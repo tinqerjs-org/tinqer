@@ -4,13 +4,19 @@
  */
 
 import { parseSync } from "oxc-parser";
+import type { Program } from "@oxc-project/types";
+
+interface ParseResult {
+  program: Program | null;
+  errors: Array<{ message: string }>;
+}
 
 export class OxcParser {
   /**
    * Parse a lambda function string into an AST
    */
-  parse(lambdaString: string): any {
-    const result = parseSync("query.ts", lambdaString, {});
+  parse(lambdaString: string): Program {
+    const result = parseSync("query.ts", lambdaString, {}) as ParseResult;
 
     if (!result || !result.program) {
       throw new Error("Failed to parse lambda function");

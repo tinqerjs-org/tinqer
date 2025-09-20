@@ -164,3 +164,9 @@ test-pod-*-backup-*.json
 .vscode/
 .idea/
 .claude/
+
+# Test output directory (for saving test results)
+.tests/
+
+# Analysis working directory (for research and documentation)
+.analysis/

@@ -15,7 +15,7 @@ export interface Expression {
  */
 export interface ConstantExpression extends Expression {
   type: "constant";
-  value: any;
+  value: string | number | boolean | null | undefined;
 }
 
 /**

@@ -48,7 +48,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body if it's a lambda
     let whereExpr: Expression;
@@ -74,7 +74,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     const newQueryable = new Queryable<U>(this.tableName, this.parser);
     newQueryable.whereExpressions = [...this.whereExpressions];
@@ -94,11 +94,11 @@ export class Queryable<T> {
    */
   join<TOther, TResult>(
     other: Queryable<TOther>,
-    outerKeySelector: ((item: T) => any) | string,
-    innerKeySelector: ((item: TOther) => any) | string,
+    outerKeySelector: ((item: T) => unknown) | string,
+    innerKeySelector: ((item: TOther) => unknown) | string,
     resultSelector: ((outer: T, inner: TOther) => TResult) | string,
   ): Queryable<TResult> {
-    return this.addJoin("INNER", other, outerKeySelector, innerKeySelector, resultSelector);
+    return this.addJoin("INNER", other, outerKeySelector, innerKeySelector, resultSelector as ((outer: T, inner: TOther | null) => TResult) | string);
   }
 
   /**
@@ -106,8 +106,8 @@ export class Queryable<T> {
    */
   leftJoin<TOther, TResult>(
     other: Queryable<TOther>,
-    outerKeySelector: ((item: T) => any) | string,
-    innerKeySelector: ((item: TOther) => any) | string,
+    outerKeySelector: ((item: T) => unknown) | string,
+    innerKeySelector: ((item: TOther) => unknown) | string,
     resultSelector: ((outer: T, inner: TOther | null) => TResult) | string,
   ): Queryable<TResult> {
     return this.addJoin("LEFT", other, outerKeySelector, innerKeySelector, resultSelector);
@@ -116,9 +116,9 @@ export class Queryable<T> {
   private addJoin<TOther, TResult>(
     kind: "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS",
     other: Queryable<TOther>,
-    outerKeySelector: any,
-    innerKeySelector: any,
-    resultSelector: any,
+    outerKeySelector: ((item: T) => unknown) | string,
+    innerKeySelector: ((item: TOther) => unknown) | string,
+    resultSelector: ((outer: T, inner: TOther | null) => TResult) | string,
   ): Queryable<TResult> {
     // Parse outer key selector
     const outerKeyString =
@@ -127,7 +127,7 @@ export class Queryable<T> {
     const outerContext: ConversionContext = {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
-    const outerKeyExpr = AstConverter.convert(outerAst, outerContext);
+    const outerKeyExpr = AstConverter.convert(outerAst as never, outerContext);
 
     // Parse inner key selector
     const innerKeyString =
@@ -136,7 +136,7 @@ export class Queryable<T> {
     const innerContext: ConversionContext = {
       parameterOrigin: { type: "table", ref: other.tableName },
     };
-    const innerKeyExpr = AstConverter.convert(innerAst, innerContext);
+    const innerKeyExpr = AstConverter.convert(innerAst as never, innerContext);
 
     // Build ON condition as binary expression
     const onCondition: BinaryExpression = {
@@ -153,7 +153,7 @@ export class Queryable<T> {
     const resultContext: ConversionContext = {
       parameterOrigin: { type: "joined" },
     };
-    const resultExpr = AstConverter.convert(resultAst, resultContext);
+    const resultExpr = AstConverter.convert(resultAst as never, resultContext);
 
     // Create JOIN expression
     const join: JoinExpression = {
@@ -188,7 +188,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     const orderExpr: OrderExpression = {
       type: "order",
@@ -212,7 +212,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     const orderExpr: OrderExpression = {
       type: "order",
@@ -236,7 +236,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     const newQueryable = this.clone();
     newQueryable.groupByExpression = expression;
@@ -254,7 +254,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body if it's a lambda
     let havingExpr: Expression;
@@ -320,7 +320,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body
     let sumExpr: Expression;
@@ -350,7 +350,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body
     let avgExpr: Expression;
@@ -372,7 +372,7 @@ export class Queryable<T> {
   /**
    * MIN aggregate
    */
-  min(selector: ((item: T) => any) | string): QueryExpression {
+  min(selector: ((item: T) => unknown) | string): QueryExpression {
     const lambdaString = typeof selector === "string" ? selector : selector.toString();
     const ast = this.parser.parse(lambdaString);
 
@@ -380,7 +380,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body
     let minExpr: Expression;
@@ -402,7 +402,7 @@ export class Queryable<T> {
   /**
    * MAX aggregate
    */
-  max(selector: ((item: T) => any) | string): QueryExpression {
+  max(selector: ((item: T) => unknown) | string): QueryExpression {
     const lambdaString = typeof selector === "string" ? selector : selector.toString();
     const ast = this.parser.parse(lambdaString);
 
@@ -410,7 +410,7 @@ export class Queryable<T> {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
 
-    const expression = AstConverter.convert(ast, context);
+    const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body
     let maxExpr: Expression;
