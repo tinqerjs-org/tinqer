@@ -120,5 +120,5 @@ export { parseJavaScript } from "./parser/oxc-parser.js";
 export {
   convertAstToExpression,
   convertAstToQueryOperation,
-  type ConversionContext
+  type ConversionContext,
 } from "./converter/ast-converter.js";

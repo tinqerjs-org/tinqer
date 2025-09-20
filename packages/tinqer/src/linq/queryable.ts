@@ -126,7 +126,7 @@ export class Queryable<T> {
     _inner: Queryable<TInner>,
     _outerKeySelector: (_outer: T) => TKey,
     _innerKeySelector: (_inner: TInner) => TKey,
-    _resultSelector: (_outer: T, _inner: TInner) => TResult
+    _resultSelector: (_outer: T, _inner: TInner) => TResult,
   ): Queryable<TResult> {
     return new Queryable<TResult>();
   }

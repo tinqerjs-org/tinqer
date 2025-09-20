@@ -10,7 +10,7 @@ import { parseSync } from "oxc-parser";
  * @param code The JavaScript/TypeScript code to parse
  * @returns The parsed AST or null if parsing fails
  */
-export function parseJavaScript(code: string): any {
+export function parseJavaScript(code: string): unknown {
   try {
     const result = parseSync("query.ts", code, {
       sourceType: "module",

@@ -6,43 +6,48 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery, from } from "../src/index.js";
+import {
+  asGroupByOperation,
+  asSelectOperation,
+  asOrderByOperation,
+} from "./test-utils/operation-helpers.js";
 
-describe("Simple Grouping Operations", () => {
+describe("GROUP BY Operation", () => {
   describe("groupBy()", () => {
     it("should parse simple groupBy with column selector", () => {
       const query = () =>
         from<{ id: number; category: string; price: number }>("products").groupBy(
-          (x) => x.category
+          (x) => x.category,
         );
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("groupBy");
-      expect((result as any).keySelector).to.equal("category");
+      const groupByOp = asGroupByOperation(result);
+      expect(groupByOp.keySelector).to.equal("category");
     });
 
     it("should parse groupBy with different column", () => {
       const query = () =>
         from<{ id: number; department: string; salary: number }>("employees").groupBy(
-          (x) => x.department
+          (x) => x.department,
         );
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("groupBy");
-      expect((result as any).keySelector).to.equal("department");
+      const groupByOp = asGroupByOperation(result);
+      expect(groupByOp.keySelector).to.equal("department");
     });
 
     it("should parse groupBy after where", () => {
       const query = () =>
-        from<{ id: number; category: string; price: number; inStock: boolean }>(
-          "products"
-        )
+        from<{ id: number; category: string; price: number; inStock: boolean }>("products")
           .where((x) => x.inStock)
           .groupBy((x) => x.category);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("groupBy");
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("where");
+      const groupByOp = asGroupByOperation(result);
+      expect(groupByOp.source.operationType).to.equal("where");
     });
 
     it("should parse groupBy before select", () => {
@@ -53,8 +58,8 @@ describe("Simple Grouping Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("groupBy");
+      const selectOp = asSelectOperation(result);
+      expect(selectOp.source.operationType).to.equal("groupBy");
     });
 
     it("should parse groupBy with ordering", () => {
@@ -65,8 +70,8 @@ describe("Simple Grouping Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("groupBy");
+      const orderByOp = asOrderByOperation(result);
+      expect(orderByOp.source.operationType).to.equal("groupBy");
     });
   });
 });

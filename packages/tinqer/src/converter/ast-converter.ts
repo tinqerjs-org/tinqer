@@ -1,71 +1,82 @@
 /**
  * AST to Expression/QueryOperation converter
- * Converts OXC AST nodes to our expression and query operation types
+ * Main orchestrator that imports and uses all converter modules
  */
 
+import type { QueryOperation } from "../query-tree/operations.js";
 import type {
-  Expression,
-  BooleanExpression,
-  ValueExpression,
-  ObjectExpression,
-  ColumnExpression,
-  ConstantExpression,
-  ParameterExpression,
-  ComparisonExpression,
-  LogicalExpression,
-  ArithmeticExpression,
-  BooleanMethodExpression,
-} from "../expressions/expression.js";
+  Program,
+  ExpressionStatement,
+  Expression as ASTExpression,
+  CallExpression as ASTCallExpression,
+} from "../parser/ast-types.js";
 
-import type {
-  QueryOperation,
-  FromOperation,
-  WhereOperation,
-  SelectOperation,
-  OrderByOperation,
-  JoinOperation,
-  GroupByOperation,
-  TakeOperation,
-  SkipOperation,
-  FirstOperation,
-  FirstOrDefaultOperation,
-  SingleOperation,
-  SingleOrDefaultOperation,
-  LastOperation,
-  LastOrDefaultOperation,
-  CountOperation,
-  SumOperation,
-  AverageOperation,
-  MinOperation,
-  MaxOperation,
-  ToArrayOperation,
-  ThenByOperation,
-  DistinctOperation,
-  ContainsOperation,
-  UnionOperation,
-  ReverseOperation,
-} from "../query-tree/operations.js";
+import { findArrowFunction, getParameterName, getMethodName } from "./converter-utils.js";
+import type { ConversionContext } from "./converter-utils.js";
 
-/**
- * Context for tracking parameter origins during conversion
- */
-export interface ConversionContext {
-  // Track which parameters come from tables vs query params
-  tableParams: Set<string>;
-  queryParams: Set<string>;
-  currentTable?: string;
-  tableAliases: Map<string, string>;
-}
+// Re-export ConversionContext for external use
+export type { ConversionContext } from "./converter-utils.js";
+
+// Import operation converters
+import { convertFromOperation } from "./from.js";
+import { convertWhereOperation } from "./where.js";
+import { convertSelectOperation } from "./select.js";
+import { convertOrderByOperation, convertThenByOperation } from "./orderby.js";
+import { convertTakeOperation } from "./take.js";
+import { convertSkipOperation } from "./skip.js";
+import { convertGroupByOperation } from "./groupby.js";
+import { convertDistinctOperation } from "./distinct.js";
+import { convertCountOperation } from "./count.js";
+import { convertSumOperation } from "./sum.js";
+import { convertFirstOperation, convertFirstOrDefaultOperation } from "./first.js";
+import { convertJoinOperation } from "./join.js";
+import { convertAverageOperation } from "./average.js";
+import { convertMinOperation } from "./min.js";
+import { convertMaxOperation } from "./max.js";
+import { convertSingleOperation } from "./single.js";
+import { convertLastOperation } from "./last.js";
+import { convertContainsOperation } from "./contains.js";
+import { convertUnionOperation } from "./union.js";
+import { convertReverseOperation } from "./reverse.js";
+import { convertToArrayOperation } from "./toarray.js";
+
+// Export the expression converter for use by operation converters
+export { convertAstToExpression } from "./expressions.js";
 
 /**
  * Converts an OXC AST to a QueryOperation tree
  * This handles the method chain: from().where().select() etc.
  */
-export function convertAstToQueryOperation(ast: any): QueryOperation | null {
+export function convertAstToQueryOperation(ast: unknown): QueryOperation | null {
   try {
+    if (!ast || typeof ast !== "object" || !("type" in ast)) {
+      return null;
+    }
+
+    // Handle Program nodes from OXC parser
+    let actualAst: ASTExpression;
+    const typedAst = ast as { type: string };
+
+    if (typedAst.type === "Program") {
+      const program = ast as Program;
+      if (program.body && program.body.length > 0) {
+        const firstStatement = program.body[0];
+        if (firstStatement && firstStatement.type === "ExpressionStatement") {
+          const exprStmt = firstStatement as ExpressionStatement;
+          actualAst = exprStmt.expression;
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } else {
+      actualAst = ast as ASTExpression;
+    }
+
     // The AST should be an arrow function
     // Extract the body which should be a method chain
-    const arrowFunc = findArrowFunction(ast);
+    const arrowFunc = findArrowFunction(actualAst);
     if (!arrowFunc) {
       return null;
     }
@@ -81,7 +92,17 @@ export function convertAstToQueryOperation(ast: any): QueryOperation | null {
     };
 
     // Convert the body (should be a method chain)
-    return convertMethodChain(arrowFunc.body, context);
+    // Handle both Expression body and BlockStatement body
+    if (arrowFunc.body.type === "BlockStatement") {
+      // For block statements, look for a return statement
+      const returnExpr = getReturnExpression(arrowFunc.body.body);
+      if (returnExpr) {
+        return convertMethodChain(returnExpr, context);
+      }
+      return null;
+    } else {
+      return convertMethodChain(arrowFunc.body, context);
+    }
   } catch (error) {
     console.error("Failed to convert AST to QueryOperation:", error);
     return null;
@@ -89,154 +110,88 @@ export function convertAstToQueryOperation(ast: any): QueryOperation | null {
 }
 
 /**
- * Converts an OXC AST to an Expression
- * This handles individual expressions within lambdas
+ * Helper function to extract return expression from block body
  */
-export function convertAstToExpression(
-  ast: any,
-  context: ConversionContext
-): Expression | null {
-  if (!ast) return null;
-
-  switch (ast.type) {
-    case "Identifier":
-      return convertIdentifier(ast, context);
-
-    case "MemberExpression":
-      return convertMemberExpression(ast, context);
-
-    case "BinaryExpression":
-      return convertBinaryExpression(ast, context);
-
-    case "LogicalExpression":
-      return convertLogicalExpression(ast, context);
-
-    case "Literal":
-    case "NumericLiteral":
-    case "StringLiteral":
-    case "BooleanLiteral":
-      return convertLiteral(ast);
-
-    case "CallExpression":
-      return convertCallExpression(ast, context);
-
-    case "ObjectExpression":
-      return convertObjectExpression(ast, context);
-
-    case "ArrowFunctionExpression":
-      return convertLambdaExpression(ast, context);
-
-    case "UnaryExpression":
-      if (ast.operator === "!") {
-        const expr = convertAstToExpression(ast.argument, context);
-        if (expr && isBooleanExpression(expr)) {
-          return {
-            type: "not",
-            expression: expr as BooleanExpression,
-          };
-        }
-      }
-      return null;
-
-    case "ParenthesizedExpression":
-      // Simply unwrap parentheses and process the inner expression
-      return convertAstToExpression(ast.expression, context);
-
-    default:
-      console.warn("Unsupported AST node type:", ast.type);
-      return null;
-  }
-}
-
-// ==================== Helper Functions ====================
-
-function findArrowFunction(ast: any): any {
-  if (ast.type === "ArrowFunctionExpression") {
-    return ast;
-  }
-
-  if (ast.body && ast.body.length > 0) {
-    for (const stmt of ast.body) {
-      if (stmt.type === "ExpressionStatement" && stmt.expression) {
-        return findArrowFunction(stmt.expression);
-      }
-    }
-  }
-
-  return null;
-}
-
-function getParameterName(arrowFunc: any): string | null {
-  if (arrowFunc.params && arrowFunc.params.length > 0) {
-    return arrowFunc.params[0].name;
+function getReturnExpression(blockBody: unknown): ASTExpression | null {
+  const statements = blockBody as Array<{ type: string; argument?: ASTExpression }>;
+  const firstStatement = statements && statements.length > 0 ? statements[0] : null;
+  if (firstStatement && firstStatement.type === "ReturnStatement") {
+    return firstStatement.argument || null;
   }
   return null;
 }
 
-function convertMethodChain(ast: any, context: ConversionContext): QueryOperation | null {
+/**
+ * Convert method chain to QueryOperation
+ */
+export function convertMethodChain(
+  ast: ASTExpression,
+  context: ConversionContext,
+): QueryOperation | null {
   if (!ast) return null;
 
   // Handle call expressions (method calls)
   if (ast.type === "CallExpression") {
-    const methodName = getMethodName(ast);
+    const callAst = ast as ASTCallExpression;
+    const methodName = getMethodName(callAst);
 
     // Check if this is a from() call
     if (methodName === "from") {
-      return convertFromOperation(ast, context);
+      return convertFromOperation(callAst, context);
     }
 
     // Otherwise, it's a chained method call
-    if (ast.callee && ast.callee.type === "MemberExpression") {
-      const source = convertMethodChain(ast.callee.object, context);
+    if (callAst.callee && callAst.callee.type === "MemberExpression") {
+      const source = convertMethodChain(callAst.callee.object, context);
       if (!source) return null;
 
       switch (methodName) {
         case "where":
-          return convertWhereOperation(ast, source, context);
+          return convertWhereOperation(callAst, source, context);
         case "select":
-          return convertSelectOperation(ast, source, context);
+          return convertSelectOperation(callAst, source, context);
         case "orderBy":
         case "orderByDescending":
-          return convertOrderByOperation(ast, source, context, methodName);
+          return convertOrderByOperation(callAst, source, context, methodName);
         case "take":
-          return convertTakeOperation(ast, source, context);
+          return convertTakeOperation(callAst, source, context);
         case "skip":
-          return convertSkipOperation(ast, source, context);
+          return convertSkipOperation(callAst, source, context);
         case "first":
-          return convertFirstOperation(ast, source, context, false);
+          return convertFirstOperation(callAst, source, context, false);
         case "firstOrDefault":
-          return convertFirstOrDefaultOperation(ast, source, context);
+          return convertFirstOrDefaultOperation(callAst, source, context);
         case "count":
-          return convertCountOperation(ast, source, context);
+          return convertCountOperation(callAst, source, context);
         case "toArray":
           return convertToArrayOperation(source);
         case "groupBy":
-          return convertGroupByOperation(ast, source, context);
+          return convertGroupByOperation(callAst, source, context);
         case "join":
-          return convertJoinOperation(ast, source, context);
+          return convertJoinOperation(callAst, source, context);
         case "distinct":
-          return convertDistinctOperation(ast, source, context);
+          return convertDistinctOperation(callAst, source, context);
         case "thenBy":
         case "thenByDescending":
-          return convertThenByOperation(ast, source, context, methodName);
+          return convertThenByOperation(callAst, source, context, methodName);
         case "sum":
-          return convertSumOperation(ast, source, context);
+          return convertSumOperation(callAst, source, context);
         case "average":
-          return convertAverageOperation(ast, source, context);
+          return convertAverageOperation(callAst, source, context);
         case "min":
-          return convertMinOperation(ast, source, context);
+          return convertMinOperation(callAst, source, context);
         case "max":
-          return convertMaxOperation(ast, source, context);
+          return convertMaxOperation(callAst, source, context);
         case "single":
         case "singleOrDefault":
-          return convertSingleOperation(ast, source, context, methodName);
+          return convertSingleOperation(callAst, source, context, methodName);
         case "last":
         case "lastOrDefault":
-          return convertLastOperation(ast, source, context, methodName);
+          return convertLastOperation(callAst, source, context, methodName);
         case "contains":
-          return convertContainsOperation(ast, source, context);
+          return convertContainsOperation(callAst, source, context);
         case "union":
-          return convertUnionOperation(ast, source, context);
+          return convertUnionOperation(callAst, source, context);
         case "reverse":
           return convertReverseOperation(source);
         // Add more operations as needed
@@ -245,823 +200,4 @@ function convertMethodChain(ast: any, context: ConversionContext): QueryOperatio
   }
 
   return null;
-}
-
-function getMethodName(callExpr: any): string | null {
-  if (callExpr.callee) {
-    if (callExpr.callee.type === "Identifier") {
-      return callExpr.callee.name;
-    }
-    if (callExpr.callee.type === "MemberExpression" && callExpr.callee.property) {
-      return callExpr.callee.property.name;
-    }
-  }
-  return null;
-}
-
-function convertFromOperation(ast: any, context: ConversionContext): FromOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const arg = ast.arguments[0];
-    if (arg.type === "StringLiteral" || arg.type === "Literal") {
-      const tableName = arg.value;
-      context.currentTable = tableName;
-      return {
-        type: "queryOperation",
-        operationType: "from",
-        table: tableName,
-      };
-    }
-  }
-  return null;
-}
-
-function convertWhereOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): WhereOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      // Add the lambda parameter to table params
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const predicate = convertAstToExpression(lambdaAst.body, context);
-      if (predicate && isBooleanExpression(predicate)) {
-        return {
-          type: "queryOperation",
-          operationType: "where",
-          source,
-          predicate: predicate as BooleanExpression,
-        };
-      }
-    }
-  }
-  return null;
-}
-
-function convertSelectOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): SelectOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      // Add the lambda parameter to table params
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const selector = convertAstToExpression(lambdaAst.body, context);
-      if (selector && (isValueExpression(selector) || isObjectExpression(selector))) {
-        return {
-          type: "queryOperation",
-          operationType: "select",
-          source,
-          selector: selector as (ValueExpression | ObjectExpression),
-        };
-      }
-    }
-  }
-  return null;
-}
-
-function convertOrderByOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext,
-  methodName: string
-): OrderByOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const keySelector = convertAstToExpression(lambdaAst.body, context);
-
-      // Only support simple column names for orderBy
-      if (keySelector && keySelector.type === "column") {
-        return {
-          type: "queryOperation",
-          operationType: "orderBy",
-          source,
-          keySelector: (keySelector as ColumnExpression).name,
-          direction: methodName === "orderByDescending" ? "descending" : "ascending",
-        };
-      }
-    }
-  }
-  return null;
-}
-
-function convertTakeOperation(
-  ast: any,
-  source: QueryOperation,
-  _context: ConversionContext
-): TakeOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const arg = ast.arguments[0];
-    if (arg.type === "NumericLiteral" || arg.type === "Literal") {
-      return {
-        type: "queryOperation",
-        operationType: "take",
-        source,
-        count: arg.value,
-      };
-    }
-  }
-  return null;
-}
-
-function convertSkipOperation(
-  ast: any,
-  source: QueryOperation,
-  _context: ConversionContext
-): SkipOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const arg = ast.arguments[0];
-    if (arg.type === "NumericLiteral" || arg.type === "Literal") {
-      return {
-        type: "queryOperation",
-        operationType: "skip",
-        source,
-        count: arg.value,
-      };
-    }
-  }
-  return null;
-}
-
-function convertFirstOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext,
-  _isDefault: boolean
-): FirstOperation | null {
-  let predicate: BooleanExpression | undefined;
-
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
-      }
-    }
-  }
-
-  return {
-    type: "queryOperation",
-    operationType: "first",
-    source,
-    predicate,
-  };
-}
-
-function convertFirstOrDefaultOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): FirstOrDefaultOperation | null {
-  let predicate: BooleanExpression | undefined;
-
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
-      }
-    }
-  }
-
-  return {
-    type: "queryOperation",
-    operationType: "firstOrDefault",
-    source,
-    predicate,
-  };
-}
-
-function convertCountOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): CountOperation | null {
-  let predicate: BooleanExpression | undefined;
-
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
-      }
-    }
-  }
-
-  return {
-    type: "queryOperation",
-    operationType: "count",
-    source,
-    predicate,
-  };
-}
-
-function convertToArrayOperation(source: QueryOperation): ToArrayOperation {
-  return {
-    type: "queryOperation",
-    operationType: "toArray",
-    source,
-  };
-}
-
-function convertGroupByOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): GroupByOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const keySelectorAst = ast.arguments[0];
-
-    if (keySelectorAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(keySelectorAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const keySelector = convertAstToExpression(keySelectorAst.body, context);
-
-      // Only support simple column names for groupBy
-      if (keySelector && keySelector.type === "column") {
-        return {
-          type: "queryOperation",
-          operationType: "groupBy",
-          source,
-          keySelector: (keySelector as ColumnExpression).name,
-        };
-      }
-    }
-  }
-  return null;
-}
-
-function convertJoinOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): JoinOperation | null {
-  if (ast.arguments && ast.arguments.length >= 4) {
-    // join(inner, outerKeySelector, innerKeySelector, resultSelector)
-    const innerSource = convertAstToQueryOperation(ast.arguments[0]);
-    const outerKeySelectorAst = ast.arguments[1];
-    const innerKeySelectorAst = ast.arguments[2];
-
-    let outerKey: string | null = null;
-    let innerKey: string | null = null;
-
-    // Only support simple column selectors
-    if (outerKeySelectorAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(outerKeySelectorAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-      const expr = convertAstToExpression(outerKeySelectorAst.body, context);
-      if (expr && expr.type === "column") {
-        outerKey = (expr as ColumnExpression).name;
-      }
-    }
-
-    if (innerKeySelectorAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(innerKeySelectorAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-      const expr = convertAstToExpression(innerKeySelectorAst.body, context);
-      if (expr && expr.type === "column") {
-        innerKey = (expr as ColumnExpression).name;
-      }
-    }
-
-    if (innerSource && outerKey && innerKey) {
-      return {
-        type: "queryOperation",
-        operationType: "join",
-        source,
-        inner: innerSource,
-        outerKey,
-        innerKey,
-      };
-    }
-  }
-  return null;
-}
-
-function convertDistinctOperation(
-  _ast: any,
-  source: QueryOperation,
-  _context: ConversionContext
-): DistinctOperation | null {
-  return {
-    type: "queryOperation",
-    operationType: "distinct",
-    source,
-  };
-}
-
-
-
-function convertThenByOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext,
-  methodName: string
-): ThenByOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const keySelector = convertAstToExpression(lambdaAst.body, context);
-
-      // Only support simple column names for thenBy
-      if (keySelector && keySelector.type === "column") {
-        return {
-          type: "queryOperation",
-          operationType: "thenBy",
-          source,
-          keySelector: (keySelector as ColumnExpression).name,
-          direction: methodName === "thenByDescending" ? "descending" : "ascending",
-        };
-      }
-    }
-  }
-  return null;
-}
-
-
-function convertSumOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): SumOperation | null {
-  let selector: string | undefined;
-
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && expr.type === "column") {
-        selector = (expr as ColumnExpression).name;
-      }
-    }
-  }
-
-  return {
-    type: "queryOperation",
-    operationType: "sum",
-    source,
-    selector,
-  };
-}
-
-function convertAverageOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): AverageOperation | null {
-  let selector: string | undefined;
-
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && expr.type === "column") {
-        selector = (expr as ColumnExpression).name;
-      }
-    }
-  }
-
-  return {
-    type: "queryOperation",
-    operationType: "average",
-    source,
-    selector,
-  };
-}
-
-function convertMinOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): MinOperation | null {
-  let selector: string | undefined;
-
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && expr.type === "column") {
-        selector = (expr as ColumnExpression).name;
-      }
-    }
-  }
-
-  return {
-    type: "queryOperation",
-    operationType: "min",
-    source,
-    selector,
-  };
-}
-
-function convertMaxOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): MaxOperation | null {
-  let selector: string | undefined;
-
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && expr.type === "column") {
-        selector = (expr as ColumnExpression).name;
-      }
-    }
-  }
-
-  return {
-    type: "queryOperation",
-    operationType: "max",
-    source,
-    selector,
-  };
-}
-
-function convertSingleOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext,
-  methodName: string
-): SingleOperation | SingleOrDefaultOperation | null {
-  let predicate: BooleanExpression | undefined;
-
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
-      }
-    }
-  }
-
-  const operation: SingleOperation | SingleOrDefaultOperation = {
-    type: "queryOperation",
-    operationType: methodName === "singleOrDefault" ? "singleOrDefault" : "single",
-    source,
-    predicate,
-  } as any;
-  return operation;
-}
-
-function convertLastOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext,
-  methodName: string
-): LastOperation | LastOrDefaultOperation | null {
-  let predicate: BooleanExpression | undefined;
-
-  if (ast.arguments && ast.arguments.length > 0) {
-    const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
-      if (paramName) {
-        context.tableParams.add(paramName);
-      }
-
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
-      }
-    }
-  }
-
-  const operation: LastOperation | LastOrDefaultOperation = {
-    type: "queryOperation",
-    operationType: methodName === "lastOrDefault" ? "lastOrDefault" : "last",
-    source,
-    predicate,
-  } as any;
-  return operation;
-}
-
-function convertContainsOperation(
-  ast: any,
-  source: QueryOperation,
-  context: ConversionContext
-): ContainsOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const valueArg = ast.arguments[0];
-    const value = convertAstToExpression(valueArg, context);
-
-    if (value && isValueExpression(value)) {
-      return {
-        type: "queryOperation",
-        operationType: "contains",
-        source,
-        value: value as ValueExpression,
-      };
-    }
-  }
-  return null;
-}
-
-function convertUnionOperation(
-  ast: any,
-  source: QueryOperation,
-  _context: ConversionContext
-): UnionOperation | null {
-  if (ast.arguments && ast.arguments.length > 0) {
-    const secondSource = convertAstToQueryOperation(ast.arguments[0]);
-    if (secondSource) {
-      return {
-        type: "queryOperation",
-        operationType: "union",
-        source,
-        second: secondSource,
-      };
-    }
-  }
-  return null;
-}
-
-function convertReverseOperation(source: QueryOperation): ReverseOperation {
-  return {
-    type: "queryOperation",
-    operationType: "reverse",
-    source,
-  };
-}
-
-function convertIdentifier(ast: any, context: ConversionContext): Expression | null {
-  const name = ast.name;
-
-  // Check if it's a table parameter
-  if (context.tableParams.has(name)) {
-    // This shouldn't happen alone - identifiers are usually part of member expressions
-    return null;
-  }
-
-  // Check if it's a query parameter
-  if (context.queryParams.has(name)) {
-    return {
-      type: "param",
-      param: name,
-    } as ParameterExpression;
-  }
-
-  // Otherwise, it might be a column name (rare case)
-  return {
-    type: "column",
-    name,
-  } as ColumnExpression;
-}
-
-function convertMemberExpression(ast: any, context: ConversionContext): Expression | null {
-  const objectName = ast.object.name;
-  const propertyName = ast.property.name;
-
-  // Check if the object is a table parameter (e.g., x.name where x is table param)
-  if (context.tableParams.has(objectName)) {
-    return {
-      type: "column",
-      name: propertyName,
-    } as ColumnExpression;
-  }
-
-  // Check if it's a query parameter (e.g., p.minAge where p is query param)
-  if (context.queryParams.has(objectName)) {
-    return {
-      type: "param",
-      param: objectName,
-      property: propertyName,
-    } as ParameterExpression;
-  }
-
-  // Nested member access (e.g., x.address.city)
-  const obj = convertAstToExpression(ast.object, context);
-  if (obj && obj.type === "column") {
-    // Flatten nested column access
-    return {
-      type: "column",
-      name: `${(obj as ColumnExpression).name}.${propertyName}`,
-    } as ColumnExpression;
-  }
-
-  return null;
-}
-
-function convertBinaryExpression(ast: any, context: ConversionContext): Expression | null {
-  const left = convertAstToExpression(ast.left, context);
-  const right = convertAstToExpression(ast.right, context);
-
-  if (!left || !right) return null;
-
-  const operator = ast.operator;
-
-  // Comparison operators
-  if (["==", "===", "!=", "!==", ">", ">=", "<", "<="].includes(operator)) {
-    const op = operator === "===" ? "==" : operator === "!==" ? "!=" : operator;
-    return {
-      type: "comparison",
-      operator: op as any,
-      left: left as ValueExpression,
-      right: right as ValueExpression,
-    } as ComparisonExpression;
-  }
-
-  // Arithmetic operators
-  if (["+", "-", "*", "/", "%"].includes(operator)) {
-    return {
-      type: "arithmetic",
-      operator: operator as any,
-      left: left as ValueExpression,
-      right: right as ValueExpression,
-    } as ArithmeticExpression;
-  }
-
-  return null;
-}
-
-function convertLogicalExpression(ast: any, context: ConversionContext): Expression | null {
-  const left = convertAstToExpression(ast.left, context);
-  const right = convertAstToExpression(ast.right, context);
-
-  if (!left || !right) return null;
-
-  if (isBooleanExpression(left) && isBooleanExpression(right)) {
-    return {
-      type: "logical",
-      operator: ast.operator,
-      left: left as BooleanExpression,
-      right: right as BooleanExpression,
-    } as LogicalExpression;
-  }
-
-  return null;
-}
-
-function convertLiteral(ast: any): ConstantExpression {
-  return {
-    type: "constant",
-    value: ast.value,
-    valueType: typeof ast.value as any,
-  };
-}
-
-function convertCallExpression(ast: any, context: ConversionContext): Expression | null {
-  // Handle string method calls
-  if (ast.callee.type === "MemberExpression") {
-    const obj = convertAstToExpression(ast.callee.object, context);
-    const methodName = ast.callee.property.name;
-
-    if (obj && isValueExpression(obj)) {
-      // Boolean methods
-      if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
-        const args = ast.arguments.map((arg: any) => convertAstToExpression(arg, context));
-        return {
-          type: "booleanMethod",
-          object: obj as ValueExpression,
-          method: methodName as any,
-          arguments: args.filter(Boolean) as ValueExpression[],
-        } as BooleanMethodExpression;
-      }
-
-      // String methods
-      if (["toLowerCase", "toUpperCase", "trim"].includes(methodName)) {
-        return {
-          type: "stringMethod",
-          object: obj as ValueExpression,
-          method: methodName as any,
-        };
-      }
-    }
-  }
-
-  return null;
-}
-
-function convertObjectExpression(ast: any, context: ConversionContext): ObjectExpression | null {
-  const properties = ast.properties.map((prop: any) => {
-    const key = prop.key.name;
-    const value = convertAstToExpression(prop.value, context);
-    if (!value) return null;
-    return { key, value };
-  }).filter(Boolean);
-
-  return {
-    type: "object",
-    properties,
-  };
-}
-
-function convertLambdaExpression(ast: any, context: ConversionContext): Expression | null {
-  const params = ast.params.map((p: any) => ({ name: p.name }));
-  const body = convertAstToExpression(ast.body, context);
-
-  if (!body) return null;
-
-  return {
-    type: "lambda",
-    parameters: params,
-    body,
-  };
-}
-
-// Type guards (should import from expressions)
-function isBooleanExpression(expr: Expression): boolean {
-  return [
-    "comparison",
-    "logical",
-    "not",
-    "booleanConstant",
-    "booleanColumn",
-    "booleanParam",
-    "booleanMethod",
-    "in",
-    "between",
-    "isNull",
-    "exists",
-    "like",
-    "regex",
-  ].includes(expr.type);
-}
-
-function isValueExpression(expr: Expression): boolean {
-  return [
-    "column",
-    "constant",
-    "param",
-    "arithmetic",
-    "concat",
-    "stringMethod",
-    "case",
-    "coalesce",
-    "cast",
-  ].includes(expr.type);
-}
-
-function isObjectExpression(expr: Expression): boolean {
-  return expr.type === "object";
 }

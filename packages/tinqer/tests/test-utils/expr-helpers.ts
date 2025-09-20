@@ -9,7 +9,7 @@ import type {
   LogicalExpression,
   NotExpression,
   ArithmeticExpression,
-  BooleanColumnExpression
+  BooleanColumnExpression,
 } from "../../src/expressions/expression.js";
 
 export const expr = {
@@ -18,12 +18,19 @@ export const expr = {
     return { type: "column", name };
   },
 
-  constant(value: any): ConstantExpression {
-    const valueType = typeof value === "number" ? "number" :
-                      typeof value === "string" ? "string" :
-                      typeof value === "boolean" ? "boolean" :
-                      value === null ? "null" :
-                      value === undefined ? "undefined" : undefined;
+  constant(value: string | number | boolean | null | undefined): ConstantExpression {
+    const valueType =
+      typeof value === "number"
+        ? "number"
+        : typeof value === "string"
+          ? "string"
+          : typeof value === "boolean"
+            ? "boolean"
+            : value === null
+              ? "null"
+              : value === undefined
+                ? "undefined"
+                : undefined;
     return valueType ? { type: "constant", value, valueType } : { type: "constant", value };
   },
 
@@ -33,7 +40,7 @@ export const expr = {
 
   // Member access
   member(object: ValueExpression, member: string): MemberAccessExpression {
-    return { type: "memberAccess", object: object as any, member };
+    return { type: "memberAccess", object: object as ValueExpression, member };
   },
 
   // Boolean column
@@ -68,11 +75,11 @@ export const expr = {
 
   // Logical operators (take BooleanExpression, return BooleanExpression)
   and(left: BooleanExpression, right: BooleanExpression): LogicalExpression {
-    return { type: "logical", operator: "&&", left, right };
+    return { type: "logical", operator: "and", left, right };
   },
 
   or(left: BooleanExpression, right: BooleanExpression): LogicalExpression {
-    return { type: "logical", operator: "||", left, right };
+    return { type: "logical", operator: "or", left, right };
   },
 
   not(expression: BooleanExpression): NotExpression {

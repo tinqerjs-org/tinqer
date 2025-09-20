@@ -107,21 +107,9 @@ export interface IQueryable<T> {
   take(count: number): IQueryable<T>;
 
   /**
-   * Returns elements from a sequence as long as a condition is true
-   */
-  takeWhile(predicate: (source: T) => boolean): IQueryable<T>;
-  takeWhile(predicate: (source: T, index: number) => boolean): IQueryable<T>;
-
-  /**
    * Bypasses a specified number of elements and returns the remaining
    */
   skip(count: number): IQueryable<T>;
-
-  /**
-   * Bypasses elements as long as a condition is true
-   */
-  skipWhile(predicate: (source: T) => boolean): IQueryable<T>;
-  skipWhile(predicate: (source: T, index: number) => boolean): IQueryable<T>;
 
   /**
    * Concatenates two sequences

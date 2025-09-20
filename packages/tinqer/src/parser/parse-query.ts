@@ -14,7 +14,9 @@ import type { TerminalQuery } from "../linq/terminal-query.js";
  * @returns The parsed QueryOperation tree or null if parsing fails
  */
 export function parseQuery<TParams, TResult>(
-  queryBuilder: (params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>
+  queryBuilder: (
+    params: TParams,
+  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
 ): QueryOperation | null {
   try {
     // 1. Convert function to string

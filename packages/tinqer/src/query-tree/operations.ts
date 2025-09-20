@@ -8,13 +8,14 @@
 import type {
   BooleanExpression,
   ValueExpression,
-  ObjectExpression
+  ObjectExpression,
 } from "../expressions/expression.js";
 
 /**
  * Parameter reference for external parameters
  */
 export interface ParamRef {
+  type: "param";
   param: string;
   property?: string;
 }
@@ -54,7 +55,6 @@ export interface SelectOperation extends QueryOperation {
   selector: ValueExpression | ObjectExpression;
 }
 
-
 /**
  * JOIN operation
  */
@@ -66,7 +66,6 @@ export interface JoinOperation extends QueryOperation {
   innerKey: string; // Simple column name
 }
 
-
 /**
  * GROUP BY operation
  */
@@ -76,15 +75,14 @@ export interface GroupByOperation extends QueryOperation {
   keySelector: string; // Only support simple column names
 }
 
-
 /**
  * ORDER BY operation
  */
 export interface OrderByOperation extends QueryOperation {
   operationType: "orderBy";
   source: QueryOperation;
-  keySelector: string; // Only support simple column names
-  direction: "ascending" | "descending";
+  keySelector: string | ValueExpression; // Support both simple columns and computed expressions
+  descending: boolean;
 }
 
 /**
@@ -93,8 +91,8 @@ export interface OrderByOperation extends QueryOperation {
 export interface ThenByOperation extends QueryOperation {
   operationType: "thenBy";
   source: QueryOperation; // Must be OrderByOperation or ThenByOperation
-  keySelector: string; // Only support simple column names
-  direction: "ascending" | "descending";
+  keySelector: string | ValueExpression; // Support both simple columns and computed expressions
+  descending: boolean;
 }
 
 /**
@@ -104,7 +102,6 @@ export interface DistinctOperation extends QueryOperation {
   operationType: "distinct";
   source: QueryOperation;
 }
-
 
 /**
  * TAKE operation (LIMIT)
@@ -116,30 +113,12 @@ export interface TakeOperation extends QueryOperation {
 }
 
 /**
- * TAKE WHILE operation
- */
-export interface TakeWhileOperation extends QueryOperation {
-  operationType: "takeWhile";
-  source: QueryOperation;
-  predicate: BooleanExpression;
-}
-
-/**
  * SKIP operation (OFFSET)
  */
 export interface SkipOperation extends QueryOperation {
   operationType: "skip";
   source: QueryOperation;
   count: number | ParamRef;
-}
-
-/**
- * SKIP WHILE operation
- */
-export interface SkipWhileOperation extends QueryOperation {
-  operationType: "skipWhile";
-  source: QueryOperation;
-  predicate: BooleanExpression;
 }
 
 /**
