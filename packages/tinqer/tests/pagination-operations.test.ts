@@ -182,7 +182,7 @@ describe("Pagination Operations", () => {
 
       const skipOp = asSkipOperation(takeOp.source);
       expect(skipOp.operationType).to.equal("skip");
-      const arithmeticExpr = skipOp.count as ArithmeticExpression;
+      const arithmeticExpr = skipOp.count as unknown as ArithmeticExpression;
       expect(arithmeticExpr.type).to.equal("arithmetic");
       expect(arithmeticExpr.operator).to.equal("*");
     });
@@ -233,8 +233,9 @@ describe("Pagination Operations", () => {
       expect(takeOp.operationType).to.equal("take");
       const skipOp = asSkipOperation(takeOp.source);
       expect(skipOp.operationType).to.equal("skip");
-      expect(skipOp.source.operationType).to.equal("orderBy");
-      expect(skipOp.source.source.operationType).to.equal("where");
+      const orderByOp = asOrderByOperation(skipOp.source);
+      expect(orderByOp.operationType).to.equal("orderBy");
+      expect(orderByOp.source.operationType).to.equal("where");
     });
   });
 });

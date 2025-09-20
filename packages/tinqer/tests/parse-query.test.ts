@@ -19,6 +19,7 @@ import type {
   BooleanMethodExpression,
   ColumnExpression,
 } from "../src/expressions/expression.js";
+import type { ParamRef } from "../src/query-tree/operations.js";
 
 describe("parseQuery", () => {
   it("should parse a simple from query", () => {
@@ -99,11 +100,13 @@ describe("parseQuery", () => {
     const whereOp = asWhereOperation(result);
     const predicate = whereOp.predicate as ComparisonExpression;
     expect(predicate.type).to.equal("comparison");
-    expect(predicate.left.type).to.equal("column");
-    expect(predicate.left.name).to.equal("age");
-    expect(predicate.right.type).to.equal("param");
-    expect(predicate.right.param).to.equal("p");
-    expect(predicate.right.property).to.equal("minAge");
+    const leftColumn = predicate.left as ColumnExpression;
+    expect(leftColumn.type).to.equal("column");
+    expect(leftColumn.name).to.equal("age");
+    const rightParam = predicate.right as ParamRef;
+    expect(rightParam.type).to.equal("param");
+    expect(rightParam.param).to.equal("p");
+    expect(rightParam.property).to.equal("minAge");
   });
 
   it("should parse terminal operations", () => {

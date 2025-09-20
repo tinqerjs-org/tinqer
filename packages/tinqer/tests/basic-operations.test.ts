@@ -18,6 +18,7 @@ import type {
   ColumnExpression,
   ConcatExpression,
   ArithmeticExpression,
+  ConstantExpression,
 } from "../src/expressions/expression.js";
 import type { ParamRef } from "../src/query-tree/operations.js";
 
@@ -158,8 +159,10 @@ describe("Basic Query Operations", () => {
 
       const whereOp = asWhereOperation(result);
       const predicate = whereOp.predicate as ComparisonExpression;
-      expect(predicate.left.name).to.equal("name");
-      expect(predicate.right.value).to.equal("John");
+      const leftColumn = predicate.left as ColumnExpression;
+      expect(leftColumn.name).to.equal("name");
+      const rightConstant = predicate.right as ConstantExpression;
+      expect(rightConstant.value).to.equal("John");
     });
 
     it("should parse boolean literal comparison", () => {
@@ -169,8 +172,9 @@ describe("Basic Query Operations", () => {
       const whereOp = asWhereOperation(result);
       const predicate = whereOp.predicate as ComparisonExpression;
       expect(predicate.type).to.equal("comparison");
-      expect(predicate.right.type).to.equal("constant");
-      expect(predicate.right.value).to.equal(true);
+      const rightConstant = predicate.right as ConstantExpression;
+      expect(rightConstant.type).to.equal("constant");
+      expect(rightConstant.value).to.equal(true);
     });
 
     it("should parse null comparison", () => {
@@ -180,8 +184,9 @@ describe("Basic Query Operations", () => {
       const whereOp = asWhereOperation(result);
       const predicate = whereOp.predicate as ComparisonExpression;
       expect(predicate.type).to.equal("comparison");
-      expect(predicate.right.type).to.equal("constant");
-      expect(predicate.right.value).to.equal(null);
+      const rightConstant = predicate.right as ConstantExpression;
+      expect(rightConstant.type).to.equal("constant");
+      expect(rightConstant.value).to.equal(null);
     });
 
     it("should parse multiple where clauses", () => {
@@ -395,11 +400,13 @@ describe("Basic Query Operations", () => {
       const where2 = asWhereOperation(selectOp.source);
       expect(where2.operationType).to.equal("where");
       const where2Predicate = where2.predicate as ComparisonExpression;
-      expect(where2Predicate.left.name).to.equal("role");
+      const where2LeftColumn = where2Predicate.left as ColumnExpression;
+      expect(where2LeftColumn.name).to.equal("role");
       const where1 = asWhereOperation(where2.source);
       expect(where1.operationType).to.equal("where");
       const where1Predicate = where1.predicate as ComparisonExpression;
-      expect(where1Predicate.left.name).to.equal("age");
+      const where1LeftColumn = where1Predicate.left as ColumnExpression;
+      expect(where1LeftColumn.name).to.equal("age");
     });
   });
 });
