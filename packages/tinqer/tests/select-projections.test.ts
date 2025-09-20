@@ -10,7 +10,6 @@ import {
   assertLogicalExpression,
   assertConstantExpression,
 } from "./test-helpers.js";
-import type { LambdaExpression } from "../src/types/expressions.js";
 
 // Define test interfaces
 interface User {
@@ -57,8 +56,8 @@ describe("Complex SELECT Projections", () => {
   it("should handle simple property selection", () => {
     const query = new Queryable<User>("users").select((u) => u.email).build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const memberExpr = assertMemberExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const memberExpr = assertMemberExpression(query.select);
     expect(memberExpr.type).to.equal("member");
     expect(memberExpr.property).to.equal("email");
   });
@@ -72,8 +71,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(objExpr.type).to.equal("object");
     expect(objExpr.properties).to.have.lengthOf(3);
   });
@@ -93,8 +92,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(objExpr.type).to.equal("object");
     expect(assertObjectExpression(objExpr.properties[1]?.value).type).to.equal("object");
   });
@@ -109,8 +108,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(assertBinaryExpression(objExpr.properties[1]?.value).type).to.equal("binary");
     expect(assertBinaryExpression(objExpr.properties[2]?.value).type).to.equal("binary");
     expect(assertConditionalExpression(objExpr.properties[3]?.value).type).to.equal("conditional");
@@ -119,8 +118,8 @@ describe("Complex SELECT Projections", () => {
   it("should handle array projection", () => {
     const query = new Queryable<User>("users").select((u) => [u.id, u.name, u.email]).build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const arrExpr = assertArrayExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const arrExpr = assertArrayExpression(query.select);
     expect(arrExpr.type).to.equal("array");
     expect(arrExpr.elements).to.have.lengthOf(3);
   });
@@ -128,8 +127,8 @@ describe("Complex SELECT Projections", () => {
   it("should handle mixed array with literals", () => {
     const query = new Queryable<User>("users").select((u) => [u.id, "USER", u.name, true]).build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const arrExpr = assertArrayExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const arrExpr = assertArrayExpression(query.select);
     expect(arrExpr.type).to.equal("array");
     const constExpr = assertConstantExpression(arrExpr.elements[1]);
     expect(constExpr.type).to.equal("constant");
@@ -145,8 +144,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(assertMemberExpression(objExpr.properties[0]?.value).type).to.equal("member");
     const prop2 = assertMemberExpression(objExpr.properties[2]?.value);
     expect(assertMemberExpression(prop2.object).type).to.equal("member");
@@ -162,8 +161,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(assertConditionalExpression(objExpr.properties[2]?.value).type).to.equal("conditional");
     expect(assertConditionalExpression(objExpr.properties[3]?.value).type).to.equal("conditional");
   });
@@ -175,8 +174,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     const condExpr = assertConditionalExpression(objExpr.properties[0]?.value);
     expect(condExpr.type).to.equal("conditional");
     expect(assertConditionalExpression(condExpr.alternate).type).to.equal("conditional");
@@ -192,8 +191,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     const binExpr = assertBinaryExpression(objExpr.properties[0]?.value);
     expect(binExpr.type).to.equal("binary");
     expect(binExpr.operator).to.equal("*");
@@ -208,8 +207,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(assertBinaryExpression(objExpr.properties[0]?.value).type).to.equal("binary");
     expect(assertLogicalExpression(objExpr.properties[1]?.value).type).to.equal("logical");
     expect(assertLogicalExpression(objExpr.properties[2]?.value).type).to.equal("logical");
@@ -226,8 +225,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     const constExpr1 = assertConstantExpression(objExpr.properties[1]?.value);
     expect(constExpr1.type).to.equal("constant");
     expect(constExpr1.value).to.equal("user");
@@ -245,8 +244,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(assertCallExpression(objExpr.properties[1]?.value).type).to.equal("call");
     expect(assertBinaryExpression(objExpr.properties[3]?.value).type).to.equal("binary");
   });
@@ -266,8 +265,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(assertBinaryExpression(objExpr.properties[1]?.value).type).to.equal("binary");
     expect(assertConditionalExpression(objExpr.properties[2]?.value).type).to.equal("conditional");
   });
@@ -281,8 +280,8 @@ describe("Complex SELECT Projections", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Now select contains just the body, not the lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(assertCallExpression(objExpr.properties[0]?.value).type).to.equal("call");
     expect(assertMemberExpression(objExpr.properties[1]?.value).type).to.equal("member");
     expect(assertMemberExpression(objExpr.properties[2]?.value).type).to.equal("member");
@@ -293,9 +292,9 @@ describe("Complex SELECT Projections", () => {
       .select(({ id, name, email }) => ({ id, name, email }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
+    // Now select contains just the body, not the lambda wrapper
     expect(selectExpr.parameters).to.have.lengthOf(1);
-    const objExpr = assertObjectExpression(selectExpr.body);
+    const objExpr = assertObjectExpression(query.select);
     expect(objExpr.type).to.equal("object");
   });
 
