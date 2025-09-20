@@ -5,7 +5,7 @@
 - All old implementation code has been deleted
 - Only type definitions remain in `packages/tinqer/src/types/`:
   - `grouping.ts` - IGrouping interface matching .NET
-  - `linq-interfaces.ts` - Complete LINQ-compatible interfaces
+  - `queryable.ts` - Complete LINQ-compatible interfaces
   - `query-operations.ts` - Expression tree operation nodes
 - Documentation is complete:
   - `README.md` - User-facing documentation with examples
@@ -113,7 +113,7 @@ packages/tinqer/src/
 ├── types/
 │   ├── expressions.ts         [NEW]
 │   ├── grouping.ts            [EXISTS]
-│   ├── linq-interfaces.ts     [EXISTS]
+│   ├── queryable.ts           [EXISTS]
 │   └── query-operations.ts    [EXISTS]
 ├── parser/
 │   ├── oxc-parser.ts          [NEW]

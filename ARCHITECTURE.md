@@ -118,7 +118,7 @@ Key features:
 
 ### 6. LINQ Interfaces
 
-**Location**: `packages/tinqer/src/types/linq-interfaces.ts`
+**Location**: `packages/tinqer/src/types/queryable.ts`
 
 TypeScript interfaces matching .NET LINQ for compatibility.
 
