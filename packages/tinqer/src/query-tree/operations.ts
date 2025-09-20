@@ -56,15 +56,6 @@ export interface SelectOperation extends QueryOperation {
   selector: ValueExpression | ObjectExpression;
 }
 
-/**
- * SELECT MANY operation - projects and flattens
- */
-export interface SelectManyOperation extends QueryOperation {
-  operationType: "selectMany";
-  source: QueryOperation;
-  collectionSelector: ValueExpression | ArrayExpression;
-  resultSelector?: ObjectExpression;
-}
 
 /**
  * JOIN operation
@@ -75,21 +66,8 @@ export interface JoinOperation extends QueryOperation {
   inner: QueryOperation;
   outerKey: string; // Simple column name
   innerKey: string; // Simple column name
-  resultSelector: ObjectExpression;
-  joinType: "inner" | "left" | "right" | "full" | "cross";
 }
 
-/**
- * GROUP JOIN operation - left outer join with grouping
- */
-export interface GroupJoinOperation extends QueryOperation {
-  operationType: "groupJoin";
-  source: QueryOperation;
-  inner: QueryOperation;
-  outerKey: string;
-  innerKey: string;
-  resultSelector: ObjectExpression;
-}
 
 /**
  * GROUP BY operation
@@ -97,20 +75,9 @@ export interface GroupJoinOperation extends QueryOperation {
 export interface GroupByOperation extends QueryOperation {
   operationType: "groupBy";
   source: QueryOperation;
-  keySelector: string | ValueExpression;
-  elementSelector?: ValueExpression | ObjectExpression;
+  keySelector: string; // Only support simple column names
 }
 
-/**
- * GROUP BY with result selector
- */
-export interface GroupByWithResultSelectorOperation extends QueryOperation {
-  operationType: "groupByWithResultSelector";
-  source: QueryOperation;
-  keySelector: string | ValueExpression;
-  elementSelector?: ValueExpression | ObjectExpression;
-  resultSelector: ObjectExpression;
-}
 
 /**
  * ORDER BY operation
@@ -118,7 +85,7 @@ export interface GroupByWithResultSelectorOperation extends QueryOperation {
 export interface OrderByOperation extends QueryOperation {
   operationType: "orderBy";
   source: QueryOperation;
-  keySelector: string | ValueExpression;
+  keySelector: string; // Only support simple column names
   direction: "ascending" | "descending";
 }
 
@@ -128,7 +95,7 @@ export interface OrderByOperation extends QueryOperation {
 export interface ThenByOperation extends QueryOperation {
   operationType: "thenBy";
   source: QueryOperation; // Must be OrderByOperation or ThenByOperation
-  keySelector: string | ValueExpression;
+  keySelector: string; // Only support simple column names
   direction: "ascending" | "descending";
 }
 
@@ -140,14 +107,6 @@ export interface DistinctOperation extends QueryOperation {
   source: QueryOperation;
 }
 
-/**
- * DISTINCT BY operation
- */
-export interface DistinctByOperation extends QueryOperation {
-  operationType: "distinctBy";
-  source: QueryOperation;
-  keySelector: string | ValueExpression;
-}
 
 /**
  * TAKE operation (LIMIT)
@@ -400,7 +359,7 @@ export interface LongCountOperation extends QueryOperation {
 export interface SumOperation extends QueryOperation {
   operationType: "sum";
   source: QueryOperation;
-  selector: ValueExpression;
+  selector?: string; // Column name only
 }
 
 /**
@@ -409,7 +368,7 @@ export interface SumOperation extends QueryOperation {
 export interface AverageOperation extends QueryOperation {
   operationType: "average";
   source: QueryOperation;
-  selector: ValueExpression;
+  selector?: string; // Column name only
 }
 
 /**
@@ -418,7 +377,7 @@ export interface AverageOperation extends QueryOperation {
 export interface MinOperation extends QueryOperation {
   operationType: "min";
   source: QueryOperation;
-  selector?: ValueExpression;
+  selector?: string; // Column name only
 }
 
 /**
@@ -427,7 +386,7 @@ export interface MinOperation extends QueryOperation {
 export interface MaxOperation extends QueryOperation {
   operationType: "max";
   source: QueryOperation;
-  selector?: ValueExpression;
+  selector?: string; // Column name only
 }
 
 /**
@@ -484,29 +443,15 @@ export type ChainableOperation =
   | FromOperation
   | WhereOperation
   | SelectOperation
-  | SelectManyOperation
   | JoinOperation
-  | GroupJoinOperation
   | GroupByOperation
-  | GroupByWithResultSelectorOperation
   | OrderByOperation
   | ThenByOperation
   | DistinctOperation
-  | DistinctByOperation
   | TakeOperation
-  | TakeWhileOperation
   | SkipOperation
-  | SkipWhileOperation
-  | ConcatOperation
   | UnionOperation
-  | IntersectOperation
-  | ExceptOperation
-  | ReverseOperation
-  | DefaultIfEmptyOperation
-  | ZipOperation
-  | AppendOperation
-  | PrependOperation
-  | HavingOperation;
+  | ReverseOperation;
 
 /**
  * Union type for all terminal operations
@@ -518,22 +463,13 @@ export type TerminalOperation =
   | SingleOrDefaultOperation
   | LastOperation
   | LastOrDefaultOperation
-  | ElementAtOperation
-  | ElementAtOrDefaultOperation
-  | AnyOperation
-  | AllOperation
   | ContainsOperation
   | CountOperation
-  | LongCountOperation
   | SumOperation
   | AverageOperation
   | MinOperation
   | MaxOperation
-  | AggregateOperation
-  | ToArrayOperation
-  | ToListOperation
-  | ToDictionaryOperation
-  | ToLookupOperation;
+  | ToArrayOperation;
 
 /**
  * Union type for all operations

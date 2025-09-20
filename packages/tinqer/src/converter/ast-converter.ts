@@ -28,8 +28,22 @@ import type {
   TakeOperation,
   SkipOperation,
   FirstOperation,
+  FirstOrDefaultOperation,
+  SingleOperation,
+  SingleOrDefaultOperation,
+  LastOperation,
+  LastOrDefaultOperation,
   CountOperation,
+  SumOperation,
+  AverageOperation,
+  MinOperation,
+  MaxOperation,
   ToArrayOperation,
+  ThenByOperation,
+  DistinctOperation,
+  ContainsOperation,
+  UnionOperation,
+  ReverseOperation,
 } from "../query-tree/operations.js";
 
 /**
@@ -185,12 +199,42 @@ function convertMethodChain(ast: any, context: ConversionContext): QueryOperatio
         case "skip":
           return convertSkipOperation(ast, source, context);
         case "first":
+          return convertFirstOperation(ast, source, context, false);
         case "firstOrDefault":
-          return convertFirstOperation(ast, source, context, methodName);
+          return convertFirstOrDefaultOperation(ast, source, context);
         case "count":
           return convertCountOperation(ast, source, context);
         case "toArray":
           return convertToArrayOperation(source);
+        case "groupBy":
+          return convertGroupByOperation(ast, source, context);
+        case "join":
+          return convertJoinOperation(ast, source, context);
+        case "distinct":
+          return convertDistinctOperation(ast, source, context);
+        case "thenBy":
+        case "thenByDescending":
+          return convertThenByOperation(ast, source, context, methodName);
+        case "sum":
+          return convertSumOperation(ast, source, context);
+        case "average":
+          return convertAverageOperation(ast, source, context);
+        case "min":
+          return convertMinOperation(ast, source, context);
+        case "max":
+          return convertMaxOperation(ast, source, context);
+        case "single":
+        case "singleOrDefault":
+          return convertSingleOperation(ast, source, context, methodName);
+        case "last":
+        case "lastOrDefault":
+          return convertLastOperation(ast, source, context, methodName);
+        case "contains":
+          return convertContainsOperation(ast, source, context);
+        case "union":
+          return convertUnionOperation(ast, source, context);
+        case "reverse":
+          return convertReverseOperation(source);
         // Add more operations as needed
       }
     }
@@ -299,7 +343,7 @@ function convertOrderByOperation(
 
       const keySelector = convertAstToExpression(lambdaAst.body, context);
 
-      // Simple property access can be just a string
+      // Only support simple column names for orderBy
       if (keySelector && keySelector.type === "column") {
         return {
           type: "queryOperation",
@@ -356,7 +400,7 @@ function convertFirstOperation(
   ast: any,
   source: QueryOperation,
   context: ConversionContext,
-  methodName: string
+  _isDefault: boolean
 ): FirstOperation | null {
   let predicate: BooleanExpression | undefined;
 
@@ -377,7 +421,37 @@ function convertFirstOperation(
 
   return {
     type: "queryOperation",
-    operationType: methodName === "firstOrDefault" ? "firstOrDefault" : "first",
+    operationType: "first",
+    source,
+    predicate,
+  };
+}
+
+function convertFirstOrDefaultOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext
+): FirstOrDefaultOperation | null {
+  let predicate: BooleanExpression | undefined;
+
+  if (ast.arguments && ast.arguments.length > 0) {
+    const lambdaAst = ast.arguments[0];
+    if (lambdaAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(lambdaAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+
+      const expr = convertAstToExpression(lambdaAst.body, context);
+      if (expr && isBooleanExpression(expr)) {
+        predicate = expr as BooleanExpression;
+      }
+    }
+  }
+
+  return {
+    type: "queryOperation",
+    operationType: "firstOrDefault",
     source,
     predicate,
   };
@@ -417,6 +491,361 @@ function convertToArrayOperation(source: QueryOperation): ToArrayOperation {
   return {
     type: "queryOperation",
     operationType: "toArray",
+    source,
+  };
+}
+
+function convertGroupByOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext
+): GroupByOperation | null {
+  if (ast.arguments && ast.arguments.length > 0) {
+    const keySelectorAst = ast.arguments[0];
+
+    if (keySelectorAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(keySelectorAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+
+      const keySelector = convertAstToExpression(keySelectorAst.body, context);
+
+      // Only support simple column names for groupBy
+      if (keySelector && keySelector.type === "column") {
+        return {
+          type: "queryOperation",
+          operationType: "groupBy",
+          source,
+          keySelector: (keySelector as ColumnExpression).name,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function convertJoinOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext
+): JoinOperation | null {
+  if (ast.arguments && ast.arguments.length >= 4) {
+    // join(inner, outerKeySelector, innerKeySelector, resultSelector)
+    const innerSource = convertAstToQueryOperation(ast.arguments[0]);
+    const outerKeySelectorAst = ast.arguments[1];
+    const innerKeySelectorAst = ast.arguments[2];
+
+    let outerKey: string | null = null;
+    let innerKey: string | null = null;
+
+    // Only support simple column selectors
+    if (outerKeySelectorAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(outerKeySelectorAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+      const expr = convertAstToExpression(outerKeySelectorAst.body, context);
+      if (expr && expr.type === "column") {
+        outerKey = (expr as ColumnExpression).name;
+      }
+    }
+
+    if (innerKeySelectorAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(innerKeySelectorAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+      const expr = convertAstToExpression(innerKeySelectorAst.body, context);
+      if (expr && expr.type === "column") {
+        innerKey = (expr as ColumnExpression).name;
+      }
+    }
+
+    if (innerSource && outerKey && innerKey) {
+      return {
+        type: "queryOperation",
+        operationType: "join",
+        source,
+        inner: innerSource,
+        outerKey,
+        innerKey,
+      };
+    }
+  }
+  return null;
+}
+
+function convertDistinctOperation(
+  _ast: any,
+  source: QueryOperation,
+  _context: ConversionContext
+): DistinctOperation | null {
+  return {
+    type: "queryOperation",
+    operationType: "distinct",
+    source,
+  };
+}
+
+
+
+function convertThenByOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext,
+  methodName: string
+): ThenByOperation | null {
+  if (ast.arguments && ast.arguments.length > 0) {
+    const lambdaAst = ast.arguments[0];
+    if (lambdaAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(lambdaAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+
+      const keySelector = convertAstToExpression(lambdaAst.body, context);
+
+      // Only support simple column names for thenBy
+      if (keySelector && keySelector.type === "column") {
+        return {
+          type: "queryOperation",
+          operationType: "thenBy",
+          source,
+          keySelector: (keySelector as ColumnExpression).name,
+          direction: methodName === "thenByDescending" ? "descending" : "ascending",
+        };
+      }
+    }
+  }
+  return null;
+}
+
+
+function convertSumOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext
+): SumOperation | null {
+  let selector: string | undefined;
+
+  if (ast.arguments && ast.arguments.length > 0) {
+    const lambdaAst = ast.arguments[0];
+    if (lambdaAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(lambdaAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+      const expr = convertAstToExpression(lambdaAst.body, context);
+      if (expr && expr.type === "column") {
+        selector = (expr as ColumnExpression).name;
+      }
+    }
+  }
+
+  return {
+    type: "queryOperation",
+    operationType: "sum",
+    source,
+    selector,
+  };
+}
+
+function convertAverageOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext
+): AverageOperation | null {
+  let selector: string | undefined;
+
+  if (ast.arguments && ast.arguments.length > 0) {
+    const lambdaAst = ast.arguments[0];
+    if (lambdaAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(lambdaAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+      const expr = convertAstToExpression(lambdaAst.body, context);
+      if (expr && expr.type === "column") {
+        selector = (expr as ColumnExpression).name;
+      }
+    }
+  }
+
+  return {
+    type: "queryOperation",
+    operationType: "average",
+    source,
+    selector,
+  };
+}
+
+function convertMinOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext
+): MinOperation | null {
+  let selector: string | undefined;
+
+  if (ast.arguments && ast.arguments.length > 0) {
+    const lambdaAst = ast.arguments[0];
+    if (lambdaAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(lambdaAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+      const expr = convertAstToExpression(lambdaAst.body, context);
+      if (expr && expr.type === "column") {
+        selector = (expr as ColumnExpression).name;
+      }
+    }
+  }
+
+  return {
+    type: "queryOperation",
+    operationType: "min",
+    source,
+    selector,
+  };
+}
+
+function convertMaxOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext
+): MaxOperation | null {
+  let selector: string | undefined;
+
+  if (ast.arguments && ast.arguments.length > 0) {
+    const lambdaAst = ast.arguments[0];
+    if (lambdaAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(lambdaAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+      const expr = convertAstToExpression(lambdaAst.body, context);
+      if (expr && expr.type === "column") {
+        selector = (expr as ColumnExpression).name;
+      }
+    }
+  }
+
+  return {
+    type: "queryOperation",
+    operationType: "max",
+    source,
+    selector,
+  };
+}
+
+function convertSingleOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext,
+  methodName: string
+): SingleOperation | SingleOrDefaultOperation | null {
+  let predicate: BooleanExpression | undefined;
+
+  if (ast.arguments && ast.arguments.length > 0) {
+    const lambdaAst = ast.arguments[0];
+    if (lambdaAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(lambdaAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+
+      const expr = convertAstToExpression(lambdaAst.body, context);
+      if (expr && isBooleanExpression(expr)) {
+        predicate = expr as BooleanExpression;
+      }
+    }
+  }
+
+  const operation: SingleOperation | SingleOrDefaultOperation = {
+    type: "queryOperation",
+    operationType: methodName === "singleOrDefault" ? "singleOrDefault" : "single",
+    source,
+    predicate,
+  } as any;
+  return operation;
+}
+
+function convertLastOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext,
+  methodName: string
+): LastOperation | LastOrDefaultOperation | null {
+  let predicate: BooleanExpression | undefined;
+
+  if (ast.arguments && ast.arguments.length > 0) {
+    const lambdaAst = ast.arguments[0];
+    if (lambdaAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(lambdaAst);
+      if (paramName) {
+        context.tableParams.add(paramName);
+      }
+
+      const expr = convertAstToExpression(lambdaAst.body, context);
+      if (expr && isBooleanExpression(expr)) {
+        predicate = expr as BooleanExpression;
+      }
+    }
+  }
+
+  const operation: LastOperation | LastOrDefaultOperation = {
+    type: "queryOperation",
+    operationType: methodName === "lastOrDefault" ? "lastOrDefault" : "last",
+    source,
+    predicate,
+  } as any;
+  return operation;
+}
+
+function convertContainsOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext
+): ContainsOperation | null {
+  if (ast.arguments && ast.arguments.length > 0) {
+    const valueArg = ast.arguments[0];
+    const value = convertAstToExpression(valueArg, context);
+
+    if (value && isValueExpression(value)) {
+      return {
+        type: "queryOperation",
+        operationType: "contains",
+        source,
+        value: value as ValueExpression,
+      };
+    }
+  }
+  return null;
+}
+
+function convertUnionOperation(
+  ast: any,
+  source: QueryOperation,
+  context: ConversionContext
+): UnionOperation | null {
+  if (ast.arguments && ast.arguments.length > 0) {
+    const secondSource = convertAstToQueryOperation(ast.arguments[0]);
+    if (secondSource) {
+      return {
+        type: "queryOperation",
+        operationType: "union",
+        source,
+        second: secondSource,
+      };
+    }
+  }
+  return null;
+}
+
+function convertReverseOperation(source: QueryOperation): ReverseOperation {
+  return {
+    type: "queryOperation",
+    operationType: "reverse",
     source,
   };
 }

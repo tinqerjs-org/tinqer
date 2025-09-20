@@ -12,9 +12,8 @@ import { parseSync } from "oxc-parser";
  */
 export function parseJavaScript(code: string): any {
   try {
-    const result = parseSync(code, {
+    const result = parseSync("query.ts", code, {
       sourceType: "module",
-      sourceFilename: "query.ts",
     });
 
     if (result.errors.length > 0) {

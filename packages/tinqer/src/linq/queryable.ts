@@ -1,8 +1,6 @@
 /**
  * Queryable and OrderedQueryable classes for compile-time type safety
- *
- * These classes exist purely for TypeScript type checking.
- * The actual query execution comes from parsing the function string.
+ * ONLY BASIC SQL OPERATIONS + single, last, contains, union, reverse
  */
 
 import type { IGrouping } from "./igrouping.js";
@@ -10,7 +8,6 @@ import { TerminalQuery } from "./terminal-query.js";
 
 /**
  * OrderedQueryable extends Queryable with thenBy operations
- * Note: Does not implement IOrderedQueryable as we use TerminalQuery for terminal operations
  */
 export class OrderedQueryable<T> {
   private _phantom?: T;
@@ -25,10 +22,6 @@ export class OrderedQueryable<T> {
   }
 
   select<TResult>(selector: (item: T) => TResult): Queryable<TResult> {
-    return new Queryable<TResult>();
-  }
-
-  selectMany<TResult>(selector: (item: T) => TResult[]): Queryable<TResult> {
     return new Queryable<TResult>();
   }
 
@@ -83,11 +76,7 @@ export class OrderedQueryable<T> {
     return new TerminalQuery<number>();
   }
 
-  any(predicate?: (item: T) => boolean): TerminalQuery<boolean> {
-    return new TerminalQuery<boolean>();
-  }
-
-  all(predicate: (item: T) => boolean): TerminalQuery<boolean> {
+  contains(value: T): TerminalQuery<boolean> {
     return new TerminalQuery<boolean>();
   }
 
@@ -115,7 +104,6 @@ export class OrderedQueryable<T> {
 /**
  * Queryable provides a fluent API for building queries with type safety.
  * This class is never actually executed - it's parsed from its string representation.
- * Note: Does not implement IQueryable as we use TerminalQuery for terminal operations
  */
 export class Queryable<T> {
   private _phantom?: T;
@@ -136,15 +124,6 @@ export class Queryable<T> {
     return new Queryable<TResult>();
   }
 
-  selectMany<TResult>(selector: (item: T) => TResult[]): Queryable<TResult>;
-  selectMany<TCollection, TResult>(
-    collectionSelector: (item: T) => TCollection[],
-    resultSelector: (item: T, collection: TCollection) => TResult
-  ): Queryable<TResult>;
-  selectMany(...args: any[]): Queryable<any> {
-    return new Queryable<any>();
-  }
-
   // ==================== Joining ====================
 
   join<TInner, TKey, TResult>(
@@ -156,33 +135,10 @@ export class Queryable<T> {
     return new Queryable<TResult>();
   }
 
-  groupJoin<TInner, TKey, TResult>(
-    inner: Queryable<TInner>,
-    outerKeySelector: (outer: T) => TKey,
-    innerKeySelector: (inner: TInner) => TKey,
-    resultSelector: (outer: T, inner: TInner[]) => TResult
-  ): Queryable<TResult> {
-    return new Queryable<TResult>();
-  }
-
   // ==================== Grouping ====================
 
-  groupBy<TKey>(keySelector: (item: T) => TKey): Queryable<IGrouping<TKey, T>>;
-  groupBy<TKey, TElement>(
-    keySelector: (item: T) => TKey,
-    elementSelector: (item: T) => TElement
-  ): Queryable<IGrouping<TKey, TElement>>;
-  groupBy<TKey, TElement, TResult>(
-    keySelector: (item: T) => TKey,
-    elementSelector: (item: T) => TElement,
-    resultSelector: (key: TKey, items: TElement[]) => TResult
-  ): Queryable<TResult>;
-  groupBy<TKey, TResult>(
-    keySelector: (item: T) => TKey,
-    resultSelector?: (key: TKey, items: T[]) => TResult
-  ): Queryable<TResult>;
-  groupBy(...args: any[]): Queryable<any> {
-    return new Queryable<any>();
+  groupBy<TKey>(keySelector: (item: T) => TKey): Queryable<IGrouping<TKey, T>> {
+    return new Queryable<IGrouping<TKey, T>>();
   }
 
   // ==================== Ordering ====================
@@ -201,19 +157,7 @@ export class Queryable<T> {
     return this;
   }
 
-  takeWhile(predicate: (item: T) => boolean): Queryable<T>;
-  takeWhile(predicate: (item: T, index: number) => boolean): Queryable<T>;
-  takeWhile(predicate: any): Queryable<T> {
-    return this;
-  }
-
   skip(count: number): Queryable<T> {
-    return this;
-  }
-
-  skipWhile(predicate: (item: T) => boolean): Queryable<T>;
-  skipWhile(predicate: (item: T, index: number) => boolean): Queryable<T>;
-  skipWhile(predicate: any): Queryable<T> {
     return this;
   }
 
@@ -223,33 +167,7 @@ export class Queryable<T> {
     return this;
   }
 
-  distinctBy<TKey>(keySelector: (item: T) => TKey): Queryable<T> {
-    return this;
-  }
-
-  concat(second: Queryable<T>): Queryable<T> {
-    return this;
-  }
-
   union(second: Queryable<T>): Queryable<T> {
-    return this;
-  }
-
-  intersect(second: Queryable<T>): Queryable<T> {
-    return this;
-  }
-
-  except(second: Queryable<T>): Queryable<T> {
-    return this;
-  }
-
-  // ==================== Element Operations ====================
-
-  append(element: T): Queryable<T> {
-    return this;
-  }
-
-  prepend(element: T): Queryable<T> {
     return this;
   }
 
@@ -257,19 +175,7 @@ export class Queryable<T> {
     return this;
   }
 
-  defaultIfEmpty(defaultValue?: T): Queryable<T> {
-    return this;
-  }
-
-  zip<TSecond, TResult>(
-    second: Queryable<TSecond>,
-    resultSelector: (first: T, second: TSecond) => TResult
-  ): Queryable<TResult> {
-    return new Queryable<TResult>();
-  }
-
   // ==================== Terminal Operations ====================
-  // These return TerminalQuery<T> to indicate the query is complete
 
   first(predicate?: (item: T) => boolean): TerminalQuery<T> {
     return new TerminalQuery<T>();
@@ -295,24 +201,6 @@ export class Queryable<T> {
     return new TerminalQuery<T | undefined>();
   }
 
-  elementAt(index: number): TerminalQuery<T> {
-    return new TerminalQuery<T>();
-  }
-
-  elementAtOrDefault(index: number): TerminalQuery<T | undefined> {
-    return new TerminalQuery<T | undefined>();
-  }
-
-  // ==================== Quantifiers ====================
-
-  any(predicate?: (item: T) => boolean): TerminalQuery<boolean> {
-    return new TerminalQuery<boolean>();
-  }
-
-  all(predicate: (item: T) => boolean): TerminalQuery<boolean> {
-    return new TerminalQuery<boolean>();
-  }
-
   contains(value: T): TerminalQuery<boolean> {
     return new TerminalQuery<boolean>();
   }
@@ -320,10 +208,6 @@ export class Queryable<T> {
   // ==================== Aggregates ====================
 
   count(predicate?: (item: T) => boolean): TerminalQuery<number> {
-    return new TerminalQuery<number>();
-  }
-
-  longCount(predicate?: (item: T) => boolean): TerminalQuery<number> {
     return new TerminalQuery<number>();
   }
 
@@ -347,44 +231,9 @@ export class Queryable<T> {
     return new TerminalQuery<T | TResult>();
   }
 
-  aggregate<TAccumulate>(
-    seed: TAccumulate,
-    func: (accumulate: TAccumulate, item: T) => TAccumulate
-  ): TerminalQuery<TAccumulate>;
-  aggregate<TAccumulate, TResult>(
-    seed: TAccumulate,
-    func: (accumulate: TAccumulate, item: T) => TAccumulate,
-    resultSelector: (accumulate: TAccumulate) => TResult
-  ): TerminalQuery<TResult>;
-  aggregate(...args: any[]): TerminalQuery<any> {
-    return new TerminalQuery<any>();
-  }
-
   // ==================== Conversion ====================
 
   toArray(): TerminalQuery<T[]> {
     return new TerminalQuery<T[]>();
-  }
-
-  toList(): TerminalQuery<T[]> {
-    return new TerminalQuery<T[]>();
-  }
-
-  toDictionary<TKey>(keySelector: (item: T) => TKey): TerminalQuery<Map<TKey, T>>;
-  toDictionary<TKey, TElement>(
-    keySelector: (item: T) => TKey,
-    elementSelector: (item: T) => TElement
-  ): TerminalQuery<Map<TKey, TElement>>;
-  toDictionary(...args: any[]): TerminalQuery<Map<any, any>> {
-    return new TerminalQuery<Map<any, any>>();
-  }
-
-  toLookup<TKey>(keySelector: (item: T) => TKey): TerminalQuery<Map<TKey, T[]>>;
-  toLookup<TKey, TElement>(
-    keySelector: (item: T) => TKey,
-    elementSelector: (item: T) => TElement
-  ): TerminalQuery<Map<TKey, TElement[]>>;
-  toLookup(...args: any[]): TerminalQuery<Map<any, any[]>> {
-    return new TerminalQuery<Map<any, any[]>>();
   }
 }

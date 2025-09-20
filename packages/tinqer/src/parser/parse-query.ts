@@ -5,7 +5,7 @@
 import type { QueryOperation } from "../query-tree/operations.js";
 import { parseJavaScript } from "./oxc-parser.js";
 import { convertAstToQueryOperation } from "../converter/ast-converter.js";
-import type { Queryable } from "../linq/queryable.js";
+import type { Queryable, OrderedQueryable } from "../linq/queryable.js";
 import type { TerminalQuery } from "../linq/terminal-query.js";
 
 /**
@@ -14,7 +14,7 @@ import type { TerminalQuery } from "../linq/terminal-query.js";
  * @returns The parsed QueryOperation tree or null if parsing fails
  */
 export function parseQuery<TParams, TResult>(
-  queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>
+  queryBuilder: (params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>
 ): QueryOperation | null {
   try {
     // 1. Convert function to string
