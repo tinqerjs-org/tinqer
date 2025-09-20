@@ -137,7 +137,11 @@ export type {
 } from "./query-tree/operations.js";
 
 // ==================== Parser API ====================
-// To be implemented
 
-// export { parseQuery } from "./parser/parse-query.js";
-// export { parseExpression } from "./parser/parse-expression.js";
+export { parseQuery } from "./parser/parse-query.js";
+export { parseJavaScript } from "./parser/oxc-parser.js";
+export {
+  convertAstToExpression,
+  convertAstToQueryOperation,
+  type ConversionContext
+} from "./converter/ast-converter.js";
