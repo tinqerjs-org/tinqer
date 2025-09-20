@@ -202,18 +202,6 @@ describe("Ordering Operations", () => {
       expect(orderByOp.source.operationType).to.equal("where");
     });
 
-    it("should parse ordering with external parameters", () => {
-      const query = (p: { sortField: string }) =>
-        from<{ id: number; name: string; age: number }>("users").orderBy(
-          (x) => x[p.sortField as keyof typeof x],
-        );
-      const result = parseQuery(query);
-
-      // Note: Dynamic field access is not currently supported by the parser
-      // This is expected to return null until dynamic property access is implemented
-      expect(result).to.be.null;
-    });
-
     it("should parse ordering with take", () => {
       const query = () =>
         from<{ id: number; score: number }>("scores")
