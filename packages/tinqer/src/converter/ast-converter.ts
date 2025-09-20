@@ -224,7 +224,7 @@ export class AstConverter {
     if ("computed" in node && node.computed === true) {
       // Handle computed properties like obj[0] or obj["prop"]
       const propExpr = node.property as AstNode;
-      if (propExpr.type === "NumericLiteral") {
+      if (propExpr.type === "NumericLiteral" || propExpr.type === "Literal") {
         property = String(propExpr.value);
       } else if (propExpr.type === "StringLiteral") {
         property = String(propExpr.value);
@@ -300,18 +300,33 @@ export class AstConverter {
     };
   }
 
-  private static convertUnaryExpression(
-    node: AstNode,
-    context: ConversionContext,
-  ): UnaryExpression {
+  private static convertUnaryExpression(node: AstNode, context: ConversionContext): Expression {
+    const operator = String(node.operator);
     const unaryArg = node.argument as AstNode;
+
+    // Special case: negative numeric literals should be constants
+    if (operator === "-" && (unaryArg.type === "NumericLiteral" || unaryArg.type === "Literal")) {
+      return {
+        type: "constant",
+        value: -(unaryArg.value as number),
+      } as ConstantExpression;
+    }
+
+    // Special case: positive numeric literals should be constants
+    if (operator === "+" && (unaryArg.type === "NumericLiteral" || unaryArg.type === "Literal")) {
+      return {
+        type: "constant",
+        value: +(unaryArg.value as number),
+      } as ConstantExpression;
+    }
+
     const operand = this.convert(unaryArg, context);
 
     return {
       type: "unary",
-      operator: String(node.operator),
+      operator,
       operand,
-    };
+    } as UnaryExpression;
   }
 
   private static convertCallExpression(node: AstNode, context: ConversionContext): CallExpression {
