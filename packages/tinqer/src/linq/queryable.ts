@@ -6,13 +6,13 @@
  */
 
 import type { IGrouping } from "./igrouping.js";
-import type { IQueryable, IOrderedQueryable } from "./iqueryable.js";
 import { TerminalQuery } from "./terminal-query.js";
 
 /**
  * OrderedQueryable extends Queryable with thenBy operations
+ * Note: Does not implement IOrderedQueryable as we use TerminalQuery for terminal operations
  */
-export class OrderedQueryable<T> implements IOrderedQueryable<T> {
+export class OrderedQueryable<T> {
   private _phantom?: T;
 
   constructor() {
@@ -115,8 +115,9 @@ export class OrderedQueryable<T> implements IOrderedQueryable<T> {
 /**
  * Queryable provides a fluent API for building queries with type safety.
  * This class is never actually executed - it's parsed from its string representation.
+ * Note: Does not implement IQueryable as we use TerminalQuery for terminal operations
  */
-export class Queryable<T> implements IQueryable<T> {
+export class Queryable<T> {
   private _phantom?: T;
 
   constructor() {
