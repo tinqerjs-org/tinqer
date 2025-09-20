@@ -42,7 +42,7 @@ export class AstConverter {
     }
 
     switch (node.type) {
-      case "Program":
+      case "Program": {
         // Lambda strings parse to Program with single ExpressionStatement
         const nodeBody = node.body as unknown as AstNode[] | undefined;
         if (nodeBody && nodeBody.length === 1 && nodeBody[0]?.type === "ExpressionStatement") {
@@ -50,6 +50,7 @@ export class AstConverter {
           return this.convert(expr.expression, context);
         }
         throw new Error("Complex program not supported");
+      }
 
       case "ArrowFunctionExpression":
       case "FunctionExpression":
@@ -94,17 +95,19 @@ export class AstConverter {
       case "FunctionBody":
         return this.convertBlockStatement(node, context);
 
-      case "ReturnStatement":
+      case "ReturnStatement": {
         const nodeArg = node.argument as AstNode | undefined;
         if (nodeArg) {
           return this.convert(nodeArg, context);
         }
         return { type: "constant", value: undefined } as ConstantExpression;
+      }
 
-      case "ParenthesizedExpression":
+      case "ParenthesizedExpression": {
         // Unwrap parentheses
         const nodeExpr = node.expression as AstNode;
         return this.convert(nodeExpr, context);
+      }
 
       default:
         throw new Error(`Unsupported AST node type: ${node.type}`);
@@ -120,7 +123,11 @@ export class AstConverter {
     if (nodeParams) {
       for (const param of nodeParams) {
         let paramName: string;
-        const p = param as { type?: string; name?: string; pattern?: { type: string; name?: string } };
+        const p = param as {
+          type?: string;
+          name?: string;
+          pattern?: { type: string; name?: string };
+        };
 
         // Handle different parameter patterns
         if (p.type === "BindingIdentifier" && p.name) {
@@ -165,7 +172,7 @@ export class AstConverter {
   }
 
   private static convertIdentifier(node: AstNode, context: ConversionContext): Expression {
-    const name = node.name as string;
+    const name = String(node.name);
 
     // Check if it's a lambda parameter
     if (context.lambdaParams?.has(name)) {
@@ -220,7 +227,7 @@ export class AstConverter {
       if (propExpr.type === "NumericLiteral") {
         property = String(propExpr.value);
       } else if (propExpr.type === "StringLiteral") {
-        property = propExpr.value as string;
+        property = String(propExpr.value);
       } else {
         throw new Error("Complex computed properties not supported");
       }
@@ -247,14 +254,17 @@ export class AstConverter {
     } as MemberExpression;
   }
 
-  private static convertBinaryExpression(node: AstNode, context: ConversionContext): BinaryExpression {
+  private static convertBinaryExpression(
+    node: AstNode,
+    context: ConversionContext,
+  ): BinaryExpression {
     const binaryLeft = node.left as AstNode;
     const binaryRight = node.right as AstNode;
     const left = this.convert(binaryLeft, context);
     const right = this.convert(binaryRight, context);
 
     // Normalize === to == and !== to !=
-    let operator = node.operator as string;
+    let operator = String(node.operator);
     if (operator === "===") operator = "==";
     if (operator === "!==") operator = "!=";
 
@@ -266,7 +276,10 @@ export class AstConverter {
     };
   }
 
-  private static convertLogicalExpression(node: AstNode, context: ConversionContext): LogicalExpression {
+  private static convertLogicalExpression(
+    node: AstNode,
+    context: ConversionContext,
+  ): LogicalExpression {
     const logicalLeft = node.left as AstNode;
     const logicalRight = node.right as AstNode;
     const left = this.convert(logicalLeft, context);
@@ -274,26 +287,29 @@ export class AstConverter {
 
     // OXC uses "&&", "||", and "??" operators
     // We only support && and ||
-    const operator = node.operator as string;
+    const operator = String(node.operator);
     if (operator !== "&&" && operator !== "||") {
       throw new Error(`Unsupported logical operator: ${operator}`);
     }
 
     return {
       type: "logical",
-      operator: operator as "&&" | "||",
+      operator: operator === "&&" ? "&&" : "||",
       left,
       right,
     };
   }
 
-  private static convertUnaryExpression(node: AstNode, context: ConversionContext): UnaryExpression {
+  private static convertUnaryExpression(
+    node: AstNode,
+    context: ConversionContext,
+  ): UnaryExpression {
     const unaryArg = node.argument as AstNode;
     const operand = this.convert(unaryArg, context);
 
     return {
       type: "unary",
-      operator: node.operator as string,
+      operator: String(node.operator),
       operand,
     };
   }
@@ -302,7 +318,11 @@ export class AstConverter {
     const calleeNode = node.callee as AstNode;
     // Check if it's a method call (e.g., name.toLowerCase())
     if (calleeNode.type === "MemberExpression") {
-      const memberExpr = calleeNode as { type: string; object: AstNode; property: { type: string; name: string } };
+      const memberExpr = calleeNode as {
+        type: string;
+        object: AstNode;
+        property: { type: string; name: string };
+      };
       const callee = this.convert(memberExpr.object, context);
 
       let method: string;
@@ -343,7 +363,10 @@ export class AstConverter {
     throw new Error("Complex function calls not supported");
   }
 
-  private static convertConditionalExpression(node: AstNode, context: ConversionContext): ConditionalExpression {
+  private static convertConditionalExpression(
+    node: AstNode,
+    context: ConversionContext,
+  ): ConditionalExpression {
     const testNode = node.test as AstNode;
     const consequentNode = node.consequent as AstNode;
     const alternateNode = node.alternate as AstNode;
@@ -359,10 +382,13 @@ export class AstConverter {
     };
   }
 
-  private static convertArrayExpression(node: AstNode, context: ConversionContext): ArrayExpression {
+  private static convertArrayExpression(
+    node: AstNode,
+    context: ConversionContext,
+  ): ArrayExpression {
     const elementsArray = node.elements as (AstNode | null)[];
     const elements = elementsArray.map((el: AstNode | null) => {
-      if (!el) return { type: "constant", value: undefined } as ConstantExpression;
+      if (!el) return { type: "constant", value: undefined };
       if (el.type === "SpreadElement") {
         throw new Error("Spread elements not supported");
       }
@@ -375,7 +401,10 @@ export class AstConverter {
     };
   }
 
-  private static convertObjectExpression(node: AstNode, context: ConversionContext): ObjectExpression {
+  private static convertObjectExpression(
+    node: AstNode,
+    context: ConversionContext,
+  ): ObjectExpression {
     const propertiesArray = node.properties as AstNode[];
     const properties = propertiesArray.map((propKind: AstNode) => {
       if (propKind.type === "SpreadElement") {
@@ -415,7 +444,7 @@ export class AstConverter {
     return {
       type: "constant",
       value: literalValue,
-    };
+    } as ConstantExpression;
   }
 
   private static convertBlockStatement(node: AstNode, context: ConversionContext): Expression {

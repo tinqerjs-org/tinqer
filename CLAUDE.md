@@ -103,6 +103,7 @@ This means: Focus on clean, optimal implementations without worrying about exist
 - **NO BACKWARDS COMPATIBILITY** - Do not write backwards compatibility code
 - **PREFER FUNCTIONS OVER CLASSES** - Export functions from modules when possible, use classes only when beneficial for stateful connections or complex state management
 - **NO DYNAMIC IMPORTS** - Always use static imports, never `await import()` or `import()` in the code
+- **STRICT TYPING REQUIRED** - No `any` types allowed. All code must be strictly typed. ESLint rule `@typescript-eslint/no-explicit-any` must be set to "error"
 - Use pure functions with explicit dependency injection
 - Prefer `type` over `interface` (use `interface` only for extensible contracts)
 

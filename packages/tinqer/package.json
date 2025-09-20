@@ -13,6 +13,7 @@
     "build": "tsc",
     "test": "mocha --exit",
     "test:grep": "mocha --exit --grep",
+    "test:build": "tsc -p tsconfig.test.json --noEmit",
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",

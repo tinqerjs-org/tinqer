@@ -28,8 +28,8 @@ export class Queryable<T> {
   private orderByExpressions: OrderExpression[] = [];
   private groupByExpression?: Expression;
   private havingExpression?: Expression;
-  private limitValue?: number;
-  private offsetValue?: number;
+  private limitExpression?: Expression;
+  private offsetExpression?: Expression;
   private distinctFlag?: boolean;
 
   constructor(tableName: string, parser?: OxcParser) {
@@ -83,8 +83,8 @@ export class Queryable<T> {
     newQueryable.orderByExpressions = [...this.orderByExpressions];
     newQueryable.groupByExpression = this.groupByExpression;
     newQueryable.havingExpression = this.havingExpression;
-    newQueryable.limitValue = this.limitValue;
-    newQueryable.offsetValue = this.offsetValue;
+    newQueryable.limitExpression = this.limitExpression;
+    newQueryable.offsetExpression = this.offsetExpression;
     newQueryable.distinctFlag = this.distinctFlag;
     return newQueryable;
   }
@@ -98,7 +98,13 @@ export class Queryable<T> {
     innerKeySelector: ((item: TOther) => unknown) | string,
     resultSelector: ((outer: T, inner: TOther) => TResult) | string,
   ): Queryable<TResult> {
-    return this.addJoin("INNER", other, outerKeySelector, innerKeySelector, resultSelector as ((outer: T, inner: TOther | null) => TResult) | string);
+    return this.addJoin(
+      "INNER",
+      other,
+      outerKeySelector,
+      innerKeySelector,
+      resultSelector as ((outer: T, inner: TOther | null) => TResult) | string,
+    );
   }
 
   /**
@@ -171,8 +177,8 @@ export class Queryable<T> {
     newQueryable.orderByExpressions = [...this.orderByExpressions];
     newQueryable.groupByExpression = this.groupByExpression;
     newQueryable.havingExpression = this.havingExpression;
-    newQueryable.limitValue = this.limitValue;
-    newQueryable.offsetValue = this.offsetValue;
+    newQueryable.limitExpression = this.limitExpression;
+    newQueryable.offsetExpression = this.offsetExpression;
     newQueryable.distinctFlag = this.distinctFlag;
     return newQueryable;
   }
@@ -270,20 +276,70 @@ export class Queryable<T> {
   }
 
   /**
-   * LIMIT
+   * LIMIT - accepts a number or expression
    */
-  take(limit: number): Queryable<T> {
+  take(limit: number | ((params: any) => number) | string): Queryable<T> {
     const newQueryable = this.clone();
-    newQueryable.limitValue = limit;
+
+    if (typeof limit === "number") {
+      // Direct number - store as constant
+      newQueryable.limitExpression = {
+        type: "constant",
+        value: limit,
+      } as Expression;
+    } else {
+      // Parse lambda expression
+      const lambdaString = typeof limit === "string" ? limit : limit.toString();
+      const ast = this.parser.parse(lambdaString);
+
+      const context: ConversionContext = {
+        externalParams: new Set(["params"]), // Allow params access
+      };
+
+      const expression = AstConverter.convert(ast as never, context);
+
+      // Extract lambda body if it's a lambda
+      if (expression.type === "lambda") {
+        newQueryable.limitExpression = (expression as LambdaExpression).body;
+      } else {
+        newQueryable.limitExpression = expression;
+      }
+    }
+
     return newQueryable;
   }
 
   /**
-   * OFFSET
+   * OFFSET - accepts a number or expression
    */
-  skip(offset: number): Queryable<T> {
+  skip(offset: number | ((params: any) => number) | string): Queryable<T> {
     const newQueryable = this.clone();
-    newQueryable.offsetValue = offset;
+
+    if (typeof offset === "number") {
+      // Direct number - store as constant
+      newQueryable.offsetExpression = {
+        type: "constant",
+        value: offset,
+      } as Expression;
+    } else {
+      // Parse lambda expression
+      const lambdaString = typeof offset === "string" ? offset : offset.toString();
+      const ast = this.parser.parse(lambdaString);
+
+      const context: ConversionContext = {
+        externalParams: new Set(["params"]), // Allow params access
+      };
+
+      const expression = AstConverter.convert(ast as never, context);
+
+      // Extract lambda body if it's a lambda
+      if (expression.type === "lambda") {
+        newQueryable.offsetExpression = (expression as LambdaExpression).body;
+      } else {
+        newQueryable.offsetExpression = expression;
+      }
+    }
+
     return newQueryable;
   }
 
@@ -455,17 +511,6 @@ export class Queryable<T> {
       },
     };
 
-    // Build limit/offset expressions
-    const limit =
-      this.limitValue !== undefined
-        ? ({ type: "constant", value: this.limitValue } as Expression)
-        : undefined;
-
-    const offset =
-      this.offsetValue !== undefined
-        ? ({ type: "constant", value: this.offsetValue } as Expression)
-        : undefined;
-
     return {
       type: "query",
       operation: "SELECT",
@@ -476,8 +521,8 @@ export class Queryable<T> {
       having: this.havingExpression,
       orderBy: this.orderByExpressions.length > 0 ? this.orderByExpressions : undefined,
       joins: this.joinExpressions.length > 0 ? this.joinExpressions : undefined,
-      limit,
-      offset,
+      limit: this.limitExpression,
+      offset: this.offsetExpression,
       distinct: this.distinctFlag,
     };
   }
@@ -490,8 +535,8 @@ export class Queryable<T> {
     newQueryable.orderByExpressions = [...this.orderByExpressions];
     newQueryable.groupByExpression = this.groupByExpression;
     newQueryable.havingExpression = this.havingExpression;
-    newQueryable.limitValue = this.limitValue;
-    newQueryable.offsetValue = this.offsetValue;
+    newQueryable.limitExpression = this.limitExpression;
+    newQueryable.offsetExpression = this.offsetExpression;
     newQueryable.distinctFlag = this.distinctFlag;
     return newQueryable;
   }
