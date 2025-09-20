@@ -3,7 +3,7 @@
  * This is a marker class - no actual implementation needed.
  */
 export class TerminalQuery<T> {
-  // @ts-ignore - T is used for type checking only
+  // @ts-expect-error - T is used for type checking only
   private readonly _type?: T;
 
   constructor() {

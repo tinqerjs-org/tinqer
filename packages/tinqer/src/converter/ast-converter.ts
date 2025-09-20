@@ -16,7 +16,30 @@ import type {
   ArithmeticExpression,
   BooleanMethodExpression,
   ConcatExpression,
+  StringMethodExpression,
 } from "../expressions/expression.js";
+
+import type {
+  Program,
+  Statement,
+  ExpressionStatement,
+  ReturnStatement,
+  Expression as ASTExpression,
+  Identifier,
+  MemberExpression as ASTMemberExpression,
+  CallExpression as ASTCallExpression,
+  ArrowFunctionExpression,
+  BinaryExpression as ASTBinaryExpression,
+  LogicalExpression as ASTLogicalExpression,
+  UnaryExpression as ASTUnaryExpression,
+  ObjectExpression as ASTObjectExpression,
+  Literal,
+  NumericLiteral,
+  StringLiteral,
+  BooleanLiteral,
+  NullLiteral,
+  ParenthesizedExpression,
+} from "../parser/ast-types.js";
 
 import type {
   QueryOperation,
@@ -28,6 +51,7 @@ import type {
   GroupByOperation,
   TakeOperation,
   SkipOperation,
+  SkipWhileOperation,
   FirstOperation,
   FirstOrDefaultOperation,
   SingleOperation,
@@ -37,6 +61,7 @@ import type {
   CountOperation,
   SumOperation,
   AverageOperation,
+  ParamRef,
   MinOperation,
   MaxOperation,
   ToArrayOperation,
@@ -62,11 +87,36 @@ export interface ConversionContext {
  * Converts an OXC AST to a QueryOperation tree
  * This handles the method chain: from().where().select() etc.
  */
-export function convertAstToQueryOperation(ast: any): QueryOperation | null {
+export function convertAstToQueryOperation(ast: unknown): QueryOperation | null {
   try {
+    if (!ast || typeof ast !== "object" || !("type" in ast)) {
+      return null;
+    }
+
+    // Handle Program nodes from OXC parser
+    let actualAst: ASTExpression;
+    const typedAst = ast as { type: string };
+
+    if (typedAst.type === "Program") {
+      const program = ast as Program;
+      if (program.body && program.body.length > 0) {
+        const firstStatement = program.body[0];
+        if (firstStatement && firstStatement.type === "ExpressionStatement") {
+          const exprStmt = firstStatement as ExpressionStatement;
+          actualAst = exprStmt.expression;
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } else {
+      actualAst = ast as ASTExpression;
+    }
+
     // The AST should be an arrow function
     // Extract the body which should be a method chain
-    const arrowFunc = findArrowFunction(ast);
+    const arrowFunc = findArrowFunction(actualAst);
     if (!arrowFunc) {
       return null;
     }
@@ -82,7 +132,17 @@ export function convertAstToQueryOperation(ast: any): QueryOperation | null {
     };
 
     // Convert the body (should be a method chain)
-    return convertMethodChain(arrowFunc.body, context);
+    // Handle both Expression body and BlockStatement body
+    if (arrowFunc.body.type === "BlockStatement") {
+      // For block statements, look for a return statement
+      const returnExpr = getReturnExpression(arrowFunc.body.body);
+      if (returnExpr) {
+        return convertMethodChain(returnExpr, context);
+      }
+      return null;
+    } else {
+      return convertMethodChain(arrowFunc.body, context);
+    }
   } catch (error) {
     console.error("Failed to convert AST to QueryOperation:", error);
     return null;
@@ -93,7 +153,10 @@ export function convertAstToQueryOperation(ast: any): QueryOperation | null {
  * Converts an OXC AST to an Expression
  * This handles individual expressions within lambdas
  */
-export function convertAstToExpression(ast: any, context: ConversionContext): Expression | null {
+export function convertAstToExpression(
+  ast: ASTExpression,
+  context: ConversionContext,
+): Expression | null {
   if (!ast) return null;
 
   switch (ast.type) {
@@ -113,7 +176,10 @@ export function convertAstToExpression(ast: any, context: ConversionContext): Ex
     case "NumericLiteral":
     case "StringLiteral":
     case "BooleanLiteral":
-      return convertLiteral(ast);
+    case "NullLiteral":
+      return convertLiteral(
+        ast as Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
+      );
 
     case "CallExpression":
       return convertCallExpression(ast, context);
@@ -124,16 +190,17 @@ export function convertAstToExpression(ast: any, context: ConversionContext): Ex
     case "ArrowFunctionExpression":
       return convertLambdaExpression(ast, context);
 
-    case "UnaryExpression":
-      if (ast.operator === "!") {
-        const expr = convertAstToExpression(ast.argument, context);
+    case "UnaryExpression": {
+      const unaryExpr = ast as ASTUnaryExpression;
+      if (unaryExpr.operator === "!") {
+        const expr = convertAstToExpression(unaryExpr.argument, context);
 
         // Convert column to booleanColumn if needed
         let finalExpr = expr;
         if (expr && expr.type === "column") {
           finalExpr = {
             type: "booleanColumn",
-            name: (expr as any).name,
+            name: (expr as ColumnExpression).name,
           };
         }
 
@@ -145,10 +212,13 @@ export function convertAstToExpression(ast: any, context: ConversionContext): Ex
         }
       }
       return null;
+    }
 
-    case "ParenthesizedExpression":
+    case "ParenthesizedExpression": {
       // Simply unwrap parentheses and process the inner expression
-      return convertAstToExpression(ast.expression, context);
+      const parenExpr = ast as ParenthesizedExpression;
+      return convertAstToExpression(parenExpr.expression, context);
+    }
 
     default:
       console.warn("Unsupported AST node type:", ast.type);
@@ -158,30 +228,36 @@ export function convertAstToExpression(ast: any, context: ConversionContext): Ex
 
 // ==================== Helper Functions ====================
 
-function findArrowFunction(ast: any): any {
+function getReturnExpression(blockBody: Statement[] | undefined): ASTExpression | null {
+  const firstStatement = blockBody && blockBody.length > 0 ? blockBody[0] : null;
+  if (firstStatement && firstStatement.type === "ReturnStatement") {
+    const returnStmt = firstStatement as ReturnStatement;
+    return returnStmt.argument || null;
+  }
+  return null;
+}
+
+function findArrowFunction(ast: ASTExpression): ArrowFunctionExpression | null {
   if (ast.type === "ArrowFunctionExpression") {
-    return ast;
+    return ast as ArrowFunctionExpression;
   }
 
-  if (ast.body && ast.body.length > 0) {
-    for (const stmt of ast.body) {
-      if (stmt.type === "ExpressionStatement" && stmt.expression) {
-        return findArrowFunction(stmt.expression);
-      }
+  // Handle other expression types that might wrap arrow functions
+  // For now, we only check the direct expression
+  return null;
+}
+
+function getParameterName(arrowFunc: ArrowFunctionExpression): string | null {
+  if (arrowFunc.params && arrowFunc.params.length > 0) {
+    const firstParam = arrowFunc.params[0];
+    if (firstParam) {
+      return firstParam.name;
     }
   }
-
   return null;
 }
 
-function getParameterName(arrowFunc: any): string | null {
-  if (arrowFunc.params && arrowFunc.params.length > 0) {
-    return arrowFunc.params[0].name;
-  }
-  return null;
-}
-
-function convertMethodChain(ast: any, context: ConversionContext): QueryOperation | null {
+function convertMethodChain(ast: ASTExpression, context: ConversionContext): QueryOperation | null {
   if (!ast) return null;
 
   // Handle call expressions (method calls)
@@ -257,7 +333,7 @@ function convertMethodChain(ast: any, context: ConversionContext): QueryOperatio
   return null;
 }
 
-function getMethodName(callExpr: any): string | null {
+function getMethodName(callExpr: ASTCallExpression): string | null {
   if (callExpr.callee) {
     if (callExpr.callee.type === "Identifier") {
       return callExpr.callee.name;
@@ -269,11 +345,14 @@ function getMethodName(callExpr: any): string | null {
   return null;
 }
 
-function convertFromOperation(ast: any, context: ConversionContext): FromOperation | null {
+function convertFromOperation(
+  ast: ASTCallExpression,
+  context: ConversionContext,
+): FromOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const arg = ast.arguments[0];
-    if (arg.type === "StringLiteral" || arg.type === "Literal") {
-      const tableName = arg.value;
+    if (arg && (arg.type === "StringLiteral" || arg.type === "Literal")) {
+      const tableName = (arg as StringLiteral | Literal).value as string;
       context.currentTable = tableName;
       return {
         type: "queryOperation",
@@ -286,27 +365,29 @@ function convertFromOperation(ast: any, context: ConversionContext): FromOperati
 }
 
 function convertWhereOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): WhereOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
       // Add the lambda parameter to table params
-      const paramName = getParameterName(lambdaAst);
+      const paramName = getParameterName(lambdaAst as ArrowFunctionExpression);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const predicate = convertAstToExpression(lambdaAst.body, context);
+      const body = (lambdaAst as ArrowFunctionExpression).body;
+      const predicate =
+        body.type === "BlockStatement" ? null : convertAstToExpression(body, context);
 
       // If we got a column, convert it to a booleanColumn for where clauses
       let finalPredicate = predicate;
       if (predicate && predicate.type === "column") {
         finalPredicate = {
           type: "booleanColumn",
-          name: (predicate as any).name,
+          name: (predicate as ColumnExpression).name,
         };
       }
 
@@ -324,20 +405,22 @@ function convertWhereOperation(
 }
 
 function convertSelectOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): SelectOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
       // Add the lambda parameter to table params
-      const paramName = getParameterName(lambdaAst);
+      const paramName = getParameterName(lambdaAst as ArrowFunctionExpression);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const selector = convertAstToExpression(lambdaAst.body, context);
+      const body = (lambdaAst as ArrowFunctionExpression).body;
+      const selector =
+        body.type === "BlockStatement" ? null : convertAstToExpression(body, context);
       if (selector && (isValueExpression(selector) || isObjectExpression(selector))) {
         return {
           type: "queryOperation",
@@ -352,20 +435,22 @@ function convertSelectOperation(
 }
 
 function convertOrderByOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
   methodName: string,
 ): OrderByOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const paramName = getParameterName(lambdaAst as ArrowFunctionExpression);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const keySelector = convertAstToExpression(lambdaAst.body, context);
+      const body = (lambdaAst as ArrowFunctionExpression).body;
+      const keySelector =
+        body.type === "BlockStatement" ? null : convertAstToExpression(body, context);
 
       if (keySelector) {
         // For simple columns, just use the string name
@@ -389,31 +474,44 @@ function convertOrderByOperation(
 }
 
 function convertTakeOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): TakeOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const arg = ast.arguments[0];
-    if (arg.type === "NumericLiteral" || arg.type === "Literal") {
+    if (!arg) return null;
+
+    if (arg.type === "NumericLiteral") {
       return {
         type: "queryOperation",
         operationType: "take",
         source,
-        count: arg.value,
+        count: (arg as NumericLiteral).value,
+      };
+    }
+    if (arg.type === "Literal") {
+      return {
+        type: "queryOperation",
+        operationType: "take",
+        source,
+        count: (arg as Literal).value as number,
       };
     }
     // Handle external parameter (e.g., p.limit)
     if (arg.type === "MemberExpression") {
-      const objectName = arg.object.name;
-      const propertyName = arg.property.name;
-      if (context.queryParams.has(objectName)) {
-        return {
-          type: "queryOperation",
-          operationType: "take",
-          source,
-          count: { type: "param", param: objectName, property: propertyName },
-        };
+      const memberExpr = arg as ASTMemberExpression;
+      if (memberExpr.object.type === "Identifier" && memberExpr.property.type === "Identifier") {
+        const objectName = (memberExpr.object as Identifier).name;
+        const propertyName = (memberExpr.property as Identifier).name;
+        if (context.queryParams.has(objectName)) {
+          return {
+            type: "queryOperation",
+            operationType: "take",
+            source,
+            count: { type: "param", param: objectName, property: propertyName },
+          };
+        }
       }
     }
   }
@@ -421,42 +519,52 @@ function convertTakeOperation(
 }
 
 function convertSkipOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): SkipOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const arg = ast.arguments[0];
+    if (!arg) return null;
 
     // Handle numeric literals
-    if (arg.type === "NumericLiteral" || arg.type === "Literal") {
+    if (arg.type === "NumericLiteral") {
       return {
         type: "queryOperation",
         operationType: "skip",
         source,
-        count: arg.value,
+        count: (arg as NumericLiteral).value,
+      };
+    }
+    if (arg.type === "Literal") {
+      return {
+        type: "queryOperation",
+        operationType: "skip",
+        source,
+        count: (arg as Literal).value as number,
       };
     }
 
     // Handle any expression (including arithmetic, member access, etc.)
     const expr = convertAstToExpression(arg, context);
     if (expr) {
-      // If it's a simple parameter reference, use ParamRef format
+      // If it's a simple parameter reference, use it directly
       if (expr.type === "param") {
         return {
           type: "queryOperation",
           operationType: "skip",
           source,
-          count: expr as any, // Already in ParamRef format
+          count: expr as ParameterExpression,
         };
       }
 
       // For other expressions (like arithmetic), use the expression directly
+      // Note: This may be an arithmetic expression or other ValueExpression
       return {
         type: "queryOperation",
         operationType: "skip",
         source,
-        count: expr as any,
+        count: expr as unknown as number | ParamRef, // Type assertion needed due to ValueExpression mismatch
       };
     }
   }
@@ -464,27 +572,38 @@ function convertSkipOperation(
 }
 
 function convertSkipWhileOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
-): any {
+): SkipWhileOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
       // Add the lambda parameter to table params
-      const paramName = getParameterName(lambdaAst);
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const predicate = convertAstToExpression(lambdaAst.body, context);
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (!bodyExpr) return null;
+      const predicate = convertAstToExpression(bodyExpr, context);
 
       // Convert column to booleanColumn if needed
       let finalPredicate = predicate;
       if (predicate && predicate.type === "column") {
         finalPredicate = {
           type: "booleanColumn",
-          name: (predicate as any).name,
+          name: (predicate as ColumnExpression).name,
         };
       }
 
@@ -502,7 +621,7 @@ function convertSkipWhileOperation(
 }
 
 function convertFirstOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
   _isDefault: boolean,
@@ -511,15 +630,27 @@ function convertFirstOperation(
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && isBooleanExpression(expr)) {
+          predicate = expr as BooleanExpression;
+        }
       }
     }
   }
@@ -533,7 +664,7 @@ function convertFirstOperation(
 }
 
 function convertFirstOrDefaultOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): FirstOrDefaultOperation | null {
@@ -541,15 +672,27 @@ function convertFirstOrDefaultOperation(
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && isBooleanExpression(expr)) {
+          predicate = expr as BooleanExpression;
+        }
       }
     }
   }
@@ -563,7 +706,7 @@ function convertFirstOrDefaultOperation(
 }
 
 function convertCountOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): CountOperation | null {
@@ -571,15 +714,27 @@ function convertCountOperation(
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && isBooleanExpression(expr)) {
+          predicate = expr as BooleanExpression;
+        }
       }
     }
   }
@@ -601,29 +756,41 @@ function convertToArrayOperation(source: QueryOperation): ToArrayOperation {
 }
 
 function convertGroupByOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): GroupByOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const keySelectorAst = ast.arguments[0];
 
-    if (keySelectorAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(keySelectorAst);
+    if (keySelectorAst && keySelectorAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = keySelectorAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const keySelector = convertAstToExpression(keySelectorAst.body, context);
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
 
-      // Only support simple column names for groupBy
-      if (keySelector && keySelector.type === "column") {
-        return {
-          type: "queryOperation",
-          operationType: "groupBy",
-          source,
-          keySelector: (keySelector as ColumnExpression).name,
-        };
+      if (bodyExpr) {
+        const keySelector = convertAstToExpression(bodyExpr, context);
+
+        // Only support simple column names for groupBy
+        if (keySelector && keySelector.type === "column") {
+          return {
+            type: "queryOperation",
+            operationType: "groupBy",
+            source,
+            keySelector: (keySelector as ColumnExpression).name,
+          };
+        }
       }
     }
   }
@@ -631,13 +798,14 @@ function convertGroupByOperation(
 }
 
 function convertJoinOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): JoinOperation | null {
   if (ast.arguments && ast.arguments.length >= 4) {
     // join(inner, outerKeySelector, innerKeySelector, resultSelector)
-    const innerSource = convertAstToQueryOperation(ast.arguments[0]);
+    const firstArg = ast.arguments[0];
+    const innerSource = firstArg ? convertAstToQueryOperation(firstArg) : null;
     const outerKeySelectorAst = ast.arguments[1];
     const innerKeySelectorAst = ast.arguments[2];
 
@@ -645,25 +813,51 @@ function convertJoinOperation(
     let innerKey: string | null = null;
 
     // Only support simple column selectors
-    if (outerKeySelectorAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(outerKeySelectorAst);
+    if (outerKeySelectorAst && outerKeySelectorAst.type === "ArrowFunctionExpression") {
+      const outerArrow = outerKeySelectorAst as ArrowFunctionExpression;
+      const paramName = getParameterName(outerArrow);
       if (paramName) {
         context.tableParams.add(paramName);
       }
-      const expr = convertAstToExpression(outerKeySelectorAst.body, context);
-      if (expr && expr.type === "column") {
-        outerKey = (expr as ColumnExpression).name;
+
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (outerArrow.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(outerArrow.body.body);
+      } else {
+        bodyExpr = outerArrow.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && expr.type === "column") {
+          outerKey = (expr as ColumnExpression).name;
+        }
       }
     }
 
-    if (innerKeySelectorAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(innerKeySelectorAst);
+    if (innerKeySelectorAst && innerKeySelectorAst.type === "ArrowFunctionExpression") {
+      const innerArrow = innerKeySelectorAst as ArrowFunctionExpression;
+      const paramName = getParameterName(innerArrow);
       if (paramName) {
         context.tableParams.add(paramName);
       }
-      const expr = convertAstToExpression(innerKeySelectorAst.body, context);
-      if (expr && expr.type === "column") {
-        innerKey = (expr as ColumnExpression).name;
+
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (innerArrow.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(innerArrow.body.body);
+      } else {
+        bodyExpr = innerArrow.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && expr.type === "column") {
+          innerKey = (expr as ColumnExpression).name;
+        }
       }
     }
 
@@ -682,7 +876,7 @@ function convertJoinOperation(
 }
 
 function convertDistinctOperation(
-  _ast: any,
+  _ast: ASTCallExpression,
   source: QueryOperation,
   _context: ConversionContext,
 ): DistinctOperation | null {
@@ -694,36 +888,48 @@ function convertDistinctOperation(
 }
 
 function convertThenByOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
   methodName: string,
 ): ThenByOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const keySelector = convertAstToExpression(lambdaAst.body, context);
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
 
-      if (keySelector) {
-        // For simple columns, just use the string name
-        // For computed expressions, use the full expression
-        const selector =
-          keySelector.type === "column"
-            ? (keySelector as ColumnExpression).name
-            : (keySelector as ValueExpression);
+      if (bodyExpr) {
+        const keySelector = convertAstToExpression(bodyExpr, context);
 
-        return {
-          type: "queryOperation",
-          operationType: "thenBy",
-          source,
-          keySelector: selector,
-          descending: methodName === "thenByDescending",
-        };
+        if (keySelector) {
+          // For simple columns, just use the string name
+          // For computed expressions, use the full expression
+          const selector =
+            keySelector.type === "column"
+              ? (keySelector as ColumnExpression).name
+              : (keySelector as ValueExpression);
+
+          return {
+            type: "queryOperation",
+            operationType: "thenBy",
+            source,
+            keySelector: selector,
+            descending: methodName === "thenByDescending",
+          };
+        }
       }
     }
   }
@@ -731,7 +937,7 @@ function convertThenByOperation(
 }
 
 function convertSumOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): SumOperation | null {
@@ -739,14 +945,27 @@ function convertSumOperation(
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && expr.type === "column") {
-        selector = (expr as ColumnExpression).name;
+
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && expr.type === "column") {
+          selector = (expr as ColumnExpression).name;
+        }
       }
     }
   }
@@ -760,7 +979,7 @@ function convertSumOperation(
 }
 
 function convertAverageOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): AverageOperation | null {
@@ -768,14 +987,27 @@ function convertAverageOperation(
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && expr.type === "column") {
-        selector = (expr as ColumnExpression).name;
+
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && expr.type === "column") {
+          selector = (expr as ColumnExpression).name;
+        }
       }
     }
   }
@@ -789,7 +1021,7 @@ function convertAverageOperation(
 }
 
 function convertMinOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): MinOperation | null {
@@ -797,14 +1029,27 @@ function convertMinOperation(
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && expr.type === "column") {
-        selector = (expr as ColumnExpression).name;
+
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && expr.type === "column") {
+          selector = (expr as ColumnExpression).name;
+        }
       }
     }
   }
@@ -818,7 +1063,7 @@ function convertMinOperation(
 }
 
 function convertMaxOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): MaxOperation | null {
@@ -826,14 +1071,27 @@ function convertMaxOperation(
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && expr.type === "column") {
-        selector = (expr as ColumnExpression).name;
+
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && expr.type === "column") {
+          selector = (expr as ColumnExpression).name;
+        }
       }
     }
   }
@@ -847,7 +1105,7 @@ function convertMaxOperation(
 }
 
 function convertSingleOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
   methodName: string,
@@ -856,15 +1114,27 @@ function convertSingleOperation(
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && isBooleanExpression(expr)) {
+          predicate = expr as BooleanExpression;
+        }
       }
     }
   }
@@ -874,12 +1144,12 @@ function convertSingleOperation(
     operationType: methodName === "singleOrDefault" ? "singleOrDefault" : "single",
     source,
     predicate,
-  } as any;
+  };
   return operation;
 }
 
 function convertLastOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
   methodName: string,
@@ -888,15 +1158,27 @@ function convertLastOperation(
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
-    if (lambdaAst.type === "ArrowFunctionExpression") {
-      const paramName = getParameterName(lambdaAst);
+    if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
+      const arrowFunc = lambdaAst as ArrowFunctionExpression;
+      const paramName = getParameterName(arrowFunc);
       if (paramName) {
         context.tableParams.add(paramName);
       }
 
-      const expr = convertAstToExpression(lambdaAst.body, context);
-      if (expr && isBooleanExpression(expr)) {
-        predicate = expr as BooleanExpression;
+      // Handle both Expression body and BlockStatement body
+      let bodyExpr: ASTExpression | null = null;
+      if (arrowFunc.body.type === "BlockStatement") {
+        // For block statements, look for a return statement
+        bodyExpr = getReturnExpression(arrowFunc.body.body);
+      } else {
+        bodyExpr = arrowFunc.body;
+      }
+
+      if (bodyExpr) {
+        const expr = convertAstToExpression(bodyExpr, context);
+        if (expr && isBooleanExpression(expr)) {
+          predicate = expr as BooleanExpression;
+        }
       }
     }
   }
@@ -906,45 +1188,50 @@ function convertLastOperation(
     operationType: methodName === "lastOrDefault" ? "lastOrDefault" : "last",
     source,
     predicate,
-  } as any;
+  };
   return operation;
 }
 
 function convertContainsOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
 ): ContainsOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const valueArg = ast.arguments[0];
-    const value = convertAstToExpression(valueArg, context);
+    if (valueArg) {
+      const value = convertAstToExpression(valueArg, context);
 
-    if (value && isValueExpression(value)) {
-      return {
-        type: "queryOperation",
-        operationType: "contains",
-        source,
-        value: value as ValueExpression,
-      };
+      if (value && isValueExpression(value)) {
+        return {
+          type: "queryOperation",
+          operationType: "contains",
+          source,
+          value: value as ValueExpression,
+        };
+      }
     }
   }
   return null;
 }
 
 function convertUnionOperation(
-  ast: any,
+  ast: ASTCallExpression,
   source: QueryOperation,
   _context: ConversionContext,
 ): UnionOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
-    const secondSource = convertAstToQueryOperation(ast.arguments[0]);
-    if (secondSource) {
-      return {
-        type: "queryOperation",
-        operationType: "union",
-        source,
-        second: secondSource,
-      };
+    const secondArg = ast.arguments[0];
+    if (secondArg) {
+      const secondSource = convertAstToQueryOperation(secondArg);
+      if (secondSource) {
+        return {
+          type: "queryOperation",
+          operationType: "union",
+          source,
+          second: secondSource,
+        };
+      }
     }
   }
   return null;
@@ -958,7 +1245,7 @@ function convertReverseOperation(source: QueryOperation): ReverseOperation {
   };
 }
 
-function convertIdentifier(ast: any, context: ConversionContext): Expression | null {
+function convertIdentifier(ast: Identifier, context: ConversionContext): Expression | null {
   const name = ast.name;
 
   // Check if it's a table parameter
@@ -982,31 +1269,38 @@ function convertIdentifier(ast: any, context: ConversionContext): Expression | n
   } as ColumnExpression;
 }
 
-function convertMemberExpression(ast: any, context: ConversionContext): Expression | null {
-  const objectName = ast.object.name;
-  const propertyName = ast.property.name;
+function convertMemberExpression(
+  ast: ASTMemberExpression,
+  context: ConversionContext,
+): Expression | null {
+  // Check if both object and property are identifiers
+  if (ast.object.type === "Identifier" && ast.property.type === "Identifier") {
+    const objectName = (ast.object as Identifier).name;
+    const propertyName = (ast.property as Identifier).name;
 
-  // Check if the object is a table parameter (e.g., x.name where x is table param)
-  if (context.tableParams.has(objectName)) {
-    return {
-      type: "column",
-      name: propertyName,
-    } as ColumnExpression;
-  }
+    // Check if the object is a table parameter (e.g., x.name where x is table param)
+    if (context.tableParams.has(objectName)) {
+      return {
+        type: "column",
+        name: propertyName,
+      } as ColumnExpression;
+    }
 
-  // Check if it's a query parameter (e.g., p.minAge where p is query param)
-  if (context.queryParams.has(objectName)) {
-    return {
-      type: "param",
-      param: objectName,
-      property: propertyName,
-    } as ParameterExpression;
+    // Check if it's a query parameter (e.g., p.minAge where p is query param)
+    if (context.queryParams.has(objectName)) {
+      return {
+        type: "param",
+        param: objectName,
+        property: propertyName,
+      } as ParameterExpression;
+    }
   }
 
   // Nested member access (e.g., x.address.city)
   const obj = convertAstToExpression(ast.object, context);
-  if (obj && obj.type === "column") {
+  if (obj && obj.type === "column" && ast.property.type === "Identifier") {
     // Flatten nested column access
+    const propertyName = (ast.property as Identifier).name;
     return {
       type: "column",
       name: `${(obj as ColumnExpression).name}.${propertyName}`,
@@ -1016,7 +1310,10 @@ function convertMemberExpression(ast: any, context: ConversionContext): Expressi
   return null;
 }
 
-function convertBinaryExpression(ast: any, context: ConversionContext): Expression | null {
+function convertBinaryExpression(
+  ast: ASTBinaryExpression,
+  context: ConversionContext,
+): Expression | null {
   const left = convertAstToExpression(ast.left, context);
   const right = convertAstToExpression(ast.right, context);
 
@@ -1029,7 +1326,7 @@ function convertBinaryExpression(ast: any, context: ConversionContext): Expressi
     const op = operator === "===" ? "==" : operator === "!==" ? "!=" : operator;
     return {
       type: "comparison",
-      operator: op as any,
+      operator: op as "==" | "!=" | ">" | ">=" | "<" | "<=",
       left: left as ValueExpression,
       right: right as ValueExpression,
     } as ComparisonExpression;
@@ -1039,19 +1336,19 @@ function convertBinaryExpression(ast: any, context: ConversionContext): Expressi
   if (operator === "+") {
     // Treat as concat if we have a string literal or concat expression
     const leftIsString =
-      (left.type === "constant" && typeof (left as any).value === "string") ||
+      (left.type === "constant" && typeof (left as ConstantExpression).value === "string") ||
       left.type === "concat"; // Already a concat expression
     const rightIsString =
-      (right.type === "constant" && typeof (right as any).value === "string") ||
+      (right.type === "constant" && typeof (right as ConstantExpression).value === "string") ||
       right.type === "concat";
 
     // Also check for string-like column/parameter names (heuristic)
     const leftLikelyString =
-      (left.type === "column" && isLikelyStringColumn((left as any).name)) ||
-      (left.type === "param" && isLikelyStringParam((left as any).property));
+      (left.type === "column" && isLikelyStringColumn((left as ColumnExpression).name)) ||
+      (left.type === "param" && isLikelyStringParam((left as ParameterExpression).property));
     const rightLikelyString =
-      (right.type === "column" && isLikelyStringColumn((right as any).name)) ||
-      (right.type === "param" && isLikelyStringParam((right as any).property));
+      (right.type === "column" && isLikelyStringColumn((right as ColumnExpression).name)) ||
+      (right.type === "param" && isLikelyStringParam((right as ParameterExpression).property));
 
     if (leftIsString || rightIsString || leftLikelyString || rightLikelyString) {
       return {
@@ -1066,7 +1363,7 @@ function convertBinaryExpression(ast: any, context: ConversionContext): Expressi
   if (["+", "-", "*", "/", "%"].includes(operator)) {
     return {
       type: "arithmetic",
-      operator: operator as any,
+      operator: operator as "+" | "-" | "*" | "/" | "%",
       left: left as ValueExpression,
       right: right as ValueExpression,
     } as ArithmeticExpression;
@@ -1075,7 +1372,10 @@ function convertBinaryExpression(ast: any, context: ConversionContext): Expressi
   return null;
 }
 
-function convertLogicalExpression(ast: any, context: ConversionContext): Expression | null {
+function convertLogicalExpression(
+  ast: ASTLogicalExpression,
+  context: ConversionContext,
+): Expression | null {
   const left = convertAstToExpression(ast.left, context);
   const right = convertAstToExpression(ast.right, context);
 
@@ -1086,7 +1386,7 @@ function convertLogicalExpression(ast: any, context: ConversionContext): Express
   if (left.type === "column") {
     finalLeft = {
       type: "booleanColumn",
-      name: (left as any).name,
+      name: (left as ColumnExpression).name,
     };
   }
 
@@ -1094,7 +1394,7 @@ function convertLogicalExpression(ast: any, context: ConversionContext): Express
   if (right.type === "column") {
     finalRight = {
       type: "booleanColumn",
-      name: (right as any).name,
+      name: (right as ColumnExpression).name,
     };
   }
 
@@ -1110,39 +1410,74 @@ function convertLogicalExpression(ast: any, context: ConversionContext): Express
   return null;
 }
 
-function convertLiteral(ast: any): ConstantExpression {
+function convertLiteral(
+  ast: Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
+): ConstantExpression {
+  let value: string | number | boolean | null;
+  if (ast.type === "NumericLiteral") {
+    value = (ast as NumericLiteral).value;
+  } else if (ast.type === "StringLiteral") {
+    value = (ast as StringLiteral).value;
+  } else if (ast.type === "BooleanLiteral") {
+    value = (ast as BooleanLiteral).value;
+  } else if (ast.type === "NullLiteral") {
+    value = null;
+  } else {
+    value = (ast as Literal).value;
+  }
+
+  const valueType =
+    typeof value === "number"
+      ? "number"
+      : typeof value === "string"
+        ? "string"
+        : typeof value === "boolean"
+          ? "boolean"
+          : value === null
+            ? "null"
+            : "undefined";
+
   return {
     type: "constant",
-    value: ast.value,
-    valueType: typeof ast.value as any,
+    value: value,
+    valueType: valueType as "number" | "string" | "boolean" | "null" | "undefined",
   };
 }
 
-function convertCallExpression(ast: any, context: ConversionContext): Expression | null {
+function convertCallExpression(
+  ast: ASTCallExpression,
+  context: ConversionContext,
+): Expression | null {
   // Handle string method calls
   if (ast.callee.type === "MemberExpression") {
-    const obj = convertAstToExpression(ast.callee.object, context);
-    const methodName = ast.callee.property.name;
+    const memberCallee = ast.callee as ASTMemberExpression;
+    const obj = convertAstToExpression(memberCallee.object, context);
 
-    if (obj && isValueExpression(obj)) {
-      // Boolean methods
-      if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
-        const args = ast.arguments.map((arg: any) => convertAstToExpression(arg, context));
-        return {
-          type: "booleanMethod",
-          object: obj as ValueExpression,
-          method: methodName as any,
-          arguments: args.filter(Boolean) as ValueExpression[],
-        } as BooleanMethodExpression;
-      }
+    if (memberCallee.property.type === "Identifier") {
+      const methodName = (memberCallee.property as Identifier).name;
 
-      // String methods
-      if (["toLowerCase", "toUpperCase", "trim"].includes(methodName)) {
-        return {
-          type: "stringMethod",
-          object: obj as ValueExpression,
-          method: methodName as any,
-        };
+      if (obj && isValueExpression(obj)) {
+        // Boolean methods
+        if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
+          const args = ast.arguments.map((arg: ASTExpression) =>
+            convertAstToExpression(arg, context),
+          );
+          return {
+            type: "booleanMethod",
+            object: obj as ValueExpression,
+            method: methodName as "startsWith" | "endsWith" | "includes" | "contains",
+            arguments: args.filter(Boolean) as ValueExpression[],
+          } as BooleanMethodExpression;
+        }
+
+        // String methods
+        if (["toLowerCase", "toUpperCase", "trim"].includes(methodName)) {
+          return {
+            type: "stringMethod",
+            object: obj as ValueExpression,
+            method: methodName as "toLowerCase" | "toUpperCase" | "trim",
+          } as StringMethodExpression;
+        }
       }
     }
   }
@@ -1150,14 +1485,24 @@ function convertCallExpression(ast: any, context: ConversionContext): Expression
   return null;
 }
 
-function convertObjectExpression(ast: any, context: ConversionContext): ObjectExpression | null {
+function convertObjectExpression(
+  ast: ASTObjectExpression,
+  context: ConversionContext,
+): ObjectExpression | null {
   const properties: Record<string, Expression> = {};
 
   for (const prop of ast.properties) {
-    const key = prop.key.name;
-    const value = convertAstToExpression(prop.value, context);
-    if (!value) return null;
-    properties[key] = value;
+    if (prop.key.type === "Identifier") {
+      const key = (prop.key as Identifier).name;
+      const value = convertAstToExpression(prop.value, context);
+      if (!value) return null;
+      properties[key] = value;
+    } else if (prop.key.type === "Literal" || prop.key.type === "StringLiteral") {
+      const key = String((prop.key as Literal | StringLiteral).value);
+      const value = convertAstToExpression(prop.value, context);
+      if (!value) return null;
+      properties[key] = value;
+    }
   }
 
   return {
@@ -1166,10 +1511,23 @@ function convertObjectExpression(ast: any, context: ConversionContext): ObjectEx
   };
 }
 
-function convertLambdaExpression(ast: any, context: ConversionContext): Expression | null {
-  const params = ast.params.map((p: any) => ({ name: p.name }));
-  const body = convertAstToExpression(ast.body, context);
+function convertLambdaExpression(
+  ast: ArrowFunctionExpression,
+  context: ConversionContext,
+): Expression | null {
+  const params = ast.params.map((p: Identifier) => ({ name: p.name }));
 
+  // Handle both Expression body and BlockStatement body
+  let bodyExpr: ASTExpression | null = null;
+  if (ast.body.type === "BlockStatement") {
+    // For block statements, look for a return statement
+    bodyExpr = getReturnExpression(ast.body.body);
+  } else {
+    bodyExpr = ast.body;
+  }
+
+  if (!bodyExpr) return null;
+  const body = convertAstToExpression(bodyExpr, context);
   if (!body) return null;
 
   return {
