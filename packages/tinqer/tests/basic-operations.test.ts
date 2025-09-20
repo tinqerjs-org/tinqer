@@ -35,92 +35,69 @@ describe("Basic Query Operations", () => {
 
   describe("where()", () => {
     it("should parse simple equality comparison", () => {
-      const query = () =>
-        from<{ id: number; name: string }>("users").where((x) => x.id == 1);
+      const query = () => from<{ id: number; name: string }>("users").where((x) => x.id == 1);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("where");
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
-        expr.eq(expr.column("id"), expr.constant(1))
-      );
+      expect(predicate).to.deep.equal(expr.eq(expr.column("id"), expr.constant(1)));
     });
 
     it("should parse inequality comparison", () => {
-      const query = () =>
-        from<{ age: number }>("users").where((x) => x.age != 30);
+      const query = () => from<{ age: number }>("users").where((x) => x.age != 30);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
-        expr.ne(expr.column("age"), expr.constant(30))
-      );
+      expect(predicate).to.deep.equal(expr.ne(expr.column("age"), expr.constant(30)));
     });
 
     it("should parse greater than comparison", () => {
-      const query = () =>
-        from<{ age: number }>("users").where((x) => x.age > 18);
+      const query = () => from<{ age: number }>("users").where((x) => x.age > 18);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
-        expr.gt(expr.column("age"), expr.constant(18))
-      );
+      expect(predicate).to.deep.equal(expr.gt(expr.column("age"), expr.constant(18)));
     });
 
     it("should parse greater than or equal comparison", () => {
-      const query = () =>
-        from<{ age: number }>("users").where((x) => x.age >= 21);
+      const query = () => from<{ age: number }>("users").where((x) => x.age >= 21);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
-        expr.gte(expr.column("age"), expr.constant(21))
-      );
+      expect(predicate).to.deep.equal(expr.gte(expr.column("age"), expr.constant(21)));
     });
 
     it("should parse less than comparison", () => {
-      const query = () =>
-        from<{ age: number }>("users").where((x) => x.age < 65);
+      const query = () => from<{ age: number }>("users").where((x) => x.age < 65);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
-        expr.lt(expr.column("age"), expr.constant(65))
-      );
+      expect(predicate).to.deep.equal(expr.lt(expr.column("age"), expr.constant(65)));
     });
 
     it("should parse less than or equal comparison", () => {
-      const query = () =>
-        from<{ age: number }>("users").where((x) => x.age <= 100);
+      const query = () => from<{ age: number }>("users").where((x) => x.age <= 100);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
-        expr.lte(expr.column("age"), expr.constant(100))
-      );
+      expect(predicate).to.deep.equal(expr.lte(expr.column("age"), expr.constant(100)));
     });
 
     it("should parse AND logical expression", () => {
       const query = () =>
-        from<{ age: number; isActive: boolean }>("users").where(
-          (x) => x.age >= 18 && x.isActive
-        );
+        from<{ age: number; isActive: boolean }>("users").where((x) => x.age >= 18 && x.isActive);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
       expect(predicate).to.deep.equal(
-        expr.and(
-          expr.gte(expr.column("age"), expr.constant(18)),
-          expr.booleanColumn("isActive")
-        )
+        expr.and(expr.gte(expr.column("age"), expr.constant(18)), expr.booleanColumn("isActive")),
       );
     });
 
     it("should parse OR logical expression", () => {
       const query = () =>
         from<{ role: string; isAdmin: boolean }>("users").where(
-          (x) => x.role == "admin" || x.isAdmin
+          (x) => x.role == "admin" || x.isAdmin,
         );
       const result = parseQuery(query);
 
@@ -128,44 +105,37 @@ describe("Basic Query Operations", () => {
       expect(predicate).to.deep.equal(
         expr.or(
           expr.eq(expr.column("role"), expr.constant("admin")),
-          expr.booleanColumn("isAdmin")
-        )
+          expr.booleanColumn("isAdmin"),
+        ),
       );
     });
 
     it("should parse NOT expression", () => {
-      const query = () =>
-        from<{ isActive: boolean }>("users").where((x) => !x.isActive);
+      const query = () => from<{ isActive: boolean }>("users").where((x) => !x.isActive);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
-        expr.not(expr.booleanColumn("isActive"))
-      );
+      expect(predicate).to.deep.equal(expr.not(expr.booleanColumn("isActive")));
     });
 
     it("should parse complex nested logical expressions", () => {
       const query = () =>
         from<{ age: number; isActive: boolean; role: string }>("users").where(
-          (x) => (x.age >= 18 && x.isActive) || x.role == "admin"
+          (x) => (x.age >= 18 && x.isActive) || x.role == "admin",
         );
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
       expect(predicate).to.deep.equal(
         expr.or(
-          expr.and(
-            expr.gte(expr.column("age"), expr.constant(18)),
-            expr.booleanColumn("isActive")
-          ),
-          expr.eq(expr.column("role"), expr.constant("admin"))
-        )
+          expr.and(expr.gte(expr.column("age"), expr.constant(18)), expr.booleanColumn("isActive")),
+          expr.eq(expr.column("role"), expr.constant("admin")),
+        ),
       );
     });
 
     it("should parse string comparison", () => {
-      const query = () =>
-        from<{ name: string }>("users").where((x) => x.name == "John");
+      const query = () => from<{ name: string }>("users").where((x) => x.name == "John");
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
@@ -174,8 +144,7 @@ describe("Basic Query Operations", () => {
     });
 
     it("should parse boolean literal comparison", () => {
-      const query = () =>
-        from<{ isActive: boolean }>("users").where((x) => x.isActive == true);
+      const query = () => from<{ isActive: boolean }>("users").where((x) => x.isActive == true);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
@@ -185,8 +154,7 @@ describe("Basic Query Operations", () => {
     });
 
     it("should parse null comparison", () => {
-      const query = () =>
-        from<{ email: string | null }>("users").where((x) => x.email == null);
+      const query = () => from<{ email: string | null }>("users").where((x) => x.email == null);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
@@ -224,9 +192,7 @@ describe("Basic Query Operations", () => {
 
     it("should parse where with multiple external parameters", () => {
       const query = (p: { minAge: number; maxAge: number }) =>
-        from<{ age: number }>("users").where(
-          (x) => x.age >= p.minAge && x.age <= p.maxAge
-        );
+        from<{ age: number }>("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge);
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
@@ -241,9 +207,7 @@ describe("Basic Query Operations", () => {
   describe("select()", () => {
     it("should parse simple property selection", () => {
       const query = () =>
-        from<{ id: number; name: string; age: number }>("users").select(
-          (x) => x.name
-        );
+        from<{ id: number; name: string; age: number }>("users").select((x) => x.name);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
@@ -270,9 +234,7 @@ describe("Basic Query Operations", () => {
 
     it("should parse nested object projection", () => {
       const query = () =>
-        from<{ id: number; name: string; city: string; country: string }>(
-          "users"
-        ).select((x) => ({
+        from<{ id: number; name: string; city: string; country: string }>("users").select((x) => ({
           id: x.id,
           details: {
             name: x.name,
@@ -293,12 +255,10 @@ describe("Basic Query Operations", () => {
 
     it("should parse select with computed properties", () => {
       const query = () =>
-        from<{ firstName: string; lastName: string; age: number }>("users").select(
-          (x) => ({
-            fullName: x.firstName + " " + x.lastName,
-            isAdult: x.age >= 18,
-          })
-        );
+        from<{ firstName: string; lastName: string; age: number }>("users").select((x) => ({
+          fullName: x.firstName + " " + x.lastName,
+          isAdult: x.age >= 18,
+        }));
       const result = parseQuery(query);
 
       const selector = (result as any).selector;

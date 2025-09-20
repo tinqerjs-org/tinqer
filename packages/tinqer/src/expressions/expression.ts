@@ -49,7 +49,8 @@ export interface ArithmeticExpression {
  */
 export interface ConcatExpression {
   type: "concat";
-  expressions: ValueExpression[];
+  left: ValueExpression;
+  right: ValueExpression;
 }
 
 /**
@@ -58,7 +59,15 @@ export interface ConcatExpression {
 export interface StringMethodExpression {
   type: "stringMethod";
   object: ValueExpression;
-  method: "toLowerCase" | "toUpperCase" | "trim" | "trimStart" | "trimEnd" | "substring" | "substr" | "slice";
+  method:
+    | "toLowerCase"
+    | "toUpperCase"
+    | "trim"
+    | "trimStart"
+    | "trimEnd"
+    | "substring"
+    | "substr"
+    | "slice";
   arguments?: ValueExpression[];
 }
 
@@ -122,7 +131,7 @@ export interface ComparisonExpression {
  */
 export interface LogicalExpression {
   type: "logical";
-  operator: "&&" | "||";
+  operator: "and" | "or";
   left: BooleanExpression;
   right: BooleanExpression;
 }
@@ -253,10 +262,7 @@ export type BooleanExpression =
  */
 export interface ObjectExpression {
   type: "object";
-  properties: Array<{
-    key: string;
-    value: Expression;
-  }>;
+  properties: Record<string, Expression>;
 }
 
 /**

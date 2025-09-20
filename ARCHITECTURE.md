@@ -29,35 +29,32 @@ Expressions are precisely typed based on their evaluation result:
 
 ```typescript
 // Base type - all possible expressions
-export type Expression =
-  | BooleanExpression
-  | ValueExpression
-  | ObjectExpression
-  | ArrayExpression;
+export type Expression = BooleanExpression | ValueExpression | ObjectExpression | ArrayExpression;
 
 // Boolean expressions - evaluate to true/false
 export type BooleanExpression =
-  | ComparisonExpression      // x.age >= 18
-  | LogicalExpression         // x.age >= 18 && x.isActive
-  | BooleanMemberExpression   // x.isActive
-  | BooleanMethodExpression   // x.name.startsWith("J")
-  | NotExpression            // !x.isDeleted
+  | ComparisonExpression // x.age >= 18
+  | LogicalExpression // x.age >= 18 && x.isActive
+  | BooleanMemberExpression // x.isActive
+  | BooleanMethodExpression // x.name.startsWith("J")
+  | NotExpression // !x.isDeleted
   | BooleanConstantExpression // true or false
-  | ExistsExpression;        // EXISTS (subquery)
+  | ExistsExpression; // EXISTS (subquery)
 
 // Value expressions - evaluate to a value
 export type ValueExpression =
-  | ColumnExpression         // x.name
-  | ConstantExpression      // 42, "hello"
-  | ParameterExpression     // p.minAge
-  | ArithmeticExpression    // x.age + 1
-  | StringMethodExpression  // x.name.toLowerCase()
-  | CaseExpression;         // CASE WHEN ... THEN ...
+  | ColumnExpression // x.name
+  | ConstantExpression // 42, "hello"
+  | ParameterExpression // p.minAge
+  | ArithmeticExpression // x.age + 1
+  | StringMethodExpression // x.name.toLowerCase()
+  | CaseExpression; // CASE WHEN ... THEN ...
 ```
 
 ### Detailed Expression Types
 
 #### ComparisonExpression
+
 Represents binary comparisons that produce boolean results.
 
 ```typescript
@@ -71,6 +68,7 @@ export interface ComparisonExpression {
 
 **Example Input**: `x => x.age >= 18`
 **Example Output**:
+
 ```typescript
 {
   type: "comparison",
@@ -81,6 +79,7 @@ export interface ComparisonExpression {
 ```
 
 #### LogicalExpression
+
 Combines boolean expressions with logical operators.
 
 ```typescript
@@ -94,6 +93,7 @@ export interface LogicalExpression {
 
 **Example Input**: `x => x.age >= 18 && x.isActive`
 **Example Output**:
+
 ```typescript
 {
   type: "logical",
@@ -109,13 +109,14 @@ export interface LogicalExpression {
 ```
 
 #### ColumnExpression
+
 References a table column.
 
 ```typescript
 export interface ColumnExpression {
   type: "column";
   name: string;
-  table?: string;  // Optional table alias for joins
+  table?: string; // Optional table alias for joins
 }
 ```
 
@@ -123,12 +124,13 @@ export interface ColumnExpression {
 **Example Output**: `{ type: "column", name: "name" }`
 
 #### ParameterExpression
+
 References an external parameter passed to the query.
 
 ```typescript
 export interface ParameterExpression {
   type: "param";
-  param: string;     // Parameter name (e.g., "p")
+  param: string; // Parameter name (e.g., "p")
   property?: string; // Property path (e.g., "minAge")
 }
 ```
@@ -137,6 +139,7 @@ export interface ParameterExpression {
 **Example Output**: `{ type: "param", param: "p", property: "minAge" }`
 
 #### ObjectExpression
+
 Represents object literals, typically used in SELECT projections.
 
 ```typescript
@@ -151,6 +154,7 @@ export interface ObjectExpression {
 
 **Example Input**: `x => ({ id: x.id, name: x.name })`
 **Example Output**:
+
 ```typescript
 {
   type: "object",
@@ -179,6 +183,7 @@ export interface QueryOperation {
 ### Chainable Operations
 
 #### FromOperation
+
 The root of all query chains.
 
 ```typescript
@@ -191,6 +196,7 @@ export interface FromOperation extends QueryOperation {
 
 **Example**: `from<User>("users")`
 **Output**:
+
 ```typescript
 {
   type: "queryOperation",
@@ -200,18 +206,20 @@ export interface FromOperation extends QueryOperation {
 ```
 
 #### WhereOperation
+
 Filters rows based on a boolean predicate.
 
 ```typescript
 export interface WhereOperation extends QueryOperation {
   operationType: "where";
   source: QueryOperation;
-  predicate: BooleanExpression;  // Must be boolean
+  predicate: BooleanExpression; // Must be boolean
 }
 ```
 
 **Example Input**: `.where(x => x.age >= 18 && x.isActive)`
 **Example Output**:
+
 ```typescript
 {
   operationType: "where",
@@ -231,6 +239,7 @@ export interface WhereOperation extends QueryOperation {
 ```
 
 #### SelectOperation
+
 Projects data into a new shape.
 
 ```typescript
@@ -243,6 +252,7 @@ export interface SelectOperation extends QueryOperation {
 
 **Example Input**: `.select(x => ({ id: x.id, name: x.name }))`
 **Example Output**:
+
 ```typescript
 {
   operationType: "select",
@@ -258,6 +268,7 @@ export interface SelectOperation extends QueryOperation {
 ```
 
 #### JoinOperation
+
 Joins two tables on matching keys.
 
 ```typescript
@@ -265,24 +276,26 @@ export interface JoinOperation extends QueryOperation {
   operationType: "join";
   source: QueryOperation;
   inner: QueryOperation;
-  outerKey: string;  // Simple column name
-  innerKey: string;  // Simple column name
+  outerKey: string; // Simple column name
+  innerKey: string; // Simple column name
   resultSelector: ObjectExpression;
   joinType: "inner" | "left" | "right" | "full" | "cross";
 }
 ```
 
 **Example Input**:
+
 ```typescript
 users.join(
   departments,
-  u => u.departmentId,
-  d => d.id,
-  (u, d) => ({ userName: u.name, deptName: d.name })
-)
+  (u) => u.departmentId,
+  (d) => d.id,
+  (u, d) => ({ userName: u.name, deptName: d.name }),
+);
 ```
 
 **Example Output**:
+
 ```typescript
 {
   operationType: "join",
@@ -302,6 +315,7 @@ users.join(
 ```
 
 #### OrderByOperation
+
 Sorts results by a key.
 
 ```typescript
@@ -315,6 +329,7 @@ export interface OrderByOperation extends QueryOperation {
 
 **Example Input**: `.orderBy(x => x.name)`
 **Example Output**:
+
 ```typescript
 {
   operationType: "orderBy",
@@ -325,6 +340,7 @@ export interface OrderByOperation extends QueryOperation {
 ```
 
 #### GroupByOperation
+
 Groups rows by a key.
 
 ```typescript
@@ -338,6 +354,7 @@ export interface GroupByOperation extends QueryOperation {
 
 **Example Input**: `.groupBy(x => x.departmentId)`
 **Example Output**:
+
 ```typescript
 {
   operationType: "groupBy",
@@ -347,6 +364,7 @@ export interface GroupByOperation extends QueryOperation {
 ```
 
 #### TakeOperation / SkipOperation
+
 Limits or skips rows.
 
 ```typescript
@@ -365,6 +383,7 @@ export interface SkipOperation extends QueryOperation {
 
 **Example Input**: `.take(10).skip(p => p.offset)`
 **Example Output**:
+
 ```typescript
 {
   operationType: "take",
@@ -382,6 +401,7 @@ export interface SkipOperation extends QueryOperation {
 Terminal operations end the query chain and produce a result.
 
 #### CountOperation
+
 Counts rows.
 
 ```typescript
@@ -394,6 +414,7 @@ export interface CountOperation extends QueryOperation {
 
 **Example Input**: `.count(x => x.isActive)`
 **Example Output**:
+
 ```typescript
 {
   operationType: "count",
@@ -403,6 +424,7 @@ export interface CountOperation extends QueryOperation {
 ```
 
 #### FirstOperation / SingleOperation
+
 Gets first or single row.
 
 ```typescript
@@ -414,6 +436,7 @@ export interface FirstOperation extends QueryOperation {
 ```
 
 #### Aggregate Operations
+
 Sum, Average, Min, Max operations.
 
 ```typescript
@@ -426,6 +449,7 @@ export interface SumOperation extends QueryOperation {
 
 **Example Input**: `.sum(x => x.amount)`
 **Example Output**:
+
 ```typescript
 {
   operationType: "sum",
@@ -465,7 +489,7 @@ function from<T>(table: string): Queryable<T>;
 ```typescript
 // Main parsing function
 function parseQuery<TParams, TResult>(
-  queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>
+  queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>,
 ): QueryOperation;
 
 // Parses individual lambdas
@@ -484,7 +508,7 @@ function convertAstToQueryOperation(ast: any): QueryOperation;
 // Main query function (in adapters)
 function query<TParams, TResult>(
   queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>,
-  params: TParams
+  params: TParams,
 ): { sql: string; params: TParams };
 
 // SQL generation
@@ -494,19 +518,21 @@ function generateSql(operation: QueryOperation, params: any): string;
 ## Complete Example Flow
 
 ### User Code
+
 ```typescript
 const result = query(
   (p: { minAge: number; dept: string }) =>
     from<User>("users")
-      .where(x => x.age >= p.minAge && x.department === p.dept)
-      .select(x => ({ id: x.id, name: x.name, age: x.age }))
-      .orderBy(x => x.name)
+      .where((x) => x.age >= p.minAge && x.department === p.dept)
+      .select((x) => ({ id: x.id, name: x.name, age: x.age }))
+      .orderBy((x) => x.name)
       .take(10),
-  { minAge: 18, dept: "Engineering" }
+  { minAge: 18, dept: "Engineering" },
 );
 ```
 
 ### Parsed Expression Tree
+
 ```typescript
 {
   type: "queryOperation",
@@ -555,6 +581,7 @@ const result = query(
 ```
 
 ### Generated SQL
+
 ```sql
 SELECT id, name, age
 FROM users

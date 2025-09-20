@@ -9,8 +9,7 @@ import { parseQuery, from } from "../src/index.js";
 describe("Ordering Operations", () => {
   describe("orderBy()", () => {
     it("should parse orderBy with simple property", () => {
-      const query = () =>
-        from<{ id: number; name: string }>("users").orderBy((x) => x.name);
+      const query = () => from<{ id: number; name: string }>("users").orderBy((x) => x.name);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
@@ -19,8 +18,7 @@ describe("Ordering Operations", () => {
     });
 
     it("should parse orderBy with numeric property", () => {
-      const query = () =>
-        from<{ id: number; age: number }>("users").orderBy((x) => x.age);
+      const query = () => from<{ id: number; age: number }>("users").orderBy((x) => x.age);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
@@ -55,7 +53,7 @@ describe("Ordering Operations", () => {
     it("should parse orderBy with computed expression", () => {
       const query = () =>
         from<{ firstName: string; lastName: string }>("users").orderBy(
-          (x) => x.firstName + x.lastName
+          (x) => x.firstName + x.lastName,
         );
       const result = parseQuery(query);
 
@@ -68,9 +66,7 @@ describe("Ordering Operations", () => {
   describe("orderByDescending()", () => {
     it("should parse orderByDescending with simple property", () => {
       const query = () =>
-        from<{ id: number; createdAt: Date }>("posts").orderByDescending(
-          (x) => x.createdAt
-        );
+        from<{ id: number; createdAt: Date }>("posts").orderByDescending((x) => x.createdAt);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
@@ -80,9 +76,7 @@ describe("Ordering Operations", () => {
 
     it("should parse orderByDescending with numeric property", () => {
       const query = () =>
-        from<{ id: number; salary: number }>("employees").orderByDescending(
-          (x) => x.salary
-        );
+        from<{ id: number; salary: number }>("employees").orderByDescending((x) => x.salary);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
@@ -194,7 +188,7 @@ describe("Ordering Operations", () => {
     it("should parse ordering with external parameters", () => {
       const query = (p: { sortField: string }) =>
         from<{ id: number; name: string; age: number }>("users").orderBy(
-          (x) => x[p.sortField as keyof typeof x]
+          (x) => x[p.sortField as keyof typeof x],
         );
       const result = parseQuery(query);
 

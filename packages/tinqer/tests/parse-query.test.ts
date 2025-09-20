@@ -17,8 +17,7 @@ describe("parseQuery", () => {
   });
 
   it("should parse a where clause", () => {
-    const query = () =>
-      from<{ id: number; age: number }>("users").where((x) => x.age >= 18);
+    const query = () => from<{ id: number; age: number }>("users").where((x) => x.age >= 18);
     const result = parseQuery(query);
 
     expect(result).to.not.be.null;
@@ -41,11 +40,11 @@ describe("parseQuery", () => {
   });
 
   it("should parse a complex query chain", () => {
-    const query = () =>
-      from<{ id: number; name: string; age: number; isActive: boolean }>("users")
-        .where((x) => x.age >= 18 && x.isActive)
-        .select((x) => ({ id: x.id, name: x.name }))
-        .orderBy((x) => x.name)
+    const query = (): any =>
+      from("users" as any)
+        .where((x: any) => x.age >= 18 && x.isActive)
+        .select((x: any) => ({ id: x.id, name: x.name }))
+        .orderBy((x: any) => x.name)
         .take(10);
     const result = parseQuery(query);
 
@@ -53,18 +52,18 @@ describe("parseQuery", () => {
     expect(result?.operationType).to.equal("take");
     expect((result as any).count).to.equal(10);
 
-    const orderBy = (result as any).source;
+    const orderBy: any = (result as any).source;
     expect(orderBy.operationType).to.equal("orderBy");
     expect(orderBy.keySelector).to.equal("name");
 
-    const select = orderBy.source;
+    const select: any = orderBy.source;
     expect(select.operationType).to.equal("select");
 
-    const where = select.source;
+    const where: any = select.source;
     expect(where.operationType).to.equal("where");
     expect(where.predicate.type).to.equal("logical");
 
-    const from = where.source;
+    const from: any = where.source;
     expect(from.operationType).to.equal("from");
     expect(from.table).to.equal("users");
   });
@@ -100,8 +99,7 @@ describe("parseQuery", () => {
   });
 
   it("should parse string methods", () => {
-    const query = () =>
-      from<{ name: string }>("users").where((x) => x.name.startsWith("John"));
+    const query = () => from<{ name: string }>("users").where((x) => x.name.startsWith("John"));
     const result = parseQuery(query);
 
     expect(result).to.not.be.null;

@@ -71,8 +71,7 @@ describe("Pagination Operations", () => {
     });
 
     it("should parse take with external parameter", () => {
-      const query = (p: { limit: number }) =>
-        from<{ id: number }>("users").take(p.limit);
+      const query = (p: { limit: number }) => from<{ id: number }>("users").take(p.limit);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
@@ -113,8 +112,7 @@ describe("Pagination Operations", () => {
     });
 
     it("should parse skip before take (pagination pattern)", () => {
-      const query = () =>
-        from<{ id: number; name: string }>("users").skip(20).take(10);
+      const query = () => from<{ id: number; name: string }>("users").skip(20).take(10);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
@@ -142,8 +140,7 @@ describe("Pagination Operations", () => {
     });
 
     it("should parse skip with external parameter", () => {
-      const query = (p: { offset: number }) =>
-        from<{ id: number }>("users").skip(p.offset);
+      const query = (p: { offset: number }) => from<{ id: number }>("users").skip(p.offset);
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("skip");
@@ -204,9 +201,7 @@ describe("Pagination Operations", () => {
 
     it("should parse pagination with filtering and ordering", () => {
       const query = () =>
-        from<{ id: number; category: string; price: number; inStock: boolean }>(
-          "products"
-        )
+        from<{ id: number; category: string; price: number; inStock: boolean }>("products")
           .where((x) => x.inStock)
           .orderByDescending((x) => x.price)
           .skip(10)

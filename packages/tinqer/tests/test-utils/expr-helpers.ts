@@ -9,7 +9,7 @@ import type {
   LogicalExpression,
   NotExpression,
   ArithmeticExpression,
-  BooleanColumnExpression
+  BooleanColumnExpression,
 } from "../../src/expressions/expression.js";
 
 export const expr = {
@@ -19,11 +19,18 @@ export const expr = {
   },
 
   constant(value: any): ConstantExpression {
-    const valueType = typeof value === "number" ? "number" :
-                      typeof value === "string" ? "string" :
-                      typeof value === "boolean" ? "boolean" :
-                      value === null ? "null" :
-                      value === undefined ? "undefined" : undefined;
+    const valueType =
+      typeof value === "number"
+        ? "number"
+        : typeof value === "string"
+          ? "string"
+          : typeof value === "boolean"
+            ? "boolean"
+            : value === null
+              ? "null"
+              : value === undefined
+                ? "undefined"
+                : undefined;
     return valueType ? { type: "constant", value, valueType } : { type: "constant", value };
   },
 
@@ -68,11 +75,11 @@ export const expr = {
 
   // Logical operators (take BooleanExpression, return BooleanExpression)
   and(left: BooleanExpression, right: BooleanExpression): LogicalExpression {
-    return { type: "logical", operator: "&&", left, right };
+    return { type: "logical", operator: "and", left, right };
   },
 
   or(left: BooleanExpression, right: BooleanExpression): LogicalExpression {
-    return { type: "logical", operator: "||", left, right };
+    return { type: "logical", operator: "or", left, right };
   },
 
   not(expression: BooleanExpression): NotExpression {

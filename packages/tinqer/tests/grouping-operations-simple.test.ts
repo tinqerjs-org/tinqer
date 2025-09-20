@@ -12,7 +12,7 @@ describe("Simple Grouping Operations", () => {
     it("should parse simple groupBy with column selector", () => {
       const query = () =>
         from<{ id: number; category: string; price: number }>("products").groupBy(
-          (x) => x.category
+          (x) => x.category,
         );
       const result = parseQuery(query);
 
@@ -23,7 +23,7 @@ describe("Simple Grouping Operations", () => {
     it("should parse groupBy with different column", () => {
       const query = () =>
         from<{ id: number; department: string; salary: number }>("employees").groupBy(
-          (x) => x.department
+          (x) => x.department,
         );
       const result = parseQuery(query);
 
@@ -33,9 +33,7 @@ describe("Simple Grouping Operations", () => {
 
     it("should parse groupBy after where", () => {
       const query = () =>
-        from<{ id: number; category: string; price: number; inStock: boolean }>(
-          "products"
-        )
+        from<{ id: number; category: string; price: number; inStock: boolean }>("products")
           .where((x) => x.inStock)
           .groupBy((x) => x.category);
       const result = parseQuery(query);
