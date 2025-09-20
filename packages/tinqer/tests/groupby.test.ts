@@ -25,7 +25,8 @@ describe("GROUP BY with Aggregates", () => {
     const query = orders.groupBy((o) => o.category).count();
 
     // The query should have both GROUP BY and COUNT
-    expect(query.groupBy).to.deep.equal(expr.lambda(expr.member("category", o), ["o"], "orders"));
+    // Now groupBy contains just the body, not the lambda wrapper
+    expect(query.groupBy).to.deep.equal(expr.member("category", o));
 
     expect(query.select).to.deep.equal({
       type: "call",
@@ -39,7 +40,7 @@ describe("GROUP BY with Aggregates", () => {
     const query = orders.groupBy((o) => o.userId).sum((o) => o.price * o.quantity);
 
     // The query should have GROUP BY
-    expect(query.groupBy).to.deep.equal(expr.lambda(expr.member("userId", o), ["o"], "orders"));
+    expect(query.groupBy).to.deep.equal(expr.member("userId", o));
 
     // And SUM of price * quantity
     expect(query.select).to.deep.equal({
@@ -53,7 +54,7 @@ describe("GROUP BY with Aggregates", () => {
     const orders = new Queryable<Order>("orders");
     const query = orders.groupBy((o) => o.productId).avg((o) => o.price);
 
-    expect(query.groupBy).to.deep.equal(expr.lambda(expr.member("productId", o), ["o"], "orders"));
+    expect(query.groupBy).to.deep.equal(expr.member("productId", o));
 
     expect(query.select).to.deep.equal({
       type: "call",
@@ -66,7 +67,7 @@ describe("GROUP BY with Aggregates", () => {
     const orders = new Queryable<Order>("orders");
     const query = orders.groupBy((o) => o.status).min((o) => o.price);
 
-    expect(query.groupBy).to.deep.equal(expr.lambda(expr.member("status", o), ["o"], "orders"));
+    expect(query.groupBy).to.deep.equal(expr.member("status", o));
 
     expect(query.select).to.deep.equal({
       type: "call",
@@ -79,7 +80,7 @@ describe("GROUP BY with Aggregates", () => {
     const orders = new Queryable<Order>("orders");
     const query = orders.groupBy((o) => o.category).max((o) => o.quantity);
 
-    expect(query.groupBy).to.deep.equal(expr.lambda(expr.member("category", o), ["o"], "orders"));
+    expect(query.groupBy).to.deep.equal(expr.member("category", o));
 
     expect(query.select).to.deep.equal({
       type: "call",
@@ -95,7 +96,7 @@ describe("GROUP BY with Aggregates", () => {
       .having((o) => o.userId > 100)
       .count();
 
-    expect(query.groupBy).to.deep.equal(expr.lambda(expr.member("userId", o), ["o"], "orders"));
+    expect(query.groupBy).to.deep.equal(expr.member("userId", o));
 
     expect(query.having).to.deep.equal(compare.gt(expr.member("userId", o), 100));
 
@@ -118,7 +119,7 @@ describe("GROUP BY with Aggregates", () => {
     expect(query.where).to.deep.equal(compare.eq(expr.member("status", o), "completed"));
 
     // GROUP BY the category
-    expect(query.groupBy).to.deep.equal(expr.lambda(expr.member("category", o), ["o"], "orders"));
+    expect(query.groupBy).to.deep.equal(expr.member("category", o));
 
     // HAVING filters after grouping
     expect(query.having).to.deep.equal(compare.neq(expr.member("category", o), "electronics"));
@@ -142,7 +143,7 @@ describe("GROUP BY with Aggregates", () => {
     // Both should have the same GROUP BY
     expect(countQuery.groupBy).to.deep.equal(sumQuery.groupBy);
     expect(countQuery.groupBy).to.deep.equal(
-      expr.lambda(expr.member("userId", o), ["o"], "orders"),
+      expr.member("userId", o),
     );
 
     // But different SELECT clauses
@@ -159,15 +160,12 @@ describe("GROUP BY edge cases", () => {
     const query = orders.groupBy((o) => (o.price > 100 ? "high" : "low")).count();
 
     // GROUP BY with conditional expression
+    // Now groupBy contains just the body, not the lambda wrapper
     expect(query.groupBy).to.deep.equal(
-      expr.lambda(
-        expr.conditional(
-          compare.gt(expr.member("price", o), 100),
-          expr.constant("high"),
-          expr.constant("low"),
-        ),
-        ["o"],
-        "orders",
+      expr.conditional(
+        compare.gt(expr.member("price", o), 100),
+        expr.constant("high"),
+        expr.constant("low"),
       ),
     );
   });

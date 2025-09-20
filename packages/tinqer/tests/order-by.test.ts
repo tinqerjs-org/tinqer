@@ -6,7 +6,6 @@ import {
   assertConditionalExpression,
   assertUnaryExpression,
 } from "./test-helpers.js";
-import type { LambdaExpression } from "../src/types/expressions.js";
 
 // Define test interfaces
 interface User {
@@ -58,8 +57,8 @@ describe("ORDER BY Operations", () => {
     expect(query.orderBy).to.have.lengthOf(1);
     if (query.orderBy && query.orderBy[0]) {
       expect(query.orderBy[0].direction).to.equal("ASC");
-      const expr = query.orderBy[0].expression as LambdaExpression;
-      const memberExpr = assertMemberExpression(expr.body);
+      // Now expression is directly the body, not wrapped in lambda
+      const memberExpr = assertMemberExpression(query.orderBy[0].expression);
       expect(memberExpr.type).to.equal("member");
       expect(memberExpr.property).to.equal("name");
     }
@@ -71,8 +70,8 @@ describe("ORDER BY Operations", () => {
     expect(query.orderBy).to.have.lengthOf(1);
     if (query.orderBy && query.orderBy[0]) {
       expect(query.orderBy[0].direction).to.equal("DESC");
-      const expr = query.orderBy[0].expression as LambdaExpression;
-      const memberExpr = assertMemberExpression(expr.body);
+      // Now expression is directly the body, not wrapped in lambda
+      const memberExpr = assertMemberExpression(query.orderBy[0].expression);
       expect(memberExpr.property).to.equal("price");
     }
   });
@@ -86,12 +85,10 @@ describe("ORDER BY Operations", () => {
 
     expect(query.orderBy).to.have.lengthOf(3);
     if (query.orderBy) {
-      const expr0 = query.orderBy[0]?.expression as LambdaExpression;
-      const expr1 = query.orderBy[1]?.expression as LambdaExpression;
-      const expr2 = query.orderBy[2]?.expression as LambdaExpression;
-      expect(assertMemberExpression(expr0.body).property).to.equal("country");
-      expect(assertMemberExpression(expr1.body).property).to.equal("city");
-      expect(assertMemberExpression(expr2.body).property).to.equal("name");
+      // Now expressions are directly the body, not wrapped in lambda
+      expect(assertMemberExpression(query.orderBy[0]?.expression).property).to.equal("country");
+      expect(assertMemberExpression(query.orderBy[1]?.expression).property).to.equal("city");
+      expect(assertMemberExpression(query.orderBy[2]?.expression).property).to.equal("name");
     }
   });
 
@@ -117,8 +114,9 @@ describe("ORDER BY Operations", () => {
       .build();
 
     if (query.orderBy && query.orderBy[0]) {
-      const expr = query.orderBy[0].expression as LambdaExpression;
-      const memberExpr = assertMemberExpression(expr.body);
+      // Expression is now directly the body, not wrapped in lambda
+      const expr = query.orderBy[0].expression;
+      const memberExpr = assertMemberExpression(expr);
       expect(memberExpr.type).to.equal("member");
       expect(assertMemberExpression(memberExpr.object).type).to.equal("member");
     }
@@ -130,9 +128,10 @@ describe("ORDER BY Operations", () => {
       .build();
 
     if (query.orderBy && query.orderBy[0]) {
-      const expr = query.orderBy[0].expression as LambdaExpression;
-      expect(expr.body.type).to.equal("binary");
-      expect((expr.body as unknown as { operator: string }).operator).to.equal("*");
+      // Expression is now directly the body, not wrapped in lambda
+      const expr = query.orderBy[0].expression;
+      expect(expr.type).to.equal("binary");
+      expect((expr as unknown as { operator: string }).operator).to.equal("*");
     }
   });
 
@@ -140,9 +139,10 @@ describe("ORDER BY Operations", () => {
     const query = new Queryable<User>("users").orderBy((u) => u.name.toLowerCase()).build();
 
     if (query.orderBy && query.orderBy[0]) {
-      const expr = query.orderBy[0].expression as LambdaExpression;
-      expect(expr.body.type).to.equal("call");
-      expect((expr.body as unknown as { method: string }).method).to.equal("toLowerCase");
+      // Expression is now directly the body, not wrapped in lambda
+      const expr = query.orderBy[0].expression;
+      expect(expr.type).to.equal("call");
+      expect((expr as unknown as { method: string }).method).to.equal("toLowerCase");
     }
   });
 
@@ -153,8 +153,9 @@ describe("ORDER BY Operations", () => {
       .build();
 
     if (query.orderBy && query.orderBy[0]) {
-      const expr = query.orderBy[0].expression as LambdaExpression;
-      expect(expr.body.type).to.equal("conditional");
+      // Expression is now directly the body, not wrapped in lambda
+      const expr = query.orderBy[0].expression;
+      expect(expr.type).to.equal("conditional");
     }
   });
 
@@ -235,8 +236,9 @@ describe("ORDER BY Operations", () => {
 
     expect(query.orderBy).to.have.lengthOf(3);
     if (query.orderBy && query.orderBy[0]) {
-      const expr = query.orderBy[0].expression as LambdaExpression;
-      const unaryExpr = assertUnaryExpression(expr.body);
+      // Expression is now directly the body, not wrapped in lambda
+      const expr = query.orderBy[0].expression;
+      const unaryExpr = assertUnaryExpression(expr);
       expect(unaryExpr.type).to.equal("unary");
     }
   });
@@ -247,8 +249,9 @@ describe("ORDER BY Operations", () => {
       .build();
 
     if (query.orderBy && query.orderBy[0]) {
-      const expr = query.orderBy[0].expression as LambdaExpression;
-      const binaryExpr = assertBinaryExpression(expr.body);
+      // Expression is now directly the body, not wrapped in lambda
+      const expr = query.orderBy[0].expression;
+      const binaryExpr = assertBinaryExpression(expr);
       expect(binaryExpr.type).to.equal("binary");
       expect(binaryExpr.operator).to.equal("/");
     }
@@ -261,8 +264,9 @@ describe("ORDER BY Operations", () => {
       .build();
 
     if (query.orderBy && query.orderBy[0]) {
-      const expr = query.orderBy[0].expression as LambdaExpression;
-      const conditionalExpr = assertConditionalExpression(expr.body);
+      // Expression is now directly the body, not wrapped in lambda
+      const expr = query.orderBy[0].expression;
+      const conditionalExpr = assertConditionalExpression(expr);
       expect(conditionalExpr.type).to.equal("conditional");
     }
   });
