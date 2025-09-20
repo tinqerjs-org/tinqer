@@ -3,7 +3,7 @@
  * Core interfaces that match .NET LINQ System.Linq namespace
  */
 
-import type { IGrouping } from "./grouping.js";
+import type { IGrouping } from "./igrouping.js";
 
 /**
  * IOrderedQueryable<T> - Represents the result of a sorting operation

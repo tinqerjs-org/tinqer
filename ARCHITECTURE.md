@@ -4,204 +4,601 @@ Tinqer is a LINQ-to-SQL query builder for TypeScript that converts lambda expres
 
 ## Core Design Principles
 
+### Dual Type System
+
+Tinqer employs a dual type system to provide both compile-time type safety and runtime SQL generation:
+
+1. **Compile-time Layer**: TypeScript classes (`Queryable<T>`, `TerminalQuery<T>`) provide type-safe APIs for users
+2. **Runtime Layer**: Simplified expression trees without generics for parsing and SQL generation
+
+This separation allows users to write fully type-safe queries while the parser works with simplified data structures.
+
 ### Expression Trees
 
-Tinqer uses expression trees to represent queries, matching the design of .NET LINQ. Each query operation wraps its source operation, creating a nested tree structure that preserves the complete operation chain. This allows accurate SQL generation that respects operation order and composition.
+Tinqer uses expression trees to represent queries, matching the design of .NET LINQ. Each query operation wraps its source operation, creating a nested tree structure that preserves the complete operation chain.
 
 ### Runtime Lambda Parsing
 
-TypeScript lambdas are parsed at runtime using the OXC parser to extract their abstract syntax tree (AST). The AST is then converted into strongly-typed expression objects that represent the query logic.
+TypeScript lambdas are parsed at runtime using the OXC parser. The function string representation is converted to AST, then to our expression tree format.
 
-### Type Safety
+## Expression Type System
 
-The library provides compile-time type safety through TypeScript's type system while maintaining runtime flexibility. Operations like `select<TResult>` properly transform types through the query chain.
+### Expression Type Hierarchy
 
-## System Components
+Expressions are precisely typed based on their evaluation result:
 
-### 1. Parser Layer
+```typescript
+// Base type - all possible expressions
+export type Expression =
+  | BooleanExpression
+  | ValueExpression
+  | ObjectExpression
+  | ArrayExpression;
 
-**Location**: `packages/tinqer/src/parser/`
+// Boolean expressions - evaluate to true/false
+export type BooleanExpression =
+  | ComparisonExpression      // x.age >= 18
+  | LogicalExpression         // x.age >= 18 && x.isActive
+  | BooleanMemberExpression   // x.isActive
+  | BooleanMethodExpression   // x.name.startsWith("J")
+  | NotExpression            // !x.isDeleted
+  | BooleanConstantExpression // true or false
+  | ExistsExpression;        // EXISTS (subquery)
 
-The parser layer wraps the OXC JavaScript/TypeScript parser to convert lambda function strings into AST representations.
+// Value expressions - evaluate to a value
+export type ValueExpression =
+  | ColumnExpression         // x.name
+  | ConstantExpression      // 42, "hello"
+  | ParameterExpression     // p.minAge
+  | ArithmeticExpression    // x.age + 1
+  | StringMethodExpression  // x.name.toLowerCase()
+  | CaseExpression;         // CASE WHEN ... THEN ...
+```
 
-- **OxcParser**: Wrapper around the OXC WASM parser
-- **Parser Module**: High-level parsing API that coordinates parsing and conversion
+### Detailed Expression Types
 
-### 2. Converter Layer
+#### ComparisonExpression
+Represents binary comparisons that produce boolean results.
 
-**Location**: `packages/tinqer/src/converter/`
+```typescript
+export interface ComparisonExpression {
+  type: "comparison";
+  operator: "==" | "!=" | ">" | ">=" | "<" | "<=";
+  left: ValueExpression;
+  right: ValueExpression;
+}
+```
 
-Converts OXC AST nodes into Tinqer's expression tree representation.
+**Example Input**: `x => x.age >= 18`
+**Example Output**:
+```typescript
+{
+  type: "comparison",
+  operator: ">=",
+  left: { type: "column", name: "age" },
+  right: { type: "constant", value: 18 }
+}
+```
 
-- **AstConverter**: Main conversion logic from AST to Expression types
-- **ConversionContext**: Maintains context during conversion (parameter origins, external params)
+#### LogicalExpression
+Combines boolean expressions with logical operators.
 
-Key responsibilities:
+```typescript
+export interface LogicalExpression {
+  type: "logical";
+  operator: "&&" | "||";
+  left: BooleanExpression;
+  right: BooleanExpression;
+}
+```
 
-- Transform JavaScript AST nodes into typed Expression objects
-- Handle parameter binding and scope resolution
-- Extract lambda bodies (removing wrapper functions)
-- Support for operators, member access, method calls, and literals
+**Example Input**: `x => x.age >= 18 && x.isActive`
+**Example Output**:
+```typescript
+{
+  type: "logical",
+  operator: "&&",
+  left: {
+    type: "comparison",
+    operator: ">=",
+    left: { type: "column", name: "age" },
+    right: { type: "constant", value: 18 }
+  },
+  right: { type: "column", name: "isActive" }
+}
+```
 
-### 3. Expression Types
+#### ColumnExpression
+References a table column.
 
-**Location**: `packages/tinqer/src/types/`
+```typescript
+export interface ColumnExpression {
+  type: "column";
+  name: string;
+  table?: string;  // Optional table alias for joins
+}
+```
 
-Strongly-typed representation of query expressions using discriminated unions.
+**Example Input**: `x => x.name`
+**Example Output**: `{ type: "column", name: "name" }`
 
-Core expression types:
+#### ParameterExpression
+References an external parameter passed to the query.
 
-- **ConstantExpression**: Literal values
-- **ParameterExpression**: Lambda parameters with origin tracking
-- **MemberExpression**: Property/field access
-- **BinaryExpression**: Binary operators (==, >, <, etc.)
-- **LogicalExpression**: Logical operators (&&, ||)
-- **CallExpression**: Method calls
-- **LambdaExpression**: Lambda functions with parameters and body
+```typescript
+export interface ParameterExpression {
+  type: "param";
+  param: string;     // Parameter name (e.g., "p")
+  property?: string; // Property path (e.g., "minAge")
+}
+```
 
-Specialized query expressions:
+**Example Input**: `p => p.minAge`
+**Example Output**: `{ type: "param", param: "p", property: "minAge" }`
 
-- **WhereExpression**: Subset of expressions valid in WHERE clauses
-- **SelectExpression**: Subset of expressions valid in SELECT projections
-- **GroupByExpression**: Subset of expressions valid in GROUP BY
-- **OrderByExpression**: Subset of expressions valid in ORDER BY
+#### ObjectExpression
+Represents object literals, typically used in SELECT projections.
 
-### 4. Query Operations
+```typescript
+export interface ObjectExpression {
+  type: "object";
+  properties: Array<{
+    key: string;
+    value: ValueExpression | BooleanExpression;
+  }>;
+}
+```
 
-**Location**: `packages/tinqer/src/types/query-operations.ts`
+**Example Input**: `x => ({ id: x.id, name: x.name })`
+**Example Output**:
+```typescript
+{
+  type: "object",
+  properties: [
+    { key: "id", value: { type: "column", name: "id" } },
+    { key: "name", value: { type: "column", name: "name" } }
+  ]
+}
+```
 
-Expression tree nodes that represent LINQ operations. Each operation contains its source, creating a tree structure.
+## Query Operations
 
-Chainable operations:
+### Simplified Operation Structure
 
-- **FromOperation**: Root of query chain (table source)
-- **WhereOperation**: Filter operation containing predicate
-- **SelectOperation**: Projection operation containing selector
-- **JoinOperation**: Join operation with keys and result selector
-- **GroupByOperation**: Grouping with key/element/result selectors
-- **OrderByOperation**: Sorting with key selector and direction
-- **ThenByOperation**: Secondary sorting (chains after OrderBy)
-- **DistinctOperation**: Distinct values
-- **TakeOperation**: Limit results (LIMIT in SQL)
-- **SkipOperation**: Offset results (OFFSET in SQL)
+Query operations no longer use complex generics. Each operation has a precise structure with specific expression types.
 
-Terminal operations:
+### Base QueryOperation
 
-- **FirstOperation**: First element with optional predicate
-- **SingleOperation**: Single element (error if multiple)
-- **CountOperation**: Count elements with optional predicate
-- **AnyOperation**: Check existence with optional predicate
-- **AllOperation**: Check all match predicate
-- **SumOperation**: Sum numeric values
-- **AverageOperation**: Average numeric values
-- **MinOperation**: Minimum value
-- **MaxOperation**: Maximum value
-- **ToArrayOperation**: Materialize to array
+```typescript
+export interface QueryOperation {
+  type: "queryOperation";
+  operationType: string;
+}
+```
 
-### 5. Queryable API
+### Chainable Operations
 
-**Location**: `packages/tinqer/src/queryable/`
+#### FromOperation
+The root of all query chains.
 
-Fluent API for building queries using method chaining.
+```typescript
+export interface FromOperation extends QueryOperation {
+  operationType: "from";
+  table: string;
+  schema?: string;
+}
+```
 
-- **Queryable<T>**: Main query builder class
-- **OrderedQueryable<T>**: Extended queryable supporting thenBy operations
-- **TerminalQuery<T>**: Represents terminated queries that return values
-- **from<T>()**: Factory function to create initial queryable
+**Example**: `from<User>("users")`
+**Output**:
+```typescript
+{
+  type: "queryOperation",
+  operationType: "from",
+  table: "users"
+}
+```
 
-Key features:
+#### WhereOperation
+Filters rows based on a boolean predicate.
 
-- Method chaining for query composition
-- Type transformation through operations (select changes T to TResult)
-- Separation of chainable and terminal operations
-- Expression tree preservation through operation chain
+```typescript
+export interface WhereOperation extends QueryOperation {
+  operationType: "where";
+  source: QueryOperation;
+  predicate: BooleanExpression;  // Must be boolean
+}
+```
 
-### 6. LINQ Interfaces
+**Example Input**: `.where(x => x.age >= 18 && x.isActive)`
+**Example Output**:
+```typescript
+{
+  operationType: "where",
+  source: { /* previous operation */ },
+  predicate: {
+    type: "logical",
+    operator: "&&",
+    left: {
+      type: "comparison",
+      operator: ">=",
+      left: { type: "column", name: "age" },
+      right: { type: "constant", value: 18 }
+    },
+    right: { type: "column", name: "isActive" }
+  }
+}
+```
 
-**Location**: `packages/tinqer/src/types/queryable.ts`
+#### SelectOperation
+Projects data into a new shape.
 
-TypeScript interfaces matching .NET LINQ for compatibility.
+```typescript
+export interface SelectOperation extends QueryOperation {
+  operationType: "select";
+  source: QueryOperation;
+  selector: ValueExpression | ObjectExpression;
+}
+```
 
-- **IQueryable<T>**: Core queryable interface
-- **IOrderedQueryable<T>**: Ordered queryable supporting thenBy
-- **IGrouping<TKey, TElement>**: Grouped elements with common key
-- **ILookup<TKey, TElement>**: Multi-value dictionary
+**Example Input**: `.select(x => ({ id: x.id, name: x.name }))`
+**Example Output**:
+```typescript
+{
+  operationType: "select",
+  source: { /* previous operation */ },
+  selector: {
+    type: "object",
+    properties: [
+      { key: "id", value: { type: "column", name: "id" } },
+      { key: "name", value: { type: "column", name: "name" } }
+    ]
+  }
+}
+```
+
+#### JoinOperation
+Joins two tables on matching keys.
+
+```typescript
+export interface JoinOperation extends QueryOperation {
+  operationType: "join";
+  source: QueryOperation;
+  inner: QueryOperation;
+  outerKey: string;  // Simple column name
+  innerKey: string;  // Simple column name
+  resultSelector: ObjectExpression;
+  joinType: "inner" | "left" | "right" | "full" | "cross";
+}
+```
+
+**Example Input**:
+```typescript
+users.join(
+  departments,
+  u => u.departmentId,
+  d => d.id,
+  (u, d) => ({ userName: u.name, deptName: d.name })
+)
+```
+
+**Example Output**:
+```typescript
+{
+  operationType: "join",
+  source: { /* users table */ },
+  inner: { /* departments table */ },
+  outerKey: "departmentId",
+  innerKey: "id",
+  resultSelector: {
+    type: "object",
+    properties: [
+      { key: "userName", value: { type: "column", name: "name", table: "t0" } },
+      { key: "deptName", value: { type: "column", name: "name", table: "t1" } }
+    ]
+  },
+  joinType: "inner"
+}
+```
+
+#### OrderByOperation
+Sorts results by a key.
+
+```typescript
+export interface OrderByOperation extends QueryOperation {
+  operationType: "orderBy";
+  source: QueryOperation;
+  keySelector: string | ValueExpression;
+  direction: "ascending" | "descending";
+}
+```
+
+**Example Input**: `.orderBy(x => x.name)`
+**Example Output**:
+```typescript
+{
+  operationType: "orderBy",
+  source: { /* previous operation */ },
+  keySelector: "name",
+  direction: "ascending"
+}
+```
+
+#### GroupByOperation
+Groups rows by a key.
+
+```typescript
+export interface GroupByOperation extends QueryOperation {
+  operationType: "groupBy";
+  source: QueryOperation;
+  keySelector: string | ValueExpression;
+  elementSelector?: ValueExpression | ObjectExpression;
+}
+```
+
+**Example Input**: `.groupBy(x => x.departmentId)`
+**Example Output**:
+```typescript
+{
+  operationType: "groupBy",
+  source: { /* previous operation */ },
+  keySelector: "departmentId"
+}
+```
+
+#### TakeOperation / SkipOperation
+Limits or skips rows.
+
+```typescript
+export interface TakeOperation extends QueryOperation {
+  operationType: "take";
+  source: QueryOperation;
+  count: number | ParamRef;
+}
+
+export interface SkipOperation extends QueryOperation {
+  operationType: "skip";
+  source: QueryOperation;
+  count: number | ParamRef;
+}
+```
+
+**Example Input**: `.take(10).skip(p => p.offset)`
+**Example Output**:
+```typescript
+{
+  operationType: "take",
+  source: {
+    operationType: "skip",
+    source: { /* previous */ },
+    count: { param: "p", property: "offset" }
+  },
+  count: 10
+}
+```
+
+### Terminal Operations
+
+Terminal operations end the query chain and produce a result.
+
+#### CountOperation
+Counts rows.
+
+```typescript
+export interface CountOperation extends QueryOperation {
+  operationType: "count";
+  source: QueryOperation;
+  predicate?: BooleanExpression;
+}
+```
+
+**Example Input**: `.count(x => x.isActive)`
+**Example Output**:
+```typescript
+{
+  operationType: "count",
+  source: { /* previous operation */ },
+  predicate: { type: "column", name: "isActive" }
+}
+```
+
+#### FirstOperation / SingleOperation
+Gets first or single row.
+
+```typescript
+export interface FirstOperation extends QueryOperation {
+  operationType: "first";
+  source: QueryOperation;
+  predicate?: BooleanExpression;
+}
+```
+
+#### Aggregate Operations
+Sum, Average, Min, Max operations.
+
+```typescript
+export interface SumOperation extends QueryOperation {
+  operationType: "sum";
+  source: QueryOperation;
+  selector: ValueExpression;
+}
+```
+
+**Example Input**: `.sum(x => x.amount)`
+**Example Output**:
+```typescript
+{
+  operationType: "sum",
+  source: { /* previous operation */ },
+  selector: { type: "column", name: "amount" }
+}
+```
+
+## API Layers
+
+### User-Facing API (Compile-Time)
+
+```typescript
+// Queryable class for type-safe chaining
+class Queryable<T> {
+  where(predicate: (item: T) => boolean): Queryable<T>;
+  select<TResult>(selector: (item: T) => TResult): Queryable<TResult>;
+  orderBy<TKey>(keySelector: (item: T) => TKey): OrderedQueryable<T>;
+
+  // Terminal operations
+  count(predicate?: (item: T) => boolean): TerminalQuery<number>;
+  first(predicate?: (item: T) => boolean): TerminalQuery<T>;
+  toArray(): TerminalQuery<T[]>;
+}
+
+// Terminal query marker
+class TerminalQuery<T> {
+  private _phantom?: T;
+}
+
+// Entry point
+function from<T>(table: string): Queryable<T>;
+```
+
+### Parser API (Runtime)
+
+```typescript
+// Main parsing function
+function parseQuery<TParams, TResult>(
+  queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>
+): QueryOperation;
+
+// Parses individual lambdas
+function parseLambda(fn: Function): Expression;
+
+// Converts AST to expressions
+function convertAstToExpression(ast: any, context: Context): Expression;
+
+// Converts method chains to operations
+function convertAstToQueryOperation(ast: any): QueryOperation;
+```
+
+### SQL Adapter API
+
+```typescript
+// Main query function (in adapters)
+function query<TParams, TResult>(
+  queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>,
+  params: TParams
+): { sql: string; params: TParams };
+
+// SQL generation
+function generateSql(operation: QueryOperation, params: any): string;
+```
+
+## Complete Example Flow
+
+### User Code
+```typescript
+const result = query(
+  (p: { minAge: number; dept: string }) =>
+    from<User>("users")
+      .where(x => x.age >= p.minAge && x.department === p.dept)
+      .select(x => ({ id: x.id, name: x.name, age: x.age }))
+      .orderBy(x => x.name)
+      .take(10),
+  { minAge: 18, dept: "Engineering" }
+);
+```
+
+### Parsed Expression Tree
+```typescript
+{
+  type: "queryOperation",
+  operationType: "take",
+  count: 10,
+  source: {
+    operationType: "orderBy",
+    keySelector: "name",
+    direction: "ascending",
+    source: {
+      operationType: "select",
+      selector: {
+        type: "object",
+        properties: [
+          { key: "id", value: { type: "column", name: "id" } },
+          { key: "name", value: { type: "column", name: "name" } },
+          { key: "age", value: { type: "column", name: "age" } }
+        ]
+      },
+      source: {
+        operationType: "where",
+        predicate: {
+          type: "logical",
+          operator: "&&",
+          left: {
+            type: "comparison",
+            operator: ">=",
+            left: { type: "column", name: "age" },
+            right: { type: "param", param: "p", property: "minAge" }
+          },
+          right: {
+            type: "comparison",
+            operator: "==",
+            left: { type: "column", name: "department" },
+            right: { type: "param", param: "p", property: "dept" }
+          }
+        },
+        source: {
+          operationType: "from",
+          table: "users"
+        }
+      }
+    }
+  }
+}
+```
+
+### Generated SQL
+```sql
+SELECT id, name, age
+FROM users
+WHERE age >= :minAge AND department = :dept
+ORDER BY name ASC
+LIMIT 10
+```
 
 ## Data Flow
 
 ```
-Lambda Function
+User TypeScript Code
     ↓
-String Representation (.toString())
+Function.toString()
     ↓
 OXC Parser (WASM)
     ↓
-AST (Abstract Syntax Tree)
+JavaScript AST
     ↓
-AstConverter
+convertAstToQueryOperation()
     ↓
-Expression Tree
+Query Operation Tree (simplified, no generics)
     ↓
-Query Operations (Nested Tree)
+SQL Adapter generateSql()
     ↓
-SQL Adapter (PostgreSQL, MySQL, etc.)
-    ↓
-SQL Query String
+SQL String + Parameters
 ```
-
-## Query Execution Model
-
-Queries in Tinqer follow a deferred execution model:
-
-1. **Query Construction**: Operations build an expression tree without executing
-2. **Terminal Operation**: Methods like `toArray()`, `first()`, `count()` terminate the chain
-3. **SQL Generation**: Expression tree is traversed to generate SQL
-4. **Database Execution**: SQL is executed against the database
-5. **Result Mapping**: Results are mapped back to TypeScript types
-
-## Extension Points
-
-### SQL Adapters
-
-Different SQL dialects are supported through adapter packages:
-
-- `tinqer-sql-pg-promise`: PostgreSQL adapter using pg-promise
-- Future: MySQL, SQLite, SQL Server adapters
-
-Adapters implement:
-
-- Expression tree to SQL conversion
-- Dialect-specific SQL generation
-- Parameter binding and escaping
-- Result mapping
-
-### Custom Expressions
-
-The expression system is extensible through discriminated unions. New expression types can be added by:
-
-1. Adding new type to Expression union
-2. Implementing conversion in AstConverter
-3. Implementing SQL generation in adapters
 
 ## Type Safety Guarantees
 
-Tinqer provides multiple levels of type safety:
-
-1. **Compile-time**: TypeScript ensures type correctness of lambda parameters and return types
-2. **Parse-time**: Parser validates JavaScript syntax
-3. **Conversion-time**: Converter validates expression types for each operation
-4. **Generation-time**: SQL adapter validates expression semantics
+1. **Compile-time**: TypeScript validates lambda signatures and types
+2. **Parse-time**: Expression types ensure correct operation combinations
+3. **Generation-time**: SQL adapter validates expression semantics
 
 ## Performance Considerations
 
-- **Parser Caching**: Parsed expressions could be cached to avoid re-parsing
-- **Expression Reuse**: Common sub-expressions could be identified and reused
-- **SQL Preparation**: Generated SQL could use prepared statements
-- **Lazy Evaluation**: Operations build trees without immediate processing
+- **Parser Caching**: Cache parsed query functions to avoid re-parsing
+- **Expression Reuse**: Identify and reuse common sub-expressions
+- **Prepared Statements**: Generated SQL uses parameterized queries
+- **Lazy Evaluation**: Operations build trees without immediate execution
 
 ## Security
 
-- **Parameter Binding**: All values are parameterized, never concatenated
-- **Expression Validation**: Only safe expressions are allowed
+- **No String Concatenation**: All values use parameterized queries
+- **Expression Validation**: Only safe expressions allowed
+- **No Dynamic Code**: No eval() or Function constructor usage
 - **SQL Injection Prevention**: Expression tree approach prevents injection by design
-- **Type Validation**: Strong typing prevents type confusion attacks
