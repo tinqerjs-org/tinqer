@@ -62,7 +62,8 @@ export class Queryable<T> {
   }
 
   /**
-   * WHERE clause - Strictly typed boolean predicate
+   * Filters a sequence of values based on a predicate
+   * @param predicate A function to test each element for a condition
    */
   where(predicate: ((item: T) => boolean) | string): Queryable<T> {
     const lambdaString = typeof predicate === "string" ? predicate : predicate.toString();
@@ -88,9 +89,10 @@ export class Queryable<T> {
   }
 
   /**
-   * SELECT projection - Strictly typed transformation
+   * Projects each element of a sequence into a new form
+   * @param selector A transform function to apply to each element
    */
-  select<TResult>(selector: ((item: T) => TResult) | string): Queryable<TResult> {
+  select<TResult>(selector: ((source: T) => TResult) | string): Queryable<TResult> {
     const lambdaString = typeof selector === "string" ? selector : selector.toString();
     const ast = this.parser.parse(lambdaString);
 
@@ -122,41 +124,45 @@ export class Queryable<T> {
   }
 
   /**
-   * INNER JOIN - Type-safe join ensuring key compatibility
+   * Correlates the elements of two sequences based on matching keys
+   * @param inner The sequence to join to the first sequence
+   * @param outerKeySelector A function to extract the join key from each element of the first sequence
+   * @param innerKeySelector A function to extract the join key from each element of the second sequence
+   * @param resultSelector A function to create a result element from two matching elements
    */
-  join<TOther, TKey, TResult>(
-    other: Queryable<TOther>,
-    outerKeySelector: ((item: T) => TKey) | string,
-    innerKeySelector: ((item: TOther) => TKey) | string,
-    resultSelector: ((outer: T, inner: TOther) => TResult) | string,
+  join<TInner, TKey, TResult>(
+    inner: Queryable<TInner>,
+    outerKeySelector: ((outer: T) => TKey) | string,
+    innerKeySelector: ((inner: TInner) => TKey) | string,
+    resultSelector: ((outer: T, inner: TInner) => TResult) | string,
   ): Queryable<TResult> {
-    return this.addJoin<TOther, TKey, TResult>(
+    return this.addJoin<TInner, TKey, TResult>(
       "INNER",
-      other,
+      inner,
       outerKeySelector,
       innerKeySelector,
-      resultSelector as ((outer: T, inner: TOther | null) => TResult) | string,
+      resultSelector as ((outer: T, inner: TInner | null) => TResult) | string,
     );
   }
 
   /**
    * LEFT JOIN - Type-safe join with nullable inner
    */
-  leftJoin<TOther, TKey, TResult>(
-    other: Queryable<TOther>,
-    outerKeySelector: ((item: T) => TKey) | string,
-    innerKeySelector: ((item: TOther) => TKey) | string,
-    resultSelector: ((outer: T, inner: TOther | null) => TResult) | string,
+  leftJoin<TInner, TKey, TResult>(
+    inner: Queryable<TInner>,
+    outerKeySelector: ((outer: T) => TKey) | string,
+    innerKeySelector: ((inner: TInner) => TKey) | string,
+    resultSelector: ((outer: T, inner: TInner | null) => TResult) | string,
   ): Queryable<TResult> {
-    return this.addJoin<TOther, TKey, TResult>("LEFT", other, outerKeySelector, innerKeySelector, resultSelector);
+    return this.addJoin<TInner, TKey, TResult>("LEFT", inner, outerKeySelector, innerKeySelector, resultSelector);
   }
 
-  private addJoin<TOther, TKey, TResult>(
+  private addJoin<TInner, TKey, TResult>(
     kind: "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS",
-    other: Queryable<TOther>,
-    outerKeySelector: ((item: T) => TKey) | string,
-    innerKeySelector: ((item: TOther) => TKey) | string,
-    resultSelector: ((outer: T, inner: TOther | null) => TResult) | string,
+    inner: Queryable<TInner>,
+    outerKeySelector: ((outer: T) => TKey) | string,
+    innerKeySelector: ((inner: TInner) => TKey) | string,
+    resultSelector: ((outer: T, inner: TInner | null) => TResult) | string,
   ): Queryable<TResult> {
     // Parse outer key selector
     const outerKeyString =
@@ -177,7 +183,7 @@ export class Queryable<T> {
       typeof innerKeySelector === "string" ? innerKeySelector : innerKeySelector.toString();
     const innerAst = this.parser.parse(innerKeyString);
     const innerContext: ConversionContext = {
-      parameterOrigin: { type: "table", ref: other.tableName },
+      parameterOrigin: { type: "table", ref: inner.tableName },
     };
     const innerKeyExpression = AstConverter.convert(innerAst as never, innerContext);
 
@@ -212,7 +218,7 @@ export class Queryable<T> {
     const join: JoinExpression = {
       type: "join",
       kind,
-      table: other.tableName,
+      table: inner.tableName,
       on: onCondition,
     };
 
@@ -347,22 +353,20 @@ export class Queryable<T> {
   }
 
   /**
-   * LIMIT - Strictly typed limit with parameters
+   * Returns a specified number of contiguous elements from the start
    */
-  take<TParams = Record<string, unknown>>(
-    limit: number | ((params: TParams) => number) | string
-  ): Queryable<T> {
+  take(count: number | string): Queryable<T> {
     const newQueryable = this.clone();
 
-    if (typeof limit === "number") {
+    if (typeof count === "number") {
       // Direct number - store as constant
       newQueryable.limitExpression = {
         type: "constant",
-        value: limit,
+        value: count,
       } as ConstantExpression;
     } else {
-      // Parse lambda expression
-      const lambdaString = typeof limit === "string" ? limit : limit.toString();
+      // Parse expression string
+      const lambdaString = count;
       const ast = this.parser.parse(lambdaString);
 
       const context: ConversionContext = {
@@ -383,22 +387,20 @@ export class Queryable<T> {
   }
 
   /**
-   * OFFSET - Strictly typed offset with parameters
+   * Bypasses a specified number of elements and returns the remaining
    */
-  skip<TParams = Record<string, unknown>>(
-    offset: number | ((params: TParams) => number) | string
-  ): Queryable<T> {
+  skip(count: number | string): Queryable<T> {
     const newQueryable = this.clone();
 
-    if (typeof offset === "number") {
+    if (typeof count === "number") {
       // Direct number - store as constant
       newQueryable.offsetExpression = {
         type: "constant",
-        value: offset,
+        value: count,
       } as ConstantExpression;
     } else {
-      // Parse lambda expression
-      const lambdaString = typeof offset === "string" ? offset : offset.toString();
+      // Parse expression string
+      const lambdaString = count;
       const ast = this.parser.parse(lambdaString);
 
       const context: ConversionContext = {
@@ -428,20 +430,113 @@ export class Queryable<T> {
   }
 
   /**
-   * COUNT aggregate - Returns count of items
+   * Determines whether any element of a sequence satisfies a condition
    */
-  count(): QueryExpression {
+  any(predicate?: ((source: T) => boolean) | string): QueryExpression {
     const query = this.build();
+
+    if (predicate) {
+      // Add the predicate as a WHERE condition
+      const whereQuery = this.where(predicate);
+      return whereQuery.any();
+    }
+
+    // EXISTS query
     query.select = {
-      type: "call",
-      method: "COUNT",
-      arguments: [{ type: "constant", value: "*" } as ConstantExpression],
-    } as CallExpression;
+      type: "constant",
+      value: 1
+    } as ConstantExpression;
+
     return query;
   }
 
   /**
-   * SUM aggregate - Strictly typed numeric selector
+   * Determines whether all elements of a sequence satisfy a condition
+   */
+  all(predicate: ((source: T) => boolean) | string): QueryExpression {
+    // ALL can be implemented as NOT EXISTS (WHERE NOT predicate)
+    const negatedQuery = this.where(`(item) => !(${predicate})`);
+    const query = negatedQuery.build();
+
+    query.select = {
+      type: "constant",
+      value: 1
+    } as ConstantExpression;
+
+    return query;
+  }
+
+  /**
+   * Returns the first element of a sequence
+   */
+  first(predicate?: ((source: T) => boolean) | string): QueryExpression {
+    let query = this as Queryable<T>;
+
+    if (predicate) {
+      query = query.where(predicate);
+    }
+
+    return query.take(1).build();
+  }
+
+  /**
+   * Returns the first element of a sequence, or a default value if empty
+   */
+  firstOrDefault(predicate?: ((source: T) => boolean) | string): QueryExpression {
+    // Same as first() but with different null handling at execution
+    return this.first(predicate);
+  }
+
+  /**
+   * Returns the number of elements in a sequence
+   */
+  count(predicate?: ((source: T) => boolean) | string): QueryExpression {
+    let query: Queryable<T> = this;
+
+    if (predicate) {
+      query = query.where(predicate);
+    }
+
+    const builtQuery = query.build();
+    builtQuery.select = {
+      type: "call",
+      method: "COUNT",
+      arguments: [{ type: "constant", value: "*" } as ConstantExpression],
+    } as CallExpression;
+    return builtQuery;
+  }
+
+  /**
+   * Returns the only element of a sequence, throws if != 1 element
+   */
+  single(predicate?: ((source: T) => boolean) | string): QueryExpression {
+    let query = this as Queryable<T>;
+
+    if (predicate) {
+      query = query.where(predicate);
+    }
+
+    // Single should verify exactly one element (handled at execution)
+    return query.take(2).build(); // Take 2 to check for multiple
+  }
+
+  /**
+   * Returns the only element or default if empty, throws if > 1 element
+   */
+  singleOrDefault(predicate?: ((source: T) => boolean) | string): QueryExpression {
+    return this.single(predicate);
+  }
+
+  /**
+   * Determines whether a sequence contains a specified element
+   */
+  contains<TValue>(value: TValue): QueryExpression {
+    // Implement as WHERE item == value
+    return this.where(`(item) => item === ${JSON.stringify(value)}`).any();
+  }
+
+  /**
+   * Computes the sum of a sequence of numeric values
    */
   sum(selector: ((item: T) => number) | string): QueryExpression {
     const lambdaString = typeof selector === "string" ? selector : selector.toString();

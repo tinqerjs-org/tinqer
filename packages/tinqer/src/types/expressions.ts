@@ -56,7 +56,8 @@ export type SelectExpression =
   | MemberExpression      // Single field: u.name
   | BinaryExpression      // Computed: u.price * u.quantity
   | ConditionalExpression // Ternary: age > 18 ? "adult" : "minor"
-  | ArrayExpression;      // Array: [u.id, u.name]
+  | ArrayExpression       // Array: [u.id, u.name]
+  | ConstantExpression;   // Literal: 1, "value", true
 
 /**
  * LIMIT/OFFSET expressions - must be numeric
