@@ -5,6 +5,14 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery, from } from "../src/index.js";
+import {
+  asTakeOperation,
+  asSkipOperation,
+  asOrderByOperation,
+  asSelectOperation,
+} from "./test-utils/operation-helpers.js";
+import type { ParamRef } from "../src/query-tree/operations.js";
+import type { ArithmeticExpression } from "../src/expressions/expression.js";
 
 describe("Pagination Operations", () => {
   describe("take()", () => {
@@ -13,7 +21,8 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      expect((result as any).count).to.equal(10);
+      const takeOp = asTakeOperation(result);
+      expect(takeOp.count).to.equal(10);
     });
 
     it("should parse take(0)", () => {
@@ -21,7 +30,8 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      expect((result as any).count).to.equal(0);
+      const takeOp = asTakeOperation(result);
+      expect(takeOp.count).to.equal(0);
     });
 
     it("should parse take with large number", () => {
@@ -29,7 +39,8 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      expect((result as any).count).to.equal(1000000);
+      const takeOp = asTakeOperation(result);
+      expect(takeOp.count).to.equal(1000000);
     });
 
     it("should parse take after where", () => {
@@ -40,9 +51,9 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      expect((result as any).count).to.equal(5);
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("where");
+      const takeOp = asTakeOperation(result);
+      expect(takeOp.count).to.equal(5);
+      expect(takeOp.source.operationType).to.equal("where");
     });
 
     it("should parse take after orderBy", () => {
@@ -53,9 +64,10 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("orderBy");
-      expect(source.descending).to.equal(true);
+      const takeOp = asTakeOperation(result);
+      const orderByOp = asOrderByOperation(takeOp.source);
+      expect(orderByOp.operationType).to.equal("orderBy");
+      expect(orderByOp.descending).to.equal(true);
     });
 
     it("should parse take before select", () => {
@@ -66,8 +78,8 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("take");
+      const selectOp = asSelectOperation(result);
+      expect(selectOp.source.operationType).to.equal("take");
     });
 
     it("should parse take with external parameter", () => {
@@ -75,10 +87,11 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      const count = (result as any).count;
-      expect(count.type).to.equal("param");
-      expect(count.param).to.equal("p");
-      expect(count.property).to.equal("limit");
+      const takeOp = asTakeOperation(result);
+      const paramRef = takeOp.count as ParamRef;
+      expect(paramRef.type).to.equal("param");
+      expect(paramRef.param).to.equal("p");
+      expect(paramRef.property).to.equal("limit");
     });
   });
 
@@ -88,7 +101,8 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("skip");
-      expect((result as any).count).to.equal(20);
+      const skipOp = asSkipOperation(result);
+      expect(skipOp.count).to.equal(20);
     });
 
     it("should parse skip(0)", () => {
@@ -96,7 +110,8 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("skip");
-      expect((result as any).count).to.equal(0);
+      const skipOp = asSkipOperation(result);
+      expect(skipOp.count).to.equal(0);
     });
 
     it("should parse skip after orderBy", () => {
@@ -107,8 +122,8 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("skip");
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("orderBy");
+      const skipOp = asSkipOperation(result);
+      expect(skipOp.source.operationType).to.equal("orderBy");
     });
 
     it("should parse skip before take (pagination pattern)", () => {
@@ -116,10 +131,11 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      expect((result as any).count).to.equal(10);
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("skip");
-      expect(source.count).to.equal(20);
+      const takeOp = asTakeOperation(result);
+      expect(takeOp.count).to.equal(10);
+      const skipOp = asSkipOperation(takeOp.source);
+      expect(skipOp.operationType).to.equal("skip");
+      expect(skipOp.count).to.equal(20);
     });
 
     it("should parse complex pagination with ordering", () => {
@@ -131,12 +147,12 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      expect((result as any).count).to.equal(25);
-      const skip = (result as any).source;
-      expect(skip.operationType).to.equal("skip");
-      expect(skip.count).to.equal(50);
-      const orderBy = skip.source;
-      expect(orderBy.operationType).to.equal("orderBy");
+      const takeOp = asTakeOperation(result);
+      expect(takeOp.count).to.equal(25);
+      const skipOp = asSkipOperation(takeOp.source);
+      expect(skipOp.operationType).to.equal("skip");
+      expect(skipOp.count).to.equal(50);
+      expect(skipOp.source.operationType).to.equal("orderBy");
     });
 
     it("should parse skip with external parameter", () => {
@@ -144,10 +160,11 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("skip");
-      const count = (result as any).count;
-      expect(count.type).to.equal("param");
-      expect(count.param).to.equal("p");
-      expect(count.property).to.equal("offset");
+      const skipOp = asSkipOperation(result);
+      const paramRef = skipOp.count as ParamRef;
+      expect(paramRef.type).to.equal("param");
+      expect(paramRef.param).to.equal("p");
+      expect(paramRef.property).to.equal("offset");
     });
 
     it("should parse pagination with both external parameters", () => {
@@ -158,15 +175,16 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      const takeCount = (result as any).count;
-      expect(takeCount.type).to.equal("param");
-      expect(takeCount.property).to.equal("pageSize");
+      const takeOp = asTakeOperation(result);
+      const takeParamRef = takeOp.count as ParamRef;
+      expect(takeParamRef.type).to.equal("param");
+      expect(takeParamRef.property).to.equal("pageSize");
 
-      const skip = (result as any).source;
-      expect(skip.operationType).to.equal("skip");
-      const skipCount = skip.count;
-      expect(skipCount.type).to.equal("arithmetic");
-      expect(skipCount.operator).to.equal("*");
+      const skipOp = asSkipOperation(takeOp.source);
+      expect(skipOp.operationType).to.equal("skip");
+      const arithmeticExpr = skipOp.count as ArithmeticExpression;
+      expect(arithmeticExpr.type).to.equal("arithmetic");
+      expect(arithmeticExpr.operator).to.equal("*");
     });
   });
 
@@ -182,21 +200,21 @@ describe("Pagination Operations", () => {
 
       // Last take
       expect(result?.operationType).to.equal("take");
-      expect((result as any).count).to.equal(10);
+      const lastTakeOp = asTakeOperation(result);
+      expect(lastTakeOp.count).to.equal(10);
 
       // Skip before last take
-      const skip = (result as any).source;
-      expect(skip.operationType).to.equal("skip");
-      expect(skip.count).to.equal(20);
+      const skipOp = asSkipOperation(lastTakeOp.source);
+      expect(skipOp.operationType).to.equal("skip");
+      expect(skipOp.count).to.equal(20);
 
       // First take
-      const take1 = skip.source;
-      expect(take1.operationType).to.equal("take");
-      expect(take1.count).to.equal(100);
+      const firstTakeOp = asTakeOperation(skipOp.source);
+      expect(firstTakeOp.operationType).to.equal("take");
+      expect(firstTakeOp.count).to.equal(100);
 
       // SkipWhile at the beginning
-      const skipWhile = take1.source;
-      expect(skipWhile.operationType).to.equal("skipWhile");
+      expect(firstTakeOp.source.operationType).to.equal("skipWhile");
     });
 
     it("should parse pagination with filtering and ordering", () => {
@@ -210,14 +228,13 @@ describe("Pagination Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const take = (result as any).source;
-      expect(take.operationType).to.equal("take");
-      const skip = take.source;
-      expect(skip.operationType).to.equal("skip");
-      const orderBy = skip.source;
-      expect(orderBy.operationType).to.equal("orderBy");
-      const where = orderBy.source;
-      expect(where.operationType).to.equal("where");
+      const selectOp = asSelectOperation(result);
+      const takeOp = asTakeOperation(selectOp.source);
+      expect(takeOp.operationType).to.equal("take");
+      const skipOp = asSkipOperation(takeOp.source);
+      expect(skipOp.operationType).to.equal("skip");
+      expect(skipOp.source.operationType).to.equal("orderBy");
+      expect(skipOp.source.source.operationType).to.equal("where");
     });
   });
 });

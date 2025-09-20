@@ -18,7 +18,7 @@ export const expr = {
     return { type: "column", name };
   },
 
-  constant(value: any): ConstantExpression {
+  constant(value: string | number | boolean | null | undefined): ConstantExpression {
     const valueType =
       typeof value === "number"
         ? "number"
@@ -40,7 +40,7 @@ export const expr = {
 
   // Member access
   member(object: ValueExpression, member: string): MemberAccessExpression {
-    return { type: "memberAccess", object: object as any, member };
+    return { type: "memberAccess", object: object as ValueExpression, member };
   },
 
   // Boolean column

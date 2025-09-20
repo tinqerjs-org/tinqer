@@ -6,6 +6,20 @@ import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery, from } from "../src/index.js";
 import { expr } from "./test-utils/expr-helpers.js";
+import {
+  asFromOperation,
+  asWhereOperation,
+  asSelectOperation,
+} from "./test-utils/operation-helpers.js";
+import type {
+  ComparisonExpression,
+  LogicalExpression,
+  ObjectExpression,
+  ColumnExpression,
+  ConcatExpression,
+  ArithmeticExpression,
+} from "../src/expressions/expression.js";
+import type { ParamRef } from "../src/query-tree/operations.js";
 
 describe("Basic Query Operations", () => {
   describe("from()", () => {
@@ -15,21 +29,25 @@ describe("Basic Query Operations", () => {
 
       expect(result).to.not.be.null;
       expect(result?.operationType).to.equal("from");
-      expect((result as any).table).to.equal("users");
+      const fromOp = asFromOperation(result);
+      expect(fromOp.table).to.equal("users");
     });
 
     it("should handle different table names", () => {
       const query1 = () => from<{ id: number }>("products");
       const result1 = parseQuery(query1);
-      expect((result1 as any).table).to.equal("products");
+      const fromOp1 = asFromOperation(result1);
+      expect(fromOp1.table).to.equal("products");
 
       const query2 = () => from<{ id: number }>("orders");
       const result2 = parseQuery(query2);
-      expect((result2 as any).table).to.equal("orders");
+      const fromOp2 = asFromOperation(result2);
+      expect(fromOp2.table).to.equal("orders");
 
       const query3 = () => from<{ id: number }>("customer_details");
       const result3 = parseQuery(query3);
-      expect((result3 as any).table).to.equal("customer_details");
+      const fromOp3 = asFromOperation(result3);
+      expect(fromOp3.table).to.equal("customer_details");
     });
   });
 
@@ -39,48 +57,48 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("where");
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(expr.eq(expr.column("id"), expr.constant(1)));
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(expr.eq(expr.column("id"), expr.constant(1)));
     });
 
     it("should parse inequality comparison", () => {
       const query = () => from<{ age: number }>("users").where((x) => x.age != 30);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(expr.ne(expr.column("age"), expr.constant(30)));
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(expr.ne(expr.column("age"), expr.constant(30)));
     });
 
     it("should parse greater than comparison", () => {
       const query = () => from<{ age: number }>("users").where((x) => x.age > 18);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(expr.gt(expr.column("age"), expr.constant(18)));
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(expr.gt(expr.column("age"), expr.constant(18)));
     });
 
     it("should parse greater than or equal comparison", () => {
       const query = () => from<{ age: number }>("users").where((x) => x.age >= 21);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(expr.gte(expr.column("age"), expr.constant(21)));
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(expr.gte(expr.column("age"), expr.constant(21)));
     });
 
     it("should parse less than comparison", () => {
       const query = () => from<{ age: number }>("users").where((x) => x.age < 65);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(expr.lt(expr.column("age"), expr.constant(65)));
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(expr.lt(expr.column("age"), expr.constant(65)));
     });
 
     it("should parse less than or equal comparison", () => {
       const query = () => from<{ age: number }>("users").where((x) => x.age <= 100);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(expr.lte(expr.column("age"), expr.constant(100)));
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(expr.lte(expr.column("age"), expr.constant(100)));
     });
 
     it("should parse AND logical expression", () => {
@@ -88,8 +106,8 @@ describe("Basic Query Operations", () => {
         from<{ age: number; isActive: boolean }>("users").where((x) => x.age >= 18 && x.isActive);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(
         expr.and(expr.gte(expr.column("age"), expr.constant(18)), expr.booleanColumn("isActive")),
       );
     });
@@ -101,8 +119,8 @@ describe("Basic Query Operations", () => {
         );
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(
         expr.or(
           expr.eq(expr.column("role"), expr.constant("admin")),
           expr.booleanColumn("isAdmin"),
@@ -114,8 +132,8 @@ describe("Basic Query Operations", () => {
       const query = () => from<{ isActive: boolean }>("users").where((x) => !x.isActive);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(expr.not(expr.booleanColumn("isActive")));
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(expr.not(expr.booleanColumn("isActive")));
     });
 
     it("should parse complex nested logical expressions", () => {
@@ -125,8 +143,8 @@ describe("Basic Query Operations", () => {
         );
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal(
+      const whereOp = asWhereOperation(result);
+      expect(whereOp.predicate).to.deep.equal(
         expr.or(
           expr.and(expr.gte(expr.column("age"), expr.constant(18)), expr.booleanColumn("isActive")),
           expr.eq(expr.column("role"), expr.constant("admin")),
@@ -138,7 +156,8 @@ describe("Basic Query Operations", () => {
       const query = () => from<{ name: string }>("users").where((x) => x.name == "John");
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
+      const whereOp = asWhereOperation(result);
+      const predicate = whereOp.predicate as ComparisonExpression;
       expect(predicate.left.name).to.equal("name");
       expect(predicate.right.value).to.equal("John");
     });
@@ -147,7 +166,8 @@ describe("Basic Query Operations", () => {
       const query = () => from<{ isActive: boolean }>("users").where((x) => x.isActive == true);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
+      const whereOp = asWhereOperation(result);
+      const predicate = whereOp.predicate as ComparisonExpression;
       expect(predicate.type).to.equal("comparison");
       expect(predicate.right.type).to.equal("constant");
       expect(predicate.right.value).to.equal(true);
@@ -157,7 +177,8 @@ describe("Basic Query Operations", () => {
       const query = () => from<{ email: string | null }>("users").where((x) => x.email == null);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
+      const whereOp = asWhereOperation(result);
+      const predicate = whereOp.predicate as ComparisonExpression;
       expect(predicate.type).to.equal("comparison");
       expect(predicate.right.type).to.equal("constant");
       expect(predicate.right.value).to.equal(null);
@@ -171,10 +192,10 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("where");
-      const outerWhere = result as any;
+      const outerWhere = asWhereOperation(result);
       expect(outerWhere.predicate.type).to.equal("booleanColumn");
 
-      const innerWhere = outerWhere.source;
+      const innerWhere = asWhereOperation(outerWhere.source);
       expect(innerWhere.operationType).to.equal("where");
       expect(innerWhere.predicate.type).to.equal("comparison");
     });
@@ -184,10 +205,12 @@ describe("Basic Query Operations", () => {
         from<{ age: number }>("users").where((x) => x.age >= p.minAge);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
-      expect(predicate.right.type).to.equal("param");
-      expect(predicate.right.param).to.equal("p");
-      expect(predicate.right.property).to.equal("minAge");
+      const whereOp = asWhereOperation(result);
+      const predicate = whereOp.predicate as ComparisonExpression;
+      const paramRef = predicate.right as ParamRef;
+      expect(paramRef.type).to.equal("param");
+      expect(paramRef.param).to.equal("p");
+      expect(paramRef.property).to.equal("minAge");
     });
 
     it("should parse where with multiple external parameters", () => {
@@ -195,12 +218,15 @@ describe("Basic Query Operations", () => {
         from<{ age: number }>("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge);
       const result = parseQuery(query);
 
-      const predicate = (result as any).predicate;
+      const whereOp = asWhereOperation(result);
+      const predicate = whereOp.predicate as LogicalExpression;
       expect(predicate.type).to.equal("logical");
-      expect(predicate.left.right.param).to.equal("p");
-      expect(predicate.left.right.property).to.equal("minAge");
-      expect(predicate.right.right.param).to.equal("p");
-      expect(predicate.right.right.property).to.equal("maxAge");
+      const leftParamRef = (predicate.left as ComparisonExpression).right as ParamRef;
+      expect(leftParamRef.param).to.equal("p");
+      expect(leftParamRef.property).to.equal("minAge");
+      const rightParamRef = (predicate.right as ComparisonExpression).right as ParamRef;
+      expect(rightParamRef.param).to.equal("p");
+      expect(rightParamRef.property).to.equal("maxAge");
     });
   });
 
@@ -211,9 +237,10 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const selector = (result as any).selector;
-      expect(selector.type).to.equal("column");
-      expect(selector.name).to.equal("name");
+      const selectOp = asSelectOperation(result);
+      const columnSelector = selectOp.selector as ColumnExpression;
+      expect(columnSelector.type).to.equal("column");
+      expect(columnSelector.name).to.equal("name");
     });
 
     it("should parse object projection", () => {
@@ -224,12 +251,15 @@ describe("Basic Query Operations", () => {
         }));
       const result = parseQuery(query);
 
-      const selector = (result as any).selector;
-      expect(selector.type).to.equal("object");
-      expect(selector.properties.userId.type).to.equal("column");
-      expect(selector.properties.userId.name).to.equal("id");
-      expect(selector.properties.userName.type).to.equal("column");
-      expect(selector.properties.userName.name).to.equal("name");
+      const selectOp = asSelectOperation(result);
+      const objectSelector = selectOp.selector as ObjectExpression;
+      expect(objectSelector.type).to.equal("object");
+      const userIdProp = objectSelector.properties.userId as ColumnExpression;
+      expect(userIdProp.type).to.equal("column");
+      expect(userIdProp.name).to.equal("id");
+      const userNameProp = objectSelector.properties.userName as ColumnExpression;
+      expect(userNameProp.type).to.equal("column");
+      expect(userNameProp.name).to.equal("name");
     });
 
     it("should parse nested object projection", () => {
@@ -246,11 +276,15 @@ describe("Basic Query Operations", () => {
         }));
       const result = parseQuery(query);
 
-      const selector = (result as any).selector;
+      const selectOp = asSelectOperation(result);
+      const selector = selectOp.selector as ObjectExpression;
       expect(selector.type).to.equal("object");
-      expect(selector.properties.details.type).to.equal("object");
-      expect(selector.properties.details.properties.location.type).to.equal("object");
-      expect(selector.properties.details.properties.location.properties.city.name).to.equal("city");
+      const detailsProp = selector.properties.details as ObjectExpression;
+      expect(detailsProp.type).to.equal("object");
+      const locationProp = detailsProp.properties.location as ObjectExpression;
+      expect(locationProp.type).to.equal("object");
+      const cityProp = locationProp.properties.city as ColumnExpression;
+      expect(cityProp.name).to.equal("city");
     });
 
     it("should parse select with computed properties", () => {
@@ -261,9 +295,12 @@ describe("Basic Query Operations", () => {
         }));
       const result = parseQuery(query);
 
-      const selector = (result as any).selector;
-      expect(selector.properties.fullName.type).to.equal("concat");
-      expect(selector.properties.isAdult.type).to.equal("comparison");
+      const selectOp = asSelectOperation(result);
+      const selector = selectOp.selector as ObjectExpression;
+      const fullNameProp = selector.properties.fullName as ConcatExpression;
+      expect(fullNameProp.type).to.equal("concat");
+      const isAdultProp = selector.properties.isAdult as ComparisonExpression;
+      expect(isAdultProp.type).to.equal("comparison");
     });
 
     it("should parse select with arithmetic expressions", () => {
@@ -274,11 +311,14 @@ describe("Basic Query Operations", () => {
         }));
       const result = parseQuery(query);
 
-      const selector = (result as any).selector;
-      expect(selector.properties.totalCompensation.type).to.equal("arithmetic");
-      expect(selector.properties.totalCompensation.operator).to.equal("+");
-      expect(selector.properties.monthlySalary.type).to.equal("arithmetic");
-      expect(selector.properties.monthlySalary.operator).to.equal("/");
+      const selectOp = asSelectOperation(result);
+      const selector = selectOp.selector as ObjectExpression;
+      const totalCompProp = selector.properties.totalCompensation as ArithmeticExpression;
+      expect(totalCompProp.type).to.equal("arithmetic");
+      expect(totalCompProp.operator).to.equal("+");
+      const monthlySalaryProp = selector.properties.monthlySalary as ArithmeticExpression;
+      expect(monthlySalaryProp.type).to.equal("arithmetic");
+      expect(monthlySalaryProp.operator).to.equal("/");
     });
 
     it("should parse select after where", () => {
@@ -289,8 +329,8 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("where");
+      const selectOp = asSelectOperation(result);
+      expect(selectOp.source.operationType).to.equal("where");
     });
 
     it("should parse multiple select operations", () => {
@@ -301,7 +341,8 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const innerSelect = (result as any).source;
+      const outerSelect = asSelectOperation(result);
+      const innerSelect = asSelectOperation(outerSelect.source);
       expect(innerSelect.operationType).to.equal("select");
     });
 
@@ -313,11 +354,14 @@ describe("Basic Query Operations", () => {
         }));
       const result = parseQuery(query);
 
-      const selector = (result as any).selector;
-      expect(selector.properties.displayName.type).to.equal("concat");
-      expect(selector.properties.displayName.left.type).to.equal("param");
-      expect(selector.properties.displayName.left.param).to.equal("p");
-      expect(selector.properties.displayName.left.property).to.equal("prefix");
+      const selectOp = asSelectOperation(result);
+      const selector = selectOp.selector as ObjectExpression;
+      const displayNameProp = selector.properties.displayName as ConcatExpression;
+      expect(displayNameProp.type).to.equal("concat");
+      const leftParam = displayNameProp.left as ParamRef;
+      expect(leftParam.type).to.equal("param");
+      expect(leftParam.param).to.equal("p");
+      expect(leftParam.property).to.equal("prefix");
     });
   });
 
@@ -330,9 +374,10 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const whereOp = (result as any).source;
+      const selectOp = asSelectOperation(result);
+      const whereOp = asWhereOperation(selectOp.source);
       expect(whereOp.operationType).to.equal("where");
-      const fromOp = whereOp.source;
+      const fromOp = asFromOperation(whereOp.source);
       expect(fromOp.operationType).to.equal("from");
       expect(fromOp.table).to.equal("users");
     });
@@ -346,12 +391,15 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const where2 = (result as any).source;
+      const selectOp = asSelectOperation(result);
+      const where2 = asWhereOperation(selectOp.source);
       expect(where2.operationType).to.equal("where");
-      expect(where2.predicate.left.name).to.equal("role");
-      const where1 = where2.source;
+      const where2Predicate = where2.predicate as ComparisonExpression;
+      expect(where2Predicate.left.name).to.equal("role");
+      const where1 = asWhereOperation(where2.source);
       expect(where1.operationType).to.equal("where");
-      expect(where1.predicate.left.name).to.equal("age");
+      const where1Predicate = where1.predicate as ComparisonExpression;
+      expect(where1Predicate.left.name).to.equal("age");
     });
   });
 });

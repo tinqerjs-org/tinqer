@@ -5,6 +5,13 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery, from } from "../src/index.js";
+import {
+  asOrderByOperation,
+  asThenByOperation,
+  asTakeOperation,
+  asSelectOperation,
+} from "./test-utils/operation-helpers.js";
+import type { ConcatExpression, ArithmeticExpression } from "../src/expressions/expression.js";
 
 describe("Ordering Operations", () => {
   describe("orderBy()", () => {
@@ -13,8 +20,9 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
-      expect((result as any).keySelector).to.equal("name");
-      expect((result as any).descending).to.equal(false);
+      const orderByOp = asOrderByOperation(result);
+      expect(orderByOp.keySelector).to.equal("name");
+      expect(orderByOp.descending).to.equal(false);
     });
 
     it("should parse orderBy with numeric property", () => {
@@ -22,8 +30,9 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
-      expect((result as any).keySelector).to.equal("age");
-      expect((result as any).descending).to.equal(false);
+      const orderByOp = asOrderByOperation(result);
+      expect(orderByOp.keySelector).to.equal("age");
+      expect(orderByOp.descending).to.equal(false);
     });
 
     it("should parse orderBy after where", () => {
@@ -34,8 +43,8 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("where");
+      const orderByOp = asOrderByOperation(result);
+      expect(orderByOp.source.operationType).to.equal("where");
     });
 
     it("should parse orderBy before select", () => {
@@ -46,8 +55,8 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("orderBy");
+      const selectOp = asSelectOperation(result);
+      expect(selectOp.source.operationType).to.equal("orderBy");
     });
 
     it("should parse orderBy with computed expression", () => {
@@ -58,8 +67,9 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
-      const keySelector = (result as any).keySelector;
-      expect(keySelector.type).to.equal("concat");
+      const orderByOp = asOrderByOperation(result);
+      const concatExpr = orderByOp.keySelector as ConcatExpression;
+      expect(concatExpr.type).to.equal("concat");
     });
   });
 
@@ -70,8 +80,9 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
-      expect((result as any).keySelector).to.equal("createdAt");
-      expect((result as any).descending).to.equal(true);
+      const orderByOp = asOrderByOperation(result);
+      expect(orderByOp.keySelector).to.equal("createdAt");
+      expect(orderByOp.descending).to.equal(true);
     });
 
     it("should parse orderByDescending with numeric property", () => {
@@ -80,8 +91,9 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("orderBy");
-      expect((result as any).keySelector).to.equal("salary");
-      expect((result as any).descending).to.equal(true);
+      const orderByOp = asOrderByOperation(result);
+      expect(orderByOp.keySelector).to.equal("salary");
+      expect(orderByOp.descending).to.equal(true);
     });
   });
 
@@ -94,12 +106,13 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("thenBy");
-      expect((result as any).keySelector).to.equal("name");
-      expect((result as any).descending).to.equal(false);
+      const thenByOp = asThenByOperation(result);
+      expect(thenByOp.keySelector).to.equal("name");
+      expect(thenByOp.descending).to.equal(false);
 
-      const source = (result as any).source;
-      expect(source.operationType).to.equal("orderBy");
-      expect(source.keySelector).to.equal("category");
+      const orderByOp = asOrderByOperation(thenByOp.source);
+      expect(orderByOp.operationType).to.equal("orderBy");
+      expect(orderByOp.keySelector).to.equal("category");
     });
 
     it("should parse multiple thenBy operations", () => {
@@ -111,15 +124,16 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("thenBy");
-      expect((result as any).keySelector).to.equal("street");
+      const lastThenByOp = asThenByOperation(result);
+      expect(lastThenByOp.keySelector).to.equal("street");
 
-      const thenBy1 = (result as any).source;
-      expect(thenBy1.operationType).to.equal("thenBy");
-      expect(thenBy1.keySelector).to.equal("city");
+      const middleThenByOp = asThenByOperation(lastThenByOp.source);
+      expect(middleThenByOp.operationType).to.equal("thenBy");
+      expect(middleThenByOp.keySelector).to.equal("city");
 
-      const orderBy = thenBy1.source;
-      expect(orderBy.operationType).to.equal("orderBy");
-      expect(orderBy.keySelector).to.equal("country");
+      const orderByOp = asOrderByOperation(middleThenByOp.source);
+      expect(orderByOp.operationType).to.equal("orderBy");
+      expect(orderByOp.keySelector).to.equal("country");
     });
 
     it("should parse thenBy with computed expression", () => {
@@ -130,9 +144,10 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("thenBy");
-      const keySelector = (result as any).keySelector;
-      expect(keySelector.type).to.equal("arithmetic");
-      expect(keySelector.operator).to.equal("-");
+      const thenByOp = asThenByOperation(result);
+      const arithmeticExpr = thenByOp.keySelector as ArithmeticExpression;
+      expect(arithmeticExpr.type).to.equal("arithmetic");
+      expect(arithmeticExpr.operator).to.equal("-");
     });
   });
 
@@ -145,8 +160,9 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("thenBy");
-      expect((result as any).keySelector).to.equal("salary");
-      expect((result as any).descending).to.equal(true);
+      const thenByOp = asThenByOperation(result);
+      expect(thenByOp.keySelector).to.equal("salary");
+      expect(thenByOp.descending).to.equal(true);
     });
 
     it("should parse mixed thenBy and thenByDescending", () => {
@@ -158,11 +174,12 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("thenBy");
-      expect((result as any).descending).to.equal(false);
+      const finalThenByOp = asThenByOperation(result);
+      expect(finalThenByOp.descending).to.equal(false);
 
-      const thenByDesc = (result as any).source;
-      expect(thenByDesc.operationType).to.equal("thenBy");
-      expect(thenByDesc.descending).to.equal(true);
+      const thenByDescOp = asThenByOperation(finalThenByOp.source);
+      expect(thenByDescOp.operationType).to.equal("thenBy");
+      expect(thenByDescOp.descending).to.equal(true);
     });
   });
 
@@ -177,12 +194,12 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("select");
-      const thenBy = (result as any).source;
-      expect(thenBy.operationType).to.equal("thenBy");
-      const orderBy = thenBy.source;
-      expect(orderBy.operationType).to.equal("orderBy");
-      const where = orderBy.source;
-      expect(where.operationType).to.equal("where");
+      const selectOp = asSelectOperation(result);
+      const thenByOp = asThenByOperation(selectOp.source);
+      expect(thenByOp.operationType).to.equal("thenBy");
+      const orderByOp = asOrderByOperation(thenByOp.source);
+      expect(orderByOp.operationType).to.equal("orderBy");
+      expect(orderByOp.source.operationType).to.equal("where");
     });
 
     it("should parse ordering with external parameters", () => {
@@ -204,10 +221,11 @@ describe("Ordering Operations", () => {
       const result = parseQuery(query);
 
       expect(result?.operationType).to.equal("take");
-      expect((result as any).count).to.equal(10);
-      const orderBy = (result as any).source;
-      expect(orderBy.operationType).to.equal("orderBy");
-      expect(orderBy.descending).to.equal(true);
+      const takeOp = asTakeOperation(result);
+      expect(takeOp.count).to.equal(10);
+      const orderByOp = asOrderByOperation(takeOp.source);
+      expect(orderByOp.operationType).to.equal("orderBy");
+      expect(orderByOp.descending).to.equal(true);
     });
   });
 });

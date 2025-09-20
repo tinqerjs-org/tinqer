@@ -5,6 +5,20 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery, from } from "../src/index.js";
+import {
+  asFromOperation,
+  asWhereOperation,
+  asSelectOperation,
+  asOrderByOperation,
+  asTakeOperation,
+} from "./test-utils/operation-helpers.js";
+import type {
+  ComparisonExpression,
+  ObjectExpression,
+  LogicalExpression,
+  BooleanMethodExpression,
+  ColumnExpression,
+} from "../src/expressions/expression.js";
 
 describe("parseQuery", () => {
   it("should parse a simple from query", () => {
@@ -13,7 +27,8 @@ describe("parseQuery", () => {
 
     expect(result).to.not.be.null;
     expect(result?.operationType).to.equal("from");
-    expect((result as any).table).to.equal("users");
+    const fromOp = asFromOperation(result);
+    expect(fromOp.table).to.equal("users");
   });
 
   it("should parse a where clause", () => {
@@ -22,8 +37,10 @@ describe("parseQuery", () => {
 
     expect(result).to.not.be.null;
     expect(result?.operationType).to.equal("where");
-    expect((result as any).source.operationType).to.equal("from");
-    expect((result as any).predicate.type).to.equal("comparison");
+    const whereOp = asWhereOperation(result);
+    expect(whereOp.source.operationType).to.equal("from");
+    const predicate = whereOp.predicate as ComparisonExpression;
+    expect(predicate.type).to.equal("comparison");
   });
 
   it("should parse a select projection", () => {
@@ -36,36 +53,40 @@ describe("parseQuery", () => {
 
     expect(result).to.not.be.null;
     expect(result?.operationType).to.equal("select");
-    expect((result as any).selector.type).to.equal("object");
+    const selectOp = asSelectOperation(result);
+    const objectSelector = selectOp.selector as ObjectExpression;
+    expect(objectSelector.type).to.equal("object");
   });
 
   it("should parse a complex query chain", () => {
-    const query = (): any =>
-      from("users" as any)
-        .where((x: any) => x.age >= 18 && x.isActive)
-        .select((x: any) => ({ id: x.id, name: x.name }))
-        .orderBy((x: any) => x.name)
+    const query = () =>
+      from<{ id: number; name: string; age: number; isActive: boolean }>("users")
+        .where((x) => x.age >= 18 && x.isActive)
+        .select((x) => ({ id: x.id, name: x.name }))
+        .orderBy((x) => x.name)
         .take(10);
     const result = parseQuery(query);
 
     expect(result).to.not.be.null;
     expect(result?.operationType).to.equal("take");
-    expect((result as any).count).to.equal(10);
+    const takeOp = asTakeOperation(result);
+    expect(takeOp.count).to.equal(10);
 
-    const orderBy: any = (result as any).source;
-    expect(orderBy.operationType).to.equal("orderBy");
-    expect(orderBy.keySelector).to.equal("name");
+    const orderByOp = asOrderByOperation(takeOp.source);
+    expect(orderByOp.operationType).to.equal("orderBy");
+    expect(orderByOp.keySelector).to.equal("name");
 
-    const select: any = orderBy.source;
-    expect(select.operationType).to.equal("select");
+    const selectOp = asSelectOperation(orderByOp.source);
+    expect(selectOp.operationType).to.equal("select");
 
-    const where: any = select.source;
-    expect(where.operationType).to.equal("where");
-    expect(where.predicate.type).to.equal("logical");
+    const whereOp = asWhereOperation(selectOp.source);
+    expect(whereOp.operationType).to.equal("where");
+    const predicate = whereOp.predicate as LogicalExpression;
+    expect(predicate.type).to.equal("logical");
 
-    const from: any = where.source;
-    expect(from.operationType).to.equal("from");
-    expect(from.table).to.equal("users");
+    const fromOp = asFromOperation(whereOp.source);
+    expect(fromOp.operationType).to.equal("from");
+    expect(fromOp.table).to.equal("users");
   });
 
   it("should parse query with external parameters", () => {
@@ -75,7 +96,8 @@ describe("parseQuery", () => {
 
     expect(result).to.not.be.null;
     expect(result?.operationType).to.equal("where");
-    const predicate = (result as any).predicate;
+    const whereOp = asWhereOperation(result);
+    const predicate = whereOp.predicate as ComparisonExpression;
     expect(predicate.type).to.equal("comparison");
     expect(predicate.left.type).to.equal("column");
     expect(predicate.left.name).to.equal("age");
@@ -103,10 +125,12 @@ describe("parseQuery", () => {
     const result = parseQuery(query);
 
     expect(result).to.not.be.null;
-    const predicate = (result as any).predicate;
+    const whereOp = asWhereOperation(result);
+    const predicate = whereOp.predicate as BooleanMethodExpression;
     expect(predicate.type).to.equal("booleanMethod");
     expect(predicate.method).to.equal("startsWith");
     expect(predicate.object.type).to.equal("column");
-    expect(predicate.object.name).to.equal("name");
+    const objectColumn = predicate.object as ColumnExpression;
+    expect(objectColumn.name).to.equal("name");
   });
 });

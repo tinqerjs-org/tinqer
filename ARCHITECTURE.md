@@ -496,10 +496,10 @@ function parseQuery<TParams, TResult>(
 function parseLambda(fn: Function): Expression;
 
 // Converts AST to expressions
-function convertAstToExpression(ast: any, context: Context): Expression;
+function convertAstToExpression(ast: unknown, context: Context): Expression;
 
 // Converts method chains to operations
-function convertAstToQueryOperation(ast: any): QueryOperation;
+function convertAstToQueryOperation(ast: unknown): QueryOperation;
 ```
 
 ### SQL Adapter API
@@ -512,7 +512,7 @@ function query<TParams, TResult>(
 ): { sql: string; params: TParams };
 
 // SQL generation
-function generateSql(operation: QueryOperation, params: any): string;
+function generateSql(operation: QueryOperation, params: unknown): string;
 ```
 
 ## Complete Example Flow
