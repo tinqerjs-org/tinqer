@@ -76,9 +76,17 @@ export class Queryable<T> {
 
     const expression = AstConverter.convert(ast as never, context);
 
+    // Extract lambda body if it's a lambda
+    let selectExpr: Expression;
+    if (expression.type === "lambda") {
+      selectExpr = (expression as LambdaExpression).body;
+    } else {
+      selectExpr = expression;
+    }
+
     const newQueryable = new Queryable<U>(this.tableName, this.parser);
     newQueryable.whereExpressions = [...this.whereExpressions];
-    newQueryable.selectExpression = expression;
+    newQueryable.selectExpression = selectExpr;
     newQueryable.joinExpressions = [...this.joinExpressions];
     newQueryable.orderByExpressions = [...this.orderByExpressions];
     newQueryable.groupByExpression = this.groupByExpression;
