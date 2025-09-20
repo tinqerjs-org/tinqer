@@ -7,10 +7,7 @@ import type {
   ThenByOperation,
   QueryOperation,
 } from "../query-tree/operations.js";
-import type {
-  ValueExpression,
-  ColumnExpression,
-} from "../expressions/expression.js";
+import type { ValueExpression, ColumnExpression } from "../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,

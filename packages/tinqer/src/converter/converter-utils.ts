@@ -2,11 +2,7 @@
  * Utility functions and types for AST conversion
  */
 
-import type {
-  Expression,
-  BooleanExpression,
-  ColumnExpression,
-} from "../expressions/expression.js";
+import type { Expression, BooleanExpression, ColumnExpression } from "../expressions/expression.js";
 
 import type {
   Statement,

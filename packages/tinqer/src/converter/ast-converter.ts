@@ -23,7 +23,7 @@ import { convertWhereOperation } from "./where.js";
 import { convertSelectOperation } from "./select.js";
 import { convertOrderByOperation, convertThenByOperation } from "./orderby.js";
 import { convertTakeOperation } from "./take.js";
-import { convertSkipOperation, convertSkipWhileOperation } from "./skip.js";
+import { convertSkipOperation } from "./skip.js";
 import { convertGroupByOperation } from "./groupby.js";
 import { convertDistinctOperation } from "./distinct.js";
 import { convertCountOperation } from "./count.js";
@@ -157,8 +157,6 @@ export function convertMethodChain(
           return convertTakeOperation(callAst, source, context);
         case "skip":
           return convertSkipOperation(callAst, source, context);
-        case "skipWhile":
-          return convertSkipWhileOperation(callAst, source, context);
         case "first":
           return convertFirstOperation(callAst, source, context, false);
         case "firstOrDefault":

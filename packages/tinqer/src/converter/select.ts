@@ -3,10 +3,7 @@
  */
 
 import type { SelectOperation, QueryOperation } from "../query-tree/operations.js";
-import type {
-  ValueExpression,
-  ObjectExpression,
-} from "../expressions/expression.js";
+import type { ValueExpression, ObjectExpression } from "../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,

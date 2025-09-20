@@ -12,7 +12,7 @@ import {
   asOrderByOperation,
 } from "./test-utils/operation-helpers.js";
 
-describe("Simple Grouping Operations", () => {
+describe("GROUP BY Operation", () => {
   describe("groupBy()", () => {
     it("should parse simple groupBy with column selector", () => {
       const query = () =>

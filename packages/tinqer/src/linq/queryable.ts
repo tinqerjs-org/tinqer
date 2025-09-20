@@ -157,10 +157,6 @@ export class Queryable<T> {
     return this;
   }
 
-  skipWhile(_predicate: (_item: T) => boolean): Queryable<T> {
-    return this;
-  }
-
   // ==================== Set Operations ====================
 
   distinct(): Queryable<T> {

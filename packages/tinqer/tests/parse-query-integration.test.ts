@@ -21,7 +21,7 @@ import type {
 } from "../src/expressions/expression.js";
 import type { ParamRef } from "../src/query-tree/operations.js";
 
-describe("parseQuery", () => {
+describe("Parse Query Integration Tests", () => {
   it("should parse a simple from query", () => {
     const query = () => from<{ id: number; name: string }>("users");
     const result = parseQuery(query);

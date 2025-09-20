@@ -113,30 +113,12 @@ export interface TakeOperation extends QueryOperation {
 }
 
 /**
- * TAKE WHILE operation
- */
-export interface TakeWhileOperation extends QueryOperation {
-  operationType: "takeWhile";
-  source: QueryOperation;
-  predicate: BooleanExpression;
-}
-
-/**
  * SKIP operation (OFFSET)
  */
 export interface SkipOperation extends QueryOperation {
   operationType: "skip";
   source: QueryOperation;
   count: number | ParamRef;
-}
-
-/**
- * SKIP WHILE operation
- */
-export interface SkipWhileOperation extends QueryOperation {
-  operationType: "skipWhile";
-  source: QueryOperation;
-  predicate: BooleanExpression;
 }
 
 /**
