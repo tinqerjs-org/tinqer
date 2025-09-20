@@ -70,6 +70,11 @@ web_modules/
 .env.*
 !.env.example
 
+# Configuration files
+config.json
+config.headers-test.json
+!config.example.json
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -137,3 +142,25 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Development environment
+devenv/pgdata/
+
+# Test output
+test-output.txt
+test-results.json
+test-results.txt
+.tests/
+test-pod-*-backup-*.json
+*-backup-*.json
+
+# Analysis working directory
+.analysis/
+
+# Task tracking directory
+.todos/
+
+# IDE and editor directories
+.vscode/
+.idea/
+.claude/

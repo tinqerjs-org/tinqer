@@ -1,0 +1,61 @@
+# Ignore all node_modules
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+*.min.js
+*.bundle.js
+
+# Database files
+database/webpods/migrations/
+database/webpods/seeds/
+*.sql
+
+# Generated files
+**/generated/
+*.generated.*
+
+# Config files that might have special formatting
+.env
+.env.*
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation that might have special formatting
+CHANGELOG.md
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

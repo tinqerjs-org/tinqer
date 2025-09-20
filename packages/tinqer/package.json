@@ -1,0 +1,43 @@
+{
+  "name": "@webpods/tinqer",
+  "version": "0.0.1",
+  "description": "LINQ to SQL for TypeScript",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha tests/**/*.test.ts",
+    "dev": "tsx watch src/index.ts",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/chai": "5.2.2",
+    "@types/mocha": "10.0.10",
+    "@types/node": "24.3.3",
+    "chai": "5.3.3",
+    "mocha": "11.7.2",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2"
+  },
+  "keywords": [
+    "linq",
+    "sql",
+    "query",
+    "builder",
+    "typescript",
+    "orm",
+    "database",
+    "postgres",
+    "mysql",
+    "sqlite"
+  ],
+  "author": "WebPods",
+  "license": "MIT"
+}
