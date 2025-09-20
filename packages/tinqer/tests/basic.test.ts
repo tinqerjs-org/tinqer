@@ -69,12 +69,12 @@ describe("Basic Queries", () => {
     expect(query.orderBy).to.have.lengthOf(2);
     expect(query.orderBy![0]).to.deep.equal({
       type: "order",
-      expression: expr.lambda(expr.member("name", u), ["u"], "users"),
+      expression: expr.member("name", u),  // Now just the body, not wrapped in lambda
       direction: "ASC",
     });
     expect(query.orderBy![1]).to.deep.equal({
       type: "order",
-      expression: expr.lambda(expr.member("age", u), ["u"], "users"),
+      expression: expr.member("age", u),  // Now just the body, not wrapped in lambda
       direction: "DESC",
     });
   });
