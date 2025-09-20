@@ -204,9 +204,17 @@ export class Queryable<T> {
 
     const expression = AstConverter.convert(ast as never, context);
 
+    // Extract lambda body if it's a lambda
+    let orderByExpr: Expression;
+    if (expression.type === "lambda") {
+      orderByExpr = (expression as LambdaExpression).body;
+    } else {
+      orderByExpr = expression;
+    }
+
     const orderExpr: OrderExpression = {
       type: "order",
-      expression,
+      expression: orderByExpr,
       direction: "ASC",
     };
 
@@ -228,9 +236,17 @@ export class Queryable<T> {
 
     const expression = AstConverter.convert(ast as never, context);
 
+    // Extract lambda body if it's a lambda
+    let orderByExpr: Expression;
+    if (expression.type === "lambda") {
+      orderByExpr = (expression as LambdaExpression).body;
+    } else {
+      orderByExpr = expression;
+    }
+
     const orderExpr: OrderExpression = {
       type: "order",
-      expression,
+      expression: orderByExpr,
       direction: "DESC",
     };
 
@@ -252,8 +268,16 @@ export class Queryable<T> {
 
     const expression = AstConverter.convert(ast as never, context);
 
+    // Extract lambda body if it's a lambda
+    let groupByExpr: Expression;
+    if (expression.type === "lambda") {
+      groupByExpr = (expression as LambdaExpression).body;
+    } else {
+      groupByExpr = expression;
+    }
+
     const newQueryable = this.clone();
-    newQueryable.groupByExpression = expression;
+    newQueryable.groupByExpression = groupByExpr;
     return newQueryable;
   }
 

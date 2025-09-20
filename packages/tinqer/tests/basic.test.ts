@@ -35,15 +35,12 @@ describe("Basic Queries", () => {
     const users = new Queryable<User>("users");
     const query = users.select((u) => ({ userId: u.id, userName: u.name })).build();
 
+    // Now select contains just the body (object expression), not the lambda wrapper
     expect(query.select).to.deep.equal(
-      expr.lambda(
-        expr.object([
-          { key: "userId", value: expr.member("id", u) },
-          { key: "userName", value: expr.member("name", u) },
-        ]),
-        ["u"],
-        "users",
-      ),
+      expr.object([
+        { key: "userId", value: expr.member("id", u) },
+        { key: "userName", value: expr.member("name", u) },
+      ]),
     );
   });
 
