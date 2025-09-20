@@ -6,7 +6,6 @@ import {
   assertBinaryExpression,
   assertObjectExpression,
 } from "./test-helpers.js";
-import type { LambdaExpression } from "../src/types/expressions.js";
 
 // Define test interfaces
 interface User {
@@ -58,8 +57,7 @@ describe("String Operations", () => {
       .where((u) => u.email.toLowerCase() === "john@example.com")
       .build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const binExpr = assertBinaryExpression(whereExpr.body);
+    const binExpr = assertBinaryExpression(query.where);
     const callExpr = assertCallExpression(binExpr.left);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("toLowerCase");
@@ -71,8 +69,7 @@ describe("String Operations", () => {
       .where((u) => u.code.toUpperCase() === "ABC123")
       .build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const binExpr = assertBinaryExpression(whereExpr.body);
+    const binExpr = assertBinaryExpression(query.where);
     const callExpr = assertCallExpression(binExpr.left);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("toUpperCase");
@@ -88,16 +85,15 @@ describe("String Operations", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Select expression is already extracted, no lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     expect(objExpr.properties).to.have.lengthOf(4);
   });
 
   it("should handle trim method", () => {
     const query = new Queryable<User>("users").where((u) => u.name.trim() === "John Doe").build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const binExpr = assertBinaryExpression(whereExpr.body);
+    const binExpr = assertBinaryExpression(query.where);
     const callExpr = assertCallExpression(binExpr.left);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("trim");
@@ -111,8 +107,8 @@ describe("String Operations", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Select expression is already extracted, no lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     const binExpr = assertBinaryExpression(objExpr.properties[0]?.value);
     expect(binExpr.type).to.equal("binary");
     expect(binExpr.operator).to.equal("+");
@@ -123,8 +119,7 @@ describe("String Operations", () => {
       .where((c) => c.value.substring(0, 3) === "ABC")
       .build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const binExpr = assertBinaryExpression(whereExpr.body);
+    const binExpr = assertBinaryExpression(query.where);
     const callExpr = assertCallExpression(binExpr.left);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("substring");
@@ -136,8 +131,7 @@ describe("String Operations", () => {
       .where((p) => p.name.indexOf("Phone") >= 0)
       .build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const binExpr = assertBinaryExpression(whereExpr.body);
+    const binExpr = assertBinaryExpression(query.where);
     const callExpr = assertCallExpression(binExpr.left);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("indexOf");
@@ -151,8 +145,8 @@ describe("String Operations", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Select expression is already extracted, no lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     const callExpr = assertCallExpression(objExpr.properties[1]?.value);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("replace");
@@ -165,8 +159,8 @@ describe("String Operations", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Select expression is already extracted, no lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     const callExpr = assertCallExpression(objExpr.properties[0]?.value);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("split");
@@ -175,8 +169,7 @@ describe("String Operations", () => {
   it("should handle startsWith method", () => {
     const query = new Queryable<File>("files").where((f) => f.name.startsWith("doc_")).build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const callExpr = assertCallExpression(whereExpr.body);
+    const callExpr = assertCallExpression(query.where);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("startsWith");
   });
@@ -184,8 +177,7 @@ describe("String Operations", () => {
   it("should handle endsWith method", () => {
     const query = new Queryable<File>("files").where((f) => f.name.endsWith(".pdf")).build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const callExpr = assertCallExpression(whereExpr.body);
+    const callExpr = assertCallExpression(query.where);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("endsWith");
   });
@@ -195,8 +187,7 @@ describe("String Operations", () => {
       .where((a) => a.content.includes("JavaScript"))
       .build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const callExpr = assertCallExpression(whereExpr.body);
+    const callExpr = assertCallExpression(query.where);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("includes");
   });
@@ -204,8 +195,7 @@ describe("String Operations", () => {
   it("should handle charAt method", () => {
     const query = new Queryable<Code>("codes").where((c) => c.value.charAt(0) === "A").build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const binExpr = assertBinaryExpression(whereExpr.body);
+    const binExpr = assertBinaryExpression(query.where);
     const callExpr = assertCallExpression(binExpr.left);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("charAt");
@@ -214,8 +204,7 @@ describe("String Operations", () => {
   it("should handle length property", () => {
     const query = new Queryable<Comment>("comments").where((c) => c.text.length > 100).build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const binExpr = assertBinaryExpression(whereExpr.body);
+    const binExpr = assertBinaryExpression(query.where);
     const memberExpr = assertMemberExpression(binExpr.left);
     expect(memberExpr.type).to.equal("member");
     expect(memberExpr.property).to.equal("length");
@@ -226,8 +215,7 @@ describe("String Operations", () => {
       .where((u) => u.name.trim().toLowerCase() === "john doe")
       .build();
 
-    const whereExpr = query.where as LambdaExpression;
-    const binExpr = assertBinaryExpression(whereExpr.body);
+    const binExpr = assertBinaryExpression(query.where);
     const callExpr = assertCallExpression(binExpr.left);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("toLowerCase");
@@ -243,8 +231,8 @@ describe("String Operations", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Select expression is already extracted, no lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     const callExpr = assertCallExpression(objExpr.properties[0]?.value);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("padStart");
@@ -257,8 +245,8 @@ describe("String Operations", () => {
       }))
       .build();
 
-    const selectExpr = query.select as LambdaExpression;
-    const objExpr = assertObjectExpression(selectExpr.body);
+    // Select expression is already extracted, no lambda wrapper
+    const objExpr = assertObjectExpression(query.select);
     const callExpr = assertCallExpression(objExpr.properties[0]?.value);
     expect(callExpr.type).to.equal("call");
     expect(callExpr.method).to.equal("padEnd");

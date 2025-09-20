@@ -1,7 +1,13 @@
 /**
  * Queryable Class
- * Fluent API for building type-safe queries
+ * Fluent API for building type-safe queries with LINQ-style type safety
  */
+
+/**
+ * Helper types for strict type safety
+ * These can be extended to enforce property-level type constraints
+ */
+// Reserved for future type constraints
 
 import type {
   Expression,
@@ -26,6 +32,10 @@ import type {
 import { OxcParser } from "../parser/oxc-parser.js";
 import { AstConverter, ConversionContext } from "../converter/ast-converter.js";
 
+/**
+ * Type-safe queryable with strict typing similar to .NET LINQ
+ * @template T The entity type being queried
+ */
 export class Queryable<T> {
   private parser: OxcParser;
   private tableName: string;
@@ -45,7 +55,14 @@ export class Queryable<T> {
   }
 
   /**
-   * WHERE clause
+   * Static factory method for better type inference
+   */
+  static from<TEntity>(tableName: string): Queryable<TEntity> {
+    return new Queryable<TEntity>(tableName);
+  }
+
+  /**
+   * WHERE clause - Strictly typed boolean predicate
    */
   where(predicate: ((item: T) => boolean) | string): Queryable<T> {
     const lambdaString = typeof predicate === "string" ? predicate : predicate.toString();
@@ -71,9 +88,9 @@ export class Queryable<T> {
   }
 
   /**
-   * SELECT projection
+   * SELECT projection - Strictly typed transformation
    */
-  select<U>(selector: ((item: T) => U) | string): Queryable<U> {
+  select<TResult>(selector: ((item: T) => TResult) | string): Queryable<TResult> {
     const lambdaString = typeof selector === "string" ? selector : selector.toString();
     const ast = this.parser.parse(lambdaString);
 
@@ -91,7 +108,7 @@ export class Queryable<T> {
       selectExpr = expression as SelectExpression;
     }
 
-    const newQueryable = new Queryable<U>(this.tableName, this.parser);
+    const newQueryable = new Queryable<TResult>(this.tableName, this.parser);
     newQueryable.whereExpressions = [...this.whereExpressions];
     newQueryable.selectExpression = selectExpr;
     newQueryable.joinExpressions = [...this.joinExpressions];
@@ -105,15 +122,15 @@ export class Queryable<T> {
   }
 
   /**
-   * INNER JOIN
+   * INNER JOIN - Type-safe join ensuring key compatibility
    */
-  join<TOther, TResult>(
+  join<TOther, TKey, TResult>(
     other: Queryable<TOther>,
-    outerKeySelector: ((item: T) => unknown) | string,
-    innerKeySelector: ((item: TOther) => unknown) | string,
+    outerKeySelector: ((item: T) => TKey) | string,
+    innerKeySelector: ((item: TOther) => TKey) | string,
     resultSelector: ((outer: T, inner: TOther) => TResult) | string,
   ): Queryable<TResult> {
-    return this.addJoin(
+    return this.addJoin<TOther, TKey, TResult>(
       "INNER",
       other,
       outerKeySelector,
@@ -123,22 +140,22 @@ export class Queryable<T> {
   }
 
   /**
-   * LEFT JOIN
+   * LEFT JOIN - Type-safe join with nullable inner
    */
-  leftJoin<TOther, TResult>(
+  leftJoin<TOther, TKey, TResult>(
     other: Queryable<TOther>,
-    outerKeySelector: ((item: T) => unknown) | string,
-    innerKeySelector: ((item: TOther) => unknown) | string,
+    outerKeySelector: ((item: T) => TKey) | string,
+    innerKeySelector: ((item: TOther) => TKey) | string,
     resultSelector: ((outer: T, inner: TOther | null) => TResult) | string,
   ): Queryable<TResult> {
-    return this.addJoin("LEFT", other, outerKeySelector, innerKeySelector, resultSelector);
+    return this.addJoin<TOther, TKey, TResult>("LEFT", other, outerKeySelector, innerKeySelector, resultSelector);
   }
 
-  private addJoin<TOther, TResult>(
+  private addJoin<TOther, TKey, TResult>(
     kind: "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS",
     other: Queryable<TOther>,
-    outerKeySelector: ((item: T) => unknown) | string,
-    innerKeySelector: ((item: TOther) => unknown) | string,
+    outerKeySelector: ((item: T) => TKey) | string,
+    innerKeySelector: ((item: TOther) => TKey) | string,
     resultSelector: ((outer: T, inner: TOther | null) => TResult) | string,
   ): Queryable<TResult> {
     // Parse outer key selector
@@ -214,9 +231,9 @@ export class Queryable<T> {
   }
 
   /**
-   * ORDER BY ascending
+   * ORDER BY ascending - Strictly typed key selector
    */
-  orderBy<K>(keySelector: ((item: T) => K) | string): Queryable<T> {
+  orderBy<TKey>(keySelector: ((item: T) => TKey) | string): Queryable<T> {
     const lambdaString = typeof keySelector === "string" ? keySelector : keySelector.toString();
     const ast = this.parser.parse(lambdaString);
 
@@ -246,9 +263,9 @@ export class Queryable<T> {
   }
 
   /**
-   * ORDER BY descending
+   * ORDER BY descending - Strictly typed key selector
    */
-  orderByDescending<K>(keySelector: ((item: T) => K) | string): Queryable<T> {
+  orderByDescending<TKey>(keySelector: ((item: T) => TKey) | string): Queryable<T> {
     const lambdaString = typeof keySelector === "string" ? keySelector : keySelector.toString();
     const ast = this.parser.parse(lambdaString);
 
@@ -278,9 +295,9 @@ export class Queryable<T> {
   }
 
   /**
-   * GROUP BY
+   * GROUP BY - Strictly typed grouping key
    */
-  groupBy<K>(keySelector: ((item: T) => K) | string): Queryable<T> {
+  groupBy<TKey>(keySelector: ((item: T) => TKey) | string): Queryable<T> {
     const lambdaString = typeof keySelector === "string" ? keySelector : keySelector.toString();
     const ast = this.parser.parse(lambdaString);
 
@@ -330,9 +347,11 @@ export class Queryable<T> {
   }
 
   /**
-   * LIMIT - accepts a number or expression
+   * LIMIT - Strictly typed limit with parameters
    */
-  take(limit: number | ((params: any) => number) | string): Queryable<T> {
+  take<TParams = Record<string, unknown>>(
+    limit: number | ((params: TParams) => number) | string
+  ): Queryable<T> {
     const newQueryable = this.clone();
 
     if (typeof limit === "number") {
@@ -364,9 +383,11 @@ export class Queryable<T> {
   }
 
   /**
-   * OFFSET - accepts a number or expression
+   * OFFSET - Strictly typed offset with parameters
    */
-  skip(offset: number | ((params: any) => number) | string): Queryable<T> {
+  skip<TParams = Record<string, unknown>>(
+    offset: number | ((params: TParams) => number) | string
+  ): Queryable<T> {
     const newQueryable = this.clone();
 
     if (typeof offset === "number") {
@@ -407,7 +428,7 @@ export class Queryable<T> {
   }
 
   /**
-   * COUNT aggregate
+   * COUNT aggregate - Returns count of items
    */
   count(): QueryExpression {
     const query = this.build();
@@ -420,7 +441,7 @@ export class Queryable<T> {
   }
 
   /**
-   * SUM aggregate
+   * SUM aggregate - Strictly typed numeric selector
    */
   sum(selector: ((item: T) => number) | string): QueryExpression {
     const lambdaString = typeof selector === "string" ? selector : selector.toString();
@@ -450,7 +471,7 @@ export class Queryable<T> {
   }
 
   /**
-   * AVG aggregate
+   * AVG aggregate - Strictly typed numeric selector
    */
   avg(selector: ((item: T) => number) | string): QueryExpression {
     const lambdaString = typeof selector === "string" ? selector : selector.toString();
@@ -480,9 +501,9 @@ export class Queryable<T> {
   }
 
   /**
-   * MIN aggregate
+   * MIN aggregate - Works with any comparable type
    */
-  min(selector: ((item: T) => unknown) | string): QueryExpression {
+  min<TValue>(selector: ((item: T) => TValue) | string): QueryExpression {
     const lambdaString = typeof selector === "string" ? selector : selector.toString();
     const ast = this.parser.parse(lambdaString);
 
@@ -510,9 +531,9 @@ export class Queryable<T> {
   }
 
   /**
-   * MAX aggregate
+   * MAX aggregate - Works with any comparable type
    */
-  max(selector: ((item: T) => unknown) | string): QueryExpression {
+  max<TValue>(selector: ((item: T) => TValue) | string): QueryExpression {
     const lambdaString = typeof selector === "string" ? selector : selector.toString();
     const ast = this.parser.parse(lambdaString);
 
