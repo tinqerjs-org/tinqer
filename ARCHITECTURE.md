@@ -5,17 +5,21 @@ Tinqer is a LINQ-to-SQL query builder for TypeScript that converts lambda expres
 ## Core Design Principles
 
 ### Expression Trees
+
 Tinqer uses expression trees to represent queries, matching the design of .NET LINQ. Each query operation wraps its source operation, creating a nested tree structure that preserves the complete operation chain. This allows accurate SQL generation that respects operation order and composition.
 
 ### Runtime Lambda Parsing
+
 TypeScript lambdas are parsed at runtime using the OXC parser to extract their abstract syntax tree (AST). The AST is then converted into strongly-typed expression objects that represent the query logic.
 
 ### Type Safety
+
 The library provides compile-time type safety through TypeScript's type system while maintaining runtime flexibility. Operations like `select<TResult>` properly transform types through the query chain.
 
 ## System Components
 
 ### 1. Parser Layer
+
 **Location**: `packages/tinqer/src/parser/`
 
 The parser layer wraps the OXC JavaScript/TypeScript parser to convert lambda function strings into AST representations.
@@ -24,6 +28,7 @@ The parser layer wraps the OXC JavaScript/TypeScript parser to convert lambda fu
 - **Parser Module**: High-level parsing API that coordinates parsing and conversion
 
 ### 2. Converter Layer
+
 **Location**: `packages/tinqer/src/converter/`
 
 Converts OXC AST nodes into Tinqer's expression tree representation.
@@ -32,17 +37,20 @@ Converts OXC AST nodes into Tinqer's expression tree representation.
 - **ConversionContext**: Maintains context during conversion (parameter origins, external params)
 
 Key responsibilities:
+
 - Transform JavaScript AST nodes into typed Expression objects
 - Handle parameter binding and scope resolution
 - Extract lambda bodies (removing wrapper functions)
 - Support for operators, member access, method calls, and literals
 
 ### 3. Expression Types
+
 **Location**: `packages/tinqer/src/types/`
 
 Strongly-typed representation of query expressions using discriminated unions.
 
 Core expression types:
+
 - **ConstantExpression**: Literal values
 - **ParameterExpression**: Lambda parameters with origin tracking
 - **MemberExpression**: Property/field access
@@ -52,17 +60,20 @@ Core expression types:
 - **LambdaExpression**: Lambda functions with parameters and body
 
 Specialized query expressions:
+
 - **WhereExpression**: Subset of expressions valid in WHERE clauses
 - **SelectExpression**: Subset of expressions valid in SELECT projections
 - **GroupByExpression**: Subset of expressions valid in GROUP BY
 - **OrderByExpression**: Subset of expressions valid in ORDER BY
 
 ### 4. Query Operations
+
 **Location**: `packages/tinqer/src/types/query-operations.ts`
 
 Expression tree nodes that represent LINQ operations. Each operation contains its source, creating a tree structure.
 
 Chainable operations:
+
 - **FromOperation**: Root of query chain (table source)
 - **WhereOperation**: Filter operation containing predicate
 - **SelectOperation**: Projection operation containing selector
@@ -75,6 +86,7 @@ Chainable operations:
 - **SkipOperation**: Offset results (OFFSET in SQL)
 
 Terminal operations:
+
 - **FirstOperation**: First element with optional predicate
 - **SingleOperation**: Single element (error if multiple)
 - **CountOperation**: Count elements with optional predicate
@@ -87,6 +99,7 @@ Terminal operations:
 - **ToArrayOperation**: Materialize to array
 
 ### 5. Queryable API
+
 **Location**: `packages/tinqer/src/queryable/`
 
 Fluent API for building queries using method chaining.
@@ -97,12 +110,14 @@ Fluent API for building queries using method chaining.
 - **from<T>()**: Factory function to create initial queryable
 
 Key features:
+
 - Method chaining for query composition
 - Type transformation through operations (select changes T to TResult)
 - Separation of chainable and terminal operations
 - Expression tree preservation through operation chain
 
 ### 6. LINQ Interfaces
+
 **Location**: `packages/tinqer/src/types/linq-interfaces.ts`
 
 TypeScript interfaces matching .NET LINQ for compatibility.
@@ -147,18 +162,21 @@ Queries in Tinqer follow a deferred execution model:
 ## Extension Points
 
 ### SQL Adapters
+
 Different SQL dialects are supported through adapter packages:
 
 - `tinqer-sql-pg-promise`: PostgreSQL adapter using pg-promise
 - Future: MySQL, SQLite, SQL Server adapters
 
 Adapters implement:
+
 - Expression tree to SQL conversion
 - Dialect-specific SQL generation
 - Parameter binding and escaping
 - Result mapping
 
 ### Custom Expressions
+
 The expression system is extensible through discriminated unions. New expression types can be added by:
 
 1. Adding new type to Expression union

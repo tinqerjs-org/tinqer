@@ -49,17 +49,17 @@ const users = from<User>("users");
 
 // Build a query
 const activeAdults = users
-  .where(u => u.age >= 18 && u.isActive)
-  .select(u => ({
+  .where((u) => u.age >= 18 && u.isActive)
+  .select((u) => ({
     id: u.id,
     name: u.name,
-    email: u.email
+    email: u.email,
   }))
-  .orderBy(u => u.name);
+  .orderBy((u) => u.name);
 
 // Terminal operations return TerminalQuery<T>
-const firstUser = users.first(u => u.id === 1);
-const userCount = users.count(u => u.isActive);
+const firstUser = users.first((u) => u.id === 1);
+const userCount = users.count((u) => u.isActive);
 const allUsers = users.toArray();
 ```
 
@@ -70,29 +70,35 @@ const allUsers = users.toArray();
 Operations that return `Queryable<T>` and can be chained:
 
 #### Filtering
+
 - `where(predicate: (item: T) => boolean)` - Filter elements
 - `distinct()` - Return unique elements
 
 #### Projection
+
 - `select<TResult>(selector: (item: T) => TResult)` - Transform elements
 - `selectMany<TResult>(selector: (item: T) => TResult[])` - Flatten nested collections
 
 #### Joining
+
 - `join<TInner, TKey, TResult>(inner, outerKey, innerKey, resultSelector)` - Inner join
 - `groupJoin<TInner, TKey, TResult>(inner, outerKey, innerKey, resultSelector)` - Left outer join with grouping
 
 #### Grouping
+
 - `groupBy<TKey>(keySelector)` - Group by key returning `IGrouping<TKey, T>`
 - `groupByWithElementSelector<TKey, TElement>(keySelector, elementSelector)` - Group with element projection
 - `groupByWithResultSelector<TKey, TResult>(keySelector, resultSelector)` - Group with result transformation
 
 #### Ordering
+
 - `orderBy<TKey>(keySelector)` - Sort ascending, returns `OrderedQueryable<T>`
 - `orderByDescending<TKey>(keySelector)` - Sort descending, returns `OrderedQueryable<T>`
 - `thenBy<TKey>(keySelector)` - Secondary sort ascending (only on `OrderedQueryable<T>`)
 - `thenByDescending<TKey>(keySelector)` - Secondary sort descending (only on `OrderedQueryable<T>`)
 
 #### Partitioning
+
 - `take(count: number | ((params) => number))` - Take first N elements
 - `skip(count: number | ((params) => number))` - Skip first N elements
 
@@ -101,17 +107,20 @@ Operations that return `Queryable<T>` and can be chained:
 Operations that end the chain and return `TerminalQuery<T>`:
 
 #### Element Operators
+
 - `first(predicate?)` - First element or throw
 - `firstOrDefault(predicate?)` - First element or undefined
 - `single(predicate?)` - Single element or throw
 - `singleOrDefault(predicate?)` - Single element or undefined
 
 #### Quantifiers
+
 - `any(predicate?)` - Check if any element matches
 - `all(predicate)` - Check if all elements match
 - `contains(value)` - Check if sequence contains value
 
 #### Aggregates
+
 - `count(predicate?)` - Count elements
 - `sum(selector?)` - Sum numeric values
 - `average(selector?)` - Average numeric values
@@ -119,6 +128,7 @@ Operations that end the chain and return `TerminalQuery<T>`:
 - `max(selector?)` - Maximum value
 
 #### Conversion
+
 - `toArray()` - Convert to array
 
 ## Advanced Examples
@@ -127,9 +137,9 @@ Operations that end the chain and return `TerminalQuery<T>`:
 
 ```typescript
 const query = users
-  .where(u => u.age >= 21)
-  .where(u => u.name.toLowerCase().startsWith("j"))
-  .where(u => u.email.endsWith("@company.com"));
+  .where((u) => u.age >= 21)
+  .where((u) => u.name.toLowerCase().startsWith("j"))
+  .where((u) => u.email.endsWith("@company.com"));
 ```
 
 ### Joins
@@ -147,46 +157,45 @@ const departments = from<Department>("departments");
 const userDepartments = users
   .join(
     departments,
-    u => u.departmentId,
-    d => d.id,
+    (u) => u.departmentId,
+    (d) => d.id,
     (u, d) => ({
       userName: u.name,
       departmentName: d.name,
-      budget: d.budget
-    })
+      budget: d.budget,
+    }),
   )
-  .where(result => result.budget > 100000)
-  .orderBy(result => result.userName);
+  .where((result) => result.budget > 100000)
+  .orderBy((result) => result.userName);
 ```
 
 ### Grouping
 
 ```typescript
 const usersByAge = users
-  .groupBy(u => u.age)
-  .select(g => ({
+  .groupBy((u) => u.age)
+  .select((g) => ({
     age: g.key,
-    count: g.toArray().length
+    count: g.toArray().length,
   }));
 
-const departmentSummaries = users
-  .groupByWithResultSelector(
-    u => u.departmentId,
-    (key, group) => ({
-      departmentId: key,
-      userCount: group.toArray().length,
-      avgAge: group.average(u => u.age)
-    })
-  );
+const departmentSummaries = users.groupByWithResultSelector(
+  (u) => u.departmentId,
+  (key, group) => ({
+    departmentId: key,
+    userCount: group.toArray().length,
+    avgAge: group.average((u) => u.age),
+  }),
+);
 ```
 
 ### Multiple Ordering
 
 ```typescript
 const sorted = users
-  .orderBy(u => u.departmentId)
-  .thenByDescending(u => u.salary)
-  .thenBy(u => u.name);
+  .orderBy((u) => u.departmentId)
+  .thenByDescending((u) => u.salary)
+  .thenBy((u) => u.name);
 ```
 
 ### Parameterized Queries
@@ -195,9 +204,7 @@ const sorted = users
 const minAge = 18;
 const maxAge = 65;
 
-const query = users
-  .where(u => u.age >= minAge && u.age <= maxAge)
-  .take(10);
+const query = users.where((u) => u.age >= minAge && u.age <= maxAge).take(10);
 ```
 
 ## Expression Tree Structure
@@ -241,15 +248,16 @@ const users = from<User>("users");
 
 // TypeScript knows the types
 users
-  .where(u => u.age >= 18)        // u is User
-  .select(u => ({                 // u is User
-    userId: u.id,                 // u.id is number
-    userName: u.name              // u.name is string
-  }))                             // Result is { userId: number, userName: string }
-  .first()                        // Returns TerminalQuery<{ userId: number, userName: string }>
+  .where((u) => u.age >= 18) // u is User
+  .select((u) => ({
+    // u is User
+    userId: u.id, // u.id is number
+    userName: u.name, // u.name is string
+  })) // Result is { userId: number, userName: string }
+  .first(); // Returns TerminalQuery<{ userId: number, userName: string }>
 
 // Compile errors for invalid access
-users.where(u => u.invalid)      // Error: Property 'invalid' does not exist on type 'User'
+users.where((u) => u.invalid); // Error: Property 'invalid' does not exist on type 'User'
 ```
 
 ## Limitations

@@ -5,6 +5,7 @@ This document outlines the coding standards and patterns used throughout the Tin
 ## TypeScript Configuration
 
 ### Strict Mode Required
+
 All TypeScript code must compile with `strict: true`. No exceptions.
 
 ```json
@@ -23,12 +24,13 @@ All TypeScript code must compile with `strict: true`. No exceptions.
 ```
 
 ### No Any Types
+
 The `any` type is forbidden. Use proper types or `unknown` when type is genuinely unknown.
 
 ```typescript
 // ✅ Good
 function processData(data: unknown): void {
-  if (typeof data === 'string') {
+  if (typeof data === "string") {
     // data is string here
   }
 }
@@ -42,6 +44,7 @@ function processData(data: any): void {
 ## Module System
 
 ### ESM Modules Only
+
 All code uses ES modules with `.js` extensions in imports.
 
 ```typescript
@@ -50,11 +53,12 @@ import { Expression } from "./types/expressions.js";
 import { parseExpression } from "./parser/parser.js";
 
 // ❌ Bad
-import { Expression } from "./types/expressions";  // Missing .js
-const parser = require("./parser");               // CommonJS
+import { Expression } from "./types/expressions"; // Missing .js
+const parser = require("./parser"); // CommonJS
 ```
 
 ### No Dynamic Imports
+
 Static imports only. No `await import()` or `import()` in code.
 
 ```typescript
@@ -68,19 +72,17 @@ const adapter = await import("./adapters/sql-adapter.js");
 ## Design Patterns
 
 ### Functions Over Classes
+
 Export functions from modules. Use classes only for stateful connections or complex state management.
 
 ```typescript
 // ✅ Good - Pure functions
-export function where<T>(
-  operation: QueryOperationNode,
-  predicate: Expression
-): WhereOperation {
+export function where<T>(operation: QueryOperationNode, predicate: Expression): WhereOperation {
   return {
     type: "queryOperation",
     operationType: "where",
     source: operation,
-    predicate
+    predicate,
   };
 }
 
@@ -102,6 +104,7 @@ export class QueryHelper {
 ```
 
 ### Discriminated Unions
+
 Use discriminated unions for expression types.
 
 ```typescript
@@ -128,6 +131,7 @@ export interface ParameterExpression {
 ```
 
 ### Type Over Interface
+
 Use `type` for object types, `interface` only for extensible contracts.
 
 ```typescript
@@ -153,6 +157,7 @@ export interface QueryOperation {
 ## Expression Trees
 
 ### Generic Expression Handling
+
 Always implement generic cases first. Simple cases should be special cases of generic structures.
 
 ```typescript
@@ -162,7 +167,7 @@ export interface JoinOperation {
   operationType: "join";
   source: QueryOperationNode;
   inner: QueryOperationNode;
-  on: Expression;  // Generic - handles any condition
+  on: Expression; // Generic - handles any condition
 }
 
 // ❌ Bad - Special case handling
@@ -174,6 +179,7 @@ export interface JoinOperation {
 ```
 
 ### Parameter Origin Tracking
+
 Every parameter must track its origin.
 
 ```typescript
@@ -194,6 +200,7 @@ export interface ParameterExpression {
 ## Error Handling
 
 ### No Throwing in Library Code
+
 Library functions should not throw. Return error states or use Result types.
 
 ```typescript
@@ -217,26 +224,24 @@ export function parseExpression(fn: Function): Expression {
 ## Testing
 
 ### Expression Tree Helpers
+
 Tests use helper functions that create the same structures the parser creates.
 
 ```typescript
 // ✅ Good - Helper creates exact AST structure
-const expected = expr.binary(
-  expr.member("age"),
-  ">=",
-  expr.constant(18)
-);
+const expected = expr.binary(expr.member("age"), ">=", expr.constant(18));
 
 // ❌ Bad - Manual object construction
 const expected = {
   type: "binary",
   operator: ">=",
   left: { type: "member", property: "age" },
-  right: { type: "constant", value: 18 }
+  right: { type: "constant", value: 18 },
 };
 ```
 
 ### Test Organization
+
 - Unit tests in `tests/unit/`
 - Integration tests in `tests/integration/`
 - Test files named `*.test.ts`
@@ -245,6 +250,7 @@ const expected = {
 ## Code Style
 
 ### No Comments in Production Code
+
 Code should be self-documenting. Comments only for complex algorithms.
 
 ```typescript
@@ -285,6 +291,7 @@ Use Prettier with default settings:
 ## Security
 
 ### Never Use npx
+
 Critical security requirement. Never use `npx` for any commands.
 
 ```bash
@@ -298,6 +305,7 @@ npx prettier
 ```
 
 ### Parameter Binding
+
 All SQL values must be parameterized, never concatenated.
 
 ```typescript
@@ -312,13 +320,12 @@ const sql = `SELECT * FROM users WHERE age >= ${minAge}`;
 ## Performance
 
 ### Lazy Evaluation
+
 Operations should build expression trees without immediate processing.
 
 ```typescript
 // ✅ Good - Builds tree, no execution
-const query = users
-  .where(u => u.age >= 18)
-  .select(u => u.name);
+const query = users.where((u) => u.age >= 18).select((u) => u.name);
 // No database hit yet
 
 // Terminal operation triggers execution
@@ -326,11 +333,13 @@ const results = query.toArray();
 ```
 
 ### Expression Reuse
+
 Common sub-expressions should be identified and reused when possible.
 
 ## Documentation
 
 ### API Documentation
+
 Public APIs must have JSDoc comments.
 
 ```typescript
@@ -343,13 +352,14 @@ where(predicate: (item: T) => boolean): Queryable<T>
 ```
 
 ### No Change Tracking
+
 Documentation should present features as designed, not evolved.
 
 ```typescript
 // ✅ Good
-"The where method filters elements based on a predicate"
+"The where method filters elements based on a predicate";
 
 // ❌ Bad
-"The where method now supports lambda expressions"
-"Changed from string predicates to lambda functions"
+"The where method now supports lambda expressions";
+"Changed from string predicates to lambda functions";
 ```

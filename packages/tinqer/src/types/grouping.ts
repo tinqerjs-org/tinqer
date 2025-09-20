@@ -20,7 +20,7 @@ export interface IGrouping<TKey, TElement> extends Iterable<TElement> {
 export class Grouping<TKey, TElement> implements IGrouping<TKey, TElement> {
   constructor(
     public readonly key: TKey,
-    private readonly elements: TElement[]
+    private readonly elements: TElement[],
   ) {}
 
   *[Symbol.iterator](): Iterator<TElement> {

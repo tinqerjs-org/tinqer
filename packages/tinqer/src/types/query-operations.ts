@@ -39,7 +39,7 @@ export interface LambdaExpression<TFunc> extends Expression {
   type: "lambda";
   parameters: ParameterExpression[];
   body: Expression;
-  _functionType?: TFunc;  // Phantom type to preserve function signature
+  _functionType?: TFunc; // Phantom type to preserve function signature
 }
 
 /**
@@ -49,8 +49,8 @@ export interface LambdaExpression<TFunc> extends Expression {
 export interface QueryOperation<TIn, TOut> {
   type: "queryOperation";
   operationType: string;
-  _inputType?: TIn;   // Phantom type for input
-  _outputType?: TOut;  // Phantom type for output
+  _inputType?: TIn; // Phantom type for input
+  _outputType?: TOut; // Phantom type for output
 }
 
 /**
@@ -69,9 +69,10 @@ export interface FromOperation<T> extends QueryOperation<never, T> {
  * Equivalent to LINQ: Where<TSource>(Expression<Func<TSource, bool>> predicate)
  * TSource preserves the complete source operation type
  */
-export interface WhereOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface WhereOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "where";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   predicate: LambdaExpression<(source: T) => boolean>;
 }
 
@@ -81,9 +82,10 @@ export interface WhereOperation<TSource extends QueryOperation<any, T>, T> exten
  * Equivalent to LINQ: Select<TSource, TResult>(Expression<Func<TSource, TResult>> selector)
  * TSource preserves the complete source operation type
  */
-export interface SelectOperation<TSource extends QueryOperation<any, T>, T, TResult> extends QueryOperation<T, TResult> {
+export interface SelectOperation<TSource extends QueryOperation<any, T>, T, TResult>
+  extends QueryOperation<T, TResult> {
   operationType: "select";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   selector: LambdaExpression<(source: T) => TResult>;
 }
 
@@ -95,9 +97,14 @@ export interface SelectOperation<TSource extends QueryOperation<any, T>, T, TRes
  *
  * When resultSelector is omitted, TResult = TCollection
  */
-export interface SelectManyOperation<TSource extends QueryOperation<any, T>, T, TCollection, TResult = TCollection> extends QueryOperation<T, TResult> {
+export interface SelectManyOperation<
+  TSource extends QueryOperation<any, T>,
+  T,
+  TCollection,
+  TResult = TCollection,
+> extends QueryOperation<T, TResult> {
   operationType: "selectMany";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   collectionSelector: LambdaExpression<(source: T) => TCollection[]>;
   resultSelector?: LambdaExpression<(source: T, collection: TCollection) => TResult>;
 }
@@ -111,11 +118,14 @@ export interface SelectManyOperation<TSource extends QueryOperation<any, T>, T, 
 export interface JoinOperation<
   TOuterSource extends QueryOperation<any, TOuter>,
   TInnerSource extends QueryOperation<any, TInner>,
-  TOuter, TInner, TKey, TResult
+  TOuter,
+  TInner,
+  TKey,
+  TResult,
 > extends QueryOperation<TOuter, TResult> {
   operationType: "join";
-  source: TOuterSource;      // Preserve exact outer source type
-  inner: TInnerSource;       // Preserve exact inner source type
+  source: TOuterSource; // Preserve exact outer source type
+  inner: TInnerSource; // Preserve exact inner source type
   outerKeySelector: LambdaExpression<(outer: TOuter) => TKey>;
   innerKeySelector: LambdaExpression<(inner: TInner) => TKey>;
   resultSelector: LambdaExpression<(outer: TOuter, inner: TInner) => TResult>;
@@ -131,11 +141,14 @@ export interface JoinOperation<
 export interface GroupJoinOperation<
   TOuterSource extends QueryOperation<any, TOuter>,
   TInnerSource extends QueryOperation<any, TInner>,
-  TOuter, TInner, TKey, TResult
+  TOuter,
+  TInner,
+  TKey,
+  TResult,
 > extends QueryOperation<TOuter, TResult> {
   operationType: "groupJoin";
-  source: TOuterSource;      // Preserve exact outer source type
-  inner: TInnerSource;       // Preserve exact inner source type
+  source: TOuterSource; // Preserve exact outer source type
+  inner: TInnerSource; // Preserve exact inner source type
   outerKeySelector: LambdaExpression<(outer: TOuter) => TKey>;
   innerKeySelector: LambdaExpression<(inner: TInner) => TKey>;
   resultSelector: LambdaExpression<(outer: TOuter, inner: TInner[]) => TResult>;
@@ -150,7 +163,7 @@ export interface GroupJoinOperation<
 export interface GroupByOperation<TSource extends QueryOperation<any, T>, T, TKey, TElement = T>
   extends QueryOperation<T, IGrouping<TKey, TElement>> {
   operationType: "groupBy";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   keySelector: LambdaExpression<(source: T) => TKey>;
   elementSelector?: LambdaExpression<(source: T) => TElement>;
 }
@@ -160,10 +173,15 @@ export interface GroupByOperation<TSource extends QueryOperation<any, T>, T, TKe
  * T → TResult (groups and transforms)
  * TSource preserves the complete source operation type
  */
-export interface GroupByWithResultSelectorOperation<TSource extends QueryOperation<any, T>, T, TKey, TElement, TResult>
-  extends QueryOperation<T, TResult> {
+export interface GroupByWithResultSelectorOperation<
+  TSource extends QueryOperation<any, T>,
+  T,
+  TKey,
+  TElement,
+  TResult,
+> extends QueryOperation<T, TResult> {
   operationType: "groupByWithResultSelector";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   keySelector: LambdaExpression<(source: T) => TKey>;
   elementSelector?: LambdaExpression<(source: T) => TElement>;
   resultSelector: LambdaExpression<(key: TKey, group: IGrouping<TKey, TElement>) => TResult>;
@@ -175,12 +193,13 @@ export interface GroupByWithResultSelectorOperation<TSource extends QueryOperati
  * Equivalent to LINQ: OrderBy<TSource, TKey>
  * TSource preserves the complete source operation type
  */
-export interface OrderByOperation<TSource extends QueryOperation<any, T>, T, TKey> extends QueryOperation<T, T> {
+export interface OrderByOperation<TSource extends QueryOperation<any, T>, T, TKey>
+  extends QueryOperation<T, T> {
   operationType: "orderBy";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   keySelector: LambdaExpression<(source: T) => TKey>;
   direction: "ascending" | "descending";
-  _ordered: true;  // Marks this as an ordered sequence
+  _ordered: true; // Marks this as an ordered sequence
 }
 
 /**
@@ -189,12 +208,16 @@ export interface OrderByOperation<TSource extends QueryOperation<any, T>, T, TKe
  * Equivalent to LINQ: ThenBy<TSource, TKey>
  * TSource MUST be an ordered operation (OrderBy or ThenBy)
  */
-export interface ThenByOperation<TSource extends OrderByOperation<any, T, any> | ThenByOperation<any, T, any>, T, TKey> extends QueryOperation<T, T> {
+export interface ThenByOperation<
+  TSource extends OrderByOperation<any, T, any> | ThenByOperation<any, T, any>,
+  T,
+  TKey,
+> extends QueryOperation<T, T> {
   operationType: "thenBy";
-  source: TSource;  // Must be ordered - compile-time enforced!
+  source: TSource; // Must be ordered - compile-time enforced!
   keySelector: LambdaExpression<(source: T) => TKey>;
   direction: "ascending" | "descending";
-  _ordered: true;  // Maintains ordered marker
+  _ordered: true; // Maintains ordered marker
 }
 
 /**
@@ -203,9 +226,10 @@ export interface ThenByOperation<TSource extends OrderByOperation<any, T, any> |
  * Equivalent to LINQ: Distinct<TSource>()
  * TSource preserves the complete source operation type
  */
-export interface DistinctOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface DistinctOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "distinct";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
 }
 
 /**
@@ -214,9 +238,10 @@ export interface DistinctOperation<TSource extends QueryOperation<any, T>, T> ex
  * Equivalent to LINQ: DistinctBy<TSource, TKey>
  * TSource preserves the complete source operation type
  */
-export interface DistinctByOperation<TSource extends QueryOperation<any, T>, T, TKey> extends QueryOperation<T, T> {
+export interface DistinctByOperation<TSource extends QueryOperation<any, T>, T, TKey>
+  extends QueryOperation<T, T> {
   operationType: "distinctBy";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   keySelector: LambdaExpression<(source: T) => TKey>;
 }
 
@@ -226,9 +251,10 @@ export interface DistinctByOperation<TSource extends QueryOperation<any, T>, T, 
  * Equivalent to LINQ: Take<TSource>(int count)
  * TSource preserves the complete source operation type
  */
-export interface TakeOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface TakeOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "take";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   count: number | LambdaExpression<(params: any) => number>;
 }
 
@@ -238,10 +264,13 @@ export interface TakeOperation<TSource extends QueryOperation<any, T>, T> extend
  * Equivalent to LINQ: TakeWhile<TSource>
  * TSource preserves the complete source operation type
  */
-export interface TakeWhileOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface TakeWhileOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "takeWhile";
-  source: TSource;  // Preserve exact source type
-  predicate: LambdaExpression<(source: T) => boolean> | LambdaExpression<(source: T, index: number) => boolean>;
+  source: TSource; // Preserve exact source type
+  predicate:
+    | LambdaExpression<(source: T) => boolean>
+    | LambdaExpression<(source: T, index: number) => boolean>;
 }
 
 /**
@@ -250,9 +279,10 @@ export interface TakeWhileOperation<TSource extends QueryOperation<any, T>, T> e
  * Equivalent to LINQ: Skip<TSource>(int count)
  * TSource preserves the complete source operation type
  */
-export interface SkipOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface SkipOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "skip";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   count: number | LambdaExpression<(params: any) => number>;
 }
 
@@ -262,10 +292,13 @@ export interface SkipOperation<TSource extends QueryOperation<any, T>, T> extend
  * Equivalent to LINQ: SkipWhile<TSource>
  * TSource preserves the complete source operation type
  */
-export interface SkipWhileOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface SkipWhileOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "skipWhile";
-  source: TSource;  // Preserve exact source type
-  predicate: LambdaExpression<(source: T) => boolean> | LambdaExpression<(source: T, index: number) => boolean>;
+  source: TSource; // Preserve exact source type
+  predicate:
+    | LambdaExpression<(source: T) => boolean>
+    | LambdaExpression<(source: T, index: number) => boolean>;
 }
 
 /**
@@ -277,11 +310,11 @@ export interface SkipWhileOperation<TSource extends QueryOperation<any, T>, T> e
 export interface ConcatOperation<
   TFirstSource extends QueryOperation<any, T>,
   TSecondSource extends QueryOperation<any, T>,
-  T
+  T,
 > extends QueryOperation<T, T> {
   operationType: "concat";
-  source: TFirstSource;  // Preserve exact first source type
-  second: TSecondSource;  // Preserve exact second source type
+  source: TFirstSource; // Preserve exact first source type
+  second: TSecondSource; // Preserve exact second source type
 }
 
 /**
@@ -293,11 +326,11 @@ export interface ConcatOperation<
 export interface UnionOperation<
   TFirstSource extends QueryOperation<any, T>,
   TSecondSource extends QueryOperation<any, T>,
-  T
+  T,
 > extends QueryOperation<T, T> {
   operationType: "union";
-  source: TFirstSource;  // Preserve exact first source type
-  second: TSecondSource;  // Preserve exact second source type
+  source: TFirstSource; // Preserve exact first source type
+  second: TSecondSource; // Preserve exact second source type
 }
 
 /**
@@ -309,11 +342,11 @@ export interface UnionOperation<
 export interface IntersectOperation<
   TFirstSource extends QueryOperation<any, T>,
   TSecondSource extends QueryOperation<any, T>,
-  T
+  T,
 > extends QueryOperation<T, T> {
   operationType: "intersect";
-  source: TFirstSource;  // Preserve exact first source type
-  second: TSecondSource;  // Preserve exact second source type
+  source: TFirstSource; // Preserve exact first source type
+  second: TSecondSource; // Preserve exact second source type
 }
 
 /**
@@ -325,11 +358,11 @@ export interface IntersectOperation<
 export interface ExceptOperation<
   TFirstSource extends QueryOperation<any, T>,
   TSecondSource extends QueryOperation<any, T>,
-  T
+  T,
 > extends QueryOperation<T, T> {
   operationType: "except";
-  source: TFirstSource;  // Preserve exact first source type
-  second: TSecondSource;  // Preserve exact second source type
+  source: TFirstSource; // Preserve exact first source type
+  second: TSecondSource; // Preserve exact second source type
 }
 
 /**
@@ -338,9 +371,10 @@ export interface ExceptOperation<
  * Equivalent to LINQ: Reverse<TSource>()
  * TSource preserves the complete source operation type
  */
-export interface ReverseOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface ReverseOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "reverse";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
 }
 
 /**
@@ -349,9 +383,10 @@ export interface ReverseOperation<TSource extends QueryOperation<any, T>, T> ext
  * Equivalent to LINQ: DefaultIfEmpty<TSource>
  * TSource preserves the complete source operation type
  */
-export interface DefaultIfEmptyOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface DefaultIfEmptyOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "defaultIfEmpty";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   defaultValue?: T;
 }
 
@@ -364,11 +399,13 @@ export interface DefaultIfEmptyOperation<TSource extends QueryOperation<any, T>,
 export interface ZipOperation<
   TFirstSource extends QueryOperation<any, TFirst>,
   TSecondSource extends QueryOperation<any, TSecond>,
-  TFirst, TSecond, TResult
+  TFirst,
+  TSecond,
+  TResult,
 > extends QueryOperation<TFirst, TResult> {
   operationType: "zip";
-  source: TFirstSource;   // Preserve exact first source type
-  second: TSecondSource;  // Preserve exact second source type
+  source: TFirstSource; // Preserve exact first source type
+  second: TSecondSource; // Preserve exact second source type
   resultSelector: LambdaExpression<(first: TFirst, second: TSecond) => TResult>;
 }
 
@@ -378,9 +415,10 @@ export interface ZipOperation<
  * Equivalent to LINQ: Append<TSource>
  * TSource preserves the complete source operation type
  */
-export interface AppendOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface AppendOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "append";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   element: T;
 }
 
@@ -390,9 +428,10 @@ export interface AppendOperation<TSource extends QueryOperation<any, T>, T> exte
  * Equivalent to LINQ: Prepend<TSource>
  * TSource preserves the complete source operation type
  */
-export interface PrependOperation<TSource extends QueryOperation<any, T>, T> extends QueryOperation<T, T> {
+export interface PrependOperation<TSource extends QueryOperation<any, T>, T>
+  extends QueryOperation<T, T> {
   operationType: "prepend";
-  source: TSource;  // Preserve exact source type
+  source: TSource; // Preserve exact source type
   element: T;
 }
 
@@ -404,10 +443,11 @@ export interface PrependOperation<TSource extends QueryOperation<any, T>, T> ext
  */
 export interface HavingOperation<
   TSource extends GroupByOperation<any, any, TKey, TElement>,
-  TKey, TElement
+  TKey,
+  TElement,
 > extends QueryOperation<IGrouping<TKey, TElement>, IGrouping<TKey, TElement>> {
   operationType: "having";
-  source: TSource;  // Must be a group by - compile-time enforced!
+  source: TSource; // Must be a group by - compile-time enforced!
   predicate: LambdaExpression<(group: IGrouping<TKey, TElement>) => boolean>;
 }
 
@@ -419,8 +459,8 @@ export interface HavingOperation<
 export interface TerminalOperation<TSource extends QueryOperation<any, TIn>, TIn, TOut> {
   type: "terminalOperation";
   terminalType: string;
-  source: TSource;  // Preserve exact source type
-  _resultType?: TOut;  // Phantom type for result
+  source: TSource; // Preserve exact source type
+  _resultType?: TOut; // Phantom type for result
 }
 
 /**
@@ -429,7 +469,8 @@ export interface TerminalOperation<TSource extends QueryOperation<any, TIn>, TIn
  * Equivalent to LINQ: First<TSource>
  * TSource preserves the complete source operation type
  */
-export interface FirstOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T> {
+export interface FirstOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T> {
   terminalType: "first";
   predicate?: LambdaExpression<(source: T) => boolean>;
 }
@@ -440,7 +481,8 @@ export interface FirstOperation<TSource extends QueryOperation<any, T>, T> exten
  * Equivalent to LINQ: FirstOrDefault<TSource>
  * TSource preserves the complete source operation type
  */
-export interface FirstOrDefaultOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T | undefined> {
+export interface FirstOrDefaultOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T | undefined> {
   terminalType: "firstOrDefault";
   predicate?: LambdaExpression<(source: T) => boolean>;
   defaultValue?: T;
@@ -452,7 +494,8 @@ export interface FirstOrDefaultOperation<TSource extends QueryOperation<any, T>,
  * Equivalent to LINQ: Last<TSource>
  * TSource preserves the complete source operation type
  */
-export interface LastOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T> {
+export interface LastOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T> {
   terminalType: "last";
   predicate?: LambdaExpression<(source: T) => boolean>;
 }
@@ -463,7 +506,8 @@ export interface LastOperation<TSource extends QueryOperation<any, T>, T> extend
  * Equivalent to LINQ: LastOrDefault<TSource>
  * TSource preserves the complete source operation type
  */
-export interface LastOrDefaultOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T | undefined> {
+export interface LastOrDefaultOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T | undefined> {
   terminalType: "lastOrDefault";
   predicate?: LambdaExpression<(source: T) => boolean>;
   defaultValue?: T;
@@ -475,7 +519,8 @@ export interface LastOrDefaultOperation<TSource extends QueryOperation<any, T>, 
  * Equivalent to LINQ: Single<TSource>
  * TSource preserves the complete source operation type
  */
-export interface SingleOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T> {
+export interface SingleOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T> {
   terminalType: "single";
   predicate?: LambdaExpression<(source: T) => boolean>;
 }
@@ -486,7 +531,8 @@ export interface SingleOperation<TSource extends QueryOperation<any, T>, T> exte
  * Equivalent to LINQ: SingleOrDefault<TSource>
  * TSource preserves the complete source operation type
  */
-export interface SingleOrDefaultOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T | undefined> {
+export interface SingleOrDefaultOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T | undefined> {
   terminalType: "singleOrDefault";
   predicate?: LambdaExpression<(source: T) => boolean>;
   defaultValue?: T;
@@ -498,7 +544,8 @@ export interface SingleOrDefaultOperation<TSource extends QueryOperation<any, T>
  * Equivalent to LINQ: ElementAt<TSource>
  * TSource preserves the complete source operation type
  */
-export interface ElementAtOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T> {
+export interface ElementAtOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T> {
   terminalType: "elementAt";
   index: number;
 }
@@ -509,7 +556,8 @@ export interface ElementAtOperation<TSource extends QueryOperation<any, T>, T> e
  * Equivalent to LINQ: ElementAtOrDefault<TSource>
  * TSource preserves the complete source operation type
  */
-export interface ElementAtOrDefaultOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T | undefined> {
+export interface ElementAtOrDefaultOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T | undefined> {
   terminalType: "elementAtOrDefault";
   index: number;
   defaultValue?: T;
@@ -521,7 +569,8 @@ export interface ElementAtOrDefaultOperation<TSource extends QueryOperation<any,
  * Equivalent to LINQ: Count<TSource>
  * TSource preserves the complete source operation type
  */
-export interface CountOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, number> {
+export interface CountOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, number> {
   terminalType: "count";
   predicate?: LambdaExpression<(source: T) => boolean>;
 }
@@ -532,7 +581,8 @@ export interface CountOperation<TSource extends QueryOperation<any, T>, T> exten
  * Equivalent to LINQ: LongCount<TSource>
  * TSource preserves the complete source operation type
  */
-export interface LongCountOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, bigint> {
+export interface LongCountOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, bigint> {
   terminalType: "longCount";
   predicate?: LambdaExpression<(source: T) => boolean>;
 }
@@ -543,7 +593,8 @@ export interface LongCountOperation<TSource extends QueryOperation<any, T>, T> e
  * Equivalent to LINQ: Any<TSource>
  * TSource preserves the complete source operation type
  */
-export interface AnyOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, boolean> {
+export interface AnyOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, boolean> {
   terminalType: "any";
   predicate?: LambdaExpression<(source: T) => boolean>;
 }
@@ -554,9 +605,10 @@ export interface AnyOperation<TSource extends QueryOperation<any, T>, T> extends
  * Equivalent to LINQ: All<TSource>
  * TSource preserves the complete source operation type
  */
-export interface AllOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, boolean> {
+export interface AllOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, boolean> {
   terminalType: "all";
-  predicate: LambdaExpression<(source: T) => boolean>;  // Required
+  predicate: LambdaExpression<(source: T) => boolean>; // Required
 }
 
 /**
@@ -565,7 +617,8 @@ export interface AllOperation<TSource extends QueryOperation<any, T>, T> extends
  * Equivalent to LINQ: Contains<TSource>
  * TSource preserves the complete source operation type
  */
-export interface ContainsOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, boolean> {
+export interface ContainsOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, boolean> {
   terminalType: "contains";
   value: T;
 }
@@ -576,7 +629,8 @@ export interface ContainsOperation<TSource extends QueryOperation<any, T>, T> ex
  * Equivalent to LINQ: Sum<TSource>
  * TSource preserves the complete source operation type
  */
-export interface SumOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, number> {
+export interface SumOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, number> {
   terminalType: "sum";
   selector?: LambdaExpression<(source: T) => number>;
 }
@@ -587,7 +641,8 @@ export interface SumOperation<TSource extends QueryOperation<any, T>, T> extends
  * Equivalent to LINQ: Average<TSource>
  * TSource preserves the complete source operation type
  */
-export interface AverageOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, number> {
+export interface AverageOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, number> {
   terminalType: "average";
   selector?: LambdaExpression<(source: T) => number>;
 }
@@ -598,7 +653,8 @@ export interface AverageOperation<TSource extends QueryOperation<any, T>, T> ext
  * Equivalent to LINQ: Min<TSource, TResult>
  * TSource preserves the complete source operation type
  */
-export interface MinOperation<TSource extends QueryOperation<any, T>, T, TResult = T> extends TerminalOperation<TSource, T, TResult> {
+export interface MinOperation<TSource extends QueryOperation<any, T>, T, TResult = T>
+  extends TerminalOperation<TSource, T, TResult> {
   terminalType: "min";
   selector?: LambdaExpression<(source: T) => TResult>;
 }
@@ -609,7 +665,8 @@ export interface MinOperation<TSource extends QueryOperation<any, T>, T, TResult
  * Equivalent to LINQ: Max<TSource, TResult>
  * TSource preserves the complete source operation type
  */
-export interface MaxOperation<TSource extends QueryOperation<any, T>, T, TResult = T> extends TerminalOperation<TSource, T, TResult> {
+export interface MaxOperation<TSource extends QueryOperation<any, T>, T, TResult = T>
+  extends TerminalOperation<TSource, T, TResult> {
   terminalType: "max";
   selector?: LambdaExpression<(source: T) => TResult>;
 }
@@ -620,7 +677,12 @@ export interface MaxOperation<TSource extends QueryOperation<any, T>, T, TResult
  * Equivalent to LINQ: Aggregate<TSource, TAccumulate, TResult>
  * TSource preserves the complete source operation type
  */
-export interface AggregateOperation<TSource extends QueryOperation<any, T>, T, TAccumulate, TResult = TAccumulate> extends TerminalOperation<TSource, T, TResult> {
+export interface AggregateOperation<
+  TSource extends QueryOperation<any, T>,
+  T,
+  TAccumulate,
+  TResult = TAccumulate,
+> extends TerminalOperation<TSource, T, TResult> {
   terminalType: "aggregate";
   seed?: TAccumulate;
   func: LambdaExpression<(accumulate: TAccumulate, source: T) => TAccumulate>;
@@ -636,10 +698,10 @@ export interface AggregateOperation<TSource extends QueryOperation<any, T>, T, T
 export interface SequenceEqualOperation<
   TSource extends QueryOperation<any, T>,
   TSecondSource extends QueryOperation<any, T>,
-  T
+  T,
 > extends TerminalOperation<TSource, T, boolean> {
   terminalType: "sequenceEqual";
-  second: TSecondSource;  // Preserve exact second source type
+  second: TSecondSource; // Preserve exact second source type
 }
 
 /**
@@ -648,7 +710,8 @@ export interface SequenceEqualOperation<
  * Equivalent to LINQ: ToArray<TSource>()
  * TSource preserves the complete source operation type
  */
-export interface ToArrayOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T[]> {
+export interface ToArrayOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T[]> {
   terminalType: "toArray";
 }
 
@@ -658,7 +721,8 @@ export interface ToArrayOperation<TSource extends QueryOperation<any, T>, T> ext
  * Equivalent to LINQ: ToList<TSource>()
  * TSource preserves the complete source operation type
  */
-export interface ToListOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, T[]> {
+export interface ToListOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, T[]> {
   terminalType: "toList";
 }
 
@@ -668,7 +732,12 @@ export interface ToListOperation<TSource extends QueryOperation<any, T>, T> exte
  * Equivalent to LINQ: ToDictionary<TSource, TKey, TElement>
  * TSource preserves the complete source operation type
  */
-export interface ToDictionaryOperation<TSource extends QueryOperation<any, T>, T, TKey, TElement = T> extends TerminalOperation<TSource, T, Map<TKey, TElement>> {
+export interface ToDictionaryOperation<
+  TSource extends QueryOperation<any, T>,
+  T,
+  TKey,
+  TElement = T,
+> extends TerminalOperation<TSource, T, Map<TKey, TElement>> {
   terminalType: "toDictionary";
   keySelector: LambdaExpression<(source: T) => TKey>;
   elementSelector?: LambdaExpression<(source: T) => TElement>;
@@ -680,7 +749,8 @@ export interface ToDictionaryOperation<TSource extends QueryOperation<any, T>, T
  * Equivalent to LINQ: ToHashSet<TSource>()
  * TSource preserves the complete source operation type
  */
-export interface ToHashSetOperation<TSource extends QueryOperation<any, T>, T> extends TerminalOperation<TSource, T, Set<T>> {
+export interface ToHashSetOperation<TSource extends QueryOperation<any, T>, T>
+  extends TerminalOperation<TSource, T, Set<T>> {
   terminalType: "toHashSet";
 }
 
@@ -690,7 +760,8 @@ export interface ToHashSetOperation<TSource extends QueryOperation<any, T>, T> e
  * Equivalent to LINQ: ToLookup<TSource, TKey, TElement>
  * TSource preserves the complete source operation type
  */
-export interface ToLookupOperation<TSource extends QueryOperation<any, T>, T, TKey, TElement = T> extends TerminalOperation<TSource, T, Map<TKey, TElement[]>> {
+export interface ToLookupOperation<TSource extends QueryOperation<any, T>, T, TKey, TElement = T>
+  extends TerminalOperation<TSource, T, Map<TKey, TElement[]>> {
   terminalType: "toLookup";
   keySelector: LambdaExpression<(source: T) => TKey>;
   elementSelector?: LambdaExpression<(source: T) => TElement>;
@@ -702,9 +773,10 @@ export interface ToLookupOperation<TSource extends QueryOperation<any, T>, T, TK
  * Equivalent to LINQ: Cast<TResult>()
  * TSource preserves the complete source operation type
  */
-export interface CastOperation<TSource extends QueryOperation<any, T>, T, TResult> extends TerminalOperation<TSource, T, TResult> {
+export interface CastOperation<TSource extends QueryOperation<any, T>, T, TResult>
+  extends TerminalOperation<TSource, T, TResult> {
   terminalType: "cast";
-  _targetType?: TResult;  // Phantom type for cast target
+  _targetType?: TResult; // Phantom type for cast target
 }
 
 /**
@@ -713,8 +785,8 @@ export interface CastOperation<TSource extends QueryOperation<any, T>, T, TResul
  * Equivalent to LINQ: OfType<TResult>()
  * TSource preserves the complete source operation type
  */
-export interface OfTypeOperation<TSource extends QueryOperation<any, T>, T, TResult> extends TerminalOperation<TSource, T, TResult> {
+export interface OfTypeOperation<TSource extends QueryOperation<any, T>, T, TResult>
+  extends TerminalOperation<TSource, T, TResult> {
   terminalType: "ofType";
-  _targetType?: TResult;  // Phantom type for filter type
+  _targetType?: TResult; // Phantom type for filter type
 }
-

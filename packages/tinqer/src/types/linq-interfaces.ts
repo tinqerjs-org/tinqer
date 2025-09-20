@@ -40,7 +40,7 @@ export interface IQueryable<T> {
   selectMany<TResult>(selector: (source: T) => TResult[]): IQueryable<TResult>;
   selectMany<TCollection, TResult>(
     collectionSelector: (source: T) => TCollection[],
-    resultSelector: (source: T, collection: TCollection) => TResult
+    resultSelector: (source: T, collection: TCollection) => TResult,
   ): IQueryable<TResult>;
 
   /**
@@ -50,7 +50,7 @@ export interface IQueryable<T> {
     inner: IQueryable<TInner>,
     outerKeySelector: (outer: T) => TKey,
     innerKeySelector: (inner: TInner) => TKey,
-    resultSelector: (outer: T, inner: TInner) => TResult
+    resultSelector: (outer: T, inner: TInner) => TResult,
   ): IQueryable<TResult>;
 
   /**
@@ -60,7 +60,7 @@ export interface IQueryable<T> {
     inner: IQueryable<TInner>,
     outerKeySelector: (outer: T) => TKey,
     innerKeySelector: (inner: TInner) => TKey,
-    resultSelector: (outer: T, inner: TInner[]) => TResult
+    resultSelector: (outer: T, inner: TInner[]) => TResult,
   ): IQueryable<TResult>;
 
   /**
@@ -69,16 +69,16 @@ export interface IQueryable<T> {
   groupBy<TKey>(keySelector: (source: T) => TKey): IQueryable<IGrouping<TKey, T>>;
   groupBy<TKey, TElement>(
     keySelector: (source: T) => TKey,
-    elementSelector: (source: T) => TElement
+    elementSelector: (source: T) => TElement,
   ): IQueryable<IGrouping<TKey, TElement>>;
   groupBy<TKey, TResult>(
     keySelector: (source: T) => TKey,
-    resultSelector: (key: TKey, group: IGrouping<TKey, T>) => TResult
+    resultSelector: (key: TKey, group: IGrouping<TKey, T>) => TResult,
   ): IQueryable<TResult>;
   groupBy<TKey, TElement, TResult>(
     keySelector: (source: T) => TKey,
     elementSelector: (source: T) => TElement,
-    resultSelector: (key: TKey, group: IGrouping<TKey, TElement>) => TResult
+    resultSelector: (key: TKey, group: IGrouping<TKey, TElement>) => TResult,
   ): IQueryable<TResult>;
 
   /**
@@ -158,12 +158,12 @@ export interface IQueryable<T> {
    */
   aggregate<TAccumulate>(
     seed: TAccumulate,
-    func: (accumulate: TAccumulate, source: T) => TAccumulate
+    func: (accumulate: TAccumulate, source: T) => TAccumulate,
   ): TAccumulate;
   aggregate<TAccumulate, TResult>(
     seed: TAccumulate,
     func: (accumulate: TAccumulate, source: T) => TAccumulate,
-    resultSelector: (accumulate: TAccumulate) => TResult
+    resultSelector: (accumulate: TAccumulate) => TResult,
   ): TResult;
 
   /**
@@ -271,7 +271,7 @@ export interface IQueryable<T> {
   toDictionary<TKey>(keySelector: (source: T) => TKey): Map<TKey, T>;
   toDictionary<TKey, TElement>(
     keySelector: (source: T) => TKey,
-    elementSelector: (source: T) => TElement
+    elementSelector: (source: T) => TElement,
   ): Map<TKey, TElement>;
 
   /**
@@ -285,7 +285,7 @@ export interface IQueryable<T> {
   toLookup<TKey>(keySelector: (source: T) => TKey): Map<TKey, T[]>;
   toLookup<TKey, TElement>(
     keySelector: (source: T) => TKey,
-    elementSelector: (source: T) => TElement
+    elementSelector: (source: T) => TElement,
   ): Map<TKey, TElement[]>;
 
   /**
