@@ -5,10 +5,15 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "npm run build -w @webpods/tinqer",
+    "build": "./scripts/build.sh",
+    "build:quick": "./scripts/build.sh --no-format",
+    "clean": "./scripts/clean.sh",
+    "clean:all": "./scripts/clean.sh --all",
     "test": "npm run test -w @webpods/tinqer",
-    "lint": "eslint packages/tinqer/src --ext .ts",
-    "lint:fix": "eslint packages/tinqer/src --ext .ts --fix",
+    "lint": "./scripts/lint-all.sh",
+    "lint:fix": "./scripts/lint-all.sh --fix",
+    "format": "./scripts/format-all.sh",
+    "format:check": "./scripts/format-all.sh --check",
     "typecheck": "tsc --noEmit"
   },
   "workspaces": [

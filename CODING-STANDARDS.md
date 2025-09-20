@@ -10,10 +10,7 @@ This document outlines the coding standards and patterns used throughout the Tin
 
 ```typescript
 // ✅ Good - Pure function with explicit dependencies
-export function where<T>(
-  query: Query<T>,
-  predicate: (item: T) => boolean
-): Query<T> {
+export function where<T>(query: Query<T>, predicate: (item: T) => boolean): Query<T> {
   // Implementation
 }
 
@@ -36,14 +33,10 @@ export interface QueryError {
   message: string;
 }
 
-export type Result<T, E = QueryError> =
-  | { success: true; data: T }
-  | { success: false; error: E };
+export type Result<T, E = QueryError> = { success: true; data: T } | { success: false; error: E };
 
 // ✅ Good - Using Result type
-export function parseQuery(
-  sql: string
-): Result<ParsedQuery> {
+export function parseQuery(sql: string): Result<ParsedQuery> {
   try {
     const parsed = parseSql(sql);
 
@@ -85,7 +78,7 @@ type User = {
 
 const query = from<User>("users")
   .select(["id", "name"]) // Only allows keyof User
-  .where(u => u.id > 100); // u is typed as User
+  .where((u) => u.id > 100); // u is typed as User
 
 // ❌ Bad - String-based columns without type checking
 const query = from("users")
@@ -253,7 +246,7 @@ export const postgresProvider: SqlProvider = {
   },
   buildOrderBy: (orderBy) => {
     // PostgreSQL-specific ORDER BY building
-  }
+  },
 };
 ```
 
@@ -266,9 +259,7 @@ import { describe, it } from "mocha";
 describe("Query Builder", () => {
   describe("select", () => {
     it("should generate correct SQL for simple select", () => {
-      const query = from<User>("users")
-        .select(["id", "name"])
-        .toSql(postgresProvider);
+      const query = from<User>("users").select(["id", "name"]).toSql(postgresProvider);
 
       expect(query).to.equal('SELECT "id", "name" FROM "users"');
     });
@@ -276,7 +267,7 @@ describe("Query Builder", () => {
     it("should handle where clauses", () => {
       const query = from<User>("users")
         .select(["id", "name"])
-        .where(u => u.id > 100)
+        .where((u) => u.id > 100)
         .toSql(postgresProvider);
 
       expect(query).to.equal('SELECT "id", "name" FROM "users" WHERE "id" > 100');
@@ -287,7 +278,7 @@ describe("Query Builder", () => {
     it("should build complex expressions", () => {
       const expr = and(
         eq(field<User>("id"), literal(1)),
-        like(field<User>("name"), literal("John%"))
+        like(field<User>("name"), literal("John%")),
       );
 
       const sql = postgresProvider.buildWhere(expr);
@@ -301,7 +292,7 @@ describe("Query Builder", () => {
 
 Add JSDoc comments for exported functions:
 
-```typescript
+````typescript
 /**
  * Creates a new query for the specified table.
  *
@@ -328,13 +319,10 @@ export function from<T>(table: string): Query<T> {
  * @param provider - The SQL dialect provider
  * @returns The SQL WHERE clause as a string
  */
-export function buildWhere<T>(
-  expression: Expression<T>,
-  provider: SqlProvider
-): string {
+export function buildWhere<T>(expression: Expression<T>, provider: SqlProvider): string {
   // Implementation
 }
-```
+````
 
 ### 11. Performance Patterns
 
@@ -344,7 +332,7 @@ export function buildWhere<T>(
 // ✅ Good - Build SQL once
 const query = from<User>("users")
   .select(["id", "name"])
-  .where(u => u.active === true)
+  .where((u) => u.active === true)
   .orderBy("created_at", "desc");
 
 const sql = query.toSql(provider); // Build SQL once
@@ -354,7 +342,7 @@ const results = await db.query(sql);
 for (const id of userIds) {
   const sql = from<User>("users")
     .select(["*"])
-    .where(u => u.id === id)
+    .where((u) => u.id === id)
     .toSql(provider); // Rebuilds SQL each iteration
 
   const result = await db.query(sql);
@@ -368,11 +356,9 @@ for (const id of userIds) {
 const activeUserExpr = eq(field<User>("active"), literal(true));
 const verifiedExpr = eq(field<User>("verified"), literal(true));
 
-const activeUsers = from<User>("users")
-  .where(activeUserExpr);
+const activeUsers = from<User>("users").where(activeUserExpr);
 
-const activeVerifiedUsers = from<User>("users")
-  .where(and(activeUserExpr, verifiedExpr));
+const activeVerifiedUsers = from<User>("users").where(and(activeUserExpr, verifiedExpr));
 ```
 
 ### 12. Type Inference
@@ -381,20 +367,18 @@ Leverage TypeScript's type inference:
 
 ```typescript
 // ✅ Good - Let TypeScript infer types
-export function select<T, K extends keyof T>(
-  query: Query<T>,
-  columns: K[]
-): Query<Pick<T, K>> {
+export function select<T, K extends keyof T>(query: Query<T>, columns: K[]): Query<Pick<T, K>> {
   // Returns a query with only selected columns
 }
 
 // Usage - type is inferred as Query<{id: number, name: string}>
-const query = from<User>("users")
-  .select(["id", "name"]);
+const query = from<User>("users").select(["id", "name"]);
 
 // ❌ Bad - Over-specifying types
-const query: Query<Pick<User, "id" | "name">> = from<User>("users")
-  .select<User, "id" | "name">(["id", "name"]);
+const query: Query<Pick<User, "id" | "name">> = from<User>("users").select<User, "id" | "name">([
+  "id",
+  "name",
+]);
 ```
 
 ## Code Review Checklist

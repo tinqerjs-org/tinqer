@@ -11,18 +11,24 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "mocha tests/**/*.test.ts",
+    "test": "mocha --exit",
+    "test:grep": "mocha --exit --grep",
     "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix"
   },
-  "dependencies": {},
+  "dependencies": {
+    "oxc-parser": "^0.90.0"
+  },
   "devDependencies": {
     "@types/chai": "5.2.2",
+    "@types/estree": "^1.0.8",
     "@types/mocha": "10.0.10",
     "@types/node": "24.3.3",
     "chai": "5.3.3",
     "mocha": "11.7.2",
+    "ts-node": "^10.9.2",
     "tsx": "4.20.5",
     "typescript": "5.9.2"
   },

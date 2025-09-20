@@ -23,17 +23,10 @@ export default [
     },
     rules: {
       ...typescript.configs.recommended.rules,
-      quotes: [
-        "error",
-        "double",
-        { avoidEscape: true, allowTemplateLiterals: true },
-      ],
+      quotes: ["error", "double", { avoidEscape: true, allowTemplateLiterals: true }],
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_" },
-      ],
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "no-console": ["error", { allow: ["warn", "error", "info"] }],
       "prefer-const": "error",
       "no-var": "error",
@@ -71,10 +64,7 @@ export default [
       ...typescript.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_" },
-      ],
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-unused-expressions": "off",
       "no-console": "off",
       "prefer-const": "error",
@@ -82,12 +72,6 @@ export default [
     },
   },
   {
-    ignores: [
-      "node_modules/**",
-      "dist/**",
-      "build/**",
-      "**/*.d.ts",
-      "**/generated/**",
-    ],
+    ignores: ["node_modules/**", "dist/**", "build/**", "**/*.d.ts", "**/generated/**"],
   },
 ];
