@@ -403,7 +403,7 @@ export class AstConverter {
   ): ArrayExpression {
     const elementsArray = node.elements as (AstNode | null)[];
     const elements = elementsArray.map((el: AstNode | null) => {
-      if (!el) return { type: "constant", value: undefined };
+      if (!el) return { type: "constant", value: undefined } as ConstantExpression;
       if (el.type === "SpreadElement") {
         throw new Error("Spread elements not supported");
       }

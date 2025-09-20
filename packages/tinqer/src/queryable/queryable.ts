@@ -5,7 +5,14 @@
 
 import type {
   Expression,
+  WhereExpression,
+  SelectExpression,
+  GroupByExpression,
+  HavingExpression,
+  LimitOffsetExpression,
+  OrderByExpression,
   LambdaExpression,
+  LogicalExpression,
   BinaryExpression,
   CallExpression,
   ConstantExpression,
@@ -22,14 +29,14 @@ import { AstConverter, ConversionContext } from "../converter/ast-converter.js";
 export class Queryable<T> {
   private parser: OxcParser;
   private tableName: string;
-  private whereExpressions: Expression[] = [];
-  private selectExpression?: Expression;
+  private whereExpressions: WhereExpression[] = [];
+  private selectExpression?: SelectExpression;
   private joinExpressions: JoinExpression[] = [];
   private orderByExpressions: OrderExpression[] = [];
-  private groupByExpression?: Expression;
-  private havingExpression?: Expression;
-  private limitExpression?: Expression;
-  private offsetExpression?: Expression;
+  private groupByExpression?: GroupByExpression;
+  private havingExpression?: HavingExpression;
+  private limitExpression?: LimitOffsetExpression;
+  private offsetExpression?: LimitOffsetExpression;
   private distinctFlag?: boolean;
 
   constructor(tableName: string, parser?: OxcParser) {
@@ -51,11 +58,11 @@ export class Queryable<T> {
     const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body if it's a lambda
-    let whereExpr: Expression;
+    let whereExpr: WhereExpression;
     if (expression.type === "lambda") {
-      whereExpr = (expression as LambdaExpression).body;
+      whereExpr = (expression as LambdaExpression).body as WhereExpression;
     } else {
-      whereExpr = expression;
+      whereExpr = expression as WhereExpression;
     }
 
     const newQueryable = this.clone();
@@ -77,11 +84,11 @@ export class Queryable<T> {
     const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body if it's a lambda
-    let selectExpr: Expression;
+    let selectExpr: SelectExpression;
     if (expression.type === "lambda") {
-      selectExpr = (expression as LambdaExpression).body;
+      selectExpr = (expression as LambdaExpression).body as SelectExpression;
     } else {
-      selectExpr = expression;
+      selectExpr = expression as SelectExpression;
     }
 
     const newQueryable = new Queryable<U>(this.tableName, this.parser);
@@ -141,7 +148,12 @@ export class Queryable<T> {
     const outerContext: ConversionContext = {
       parameterOrigin: { type: "table", ref: this.tableName },
     };
-    const outerKeyExpr = AstConverter.convert(outerAst as never, outerContext);
+    const outerKeyExpression = AstConverter.convert(outerAst as never, outerContext);
+
+    // Extract lambda body if it's a lambda
+    const outerKeyExpr = outerKeyExpression.type === "lambda"
+      ? (outerKeyExpression as LambdaExpression).body
+      : outerKeyExpression;
 
     // Parse inner key selector
     const innerKeyString =
@@ -150,7 +162,12 @@ export class Queryable<T> {
     const innerContext: ConversionContext = {
       parameterOrigin: { type: "table", ref: other.tableName },
     };
-    const innerKeyExpr = AstConverter.convert(innerAst as never, innerContext);
+    const innerKeyExpression = AstConverter.convert(innerAst as never, innerContext);
+
+    // Extract lambda body if it's a lambda
+    const innerKeyExpr = innerKeyExpression.type === "lambda"
+      ? (innerKeyExpression as LambdaExpression).body
+      : innerKeyExpression;
 
     // Build ON condition as binary expression
     const onCondition: BinaryExpression = {
@@ -167,7 +184,12 @@ export class Queryable<T> {
     const resultContext: ConversionContext = {
       parameterOrigin: { type: "joined" },
     };
-    const resultExpr = AstConverter.convert(resultAst as never, resultContext);
+    const resultExpression = AstConverter.convert(resultAst as never, resultContext);
+
+    // Extract lambda body if it's a lambda
+    const resultExpr: SelectExpression = resultExpression.type === "lambda"
+      ? (resultExpression as LambdaExpression).body as SelectExpression
+      : resultExpression as SelectExpression;
 
     // Create JOIN expression
     const join: JoinExpression = {
@@ -205,11 +227,11 @@ export class Queryable<T> {
     const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body if it's a lambda
-    let orderByExpr: Expression;
+    let orderByExpr: OrderByExpression;
     if (expression.type === "lambda") {
-      orderByExpr = (expression as LambdaExpression).body;
+      orderByExpr = (expression as LambdaExpression).body as OrderByExpression;
     } else {
-      orderByExpr = expression;
+      orderByExpr = expression as OrderByExpression;
     }
 
     const orderExpr: OrderExpression = {
@@ -237,11 +259,11 @@ export class Queryable<T> {
     const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body if it's a lambda
-    let orderByExpr: Expression;
+    let orderByExpr: OrderByExpression;
     if (expression.type === "lambda") {
-      orderByExpr = (expression as LambdaExpression).body;
+      orderByExpr = (expression as LambdaExpression).body as OrderByExpression;
     } else {
-      orderByExpr = expression;
+      orderByExpr = expression as OrderByExpression;
     }
 
     const orderExpr: OrderExpression = {
@@ -269,11 +291,11 @@ export class Queryable<T> {
     const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body if it's a lambda
-    let groupByExpr: Expression;
+    let groupByExpr: GroupByExpression;
     if (expression.type === "lambda") {
-      groupByExpr = (expression as LambdaExpression).body;
+      groupByExpr = (expression as LambdaExpression).body as GroupByExpression;
     } else {
-      groupByExpr = expression;
+      groupByExpr = expression as GroupByExpression;
     }
 
     const newQueryable = this.clone();
@@ -295,11 +317,11 @@ export class Queryable<T> {
     const expression = AstConverter.convert(ast as never, context);
 
     // Extract lambda body if it's a lambda
-    let havingExpr: Expression;
+    let havingExpr: HavingExpression;
     if (expression.type === "lambda") {
-      havingExpr = (expression as LambdaExpression).body;
+      havingExpr = (expression as LambdaExpression).body as HavingExpression;
     } else {
-      havingExpr = expression;
+      havingExpr = expression as HavingExpression;
     }
 
     const newQueryable = this.clone();
@@ -318,7 +340,7 @@ export class Queryable<T> {
       newQueryable.limitExpression = {
         type: "constant",
         value: limit,
-      } as Expression;
+      } as ConstantExpression;
     } else {
       // Parse lambda expression
       const lambdaString = typeof limit === "string" ? limit : limit.toString();
@@ -332,9 +354,9 @@ export class Queryable<T> {
 
       // Extract lambda body if it's a lambda
       if (expression.type === "lambda") {
-        newQueryable.limitExpression = (expression as LambdaExpression).body;
+        newQueryable.limitExpression = (expression as LambdaExpression).body as LimitOffsetExpression;
       } else {
-        newQueryable.limitExpression = expression;
+        newQueryable.limitExpression = expression as LimitOffsetExpression;
       }
     }
 
@@ -352,7 +374,7 @@ export class Queryable<T> {
       newQueryable.offsetExpression = {
         type: "constant",
         value: offset,
-      } as Expression;
+      } as ConstantExpression;
     } else {
       // Parse lambda expression
       const lambdaString = typeof offset === "string" ? offset : offset.toString();
@@ -366,9 +388,9 @@ export class Queryable<T> {
 
       // Extract lambda body if it's a lambda
       if (expression.type === "lambda") {
-        newQueryable.offsetExpression = (expression as LambdaExpression).body;
+        newQueryable.offsetExpression = (expression as LambdaExpression).body as LimitOffsetExpression;
       } else {
-        newQueryable.offsetExpression = expression;
+        newQueryable.offsetExpression = expression as LimitOffsetExpression;
       }
     }
 
@@ -522,16 +544,16 @@ export class Queryable<T> {
    */
   build(): QueryExpression {
     // Combine WHERE expressions with AND
-    let whereExpr: Expression | undefined;
+    let whereExpr: WhereExpression | undefined;
     if (this.whereExpressions.length === 1) {
       whereExpr = this.whereExpressions[0];
     } else if (this.whereExpressions.length > 1) {
       whereExpr = this.whereExpressions.reduce((acc, expr) => ({
         type: "logical",
-        operator: "&&",
+        operator: "&&" as const,
         left: acc,
         right: expr,
-      }));
+      } as LogicalExpression));
     }
 
     // Build source

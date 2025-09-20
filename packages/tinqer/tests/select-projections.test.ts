@@ -293,7 +293,6 @@ describe("Complex SELECT Projections", () => {
       .build();
 
     // Now select contains just the body, not the lambda wrapper
-    expect(selectExpr.parameters).to.have.lengthOf(1);
     const objExpr = assertObjectExpression(query.select);
     expect(objExpr.type).to.equal("object");
   });

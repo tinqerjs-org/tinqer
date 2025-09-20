@@ -3,7 +3,15 @@
  * Represents the complete structure of a SELECT query
  */
 
-import type { Expression } from "./expressions.js";
+import type {
+  Expression,
+  SelectExpression,
+  WhereExpression,
+  GroupByExpression,
+  HavingExpression,
+  LimitOffsetExpression,
+  OrderByExpression as OrderByExpr
+} from "./expressions.js";
 
 /**
  * Main query expression - represents a complete SELECT query
@@ -12,14 +20,14 @@ export interface QueryExpression {
   type: "query";
   operation: "SELECT"; // Only SELECT supported
   from: SourceExpression;
-  select?: Expression;
-  where?: Expression;
-  groupBy?: Expression;
-  having?: Expression;
+  select?: SelectExpression;
+  where?: WhereExpression;
+  groupBy?: GroupByExpression;
+  having?: HavingExpression;
   orderBy?: OrderExpression[];
   joins?: JoinExpression[];
-  limit?: Expression;
-  offset?: Expression;
+  limit?: LimitOffsetExpression;
+  offset?: LimitOffsetExpression;
   distinct?: boolean;
 
   // Set operations (future)
@@ -72,7 +80,7 @@ export interface JoinExpression {
  */
 export interface OrderExpression {
   type: "order";
-  expression: Expression;
+  expression: OrderByExpr;
   direction: "ASC" | "DESC";
 }
 
