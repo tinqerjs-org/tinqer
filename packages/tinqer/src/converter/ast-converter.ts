@@ -138,6 +138,10 @@ export function convertAstToExpression(
       }
       return null;
 
+    case "ParenthesizedExpression":
+      // Simply unwrap parentheses and process the inner expression
+      return convertAstToExpression(ast.expression, context);
+
     default:
       console.warn("Unsupported AST node type:", ast.type);
       return null;
@@ -361,7 +365,7 @@ function convertOrderByOperation(
 function convertTakeOperation(
   ast: any,
   source: QueryOperation,
-  context: ConversionContext
+  _context: ConversionContext
 ): TakeOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const arg = ast.arguments[0];
@@ -380,7 +384,7 @@ function convertTakeOperation(
 function convertSkipOperation(
   ast: any,
   source: QueryOperation,
-  context: ConversionContext
+  _context: ConversionContext
 ): SkipOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const arg = ast.arguments[0];
@@ -826,7 +830,7 @@ function convertContainsOperation(
 function convertUnionOperation(
   ast: any,
   source: QueryOperation,
-  context: ConversionContext
+  _context: ConversionContext
 ): UnionOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const secondSource = convertAstToQueryOperation(ast.arguments[0]);

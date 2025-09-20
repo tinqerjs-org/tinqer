@@ -5,12 +5,10 @@
  * They are used by the parser to build query structures from lambda expressions.
  */
 
-import type { IGrouping } from "../linq/igrouping.js";
 import type {
   BooleanExpression,
   ValueExpression,
-  ObjectExpression,
-  ArrayExpression
+  ObjectExpression
 } from "../expressions/expression.js";
 
 /**

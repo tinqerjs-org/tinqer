@@ -284,6 +284,10 @@ Benefits: Keeps analysis artifacts separate from source code, allows iterative w
 
 **TIP**: Use `./scripts/build.sh --no-format` during debugging sessions to skip prettier formatting for faster builds.
 
+### Text Replacement Guidelines
+
+**NEVER use `sed` for text replacements**. Always use the Edit or MultiEdit tools to make changes manually. This ensures better control and prevents unintended replacements.
+
 ## Test Files Convention
 
 **NEVER create temporary test scripts in the root directory**. Test files belong in:

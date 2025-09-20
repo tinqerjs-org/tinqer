@@ -9,6 +9,6 @@ import { Queryable } from "./queryable.js";
  * @param tableName The name of the table to query
  * @returns A new Queryable instance
  */
-export function from<T>(tableName: string): Queryable<T> {
+export function from<T>(_tableName: string): Queryable<T> {
   return new Queryable<T>();
 }

@@ -1,89 +1,102 @@
-import type { Expression, ComparisonExpression, ColumnExpression, ConstantExpression, MemberAccessExpression, ParameterExpression, LogicalExpression, NotExpression, ArithmeticExpression } from "../../src/expressions/expression.js";
+import type {
+  ValueExpression,
+  BooleanExpression,
+  ComparisonExpression,
+  ColumnExpression,
+  ConstantExpression,
+  MemberAccessExpression,
+  ParameterExpression,
+  LogicalExpression,
+  NotExpression,
+  ArithmeticExpression,
+  BooleanColumnExpression
+} from "../../src/expressions/expression.js";
 
 export const expr = {
-  // Basic expressions
+  // Basic value expressions
   column(name: string): ColumnExpression {
     return { type: "column", name };
   },
 
   constant(value: any): ConstantExpression {
-    return { type: "constant", value };
+    const valueType = typeof value === "number" ? "number" :
+                      typeof value === "string" ? "string" :
+                      typeof value === "boolean" ? "boolean" :
+                      value === null ? "null" :
+                      value === undefined ? "undefined" : undefined;
+    return valueType ? { type: "constant", value, valueType } : { type: "constant", value };
   },
 
   parameter(param: string, property?: string): ParameterExpression {
     return property ? { type: "param", param, property } : { type: "param", param };
   },
 
-  member(object: Expression, property: string): MemberAccessExpression {
-    return { type: "memberAccess", object, property };
+  // Member access
+  member(object: ValueExpression, member: string): MemberAccessExpression {
+    return { type: "memberAccess", object: object as any, member };
   },
 
-  // Table origin helper
-  tableOrigin(ref: string) {
-    return { type: "table", ref };
+  // Boolean column
+  booleanColumn(name: string): BooleanColumnExpression {
+    return { type: "booleanColumn", name };
   },
 
-  // Query param origin helper
-  queryParamOrigin(name: string) {
-    return { type: "query-param", name };
-  },
-
-  // Comparison operators
-  eq(left: Expression, right: Expression): ComparisonExpression {
+  // Comparison operators (take ValueExpression, return BooleanExpression)
+  eq(left: ValueExpression, right: ValueExpression): ComparisonExpression {
     return { type: "comparison", operator: "==", left, right };
   },
 
-  ne(left: Expression, right: Expression): ComparisonExpression {
+  ne(left: ValueExpression, right: ValueExpression): ComparisonExpression {
     return { type: "comparison", operator: "!=", left, right };
   },
 
-  gt(left: Expression, right: Expression): ComparisonExpression {
+  gt(left: ValueExpression, right: ValueExpression): ComparisonExpression {
     return { type: "comparison", operator: ">", left, right };
   },
 
-  gte(left: Expression, right: Expression): ComparisonExpression {
+  gte(left: ValueExpression, right: ValueExpression): ComparisonExpression {
     return { type: "comparison", operator: ">=", left, right };
   },
 
-  lt(left: Expression, right: Expression): ComparisonExpression {
+  lt(left: ValueExpression, right: ValueExpression): ComparisonExpression {
     return { type: "comparison", operator: "<", left, right };
   },
 
-  lte(left: Expression, right: Expression): ComparisonExpression {
+  lte(left: ValueExpression, right: ValueExpression): ComparisonExpression {
     return { type: "comparison", operator: "<=", left, right };
   },
 
-  // Logical operators
-  and(left: Expression, right: Expression): LogicalExpression {
+  // Logical operators (take BooleanExpression, return BooleanExpression)
+  and(left: BooleanExpression, right: BooleanExpression): LogicalExpression {
     return { type: "logical", operator: "&&", left, right };
   },
 
-  or(left: Expression, right: Expression): LogicalExpression {
+  or(left: BooleanExpression, right: BooleanExpression): LogicalExpression {
     return { type: "logical", operator: "||", left, right };
   },
 
-  not(operand: Expression): NotExpression {
-    return { type: "not", operand };
+  not(expression: BooleanExpression): NotExpression {
+    return { type: "not", expression };
   },
 
-  // Arithmetic operators
-  add(left: Expression, right: Expression): ArithmeticExpression {
-    return { type: "arithmetic", operator: "+", left: left as any, right: right as any };
+  // Arithmetic operators (take ValueExpression, return ValueExpression)
+  add(left: ValueExpression, right: ValueExpression): ArithmeticExpression {
+    return { type: "arithmetic", operator: "+", left, right };
   },
 
-  subtract(left: Expression, right: Expression): ArithmeticExpression {
-    return { type: "arithmetic", operator: "-", left: left as any, right: right as any };
+  subtract(left: ValueExpression, right: ValueExpression): ArithmeticExpression {
+    return { type: "arithmetic", operator: "-", left, right };
   },
 
-  multiply(left: Expression, right: Expression): ArithmeticExpression {
-    return { type: "arithmetic", operator: "*", left: left as any, right: right as any };
+  multiply(left: ValueExpression, right: ValueExpression): ArithmeticExpression {
+    return { type: "arithmetic", operator: "*", left, right };
   },
 
-  divide(left: Expression, right: Expression): ArithmeticExpression {
-    return { type: "arithmetic", operator: "/", left: left as any, right: right as any };
+  divide(left: ValueExpression, right: ValueExpression): ArithmeticExpression {
+    return { type: "arithmetic", operator: "/", left, right };
   },
 
-  modulo(left: Expression, right: Expression): ArithmeticExpression {
-    return { type: "arithmetic", operator: "%", left: left as any, right: right as any };
+  modulo(left: ValueExpression, right: ValueExpression): ArithmeticExpression {
+    return { type: "arithmetic", operator: "%", left, right };
   },
 };

@@ -109,12 +109,12 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal({
-        type: "logical",
-        operator: "&&",
-        left: expr.gte(expr.column("age"), expr.constant(18)),
-        right: { type: "booleanColumn", name: "isActive" }
-      });
+      expect(predicate).to.deep.equal(
+        expr.and(
+          expr.gte(expr.column("age"), expr.constant(18)),
+          expr.booleanColumn("isActive")
+        )
+      );
     });
 
     it("should parse OR logical expression", () => {
@@ -125,12 +125,12 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal({
-        type: "logical",
-        operator: "||",
-        left: expr.eq(expr.column("role"), expr.constant("admin")),
-        right: { type: "booleanColumn", name: "isAdmin" }
-      });
+      expect(predicate).to.deep.equal(
+        expr.or(
+          expr.eq(expr.column("role"), expr.constant("admin")),
+          expr.booleanColumn("isAdmin")
+        )
+      );
     });
 
     it("should parse NOT expression", () => {
@@ -139,10 +139,9 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal({
-        type: "not",
-        operand: { type: "booleanColumn", name: "isActive" }
-      });
+      expect(predicate).to.deep.equal(
+        expr.not(expr.booleanColumn("isActive"))
+      );
     });
 
     it("should parse complex nested logical expressions", () => {
@@ -153,17 +152,15 @@ describe("Basic Query Operations", () => {
       const result = parseQuery(query);
 
       const predicate = (result as any).predicate;
-      expect(predicate).to.deep.equal({
-        type: "logical",
-        operator: "||",
-        left: {
-          type: "logical",
-          operator: "&&",
-          left: expr.gte(expr.column("age"), expr.constant(18)),
-          right: { type: "booleanColumn", name: "isActive" }
-        },
-        right: expr.eq(expr.column("role"), expr.constant("admin"))
-      });
+      expect(predicate).to.deep.equal(
+        expr.or(
+          expr.and(
+            expr.gte(expr.column("age"), expr.constant(18)),
+            expr.booleanColumn("isActive")
+          ),
+          expr.eq(expr.column("role"), expr.constant("admin"))
+        )
+      );
     });
 
     it("should parse string comparison", () => {
