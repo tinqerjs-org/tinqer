@@ -9,6 +9,7 @@ import {
   asSkipOperation,
   asOrderByOperation,
   asTakeOperation,
+  getOperation,
 } from "./test-utils/operation-helpers.js";
 import type { ParamRef } from "../src/query-tree/operations.js";
 import type { ArithmeticExpression } from "../src/expressions/expression.js";
@@ -19,17 +20,23 @@ describe("SKIP Operations", () => {
       const query = () => from<{ id: number }>("users").skip(10);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("skip");
-      const skipOp = asSkipOperation(result);
-      expect(skipOp.count).to.equal(10);
+      expect(getOperation(result)?.operationType).to.equal("skip");
+      const skipOp = asSkipOperation(getOperation(result));
+      const countParam = skipOp.count as ParamRef;
+      expect(countParam.type).to.equal("param");
+      expect(countParam.param).to.equal("_offset1");
+      expect(result?.autoParams).to.deep.equal({ _offset1: 10 });
     });
 
     it("should parse skip(0)", () => {
       const query = () => from<{ id: number }>("users").skip(0);
       const result = parseQuery(query);
 
-      const skipOp = asSkipOperation(result);
-      expect(skipOp.count).to.equal(0);
+      const skipOp = asSkipOperation(getOperation(result));
+      const countParam = skipOp.count as ParamRef;
+      expect(countParam.type).to.equal("param");
+      expect(countParam.param).to.equal("_offset1");
+      expect(result?.autoParams).to.deep.equal({ _offset1: 0 });
     });
 
     it("should parse skip after orderBy", () => {
@@ -39,9 +46,12 @@ describe("SKIP Operations", () => {
           .skip(20);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("skip");
-      const skipOp = asSkipOperation(result);
-      expect(skipOp.count).to.equal(20);
+      expect(getOperation(result)?.operationType).to.equal("skip");
+      const skipOp = asSkipOperation(getOperation(result));
+      const countParam = skipOp.count as ParamRef;
+      expect(countParam.type).to.equal("param");
+      expect(countParam.param).to.equal("_offset1");
+      expect(result?.autoParams).to.deep.equal({ _offset1: 20 });
       const orderByOp = asOrderByOperation(skipOp.source);
       expect(orderByOp.operationType).to.equal("orderBy");
     });
@@ -50,19 +60,24 @@ describe("SKIP Operations", () => {
       const query = () => from<{ id: number }>("users").skip(20).take(10);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("take");
-      const takeOp = asTakeOperation(result);
-      expect(takeOp.count).to.equal(10);
+      expect(getOperation(result)?.operationType).to.equal("take");
+      const takeOp = asTakeOperation(getOperation(result));
+      const takeParam = takeOp.count as ParamRef;
+      expect(takeParam.type).to.equal("param");
+      expect(takeParam.param).to.equal("_limit1");
       const skipOp = asSkipOperation(takeOp.source);
       expect(skipOp.operationType).to.equal("skip");
-      expect(skipOp.count).to.equal(20);
+      const skipParam = skipOp.count as ParamRef;
+      expect(skipParam.type).to.equal("param");
+      expect(skipParam.param).to.equal("_offset1");
+      expect(result?.autoParams).to.deep.equal({ _offset1: 20, _limit1: 10 });
     });
 
     it("should parse skip with external parameter", () => {
       const query = (p: { offset: number }) => from<{ id: number }>("users").skip(p.offset);
       const result = parseQuery(query);
 
-      const skipOp = asSkipOperation(result);
+      const skipOp = asSkipOperation(getOperation(result));
       const paramRef = skipOp.count as ParamRef;
       expect(paramRef.type).to.equal("param");
       expect(paramRef.param).to.equal("p");
@@ -74,7 +89,7 @@ describe("SKIP Operations", () => {
         from<{ id: number }>("users").skip((p.page - 1) * p.pageSize);
       const result = parseQuery(query);
 
-      const skipOp = asSkipOperation(result);
+      const skipOp = asSkipOperation(getOperation(result));
       const arithmeticExpr = skipOp.count as unknown as ArithmeticExpression;
       expect(arithmeticExpr.type).to.equal("arithmetic");
       expect(arithmeticExpr.operator).to.equal("*");
@@ -88,13 +103,18 @@ describe("SKIP Operations", () => {
           .take(25);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("take");
-      const takeOp = asTakeOperation(result);
-      expect(takeOp.count).to.equal(25);
+      expect(getOperation(result)?.operationType).to.equal("take");
+      const takeOp = asTakeOperation(getOperation(result));
+      const takeParam = takeOp.count as ParamRef;
+      expect(takeParam.type).to.equal("param");
+      expect(takeParam.param).to.equal("_limit1");
       const skipOp = asSkipOperation(takeOp.source);
       expect(skipOp.operationType).to.equal("skip");
-      expect(skipOp.count).to.equal(10);
+      const skipParam = skipOp.count as ParamRef;
+      expect(skipParam.type).to.equal("param");
+      expect(skipParam.param).to.equal("_offset1");
       expect(skipOp.source.operationType).to.equal("orderBy");
+      expect(result?.autoParams).to.deep.equal({ _offset1: 10, _limit1: 25 });
     });
 
     it("should parse pagination with both external parameters", () => {
@@ -104,8 +124,8 @@ describe("SKIP Operations", () => {
           .take(p.pageSize);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("take");
-      const takeOp = asTakeOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("take");
+      const takeOp = asTakeOperation(getOperation(result));
       const takeParamRef = takeOp.count as ParamRef;
       expect(takeParamRef.type).to.equal("param");
       expect(takeParamRef.property).to.equal("pageSize");

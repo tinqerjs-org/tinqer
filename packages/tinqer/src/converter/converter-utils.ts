@@ -23,6 +23,10 @@ export interface ConversionContext {
   tableAliases: Map<string, string>;
   // Track parameters that represent IGrouping<TKey, TElement> after groupBy
   groupingParams?: Set<string>;
+
+  // Auto-parameterization: track extracted constants
+  autoParams: Map<string, string | number | boolean | null>; // Maps param name to value
+  columnCounters: Map<string, number>; // Tracks counter per column for naming
 }
 
 /**

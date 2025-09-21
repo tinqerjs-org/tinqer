@@ -5,7 +5,11 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery, from } from "../src/index.js";
-import { asSelectOperation, asWhereOperation } from "./test-utils/operation-helpers.js";
+import {
+  asSelectOperation,
+  asWhereOperation,
+  getOperation,
+} from "./test-utils/operation-helpers.js";
 import type {
   ObjectExpression,
   ColumnExpression,
@@ -22,8 +26,8 @@ describe("SELECT Operation", () => {
         from<{ id: number; name: string; age: number }>("users").select((x) => x.name);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("select");
-      const selectOp = asSelectOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("select");
+      const selectOp = asSelectOperation(getOperation(result));
       const columnSelector = selectOp.selector as ColumnExpression;
       expect(columnSelector.type).to.equal("column");
       expect(columnSelector.name).to.equal("name");
@@ -37,7 +41,7 @@ describe("SELECT Operation", () => {
         }));
       const result = parseQuery(query);
 
-      const selectOp = asSelectOperation(result);
+      const selectOp = asSelectOperation(getOperation(result));
       const objectSelector = selectOp.selector as ObjectExpression;
       expect(objectSelector.type).to.equal("object");
       const userIdProp = objectSelector.properties.userId as ColumnExpression;
@@ -64,7 +68,7 @@ describe("SELECT Operation", () => {
         }));
       const result = parseQuery(query);
 
-      const selectOp = asSelectOperation(result);
+      const selectOp = asSelectOperation(getOperation(result));
       const selector = selectOp.selector as ObjectExpression;
       expect(selector.type).to.equal("object");
       const detailsProp = selector.properties.details as ObjectExpression;
@@ -85,7 +89,7 @@ describe("SELECT Operation", () => {
         }));
       const result = parseQuery(query);
 
-      const selectOp = asSelectOperation(result);
+      const selectOp = asSelectOperation(getOperation(result));
       const selector = selectOp.selector as ObjectExpression;
       const fullNameProp = selector.properties.fullName as ConcatExpression;
       expect(fullNameProp.type).to.equal("concat");
@@ -101,7 +105,7 @@ describe("SELECT Operation", () => {
         }));
       const result = parseQuery(query);
 
-      const selectOp = asSelectOperation(result);
+      const selectOp = asSelectOperation(getOperation(result));
       const selector = selectOp.selector as ObjectExpression;
       const totalCompProp = selector.properties.totalCompensation as ArithmeticExpression;
       expect(totalCompProp.type).to.equal("arithmetic");
@@ -120,8 +124,8 @@ describe("SELECT Operation", () => {
           .select((x) => ({ id: x.id, name: x.name }));
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("select");
-      const selectOp = asSelectOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("select");
+      const selectOp = asSelectOperation(getOperation(result));
       expect(selectOp.source.operationType).to.equal("where");
     });
 
@@ -132,8 +136,8 @@ describe("SELECT Operation", () => {
           .select((x) => ({ id: x.userId, displayName: x.userName }));
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("select");
-      const outerSelect = asSelectOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("select");
+      const outerSelect = asSelectOperation(getOperation(result));
       const innerSelect = asSelectOperation(outerSelect.source);
       expect(innerSelect.operationType).to.equal("select");
     });
@@ -148,7 +152,7 @@ describe("SELECT Operation", () => {
         }));
       const result = parseQuery(query);
 
-      const selectOp = asSelectOperation(result);
+      const selectOp = asSelectOperation(getOperation(result));
       const selector = selectOp.selector as ObjectExpression;
       const displayNameProp = selector.properties.displayName as ConcatExpression;
       expect(displayNameProp.type).to.equal("concat");

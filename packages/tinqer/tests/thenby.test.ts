@@ -10,6 +10,7 @@ import {
   asThenByOperation,
   asSelectOperation,
   asWhereOperation,
+  getOperation,
 } from "./test-utils/operation-helpers.js";
 import type { ArithmeticExpression } from "../src/expressions/expression.js";
 
@@ -22,8 +23,8 @@ describe("THEN BY Operations", () => {
           .thenBy((x) => x.name);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("thenBy");
-      const thenByOp = asThenByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("thenBy");
+      const thenByOp = asThenByOperation(getOperation(result));
       expect(thenByOp.keySelector).to.equal("name");
       expect(thenByOp.descending).to.equal(false);
 
@@ -40,8 +41,8 @@ describe("THEN BY Operations", () => {
           .thenBy((x) => x.street);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("thenBy");
-      const lastThenByOp = asThenByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("thenBy");
+      const lastThenByOp = asThenByOperation(getOperation(result));
       expect(lastThenByOp.keySelector).to.equal("street");
 
       const middleThenByOp = asThenByOperation(lastThenByOp.source);
@@ -60,8 +61,8 @@ describe("THEN BY Operations", () => {
           .thenBy((x) => x.price - x.discount);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("thenBy");
-      const thenByOp = asThenByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("thenBy");
+      const thenByOp = asThenByOperation(getOperation(result));
       const arithmeticExpr = thenByOp.keySelector as ArithmeticExpression;
       expect(arithmeticExpr.type).to.equal("arithmetic");
       expect(arithmeticExpr.operator).to.equal("-");
@@ -76,8 +77,8 @@ describe("THEN BY Operations", () => {
           .thenByDescending((x) => x.salary);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("thenBy");
-      const thenByOp = asThenByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("thenBy");
+      const thenByOp = asThenByOperation(getOperation(result));
       expect(thenByOp.keySelector).to.equal("salary");
       expect(thenByOp.descending).to.equal(true);
     });
@@ -90,8 +91,8 @@ describe("THEN BY Operations", () => {
           .thenBy((x) => x.price);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("thenBy");
-      const finalThenByOp = asThenByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("thenBy");
+      const finalThenByOp = asThenByOperation(getOperation(result));
       expect(finalThenByOp.descending).to.equal(false);
 
       const thenByDescOp = asThenByOperation(finalThenByOp.source);

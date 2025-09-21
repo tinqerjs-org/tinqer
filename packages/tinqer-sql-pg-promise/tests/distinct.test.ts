@@ -26,7 +26,8 @@ describe("Distinct SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT DISTINCT * FROM "products" AS t0 WHERE price > 100');
+    expect(result.sql).to.equal('SELECT DISTINCT * FROM "products" AS t0 WHERE price > $(_price1)');
+    expect(result.params).to.deep.equal({ _price1: 100 });
   });
 
   it("should combine DISTINCT with SELECT projection", () => {
@@ -52,7 +53,8 @@ describe("Distinct SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT DISTINCT * FROM "products" AS t0 WHERE price < 500 ORDER BY brand ASC',
+      'SELECT DISTINCT * FROM "products" AS t0 WHERE price < $(_price1) ORDER BY brand ASC',
     );
+    expect(result.params).to.deep.equal({ _price1: 500 });
   });
 });

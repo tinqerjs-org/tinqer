@@ -13,13 +13,15 @@ describe("Skip SQL Generation", () => {
   it("should generate OFFSET clause", () => {
     const result = query(() => from<User>("users").skip(10), {});
 
-    expect(result.sql).to.equal('SELECT * FROM "users" AS t0 OFFSET 10');
+    expect(result.sql).to.equal('SELECT * FROM "users" AS t0 OFFSET $(_offset1)');
+    expect(result.params).to.deep.equal({ _offset1: 10 });
   });
 
   it("should combine skip with take for pagination", () => {
     const result = query(() => from<User>("users").skip(20).take(10), {});
 
-    expect(result.sql).to.equal('SELECT * FROM "users" AS t0 LIMIT 10 OFFSET 20');
+    expect(result.sql).to.equal('SELECT * FROM "users" AS t0 LIMIT $(_limit1) OFFSET $(_offset1)');
+    expect(result.params).to.deep.equal({ _limit1: 10, _offset1: 20 });
   });
 
   it("should combine skip with where and orderBy", () => {
@@ -33,8 +35,9 @@ describe("Skip SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS t0 WHERE age >= 21 ORDER BY name ASC OFFSET 5',
+      'SELECT * FROM "users" AS t0 WHERE age >= $(_age1) ORDER BY name ASC OFFSET $(_offset1)',
     );
+    expect(result.params).to.deep.equal({ _age1: 21, _offset1: 5 });
   });
 
   it("should throw error when using local variables", () => {

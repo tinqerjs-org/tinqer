@@ -117,6 +117,7 @@ export type {
 // ==================== Parser API ====================
 
 export { parseQuery } from "./parser/parse-query.js";
+export type { ParseResult } from "./parser/parse-query.js";
 export { parseJavaScript } from "./parser/oxc-parser.js";
 export {
   convertAstToExpression,

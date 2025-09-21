@@ -21,20 +21,25 @@ export function convertTakeOperation(
     const arg = ast.arguments[0];
     if (!arg) return null;
 
-    if (arg.type === "NumericLiteral") {
+    if (arg.type === "NumericLiteral" || arg.type === "Literal") {
+      // Auto-parameterize the limit value
+      const value =
+        arg.type === "NumericLiteral"
+          ? (arg as NumericLiteral).value
+          : ((arg as Literal).value as number);
+
+      const counter = (context.columnCounters.get("limit") || 0) + 1;
+      context.columnCounters.set("limit", counter);
+      const paramName = `_limit${counter}`;
+
+      // Store the parameter value
+      context.autoParams.set(paramName, value);
+
       return {
         type: "queryOperation",
         operationType: "take",
         source,
-        count: (arg as NumericLiteral).value,
-      };
-    }
-    if (arg.type === "Literal") {
-      return {
-        type: "queryOperation",
-        operationType: "take",
-        source,
-        count: (arg as Literal).value as number,
+        count: { type: "param", param: paramName },
       };
     }
     // Handle external parameter (e.g., p.limit)

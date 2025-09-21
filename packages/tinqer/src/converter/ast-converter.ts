@@ -43,8 +43,72 @@ import { convertToArrayOperation } from "./toarray.js";
 // Export the expression converter for use by operation converters
 export { convertAstToExpression } from "./expressions.js";
 
+import type { ParseResult } from "../parser/parse-query.js";
+
 /**
- * Converts an OXC AST to a QueryOperation tree
+ * Converts an OXC AST to a QueryOperation tree with auto-extracted parameters
+ * This handles the method chain: from().where().select() etc.
+ */
+export function convertAstToQueryOperationWithParams(ast: unknown): ParseResult | null {
+  try {
+    const program = ast as Program;
+
+    // Find the arrow function in the AST
+    const firstStatement = program.body[0] as ExpressionStatement;
+    const arrowFunc = findArrowFunction(firstStatement.expression);
+
+    if (!arrowFunc) {
+      return null;
+    }
+
+    // Get the parameter name (if any)
+    const paramName = getParameterName(arrowFunc);
+
+    // Create conversion context with auto-param tracking
+    const context: ConversionContext = {
+      tableParams: new Set(),
+      queryParams: paramName ? new Set([paramName]) : new Set(),
+      tableAliases: new Map(),
+      autoParams: new Map(),
+      columnCounters: new Map(),
+    };
+
+    // Convert the body (should be a method chain)
+    let operation: QueryOperation | null = null;
+
+    // Handle both Expression body and BlockStatement body
+    if (arrowFunc.body.type === "BlockStatement") {
+      // For block statements, look for a return statement
+      const returnExpr = getReturnExpression(arrowFunc.body.body);
+      if (returnExpr) {
+        operation = convertMethodChain(returnExpr, context);
+      }
+    } else {
+      operation = convertMethodChain(arrowFunc.body, context);
+    }
+
+    if (!operation) {
+      return null;
+    }
+
+    // Convert Map to plain object for autoParams
+    const autoParams: Record<string, string | number | boolean | null> = {};
+    context.autoParams.forEach((value, key) => {
+      autoParams[key] = value;
+    });
+
+    return {
+      operation,
+      autoParams,
+    };
+  } catch (error) {
+    console.error("Failed to convert AST to QueryOperation:", error);
+    return null;
+  }
+}
+
+/**
+ * Converts an OXC AST to a QueryOperation tree (legacy, for backward compatibility)
  * This handles the method chain: from().where().select() etc.
  */
 export function convertAstToQueryOperation(ast: unknown): QueryOperation | null {
@@ -84,11 +148,13 @@ export function convertAstToQueryOperation(ast: unknown): QueryOperation | null 
     // Get the parameter name (e.g., "p" in (p) => ...)
     const paramName = getParameterName(arrowFunc);
 
-    // Create context
+    // Create context (with empty auto-param tracking for legacy)
     const context: ConversionContext = {
       tableParams: new Set(),
       queryParams: paramName ? new Set([paramName]) : new Set(),
       tableAliases: new Map(),
+      autoParams: new Map(),
+      columnCounters: new Map(),
     };
 
     // Convert the body (should be a method chain)

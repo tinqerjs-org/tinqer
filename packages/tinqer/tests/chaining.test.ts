@@ -12,8 +12,10 @@ import {
   asOrderByOperation,
   asSkipOperation,
   asTakeOperation,
+  getOperation,
 } from "./test-utils/operation-helpers.js";
 import type { ComparisonExpression, ColumnExpression } from "../src/expressions/expression.js";
+import type { ParamRef } from "../src/query-tree/operations.js";
 
 describe("Operation Chaining", () => {
   it("should parse from().where().select() chain", () => {
@@ -23,8 +25,8 @@ describe("Operation Chaining", () => {
         .select((x) => ({ id: x.id, name: x.name }));
     const result = parseQuery(query);
 
-    expect(result?.operationType).to.equal("select");
-    const selectOp = asSelectOperation(result);
+    expect(getOperation(result)?.operationType).to.equal("select");
+    const selectOp = asSelectOperation(getOperation(result));
     const whereOp = asWhereOperation(selectOp.source);
     expect(whereOp.operationType).to.equal("where");
     const fromOp = asFromOperation(whereOp.source);
@@ -40,8 +42,8 @@ describe("Operation Chaining", () => {
         .select((x) => ({ id: x.id, name: x.name }));
     const result = parseQuery(query);
 
-    expect(result?.operationType).to.equal("select");
-    const selectOp = asSelectOperation(result);
+    expect(getOperation(result)?.operationType).to.equal("select");
+    const selectOp = asSelectOperation(getOperation(result));
     const where2 = asWhereOperation(selectOp.source);
     expect(where2.operationType).to.equal("where");
     const where2Predicate = where2.predicate as ComparisonExpression;
@@ -62,8 +64,8 @@ describe("Operation Chaining", () => {
         .select((x) => ({ userId: x.id, displayName: x.fullName }));
     const result = parseQuery(query);
 
-    expect(result?.operationType).to.equal("select");
-    const outerSelect = asSelectOperation(result);
+    expect(getOperation(result)?.operationType).to.equal("select");
+    const outerSelect = asSelectOperation(getOperation(result));
     const whereOp = asWhereOperation(outerSelect.source);
     expect(whereOp.operationType).to.equal("where");
     const innerSelect = asSelectOperation(whereOp.source);
@@ -83,14 +85,19 @@ describe("Operation Chaining", () => {
         .select((x) => ({ id: x.id, price: x.price }));
     const result = parseQuery(query);
 
-    expect(result?.operationType).to.equal("select");
-    const selectOp = asSelectOperation(result);
+    expect(getOperation(result)?.operationType).to.equal("select");
+    const selectOp = asSelectOperation(getOperation(result));
     const takeOp = asTakeOperation(selectOp.source);
     expect(takeOp.operationType).to.equal("take");
-    expect(takeOp.count).to.equal(20);
+    const takeParam = takeOp.count as ParamRef;
+    expect(takeParam.type).to.equal("param");
+    expect(takeParam.param).to.equal("_limit1");
     const skipOp = asSkipOperation(takeOp.source);
     expect(skipOp.operationType).to.equal("skip");
-    expect(skipOp.count).to.equal(10);
+    const skipParam = skipOp.count as ParamRef;
+    expect(skipParam.type).to.equal("param");
+    expect(skipParam.param).to.equal("_offset1");
+    expect(result?.autoParams).to.deep.equal({ _offset1: 10, _limit1: 20 });
     const orderByOp = asOrderByOperation(skipOp.source);
     expect(orderByOp.operationType).to.equal("orderBy");
     expect(orderByOp.descending).to.equal(true);

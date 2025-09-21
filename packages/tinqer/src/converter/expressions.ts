@@ -78,6 +78,7 @@ export function convertAstToExpression(
     case "NullLiteral":
       return convertLiteral(
         ast as Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
+        context,
       );
 
     case "CallExpression":
@@ -194,8 +195,59 @@ export function convertBinaryExpression(
   ast: ASTBinaryExpression,
   context: ConversionContext,
 ): Expression | null {
-  const left = convertAstToExpression(ast.left, context);
-  const right = convertAstToExpression(ast.right, context);
+  // Check if we can get column hint from either side
+  let columnHint: string | undefined;
+
+  // Peek at both sides to find column hint
+  if (ast.left.type === "MemberExpression") {
+    const memberExpr = ast.left as ASTMemberExpression;
+    if (memberExpr.property && memberExpr.property.type === "Identifier") {
+      columnHint = (memberExpr.property as Identifier).name;
+    }
+  } else if (ast.right.type === "MemberExpression") {
+    const memberExpr = ast.right as ASTMemberExpression;
+    if (memberExpr.property && memberExpr.property.type === "Identifier") {
+      columnHint = (memberExpr.property as Identifier).name;
+    }
+  }
+
+  // Convert left side
+  let left: Expression | null;
+  if (
+    columnHint &&
+    (ast.left.type === "Literal" ||
+      ast.left.type === "NumericLiteral" ||
+      ast.left.type === "StringLiteral" ||
+      ast.left.type === "BooleanLiteral" ||
+      ast.left.type === "NullLiteral")
+  ) {
+    left = convertLiteral(
+      ast.left as Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
+      context,
+      columnHint,
+    );
+  } else {
+    left = convertAstToExpression(ast.left, context);
+  }
+
+  // Convert right side with column hint for literals
+  let right: Expression | null;
+  if (
+    columnHint &&
+    (ast.right.type === "Literal" ||
+      ast.right.type === "NumericLiteral" ||
+      ast.right.type === "StringLiteral" ||
+      ast.right.type === "BooleanLiteral" ||
+      ast.right.type === "NullLiteral")
+  ) {
+    right = convertLiteral(
+      ast.right as Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
+      context,
+      columnHint,
+    );
+  } else {
+    right = convertAstToExpression(ast.right, context);
+  }
 
   if (!left || !right) return null;
 
@@ -292,7 +344,9 @@ export function convertLogicalExpression(
 
 export function convertLiteral(
   ast: Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
-): ConstantExpression {
+  context: ConversionContext,
+  columnHint?: string,
+): ParameterExpression {
   let value: string | number | boolean | null;
   if (ast.type === "NumericLiteral") {
     value = (ast as NumericLiteral).value;
@@ -306,22 +360,20 @@ export function convertLiteral(
     value = (ast as Literal).value;
   }
 
-  const valueType =
-    typeof value === "number"
-      ? "number"
-      : typeof value === "string"
-        ? "string"
-        : typeof value === "boolean"
-          ? "boolean"
-          : value === null
-            ? "null"
-            : "undefined";
+  // Generate parameter name based on column hint
+  const columnName = columnHint || "value";
+  const counter = (context.columnCounters.get(columnName) || 0) + 1;
+  context.columnCounters.set(columnName, counter);
+  const paramName = `_${columnName}${counter}`;
 
+  // Store the parameter value
+  context.autoParams.set(paramName, value);
+
+  // Return a parameter expression instead of constant
   return {
-    type: "constant",
-    value: value,
-    valueType: valueType as "number" | "string" | "boolean" | "null" | "undefined",
-  };
+    type: "param",
+    param: paramName,
+  } as ParameterExpression;
 }
 
 export function convertCallExpression(

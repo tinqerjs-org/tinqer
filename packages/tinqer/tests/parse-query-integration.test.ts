@@ -11,7 +11,9 @@ import {
   asSelectOperation,
   asOrderByOperation,
   asTakeOperation,
+  getOperation,
 } from "./test-utils/operation-helpers.js";
+import type { ParamRef } from "../src/query-tree/operations.js";
 import type {
   ComparisonExpression,
   ObjectExpression,
@@ -19,16 +21,15 @@ import type {
   BooleanMethodExpression,
   ColumnExpression,
 } from "../src/expressions/expression.js";
-import type { ParamRef } from "../src/query-tree/operations.js";
 
 describe("Parse Query Integration Tests", () => {
   it("should parse a simple from query", () => {
     const query = () => from<{ id: number; name: string }>("users");
     const result = parseQuery(query);
 
-    expect(result).to.not.be.null;
-    expect(result?.operationType).to.equal("from");
-    const fromOp = asFromOperation(result);
+    expect(getOperation(result)).to.not.be.null;
+    expect(getOperation(result)?.operationType).to.equal("from");
+    const fromOp = asFromOperation(getOperation(result));
     expect(fromOp.table).to.equal("users");
   });
 
@@ -36,9 +37,9 @@ describe("Parse Query Integration Tests", () => {
     const query = () => from<{ id: number; age: number }>("users").where((x) => x.age >= 18);
     const result = parseQuery(query);
 
-    expect(result).to.not.be.null;
-    expect(result?.operationType).to.equal("where");
-    const whereOp = asWhereOperation(result);
+    expect(getOperation(result)).to.not.be.null;
+    expect(getOperation(result)?.operationType).to.equal("where");
+    const whereOp = asWhereOperation(getOperation(result));
     expect(whereOp.source.operationType).to.equal("from");
     const predicate = whereOp.predicate as ComparisonExpression;
     expect(predicate.type).to.equal("comparison");
@@ -52,9 +53,9 @@ describe("Parse Query Integration Tests", () => {
       }));
     const result = parseQuery(query);
 
-    expect(result).to.not.be.null;
-    expect(result?.operationType).to.equal("select");
-    const selectOp = asSelectOperation(result);
+    expect(getOperation(result)).to.not.be.null;
+    expect(getOperation(result)?.operationType).to.equal("select");
+    const selectOp = asSelectOperation(getOperation(result));
     const objectSelector = selectOp.selector as ObjectExpression;
     expect(objectSelector.type).to.equal("object");
   });
@@ -68,10 +69,13 @@ describe("Parse Query Integration Tests", () => {
         .take(10);
     const result = parseQuery(query);
 
-    expect(result).to.not.be.null;
-    expect(result?.operationType).to.equal("take");
-    const takeOp = asTakeOperation(result);
-    expect(takeOp.count).to.equal(10);
+    expect(getOperation(result)).to.not.be.null;
+    expect(getOperation(result)?.operationType).to.equal("take");
+    const takeOp = asTakeOperation(getOperation(result));
+    const takeParam = takeOp.count as ParamRef;
+    expect(takeParam.type).to.equal("param");
+    expect(takeParam.param).to.equal("_limit1");
+    expect(result?.autoParams).to.deep.equal({ _age1: 18, _limit1: 10 });
 
     const orderByOp = asOrderByOperation(takeOp.source);
     expect(orderByOp.operationType).to.equal("orderBy");
@@ -95,9 +99,9 @@ describe("Parse Query Integration Tests", () => {
       from<{ id: number; age: number }>("users").where((x) => x.age >= p.minAge);
     const result = parseQuery(query);
 
-    expect(result).to.not.be.null;
-    expect(result?.operationType).to.equal("where");
-    const whereOp = asWhereOperation(result);
+    expect(getOperation(result)).to.not.be.null;
+    expect(getOperation(result)?.operationType).to.equal("where");
+    const whereOp = asWhereOperation(getOperation(result));
     const predicate = whereOp.predicate as ComparisonExpression;
     expect(predicate.type).to.equal("comparison");
     const leftColumn = predicate.left as ColumnExpression;
@@ -112,23 +116,23 @@ describe("Parse Query Integration Tests", () => {
   it("should parse terminal operations", () => {
     const query1 = () => from<{ id: number }>("users").count();
     const result1 = parseQuery(query1);
-    expect(result1?.operationType).to.equal("count");
+    expect(getOperation(result1)?.operationType).to.equal("count");
 
     const query2 = () => from<{ id: number }>("users").first();
     const result2 = parseQuery(query2);
-    expect(result2?.operationType).to.equal("first");
+    expect(getOperation(result2)?.operationType).to.equal("first");
 
     const query3 = () => from<{ id: number }>("users").toArray();
     const result3 = parseQuery(query3);
-    expect(result3?.operationType).to.equal("toArray");
+    expect(getOperation(result3)?.operationType).to.equal("toArray");
   });
 
   it("should parse string methods", () => {
     const query = () => from<{ name: string }>("users").where((x) => x.name.startsWith("John"));
     const result = parseQuery(query);
 
-    expect(result).to.not.be.null;
-    const whereOp = asWhereOperation(result);
+    expect(getOperation(result)).to.not.be.null;
+    const whereOp = asWhereOperation(getOperation(result));
     const predicate = whereOp.predicate as BooleanMethodExpression;
     expect(predicate.type).to.equal("booleanMethod");
     expect(predicate.method).to.equal("startsWith");
