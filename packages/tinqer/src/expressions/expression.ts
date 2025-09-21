@@ -101,6 +101,16 @@ export interface CastExpression {
 }
 
 /**
+ * Aggregate expression - for GROUP BY aggregations
+ * Follows C# LINQ IGrouping pattern
+ */
+export interface AggregateExpression {
+  type: "aggregate";
+  function: "count" | "sum" | "avg" | "min" | "max";
+  expression?: ValueExpression; // Optional - COUNT(*) doesn't need one
+}
+
+/**
  * Union type for all value-producing expressions
  */
 export type ValueExpression =
@@ -112,7 +122,8 @@ export type ValueExpression =
   | StringMethodExpression
   | CaseExpression
   | CoalesceExpression
-  | CastExpression;
+  | CastExpression
+  | AggregateExpression;
 
 // ==================== Boolean Expressions ====================
 
@@ -378,6 +389,7 @@ export function isValueExpression(expr: Expression): expr is ValueExpression {
     "case",
     "coalesce",
     "cast",
+    "aggregate",
   ].includes(expr.type);
 }
 

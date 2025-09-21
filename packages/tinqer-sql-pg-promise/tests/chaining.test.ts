@@ -41,7 +41,7 @@ describe("Complex Query Chaining", () => {
     expect(result.params).to.deep.equal({ page: 2, pageSize: 20 });
   });
 
-  it("should generate query with multiple WHERE clauses", () => {
+  it("should generate query with multiple WHERE clauses combined with AND", () => {
     const result = query(
       () =>
         from<{ id: number; age: number; role: string }>("users")
@@ -50,7 +50,7 @@ describe("Complex Query Chaining", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE age >= 18 WHERE role = \'admin\'');
+    expect(result.sql).to.equal("SELECT * FROM \"users\" AS t0 WHERE age >= 18 AND role = 'admin'");
   });
 
   it("should generate query with DISTINCT", () => {
@@ -65,7 +65,7 @@ describe("Complex Query Chaining", () => {
     expect(result.sql).to.equal('SELECT DISTINCT category FROM "products" AS t0');
   });
 
-  it.skip("should generate query with GROUP BY (parser limitation - grouping with aggregates)", () => {
+  it("should generate query with GROUP BY and COUNT aggregate", () => {
     const result = query(
       () =>
         from<{ department: string; salary: number }>("employees")
@@ -74,7 +74,8 @@ describe("Complex Query Chaining", () => {
       {},
     );
 
-    // Note: This is a simplified test - actual GROUP BY with aggregates needs more work
-    expect(result.sql).to.contain("GROUP BY department");
+    expect(result.sql).to.equal(
+      'SELECT key AS department, COUNT(*) AS count FROM "employees" AS t0 GROUP BY department',
+    );
   });
 });

@@ -26,8 +26,8 @@ import type {
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 import { generateFrom } from "./generators/from.js";
-import { generateWhere } from "./generators/where.js";
 import { generateSelect } from "./generators/select.js";
+import { generateBooleanExpression } from "./expression-generator.js";
 import { generateOrderBy } from "./generators/orderby.js";
 import { generateThenBy } from "./generators/thenby.js";
 import { generateTake } from "./generators/take.js";
@@ -118,11 +118,14 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     fragments.push(generateJoin(joinOp, context));
   });
 
-  // Process WHERE clauses (can have multiple)
+  // Process WHERE clauses (combine multiple with AND)
   const whereOps = operations.filter((op) => op.operationType === "where") as WhereOperation[];
-  whereOps.forEach((whereOp) => {
-    fragments.push(generateWhere(whereOp, context));
-  });
+  if (whereOps.length > 0) {
+    const predicates = whereOps.map((whereOp) =>
+      generateBooleanExpression(whereOp.predicate, context),
+    );
+    fragments.push(`WHERE ${predicates.join(" AND ")}`);
+  }
 
   // Process GROUP BY
   const groupByOp = operations.find((op) => op.operationType === "groupBy") as GroupByOperation;

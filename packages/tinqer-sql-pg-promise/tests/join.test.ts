@@ -21,7 +21,7 @@ describe("Join SQL Generation", () => {
     amount: number;
   }
 
-  it.skip("should generate INNER JOIN (parser limitation - join not yet supported)", () => {
+  it("should generate INNER JOIN with proper syntax", () => {
     const result = query(
       () =>
         from<User>("users").join(
@@ -33,12 +33,13 @@ describe("Join SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.include("INNER JOIN");
-    expect(result.sql).to.include("departments");
-    expect(result.sql).to.include("ON");
+    // The generator creates a subquery for the joined table
+    expect(result.sql).to.equal(
+      'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "departments" AS t0) AS t1 ON t0.departmentId = t1.id',
+    );
   });
 
-  it.skip("should handle JOIN with WHERE clause (parser limitation - join not yet supported)", () => {
+  it("should handle JOIN with WHERE clause", () => {
     const result = query(
       () =>
         from<User>("users")
@@ -52,12 +53,13 @@ describe("Join SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.include("WHERE");
-    expect(result.sql).to.include("id > 100");
-    expect(result.sql).to.include("INNER JOIN");
+    // WHERE comes after JOIN in the generated SQL
+    expect(result.sql).to.equal(
+      'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0) AS t1 ON t0.id = t1.userId WHERE id > 100',
+    );
   });
 
-  it.skip("should handle JOIN with complex inner query (parser limitation - join not yet supported)", () => {
+  it("should handle JOIN with complex inner query", () => {
     const result = query(
       () =>
         from<User>("users").join(
@@ -69,7 +71,9 @@ describe("Join SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.include("INNER JOIN");
-    expect(result.sql).to.include("amount > 1000");
+    // The inner query includes its WHERE clause in the subquery
+    expect(result.sql).to.equal(
+      'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0 WHERE amount > 1000) AS t1 ON t0.id = t1.userId',
+    );
   });
 });

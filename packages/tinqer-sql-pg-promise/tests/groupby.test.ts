@@ -53,4 +53,74 @@ describe("GroupBy SQL Generation", () => {
 
     expect(result.sql).to.equal('SELECT * FROM "sales" AS t0 GROUP BY product ORDER BY key ASC');
   });
+
+  it("should handle GROUP BY with COUNT aggregate", () => {
+    const result = query(
+      () =>
+        from<Sale>("sales")
+          .groupBy((s) => s.category)
+          .select((g) => ({ category: g.key, count: g.count() })),
+      {},
+    );
+
+    expect(result.sql).to.equal(
+      'SELECT key AS category, COUNT(*) AS count FROM "sales" AS t0 GROUP BY category',
+    );
+  });
+
+  it("should handle GROUP BY with SUM aggregate", () => {
+    const result = query(
+      () =>
+        from<Sale>("sales")
+          .groupBy((s) => s.category)
+          .select((g) => ({
+            category: g.key,
+            totalAmount: g.sum((s) => s.amount),
+          })),
+      {},
+    );
+
+    expect(result.sql).to.equal(
+      'SELECT key AS category, SUM(amount) AS totalAmount FROM "sales" AS t0 GROUP BY category',
+    );
+  });
+
+  it("should handle GROUP BY with multiple aggregates", () => {
+    const result = query(
+      () =>
+        from<Sale>("sales")
+          .groupBy((s) => s.category)
+          .select((g) => ({
+            category: g.key,
+            count: g.count(),
+            totalAmount: g.sum((s) => s.amount),
+            avgAmount: g.avg((s) => s.amount),
+          })),
+      {},
+    );
+
+    expect(result.sql).to.equal(
+      'SELECT key AS category, COUNT(*) AS count, SUM(amount) AS totalAmount, AVG(amount) AS avgAmount FROM "sales" AS t0 GROUP BY category',
+    );
+  });
+
+  it("should handle GROUP BY with WHERE and aggregates", () => {
+    const result = query(
+      () =>
+        from<Sale>("sales")
+          .where((s) => s.quantity > 10)
+          .groupBy((s) => s.product)
+          .select((g) => ({
+            product: g.key,
+            totalQuantity: g.sum((s) => s.quantity),
+            maxAmount: g.max((s) => s.amount),
+            minAmount: g.min((s) => s.amount),
+          })),
+      {},
+    );
+
+    expect(result.sql).to.equal(
+      'SELECT key AS product, SUM(quantity) AS totalQuantity, MAX(amount) AS maxAmount, MIN(amount) AS minAmount FROM "sales" AS t0 WHERE quantity > 10 GROUP BY product',
+    );
+  });
 });

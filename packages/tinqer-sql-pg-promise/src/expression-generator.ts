@@ -18,6 +18,7 @@ import type {
   ObjectExpression,
   ArrayExpression,
   ConcatExpression,
+  AggregateExpression,
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 
@@ -79,6 +80,8 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
       return generateConcatExpression(expr as ConcatExpression, context);
     case "stringMethod":
       return generateStringMethodExpression(expr as StringMethodExpression, context);
+    case "aggregate":
+      return generateAggregateExpression(expr as AggregateExpression, context);
     default:
       throw new Error(`Unsupported value expression type: ${(expr as any).type}`);
   }
@@ -260,6 +263,27 @@ function generateBooleanMethodExpression(
 }
 
 /**
+ * Generate SQL for aggregate expressions
+ */
+function generateAggregateExpression(expr: AggregateExpression, context: SqlContext): string {
+  const func = expr.function.toUpperCase();
+
+  // COUNT(*) special case
+  if (func === "COUNT" && !expr.expression) {
+    return "COUNT(*)";
+  }
+
+  // Aggregate with expression (e.g., SUM(amount), COUNT(id))
+  if (expr.expression) {
+    const innerExpr = generateValueExpression(expr.expression, context);
+    return `${func}(${innerExpr})`;
+  }
+
+  // Default to COUNT(*) for other aggregates without expression
+  return `${func}(*)`;
+}
+
+/**
  * Generate SQL for object expressions (used in SELECT)
  */
 function generateObjectExpression(expr: ObjectExpression, context: SqlContext): string {
@@ -287,9 +311,16 @@ function isBooleanExpression(expr: Expression): expr is BooleanExpression {
 }
 
 function isValueExpression(expr: Expression): expr is ValueExpression {
-  return ["column", "constant", "param", "arithmetic", "concat", "stringMethod", "case"].includes(
-    (expr as any).type,
-  );
+  return [
+    "column",
+    "constant",
+    "param",
+    "arithmetic",
+    "concat",
+    "stringMethod",
+    "case",
+    "aggregate",
+  ].includes((expr as any).type);
 }
 
 function isObjectExpression(expr: Expression): expr is ObjectExpression {
