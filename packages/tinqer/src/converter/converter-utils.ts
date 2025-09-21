@@ -21,6 +21,8 @@ export interface ConversionContext {
   queryParams: Set<string>;
   currentTable?: string;
   tableAliases: Map<string, string>;
+  // Track parameters that represent IGrouping<TKey, TElement> after groupBy
+  groupingParams?: Set<string>;
 }
 
 /**
@@ -111,6 +113,7 @@ export function isValueExpression(expr: Expression): boolean {
     "case",
     "coalesce",
     "cast",
+    "aggregate",
   ].includes(expr.type);
 }
 

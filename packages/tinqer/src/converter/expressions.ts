@@ -17,6 +17,7 @@ import type {
   BooleanMethodExpression,
   ConcatExpression,
   StringMethodExpression,
+  AggregateExpression,
 } from "../expressions/expression.js";
 
 import type {
@@ -39,6 +40,7 @@ import type {
 
 import type { ConversionContext } from "./converter-utils.js";
 import {
+  getParameterName,
   getReturnExpression,
   isBooleanExpression,
   isValueExpression,
@@ -326,9 +328,60 @@ export function convertCallExpression(
   ast: ASTCallExpression,
   context: ConversionContext,
 ): Expression | null {
-  // Handle string method calls
+  // Handle method calls
   if (ast.callee.type === "MemberExpression") {
     const memberCallee = ast.callee as ASTMemberExpression;
+
+    // Check if this is an aggregate method on a grouping parameter
+    // In C# LINQ, after groupBy, the parameter represents IGrouping<TKey, TElement>
+    if (memberCallee.object.type === "Identifier" && memberCallee.property.type === "Identifier") {
+      const objName = (memberCallee.object as Identifier).name;
+      const methodName = (memberCallee.property as Identifier).name;
+
+      // Check if this is a grouping parameter calling an aggregate method
+      if (context.groupingParams && context.groupingParams.has(objName)) {
+        // Handle aggregate methods on grouping
+        if (["count", "sum", "avg", "average", "min", "max"].includes(methodName.toLowerCase())) {
+          const aggregateFunc =
+            methodName.toLowerCase() === "average" ? "avg" : methodName.toLowerCase();
+
+          // For methods like sum, avg, min, max that can take a selector
+          if (ast.arguments && ast.arguments.length > 0) {
+            const selectorArg = ast.arguments[0];
+            if (selectorArg && selectorArg.type === "ArrowFunctionExpression") {
+              const arrowFunc = selectorArg as ArrowFunctionExpression;
+              const paramName = getParameterName(arrowFunc);
+              if (paramName) {
+                context.tableParams.add(paramName);
+              }
+
+              const bodyExpr =
+                arrowFunc.body.type === "BlockStatement"
+                  ? getReturnExpression(arrowFunc.body.body)
+                  : arrowFunc.body;
+
+              if (bodyExpr) {
+                const expr = convertAstToExpression(bodyExpr, context);
+                if (expr && isValueExpression(expr)) {
+                  return {
+                    type: "aggregate",
+                    function: aggregateFunc as "count" | "sum" | "avg" | "min" | "max",
+                    expression: expr as ValueExpression,
+                  } as AggregateExpression;
+                }
+              }
+            }
+          }
+
+          // No arguments - just COUNT(*) or similar
+          return {
+            type: "aggregate",
+            function: aggregateFunc as "count" | "sum" | "avg" | "min" | "max",
+          } as AggregateExpression;
+        }
+      }
+    }
+
     const obj = convertAstToExpression(memberCallee.object, context);
 
     if (memberCallee.property.type === "Identifier") {

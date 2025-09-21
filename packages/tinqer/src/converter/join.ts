@@ -12,7 +12,7 @@ import type {
 import type { ConversionContext } from "./converter-utils.js";
 import { getParameterName, getReturnExpression } from "./converter-utils.js";
 import { convertAstToExpression } from "./expressions.js";
-import { convertAstToQueryOperation } from "./ast-converter.js";
+import { convertMethodChain } from "./ast-converter.js";
 
 export function convertJoinOperation(
   ast: ASTCallExpression,
@@ -22,7 +22,7 @@ export function convertJoinOperation(
   if (ast.arguments && ast.arguments.length >= 4) {
     // join(inner, outerKeySelector, innerKeySelector, resultSelector)
     const firstArg = ast.arguments[0];
-    const innerSource = firstArg ? convertAstToQueryOperation(firstArg) : null;
+    const innerSource = firstArg ? convertMethodChain(firstArg as ASTExpression, context) : null;
     const outerKeySelectorAst = ast.arguments[1];
     const innerKeySelectorAst = ast.arguments[2];
 

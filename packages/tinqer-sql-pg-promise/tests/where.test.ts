@@ -60,7 +60,7 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS t0 WHERE (role = \'admin\' OR role = \'moderator\')',
+        "SELECT * FROM \"users\" AS t0 WHERE (role = 'admin' OR role = 'moderator')",
       );
     });
   });

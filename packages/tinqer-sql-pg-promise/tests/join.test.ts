@@ -21,7 +21,7 @@ describe("Join SQL Generation", () => {
     amount: number;
   }
 
-  it.skip("should generate INNER JOIN (parser limitation - join not yet supported)", () => {
+  it("should generate INNER JOIN", () => {
     const result = query(
       () =>
         from<User>("users").join(
@@ -38,7 +38,7 @@ describe("Join SQL Generation", () => {
     expect(result.sql).to.include("ON");
   });
 
-  it.skip("should handle JOIN with WHERE clause (parser limitation - join not yet supported)", () => {
+  it("should handle JOIN with WHERE clause", () => {
     const result = query(
       () =>
         from<User>("users")
@@ -57,7 +57,7 @@ describe("Join SQL Generation", () => {
     expect(result.sql).to.include("INNER JOIN");
   });
 
-  it.skip("should handle JOIN with complex inner query (parser limitation - join not yet supported)", () => {
+  it("should handle JOIN with complex inner query", () => {
     const result = query(
       () =>
         from<User>("users").join(

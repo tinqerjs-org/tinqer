@@ -37,19 +37,20 @@ describe("Skip SQL Generation", () => {
     );
   });
 
-  it.skip("should handle pagination pattern with local variables (parser limitation)", () => {
+  it("should throw error when using local variables", () => {
     const pageSize = 25;
     const pageNumber = 3; // 0-based
 
-    const result = query(
-      () =>
-        from<User>("users")
-          .orderBy((u) => u.id)
-          .skip(pageNumber * pageSize)
-          .take(pageSize),
-      {},
-    );
-
-    expect(result.sql).to.equal("SELECT * FROM users AS t0 ORDER BY id ASC LIMIT 25 OFFSET 75");
+    // Local variables should NOT work - parser should return null and throw error
+    expect(() => {
+      query(
+        () =>
+          from<User>("users")
+            .orderBy((u) => u.id)
+            .skip(pageNumber * pageSize)
+            .take(pageSize),
+        {},
+      );
+    }).to.throw("Failed to parse query");
   });
 });
