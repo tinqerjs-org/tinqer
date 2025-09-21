@@ -17,7 +17,10 @@ describe("Aggregate SQL Generation", () => {
 
     it("should generate COUNT with WHERE", () => {
       const result = query(
-        () => from<{ id: number; isActive: boolean }>("users").where((x) => x.isActive).count(),
+        () =>
+          from<{ id: number; isActive: boolean }>("users")
+            .where((x) => x.isActive)
+            .count(),
         {},
       );
 
@@ -27,10 +30,7 @@ describe("Aggregate SQL Generation", () => {
 
   describe("SUM", () => {
     it("should generate SUM", () => {
-      const result = query(
-        () => from<{ amount: number }>("orders").sum((x) => x.amount),
-        {},
-      );
+      const result = query(() => from<{ amount: number }>("orders").sum((x) => x.amount), {});
 
       expect(result.sql).to.equal("SELECT SUM(amount) FROM orders AS t0");
     });
@@ -38,10 +38,7 @@ describe("Aggregate SQL Generation", () => {
 
   describe("AVG", () => {
     it("should generate AVG", () => {
-      const result = query(
-        () => from<{ price: number }>("products").average((x) => x.price),
-        {},
-      );
+      const result = query(() => from<{ price: number }>("products").average((x) => x.price), {});
 
       expect(result.sql).to.equal("SELECT AVG(price) FROM products AS t0");
     });
@@ -49,10 +46,7 @@ describe("Aggregate SQL Generation", () => {
 
   describe("MIN", () => {
     it("should generate MIN", () => {
-      const result = query(
-        () => from<{ age: number }>("users").min((x) => x.age),
-        {},
-      );
+      const result = query(() => from<{ age: number }>("users").min((x) => x.age), {});
 
       expect(result.sql).to.equal("SELECT MIN(age) FROM users AS t0");
     });
@@ -60,10 +54,7 @@ describe("Aggregate SQL Generation", () => {
 
   describe("MAX", () => {
     it("should generate MAX", () => {
-      const result = query(
-        () => from<{ salary: number }>("employees").max((x) => x.salary),
-        {},
-      );
+      const result = query(() => from<{ salary: number }>("employees").max((x) => x.salary), {});
 
       expect(result.sql).to.equal("SELECT MAX(salary) FROM employees AS t0");
     });

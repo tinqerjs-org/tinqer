@@ -12,20 +12,18 @@ describe("Distinct SQL Generation", () => {
   }
 
   it("should generate DISTINCT for all columns", () => {
-    const result = query(
-      () => from<Product>("products").distinct(),
-      {}
-    );
+    const result = query(() => from<Product>("products").distinct(), {});
 
     expect(result.sql).to.equal("SELECT DISTINCT * FROM products AS t0");
   });
 
   it("should combine DISTINCT with WHERE", () => {
     const result = query(
-      () => from<Product>("products")
-        .where(p => p.price > 100)
-        .distinct(),
-      {}
+      () =>
+        from<Product>("products")
+          .where((p) => p.price > 100)
+          .distinct(),
+      {},
     );
 
     expect(result.sql).to.equal("SELECT DISTINCT * FROM products AS t0 WHERE price > 100");
@@ -33,10 +31,11 @@ describe("Distinct SQL Generation", () => {
 
   it("should combine DISTINCT with SELECT projection", () => {
     const result = query(
-      () => from<Product>("products")
-        .select(p => ({ category: p.category }))
-        .distinct(),
-      {}
+      () =>
+        from<Product>("products")
+          .select((p) => ({ category: p.category }))
+          .distinct(),
+      {},
     );
 
     expect(result.sql).to.equal("SELECT DISTINCT category AS category FROM products AS t0");
@@ -44,13 +43,16 @@ describe("Distinct SQL Generation", () => {
 
   it("should work with DISTINCT, WHERE, and ORDER BY", () => {
     const result = query(
-      () => from<Product>("products")
-        .where(p => p.price < 500)
-        .distinct()
-        .orderBy(p => p.brand),
-      {}
+      () =>
+        from<Product>("products")
+          .where((p) => p.price < 500)
+          .distinct()
+          .orderBy((p) => p.brand),
+      {},
     );
 
-    expect(result.sql).to.equal("SELECT DISTINCT * FROM products AS t0 WHERE price < 500 ORDER BY brand ASC");
+    expect(result.sql).to.equal(
+      "SELECT DISTINCT * FROM products AS t0 WHERE price < 500 ORDER BY brand ASC",
+    );
   });
 });

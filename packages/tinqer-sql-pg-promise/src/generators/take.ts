@@ -2,8 +2,9 @@
  * TAKE (LIMIT) clause generator
  */
 
-import type { TakeOperation, ParamRef } from "@webpods/tinqer";
+import type { TakeOperation } from "@webpods/tinqer";
 import type { SqlContext } from "../types.js";
+import { generateValueExpression } from "../expression-generator.js";
 
 /**
  * Generate LIMIT clause
@@ -12,11 +13,8 @@ export function generateTake(operation: TakeOperation, context: SqlContext): str
   if (typeof operation.count === "number") {
     return `LIMIT ${operation.count}`;
   } else {
-    // Parameter reference
-    const paramRef = operation.count as ParamRef;
-    const param = paramRef.property
-      ? `${context.paramPrefix}${paramRef.param}.${paramRef.property}`
-      : `${context.paramPrefix}${paramRef.param}`;
-    return `LIMIT ${param}`;
+    // Handle as expression (ParamRef, ArithmeticExpression, etc.)
+    const expr = generateValueExpression(operation.count as any, context);
+    return `LIMIT ${expr}`;
   }
 }

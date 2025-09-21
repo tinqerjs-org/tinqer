@@ -230,7 +230,10 @@ function generateStringMethodExpression(expr: StringMethodExpression, context: S
 /**
  * Generate SQL for boolean method expressions
  */
-function generateBooleanMethodExpression(expr: BooleanMethodExpression, context: SqlContext): string {
+function generateBooleanMethodExpression(
+  expr: BooleanMethodExpression,
+  context: SqlContext,
+): string {
   const object = generateValueExpression(expr.object, context);
 
   switch (expr.method) {
@@ -286,15 +289,9 @@ function isBooleanExpression(expr: Expression): expr is BooleanExpression {
 }
 
 function isValueExpression(expr: Expression): expr is ValueExpression {
-  return [
-    "column",
-    "constant",
-    "param",
-    "arithmetic",
-    "concat",
-    "stringMethod",
-    "case",
-  ].includes((expr as any).type);
+  return ["column", "constant", "param", "arithmetic", "concat", "stringMethod", "case"].includes(
+    (expr as any).type,
+  );
 }
 
 function isObjectExpression(expr: Expression): expr is ObjectExpression {

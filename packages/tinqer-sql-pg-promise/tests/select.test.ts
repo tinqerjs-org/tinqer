@@ -54,8 +54,6 @@ describe("SELECT SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal(
-      "SELECT id AS id, name AS name FROM users AS t0 WHERE age >= 18",
-    );
+    expect(result.sql).to.equal("SELECT id AS id, name AS name FROM users AS t0 WHERE age >= 18");
   });
 });

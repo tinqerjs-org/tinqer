@@ -68,7 +68,9 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
 
   // Check for DISTINCT
   const distinctOp = operations.find((op) => op.operationType === "distinct");
-  const distinctKeyword = distinctOp ? generateDistinct(distinctOp as DistinctOperation, context) : "";
+  const distinctKeyword = distinctOp
+    ? generateDistinct(distinctOp as DistinctOperation, context)
+    : "";
 
   // Check for aggregate operations
   const countOp = operations.find((op) => op.operationType === "count") as CountOperation;
