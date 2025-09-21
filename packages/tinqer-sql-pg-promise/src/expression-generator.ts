@@ -169,11 +169,9 @@ function generateConstantExpression(expr: ConstantExpression): string {
  * Generate SQL for parameter references
  */
 function generateParameterExpression(expr: ParameterExpression, context: SqlContext): string {
-  // For pg-promise, use :paramName or :param.property notation
-  if (expr.property) {
-    return `${context.paramPrefix}${expr.param}.${expr.property}`;
-  }
-  return `${context.paramPrefix}${expr.param}`;
+  // Extract only the last property name for the parameter
+  const paramName = expr.property || expr.param;
+  return context.formatParameter(paramName);
 }
 
 /**

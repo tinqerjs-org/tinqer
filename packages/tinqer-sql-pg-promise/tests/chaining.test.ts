@@ -20,7 +20,7 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      "SELECT id AS id, name AS name FROM users AS t0 WHERE (age >= :p.minAge AND isActive) ORDER BY name ASC LIMIT 10",
+      'SELECT id AS id, name AS name FROM "users" AS t0 WHERE (age >= $(minAge) AND isActive) ORDER BY name ASC LIMIT 10',
     );
     expect(result.params).to.deep.equal({ minAge: 18 });
   });
@@ -36,7 +36,7 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      "SELECT * FROM products AS t0 ORDER BY name ASC LIMIT :p.pageSize OFFSET (:p.page * :p.pageSize)",
+      'SELECT * FROM "products" AS t0 ORDER BY name ASC LIMIT $(pageSize) OFFSET ($(page) * $(pageSize))',
     );
     expect(result.params).to.deep.equal({ page: 2, pageSize: 20 });
   });
@@ -50,7 +50,7 @@ describe("Complex Query Chaining", () => {
       {},
     );
 
-    expect(result.sql).to.equal("SELECT * FROM users AS t0 WHERE age >= 18 WHERE role = 'admin'");
+    expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE age >= 18 WHERE role = \'admin\'');
   });
 
   it("should generate query with DISTINCT", () => {
@@ -62,7 +62,7 @@ describe("Complex Query Chaining", () => {
       {},
     );
 
-    expect(result.sql).to.equal("SELECT DISTINCT category FROM products AS t0");
+    expect(result.sql).to.equal('SELECT DISTINCT category FROM "products" AS t0');
   });
 
   it.skip("should generate query with GROUP BY (parser limitation - grouping with aggregates)", () => {
