@@ -15,7 +15,7 @@ describe("WHERE SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.equal("SELECT * FROM users AS t0 WHERE id = 1");
+      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE id = 1');
     });
 
     it("should generate greater than comparison", () => {
@@ -24,7 +24,7 @@ describe("WHERE SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.equal("SELECT * FROM users AS t0 WHERE age > 18");
+      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE age > 18');
     });
 
     it("should generate greater than or equal comparison", () => {
@@ -33,7 +33,7 @@ describe("WHERE SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.equal("SELECT * FROM users AS t0 WHERE age >= 18");
+      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE age >= 18');
     });
   });
 
@@ -47,7 +47,7 @@ describe("WHERE SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.equal("SELECT * FROM users AS t0 WHERE (age >= 18 AND isActive)");
+      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE (age >= 18 AND isActive)');
     });
 
     it("should generate OR condition", () => {
@@ -60,7 +60,7 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        "SELECT * FROM users AS t0 WHERE (role = 'admin' OR role = 'moderator')",
+        'SELECT * FROM "users" AS t0 WHERE (role = \'admin\' OR role = \'moderator\')',
       );
     });
   });
@@ -73,7 +73,7 @@ describe("WHERE SQL Generation", () => {
         { minAge: 18 },
       );
 
-      expect(result.sql).to.equal("SELECT * FROM users AS t0 WHERE age >= :p.minAge");
+      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE age >= $(minAge)');
       expect(result.params).to.deep.equal({ minAge: 18 });
     });
 
@@ -87,7 +87,7 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        "SELECT * FROM users AS t0 WHERE (age >= :p.minAge AND age <= :p.maxAge)",
+        'SELECT * FROM "users" AS t0 WHERE (age >= $(minAge) AND age <= $(maxAge))',
       );
       expect(result.params).to.deep.equal({ minAge: 18, maxAge: 65 });
     });

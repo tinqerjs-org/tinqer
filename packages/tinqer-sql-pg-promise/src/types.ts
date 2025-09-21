@@ -16,7 +16,7 @@ export interface SqlResult<TParams> {
 export interface SqlContext {
   tableAliases: Map<string, string>;
   aliasCounter: number;
-  paramPrefix: string; // For pg-promise we use ":"
+  formatParameter: (paramName: string) => string; // Format parameter for SQL dialect
 }
 
 /**

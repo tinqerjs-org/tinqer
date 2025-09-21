@@ -52,7 +52,7 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
   const context: SqlContext = {
     tableAliases: new Map(),
     aliasCounter: 0,
-    paramPrefix: ":",
+    formatParameter: (paramName: string) => `$(${paramName})`, // pg-promise format
   };
 
   // Handle special operations first

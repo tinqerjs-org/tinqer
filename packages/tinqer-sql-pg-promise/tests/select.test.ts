@@ -14,7 +14,7 @@ describe("SELECT SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal("SELECT name FROM users AS t0");
+    expect(result.sql).to.equal('SELECT name FROM "users" AS t0');
   });
 
   it("should generate SELECT with object projection", () => {
@@ -27,7 +27,7 @@ describe("SELECT SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal("SELECT id AS userId, name AS userName FROM users AS t0");
+    expect(result.sql).to.equal('SELECT id AS userId, name AS userName FROM "users" AS t0');
   });
 
   it("should generate SELECT with computed values", () => {
@@ -41,7 +41,7 @@ describe("SELECT SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      "SELECT firstName || ' ' || lastName AS fullName, (age * 12) AS ageInMonths FROM users AS t0",
+      "SELECT firstName || ' ' || lastName AS fullName, (age * 12) AS ageInMonths FROM \"users\" AS t0",
     );
   });
 
@@ -54,6 +54,6 @@ describe("SELECT SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal("SELECT id AS id, name AS name FROM users AS t0 WHERE age >= 18");
+    expect(result.sql).to.equal('SELECT id AS id, name AS name FROM "users" AS t0 WHERE age >= 18');
   });
 });
