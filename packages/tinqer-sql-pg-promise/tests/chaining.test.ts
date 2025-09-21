@@ -41,7 +41,7 @@ describe("Complex Query Chaining", () => {
     expect(result.params).to.deep.equal({ page: 2, pageSize: 20 });
   });
 
-  it("should generate query with multiple WHERE clauses", () => {
+  it("should generate query with multiple WHERE clauses combined with AND", () => {
     const result = query(
       () =>
         from<{ id: number; age: number; role: string }>("users")
@@ -50,9 +50,7 @@ describe("Complex Query Chaining", () => {
       {},
     );
 
-    expect(result.sql).to.equal(
-      "SELECT * FROM \"users\" AS t0 WHERE age >= 18 WHERE role = 'admin'",
-    );
+    expect(result.sql).to.equal("SELECT * FROM \"users\" AS t0 WHERE age >= 18 AND role = 'admin'");
   });
 
   it("should generate query with DISTINCT", () => {
