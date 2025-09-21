@@ -10,6 +10,7 @@ import {
   asGroupByOperation,
   asSelectOperation,
   asOrderByOperation,
+  getOperation,
 } from "./test-utils/operation-helpers.js";
 
 describe("GROUP BY Operation", () => {
@@ -21,8 +22,8 @@ describe("GROUP BY Operation", () => {
         );
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("groupBy");
-      const groupByOp = asGroupByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("groupBy");
+      const groupByOp = asGroupByOperation(getOperation(result));
       expect(groupByOp.keySelector).to.equal("category");
     });
 
@@ -33,8 +34,8 @@ describe("GROUP BY Operation", () => {
         );
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("groupBy");
-      const groupByOp = asGroupByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("groupBy");
+      const groupByOp = asGroupByOperation(getOperation(result));
       expect(groupByOp.keySelector).to.equal("department");
     });
 
@@ -45,8 +46,8 @@ describe("GROUP BY Operation", () => {
           .groupBy((x) => x.category);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("groupBy");
-      const groupByOp = asGroupByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("groupBy");
+      const groupByOp = asGroupByOperation(getOperation(result));
       expect(groupByOp.source.operationType).to.equal("where");
     });
 
@@ -57,8 +58,8 @@ describe("GROUP BY Operation", () => {
           .select((g) => ({ category: g.key }));
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("select");
-      const selectOp = asSelectOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("select");
+      const selectOp = asSelectOperation(getOperation(result));
       expect(selectOp.source.operationType).to.equal("groupBy");
     });
 
@@ -69,8 +70,8 @@ describe("GROUP BY Operation", () => {
           .orderBy((g) => g.key);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("orderBy");
-      const orderByOp = asOrderByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("orderBy");
+      const orderByOp = asOrderByOperation(getOperation(result));
       expect(orderByOp.source.operationType).to.equal("groupBy");
     });
   });

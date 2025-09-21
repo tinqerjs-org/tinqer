@@ -41,8 +41,9 @@ describe("SELECT SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      "SELECT firstName || ' ' || lastName AS fullName, (age * 12) AS ageInMonths FROM \"users\" AS t0",
+      'SELECT firstName || $(_firstName1) || lastName AS fullName, (age * $(_age1)) AS ageInMonths FROM "users" AS t0',
     );
+    expect(result.params).to.deep.equal({ _firstName1: " ", _age1: 12 });
   });
 
   it("should generate SELECT after WHERE", () => {
@@ -54,6 +55,9 @@ describe("SELECT SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT id AS id, name AS name FROM "users" AS t0 WHERE age >= 18');
+    expect(result.sql).to.equal(
+      'SELECT id AS id, name AS name FROM "users" AS t0 WHERE age >= $(_age1)',
+    );
+    expect(result.params).to.deep.equal({ _age1: 18 });
   });
 });

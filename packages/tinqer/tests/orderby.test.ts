@@ -10,8 +10,10 @@ import {
   asSelectOperation,
   asWhereOperation,
   asTakeOperation,
+  getOperation,
 } from "./test-utils/operation-helpers.js";
 import type { ConcatExpression } from "../src/expressions/expression.js";
+import type { ParamRef } from "../src/query-tree/operations.js";
 
 describe("ORDER BY Operations", () => {
   describe("orderBy()", () => {
@@ -19,8 +21,8 @@ describe("ORDER BY Operations", () => {
       const query = () => from<{ id: number; name: string }>("users").orderBy((x) => x.name);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("orderBy");
-      const orderByOp = asOrderByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("orderBy");
+      const orderByOp = asOrderByOperation(getOperation(result));
       expect(orderByOp.keySelector).to.equal("name");
       expect(orderByOp.descending).to.equal(false);
     });
@@ -29,8 +31,8 @@ describe("ORDER BY Operations", () => {
       const query = () => from<{ id: number; age: number }>("users").orderBy((x) => x.age);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("orderBy");
-      const orderByOp = asOrderByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("orderBy");
+      const orderByOp = asOrderByOperation(getOperation(result));
       expect(orderByOp.keySelector).to.equal("age");
       expect(orderByOp.descending).to.equal(false);
     });
@@ -42,8 +44,8 @@ describe("ORDER BY Operations", () => {
           .orderBy((x) => x.name);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("orderBy");
-      const orderByOp = asOrderByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("orderBy");
+      const orderByOp = asOrderByOperation(getOperation(result));
       expect(orderByOp.source.operationType).to.equal("where");
     });
 
@@ -54,8 +56,8 @@ describe("ORDER BY Operations", () => {
           .select((x) => ({ id: x.id, name: x.name }));
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("select");
-      const selectOp = asSelectOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("select");
+      const selectOp = asSelectOperation(getOperation(result));
       expect(selectOp.source.operationType).to.equal("orderBy");
     });
 
@@ -66,8 +68,8 @@ describe("ORDER BY Operations", () => {
         );
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("orderBy");
-      const orderByOp = asOrderByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("orderBy");
+      const orderByOp = asOrderByOperation(getOperation(result));
       const concatExpr = orderByOp.keySelector as ConcatExpression;
       expect(concatExpr.type).to.equal("concat");
     });
@@ -79,8 +81,8 @@ describe("ORDER BY Operations", () => {
         from<{ id: number; createdAt: Date }>("posts").orderByDescending((x) => x.createdAt);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("orderBy");
-      const orderByOp = asOrderByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("orderBy");
+      const orderByOp = asOrderByOperation(getOperation(result));
       expect(orderByOp.keySelector).to.equal("createdAt");
       expect(orderByOp.descending).to.equal(true);
     });
@@ -90,8 +92,8 @@ describe("ORDER BY Operations", () => {
         from<{ id: number; salary: number }>("employees").orderByDescending((x) => x.salary);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("orderBy");
-      const orderByOp = asOrderByOperation(result);
+      expect(getOperation(result)?.operationType).to.equal("orderBy");
+      const orderByOp = asOrderByOperation(getOperation(result));
       expect(orderByOp.keySelector).to.equal("salary");
       expect(orderByOp.descending).to.equal(true);
     });
@@ -103,9 +105,12 @@ describe("ORDER BY Operations", () => {
           .take(10);
       const result = parseQuery(query);
 
-      expect(result?.operationType).to.equal("take");
-      const takeOp = asTakeOperation(result);
-      expect(takeOp.count).to.equal(10);
+      expect(getOperation(result)?.operationType).to.equal("take");
+      const takeOp = asTakeOperation(getOperation(result));
+      const takeParam = takeOp.count as ParamRef;
+      expect(takeParam.type).to.equal("param");
+      expect(takeParam.param).to.equal("_limit1");
+      expect(result?.autoParams).to.deep.equal({ _limit1: 10 });
       const orderByOp = asOrderByOperation(takeOp.source);
       expect(orderByOp.operationType).to.equal("orderBy");
       expect(orderByOp.descending).to.equal(true);

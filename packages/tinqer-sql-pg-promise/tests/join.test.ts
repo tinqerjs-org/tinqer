@@ -55,8 +55,9 @@ describe("Join SQL Generation", () => {
 
     // WHERE comes after JOIN in the generated SQL
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0) AS t1 ON t0.id = t1.userId WHERE id > 100',
+      'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0) AS t1 ON t0.id = t1.userId WHERE id > $(_id1)',
     );
+    expect(result.params).to.deep.equal({ _id1: 100 });
   });
 
   it("should handle JOIN with complex inner query", () => {
@@ -73,7 +74,8 @@ describe("Join SQL Generation", () => {
 
     // The inner query includes its WHERE clause in the subquery
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0 WHERE amount > 1000) AS t1 ON t0.id = t1.userId',
+      'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0 WHERE amount > $(_amount1)) AS t1 ON t0.id = t1.userId',
     );
+    expect(result.params).to.deep.equal({ _amount1: 1000 });
   });
 });

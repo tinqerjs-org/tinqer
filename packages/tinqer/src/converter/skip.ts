@@ -21,21 +21,26 @@ export function convertSkipOperation(
     const arg = ast.arguments[0];
     if (!arg) return null;
 
-    // Handle numeric literals
-    if (arg.type === "NumericLiteral") {
+    // Handle numeric literals - auto-parameterize them
+    if (arg.type === "NumericLiteral" || arg.type === "Literal") {
+      // Auto-parameterize the offset value
+      const value =
+        arg.type === "NumericLiteral"
+          ? (arg as NumericLiteral).value
+          : ((arg as Literal).value as number);
+
+      const counter = (context.columnCounters.get("offset") || 0) + 1;
+      context.columnCounters.set("offset", counter);
+      const paramName = `_offset${counter}`;
+
+      // Store the parameter value
+      context.autoParams.set(paramName, value);
+
       return {
         type: "queryOperation",
         operationType: "skip",
         source,
-        count: (arg as NumericLiteral).value,
-      };
-    }
-    if (arg.type === "Literal") {
-      return {
-        type: "queryOperation",
-        operationType: "skip",
-        source,
-        count: (arg as Literal).value as number,
+        count: { type: "param", param: paramName },
       };
     }
 

@@ -13,6 +13,14 @@ import type {
   SkipOperation,
   GroupByOperation,
 } from "../../src/query-tree/operations.js";
+import type { ParseResult } from "../../src/parser/parse-query.js";
+
+/**
+ * Extract operation from ParseResult
+ */
+export function getOperation(result: ParseResult | null): QueryOperation | null {
+  return result?.operation || null;
+}
 
 /**
  * Type guard and accessor for FromOperation

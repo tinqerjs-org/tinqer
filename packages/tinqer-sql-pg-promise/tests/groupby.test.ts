@@ -27,7 +27,10 @@ describe("GroupBy SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT * FROM "sales" AS t0 WHERE amount > 100 GROUP BY category');
+    expect(result.sql).to.equal(
+      'SELECT * FROM "sales" AS t0 WHERE amount > $(_amount1) GROUP BY category',
+    );
+    expect(result.params).to.deep.equal({ _amount1: 100 });
   });
 
   it("should handle GROUP BY with SELECT projection", () => {
@@ -120,7 +123,8 @@ describe("GroupBy SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT key AS product, SUM(quantity) AS totalQuantity, MAX(amount) AS maxAmount, MIN(amount) AS minAmount FROM "sales" AS t0 WHERE quantity > 10 GROUP BY product',
+      'SELECT key AS product, SUM(quantity) AS totalQuantity, MAX(amount) AS maxAmount, MIN(amount) AS minAmount FROM "sales" AS t0 WHERE quantity > $(_quantity1) GROUP BY product',
     );
+    expect(result.params).to.deep.equal({ _quantity1: 10 });
   });
 });

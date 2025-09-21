@@ -10,24 +10,27 @@ import type { SqlResult } from "./types.js";
  * Generate SQL from a query builder function
  * @param queryBuilder Function that builds the query using LINQ operations
  * @param params Parameters to pass to the query builder
- * @returns SQL string and the original params
+ * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function query<TParams, TResult>(
   queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>,
   params: TParams,
-): SqlResult<TParams> {
-  // Parse the query to get the operation tree
-  const operation = parseQuery(queryBuilder);
+): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+  // Parse the query to get the operation tree and auto-params
+  const parseResult = parseQuery(queryBuilder);
 
-  if (!operation) {
+  if (!parseResult) {
     throw new Error("Failed to parse query");
   }
 
-  // Generate SQL from the operation tree
-  const sql = generateSql(operation, params);
+  // Merge user params with auto-extracted params
+  const mergedParams = { ...params, ...parseResult.autoParams };
 
-  // Return SQL with original params (pg-promise will handle parameter substitution)
-  return { sql, params };
+  // Generate SQL from the operation tree
+  const sql = generateSql(parseResult.operation, mergedParams);
+
+  // Return SQL with merged params (pg-promise will handle parameter substitution)
+  return { sql, params: mergedParams };
 }
 
 // Export types
