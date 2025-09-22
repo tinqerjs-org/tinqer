@@ -167,8 +167,61 @@ export function convertMemberExpression(
   ast: ASTMemberExpression,
   context: ConversionContext,
 ): Expression | null {
+  // Handle array indexing (e.g., params.roles[0])
+  if (ast.computed && ast.object.type === "Identifier") {
+    const objectName = (ast.object as Identifier).name;
+
+    // Get the index value (could be NumericLiteral or Literal)
+    let index: number | null = null;
+    if (ast.property.type === "NumericLiteral") {
+      index = (ast.property as NumericLiteral).value;
+    } else if (
+      ast.property.type === "Literal" &&
+      typeof (ast.property as Literal).value === "number"
+    ) {
+      index = (ast.property as Literal).value as number;
+    }
+
+    if (index !== null) {
+      // Check if it's a query parameter array access
+      if (context.queryParams.has(objectName)) {
+        return {
+          type: "param",
+          param: objectName,
+          index: index,
+        } as ParameterExpression;
+      }
+    }
+  }
+
+  // Also handle nested array indexing (e.g., params.data.roles[0])
+  if (ast.computed && ast.object.type === "MemberExpression") {
+    const memberObj = convertMemberExpression(ast.object as ASTMemberExpression, context);
+
+    // Get the index value
+    let index: number | null = null;
+    if (ast.property.type === "NumericLiteral") {
+      index = (ast.property as NumericLiteral).value;
+    } else if (
+      ast.property.type === "Literal" &&
+      typeof (ast.property as Literal).value === "number"
+    ) {
+      index = (ast.property as Literal).value as number;
+    }
+
+    if (index !== null && memberObj && memberObj.type === "param") {
+      const paramExpr = memberObj as ParameterExpression;
+      return {
+        type: "param",
+        param: paramExpr.param,
+        property: paramExpr.property,
+        index: index,
+      } as ParameterExpression;
+    }
+  }
+
   // Check if both object and property are identifiers
-  if (ast.object.type === "Identifier" && ast.property.type === "Identifier") {
+  if (ast.object.type === "Identifier" && ast.property.type === "Identifier" && !ast.computed) {
     const objectName = (ast.object as Identifier).name;
     const propertyName = (ast.property as Identifier).name;
 

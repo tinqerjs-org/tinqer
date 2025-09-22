@@ -203,7 +203,7 @@ describe("Join SQL Generation", () => {
             )
             .join(
               from<Product>("products"),
-              (ou) => ou.productId || 0,
+              (ou) => ou.productId, // Fixed: removed || 0, JOINs must use simple column access
               (p) => p.id,
               (ou, p) => ({
                 orderId: ou.orderId,
@@ -239,7 +239,7 @@ describe("Join SQL Generation", () => {
         () =>
           from<User>("users").join(
             from<User>("users").where((m) => m.managerId != null),
-            (e) => e.managerId || 0,
+            (e) => e.managerId, // Fixed: removed || 0, JOINs must use simple column access
             (m) => m.id,
             (e, m) => ({ employeeName: e.name, managerName: m.name }),
           ),

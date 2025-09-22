@@ -10,6 +10,11 @@ import { generateExpression, generateValueExpression } from "../expression-gener
  * Generate SELECT clause
  */
 export function generateSelect(operation: SelectOperation, context: SqlContext): string {
+  // Handle null selector (identity function like .select(u => u))
+  if (!operation.selector) {
+    return "SELECT *";
+  }
+
   // Handle different selector types
   if (operation.selector.type === "object") {
     // Object projection - generate columns with aliases

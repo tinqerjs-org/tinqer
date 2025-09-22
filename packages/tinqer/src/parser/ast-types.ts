@@ -30,7 +30,7 @@ export interface Identifier extends ASTNode {
 export interface MemberExpression extends ASTNode {
   type: "MemberExpression";
   object: Expression;
-  property: Identifier;
+  property: Expression | Identifier; // Can be any expression when computed
   computed: boolean;
 }
 

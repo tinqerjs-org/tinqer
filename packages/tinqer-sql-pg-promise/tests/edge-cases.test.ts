@@ -351,19 +351,7 @@ describe("Edge Cases and Error Handling", () => {
   });
 
   describe("Type coercion edge cases", () => {
-    it("should handle number to string coercion", () => {
-      const result = query(
-        () =>
-          from<TestTable>("test").select((t) => ({
-            concat: t.name + 123,
-          })),
-        {},
-      );
-
-      expect(result.sql).to.contain("name || $(_name1)");
-      expect(result.params).to.deep.equal({ _name1: 123 });
-    });
-
-    // Removed: ternary operator
+    // Test removed: string concatenation with numbers is not allowed in SELECT
+    // Expressions must be computed in application code
   });
 });

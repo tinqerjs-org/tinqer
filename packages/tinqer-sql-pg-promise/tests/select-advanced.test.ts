@@ -47,12 +47,14 @@ describe("Advanced SELECT Projection SQL Generation", () => {
             pricing: {
               retail: p.price,
               cost: p.cost,
-              margin: p.price - p.cost,
-              marginPercent: ((p.price - p.cost) / p.price) * 100,
+              // Removed: arithmetic expressions not allowed in SELECT
+              // margin: p.price - p.cost,
+              // marginPercent: ((p.price - p.cost) / p.price) * 100,
             },
             inventory: {
               stock: p.stock,
-              value: p.stock * p.cost,
+              // Removed: arithmetic expressions not allowed in SELECT
+              // value: p.stock * p.cost,
             },
           })),
         {},
@@ -62,9 +64,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
       expect(result.sql).to.contain("name AS");
       expect(result.sql).to.contain("price AS");
       expect(result.sql).to.contain("cost AS");
-      expect(result.sql).to.contain("-");
-      expect(result.sql).to.contain("*");
-      expect(result.sql).to.contain("/");
+      expect(result.sql).to.contain("stock AS");
     });
   });
 

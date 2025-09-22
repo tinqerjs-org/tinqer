@@ -10,6 +10,7 @@ import type {
   Expression as ASTExpression,
   ArrowFunctionExpression,
   CallExpression as ASTCallExpression,
+  Identifier,
 } from "../parser/ast-types.js";
 
 /**
@@ -78,8 +79,12 @@ export function getMethodName(callExpr: ASTCallExpression): string | null {
     if (callExpr.callee.type === "Identifier") {
       return callExpr.callee.name;
     }
-    if (callExpr.callee.type === "MemberExpression" && callExpr.callee.property) {
-      return callExpr.callee.property.name;
+    if (
+      callExpr.callee.type === "MemberExpression" &&
+      callExpr.callee.property &&
+      callExpr.callee.property.type === "Identifier"
+    ) {
+      return (callExpr.callee.property as Identifier).name;
     }
   }
   return null;

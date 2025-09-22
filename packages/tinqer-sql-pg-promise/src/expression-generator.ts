@@ -196,6 +196,19 @@ function generateConstantExpression(expr: ConstantExpression): string {
  * Generate SQL for parameter references
  */
 function generateParameterExpression(expr: ParameterExpression, context: SqlContext): string {
+  // Handle array indexing
+  if (expr.index !== undefined) {
+    // For array access, we need to extract the value at runtime
+    // The parameter should reference the array element directly
+    // e.g., params.roles[0] becomes roles[0] in the parameter
+    const baseName = expr.property || expr.param;
+    const indexedName = `${baseName}[${expr.index}]`;
+
+    // Store the array access for runtime resolution
+    // The query executor will need to resolve this
+    return context.formatParameter(indexedName);
+  }
+
   // Extract only the last property name for the parameter
   const paramName = expr.property || expr.param;
   return context.formatParameter(paramName);

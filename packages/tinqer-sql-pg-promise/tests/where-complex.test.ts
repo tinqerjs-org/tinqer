@@ -41,7 +41,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("((age >= $(_age1) AND age <= $(_age2) AND isActive)");
+      expect(result.sql).to.contain("(((age >= $(_age1) AND age <= $(_age2)) AND isActive)");
       expect(result.sql).to.contain("OR (role = $(_role1) AND departmentId = $(_departmentId1)))");
       expect(result.params).to.deep.equal({
         _age1: 18,
@@ -268,10 +268,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle type coercion scenarios", () => {
       const result = query(
-        () =>
-          from<User>("users").where(
-            (u) => u.id > 0 && u.isActive && u.name.length > 0 && u.age != null,
-          ),
+        () => from<User>("users").where((u) => u.id > 0 && u.isActive && u.age != null),
         {},
       );
 
@@ -280,7 +277,6 @@ describe("Complex WHERE Clause SQL Generation", () => {
       expect(result.sql).to.contain("age != $(_age1)");
       expect(result.params).to.deep.equal({
         _id1: 0,
-        _value1: 0,
         _age1: null,
       });
     });

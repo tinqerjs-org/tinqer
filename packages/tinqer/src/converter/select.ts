@@ -46,6 +46,18 @@ export function convertSelectOperation(
       // Set flag to indicate we're in a SELECT projection
       const selectContext = { ...context, inSelectProjection: true };
 
+      // Special case: identity selector (e.g., .select(u => u))
+      // This should select all columns (SELECT *)
+      if (body.type === "Identifier" && paramName && body.name === paramName) {
+        // Return select with null selector to indicate SELECT *
+        return {
+          type: "queryOperation",
+          operationType: "select",
+          source,
+          selector: null as unknown as ValueExpression | ObjectExpression,
+        };
+      }
+
       const selector =
         body.type === "BlockStatement" ? null : convertAstToExpression(body, selectContext);
       if (selector && (isValueExpression(selector) || isObjectExpression(selector))) {
