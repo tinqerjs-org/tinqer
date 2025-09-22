@@ -19,6 +19,8 @@ import type {
   ArrayExpression,
   ConcatExpression,
   AggregateExpression,
+  ConditionalExpression,
+  CoalesceExpression,
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 
@@ -34,6 +36,9 @@ export function generateExpression(expr: Expression, context: SqlContext): strin
   }
   if (isObjectExpression(expr)) {
     return generateObjectExpression(expr, context);
+  }
+  if (isConditionalExpression(expr)) {
+    return generateConditionalExpression(expr, context);
   }
   if (isArrayExpression(expr)) {
     throw new Error("Array expressions not yet supported");
@@ -82,6 +87,8 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
       return generateStringMethodExpression(expr as StringMethodExpression, context);
     case "aggregate":
       return generateAggregateExpression(expr as AggregateExpression, context);
+    case "coalesce":
+      return generateCoalesceExpression(expr as CoalesceExpression, context);
     default:
       throw new Error(`Unsupported value expression type: ${(expr as any).type}`);
   }
@@ -91,10 +98,23 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
  * Generate SQL for comparison expressions
  */
 function generateComparisonExpression(expr: ComparisonExpression, context: SqlContext): string {
-  const left = generateValueExpression(expr.left, context);
-  const right = generateValueExpression(expr.right, context);
+  // Handle cases where left or right side might be boolean expressions
+  const left = generateExpressionForComparison(expr.left, context);
+  const right = generateExpressionForComparison(expr.right, context);
   const operator = mapComparisonOperator(expr.operator);
   return `${left} ${operator} ${right}`;
+}
+
+/**
+ * Generate expression for use in comparisons - handles both value and boolean expressions
+ */
+function generateExpressionForComparison(expr: any, context: SqlContext): string {
+  // Check if it's a boolean expression
+  if (isBooleanExpression(expr)) {
+    return generateBooleanExpression(expr, context);
+  }
+  // Otherwise treat as value expression
+  return generateValueExpression(expr, context);
 }
 
 /**
@@ -136,6 +156,10 @@ function generateLogicalExpression(expr: LogicalExpression, context: SqlContext)
  */
 function generateNotExpression(expr: NotExpression, context: SqlContext): string {
   const operand = generateBooleanExpression(expr.expression, context);
+  // Check if operand is a simple column reference (no operators)
+  if (!operand.includes(" ") && !operand.includes("(")) {
+    return `NOT ${operand}`;
+  }
   return `NOT (${operand})`;
 }
 
@@ -241,20 +265,20 @@ function generateBooleanMethodExpression(
     case "startsWith":
       if (expr.arguments && expr.arguments.length > 0) {
         const prefix = generateValueExpression(expr.arguments[0]!, context);
-        return `${object} LIKE (${prefix} || '%')`;
+        return `${object} LIKE ${prefix} || '%'`;
       }
       throw new Error("startsWith requires an argument");
     case "endsWith":
       if (expr.arguments && expr.arguments.length > 0) {
         const suffix = generateValueExpression(expr.arguments[0]!, context);
-        return `${object} LIKE ('%' || ${suffix})`;
+        return `${object} LIKE '%' || ${suffix}`;
       }
       throw new Error("endsWith requires an argument");
     case "includes":
     case "contains":
       if (expr.arguments && expr.arguments.length > 0) {
         const search = generateValueExpression(expr.arguments[0]!, context);
-        return `${object} LIKE ('%' || ${search} || '%')`;
+        return `${object} LIKE '%' || ${search} || '%'`;
       }
       throw new Error("includes/contains requires an argument");
     default:
@@ -281,6 +305,25 @@ function generateAggregateExpression(expr: AggregateExpression, context: SqlCont
 
   // Default to COUNT(*) for other aggregates without expression
   return `${func}(*)`;
+}
+
+/**
+ * Generate SQL for coalesce expressions
+ */
+function generateCoalesceExpression(expr: CoalesceExpression, context: SqlContext): string {
+  const expressions = expr.expressions.map((e) => generateValueExpression(e, context));
+  return `COALESCE(${expressions.join(", ")})`;
+}
+
+/**
+ * Generate SQL for conditional expressions (ternary)
+ */
+function generateConditionalExpression(expr: ConditionalExpression, context: SqlContext): string {
+  const condition = generateBooleanExpression(expr.condition, context);
+  const thenExpr = generateExpression(expr.then, context);
+  const elseExpr = generateExpression(expr.else, context);
+  // Use SQL CASE expression
+  return `CASE WHEN ${condition} THEN ${thenExpr} ELSE ${elseExpr} END`;
 }
 
 /**
@@ -329,4 +372,8 @@ function isObjectExpression(expr: Expression): expr is ObjectExpression {
 
 function isArrayExpression(expr: Expression): expr is ArrayExpression {
   return (expr as any).type === "array";
+}
+
+function isConditionalExpression(expr: Expression): expr is ConditionalExpression {
+  return (expr as any).type === "conditional";
 }

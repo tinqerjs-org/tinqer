@@ -95,6 +95,11 @@ export interface ParenthesizedExpression extends ASTNode {
   expression: Expression;
 }
 
+export interface ChainExpression extends ASTNode {
+  type: "ChainExpression";
+  expression: Expression;
+}
+
 // Literals
 export interface Literal extends ASTNode {
   type: "Literal" | "NumericLiteral" | "StringLiteral" | "BooleanLiteral" | "NullLiteral";
@@ -146,6 +151,7 @@ export type Expression =
   | ObjectExpression
   | ArrayExpression
   | ParenthesizedExpression
+  | ChainExpression
   | Literal
   | NumericLiteral
   | StringLiteral

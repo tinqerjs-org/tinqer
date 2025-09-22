@@ -42,8 +42,12 @@ export function convertSelectOperation(
       }
 
       const body = (lambdaAst as ArrowFunctionExpression).body;
+
+      // Set flag to indicate we're in a SELECT projection
+      const selectContext = { ...context, inSelectProjection: true };
+
       const selector =
-        body.type === "BlockStatement" ? null : convertAstToExpression(body, context);
+        body.type === "BlockStatement" ? null : convertAstToExpression(body, selectContext);
       if (selector && (isValueExpression(selector) || isObjectExpression(selector))) {
         return {
           type: "queryOperation",

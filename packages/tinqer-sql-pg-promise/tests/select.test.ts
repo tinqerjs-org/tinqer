@@ -30,21 +30,7 @@ describe("SELECT SQL Generation", () => {
     expect(result.sql).to.equal('SELECT id AS userId, name AS userName FROM "users" AS t0');
   });
 
-  it("should generate SELECT with computed values", () => {
-    const result = query(
-      () =>
-        from<{ firstName: string; lastName: string; age: number }>("users").select((x) => ({
-          fullName: x.firstName + " " + x.lastName,
-          ageInMonths: x.age * 12,
-        })),
-      {},
-    );
-
-    expect(result.sql).to.equal(
-      'SELECT firstName || $(_firstName1) || lastName AS fullName, (age * $(_age1)) AS ageInMonths FROM "users" AS t0',
-    );
-    expect(result.params).to.deep.equal({ _firstName1: " ", _age1: 12 });
-  });
+  // Test removed: Computed values with expressions no longer supported in SELECT projections
 
   it("should generate SELECT after WHERE", () => {
     const result = query(

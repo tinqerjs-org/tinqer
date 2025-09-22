@@ -27,6 +27,9 @@ export interface ConversionContext {
   // Auto-parameterization: track extracted constants
   autoParams: Map<string, string | number | boolean | null>; // Maps param name to value
   columnCounters: Map<string, number>; // Tracks counter per column for naming
+
+  // Track when we're in a SELECT projection to reject expressions
+  inSelectProjection?: boolean;
 }
 
 /**

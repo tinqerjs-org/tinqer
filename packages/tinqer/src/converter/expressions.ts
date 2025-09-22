@@ -18,6 +18,8 @@ import type {
   ConcatExpression,
   StringMethodExpression,
   AggregateExpression,
+  ConditionalExpression,
+  CoalesceExpression,
 } from "../expressions/expression.js";
 
 import type {
@@ -30,6 +32,8 @@ import type {
   LogicalExpression as ASTLogicalExpression,
   UnaryExpression as ASTUnaryExpression,
   ObjectExpression as ASTObjectExpression,
+  ConditionalExpression as ASTConditionalExpression,
+  ChainExpression as ASTChainExpression,
   Literal,
   NumericLiteral,
   StringLiteral,
@@ -120,6 +124,15 @@ export function convertAstToExpression(
       return convertAstToExpression(parenExpr.expression, context);
     }
 
+    case "ConditionalExpression":
+      return convertConditionalExpression(ast as ASTConditionalExpression, context);
+
+    case "ChainExpression": {
+      // Optional chaining - unwrap and process the inner expression
+      const chainExpr = ast as ASTChainExpression;
+      return convertAstToExpression(chainExpr.expression, context);
+    }
+
     default:
       console.warn("Unsupported AST node type:", ast.type);
       return null;
@@ -159,6 +172,40 @@ export function convertMemberExpression(
     const objectName = (ast.object as Identifier).name;
     const propertyName = (ast.property as Identifier).name;
 
+    // Handle JavaScript built-in constants like Number.MAX_SAFE_INTEGER
+    if (objectName === "Number") {
+      let value: number | undefined;
+      if (propertyName === "MAX_SAFE_INTEGER") {
+        value = Number.MAX_SAFE_INTEGER;
+      } else if (propertyName === "MIN_SAFE_INTEGER") {
+        value = Number.MIN_SAFE_INTEGER;
+      } else if (propertyName === "MAX_VALUE") {
+        value = Number.MAX_VALUE;
+      } else if (propertyName === "MIN_VALUE") {
+        value = Number.MIN_VALUE;
+      } else if (propertyName === "POSITIVE_INFINITY") {
+        value = Number.POSITIVE_INFINITY;
+      } else if (propertyName === "NEGATIVE_INFINITY") {
+        value = Number.NEGATIVE_INFINITY;
+      } else if (propertyName === "NaN") {
+        value = Number.NaN;
+      }
+
+      if (value !== undefined) {
+        // Convert to auto-parameterized parameter using column hint
+        const columnName = "id"; // Use generic hint for Number constants
+        const counter = (context.columnCounters.get(columnName) || 0) + 1;
+        context.columnCounters.set(columnName, counter);
+        const paramName = `_${columnName}${counter}`;
+        context.autoParams.set(paramName, value);
+
+        return {
+          type: "param",
+          param: paramName,
+        } as ParameterExpression;
+      }
+    }
+
     // Check if the object is a table parameter (e.g., x.name where x is table param)
     if (context.tableParams.has(objectName)) {
       return {
@@ -195,17 +242,51 @@ export function convertBinaryExpression(
   ast: ASTBinaryExpression,
   context: ConversionContext,
 ): Expression | null {
-  // Check if we can get column hint from either side
+  // Use column hint for comparisons and simple arithmetic (column op literal)
   let columnHint: string | undefined;
+  const isComparison = ["==", "===", "!=", "!==", ">", ">=", "<", "<="].includes(ast.operator);
 
-  // Peek at both sides to find column hint
-  if (ast.left.type === "MemberExpression") {
-    const memberExpr = ast.left as ASTMemberExpression;
-    if (memberExpr.property && memberExpr.property.type === "Identifier") {
-      columnHint = (memberExpr.property as Identifier).name;
+  if (isComparison) {
+    // For comparisons, use column hints to relate constants to compared columns
+    if (
+      ast.left.type === "MemberExpression" &&
+      (ast.right.type === "Literal" ||
+        ast.right.type === "NumericLiteral" ||
+        ast.right.type === "StringLiteral" ||
+        ast.right.type === "BooleanLiteral" ||
+        ast.right.type === "NullLiteral")
+    ) {
+      // Pattern: column OP literal
+      const memberExpr = ast.left as ASTMemberExpression;
+      if (memberExpr.property && memberExpr.property.type === "Identifier") {
+        columnHint = (memberExpr.property as Identifier).name;
+      }
+    } else if (
+      ast.right.type === "MemberExpression" &&
+      (ast.left.type === "Literal" ||
+        ast.left.type === "NumericLiteral" ||
+        ast.left.type === "StringLiteral" ||
+        ast.left.type === "BooleanLiteral" ||
+        ast.left.type === "NullLiteral")
+    ) {
+      // Pattern: literal OP column
+      const memberExpr = ast.right as ASTMemberExpression;
+      if (memberExpr.property && memberExpr.property.type === "Identifier") {
+        columnHint = (memberExpr.property as Identifier).name;
+      }
     }
-  } else if (ast.right.type === "MemberExpression") {
-    const memberExpr = ast.right as ASTMemberExpression;
+  } else if (
+    ["+", "-", "*", "/", "%"].includes(ast.operator) &&
+    ast.left.type === "MemberExpression" &&
+    (ast.right.type === "Literal" ||
+      ast.right.type === "NumericLiteral" ||
+      ast.right.type === "StringLiteral" ||
+      ast.right.type === "BooleanLiteral" ||
+      ast.right.type === "NullLiteral")
+  ) {
+    // For arithmetic operations with column on left, use column hints
+    // but will be overridden later for string concatenation contexts (for +)
+    const memberExpr = ast.left as ASTMemberExpression;
     if (memberExpr.property && memberExpr.property.type === "Identifier") {
       columnHint = (memberExpr.property as Identifier).name;
     }
@@ -283,6 +364,14 @@ export function convertBinaryExpression(
       (right.type === "param" && isLikelyStringParam((right as ParameterExpression).property));
 
     if (leftIsString || rightIsString || leftLikelyString || rightLikelyString) {
+      // Reject string concatenation in SELECT projections
+      if (context.inSelectProjection) {
+        throw new Error(
+          "SELECT projections only support simple column access. String concatenation must be computed in application code.",
+        );
+      }
+      // For string concatenation, use the already converted left and right
+      // which have column hints if applicable (from the earlier conversion)
       return {
         type: "concat",
         left: left as ValueExpression,
@@ -293,6 +382,12 @@ export function convertBinaryExpression(
 
   // Arithmetic operators
   if (["+", "-", "*", "/", "%"].includes(operator)) {
+    // Reject arithmetic expressions in SELECT projections
+    if (context.inSelectProjection) {
+      throw new Error(
+        "SELECT projections only support simple column access. Arithmetic operations must be computed in application code.",
+      );
+    }
     return {
       type: "arithmetic",
       operator: operator as "+" | "-" | "*" | "/" | "%",
@@ -337,6 +432,20 @@ export function convertLogicalExpression(
       left: finalLeft as BooleanExpression,
       right: finalRight as BooleanExpression,
     } as LogicalExpression;
+  }
+
+  // Handle || as coalesce when not both boolean expressions
+  if (ast.operator === "||" && isValueExpression(left) && isValueExpression(right)) {
+    // Reject coalesce expressions in SELECT projections
+    if (context.inSelectProjection) {
+      throw new Error(
+        "SELECT projections only support simple column access. Coalesce expressions must be computed in application code.",
+      );
+    }
+    return {
+      type: "coalesce",
+      expressions: [left as ValueExpression, right as ValueExpression],
+    } as CoalesceExpression;
   }
 
   return null;
@@ -442,9 +551,30 @@ export function convertCallExpression(
       if (obj && isValueExpression(obj)) {
         // Boolean methods
         if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
-          const args = ast.arguments.map((arg: ASTExpression) =>
-            convertAstToExpression(arg, context),
-          );
+          // Extract column hint from the method object for parameter naming
+          let columnHint: string | undefined;
+          if (obj.type === "column") {
+            columnHint = (obj as ColumnExpression).name;
+          }
+
+          const args = ast.arguments.map((arg: ASTExpression) => {
+            // Convert literals with column hint for better parameter names
+            if (
+              columnHint &&
+              (arg.type === "Literal" ||
+                arg.type === "NumericLiteral" ||
+                arg.type === "StringLiteral" ||
+                arg.type === "BooleanLiteral" ||
+                arg.type === "NullLiteral")
+            ) {
+              return convertLiteral(
+                arg as Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
+                context,
+                columnHint,
+              );
+            }
+            return convertAstToExpression(arg, context);
+          });
           return {
             type: "booleanMethod",
             object: obj as ValueExpression,
@@ -517,5 +647,45 @@ export function convertLambdaExpression(
     type: "lambda",
     parameters: params,
     body,
+  };
+}
+
+export function convertConditionalExpression(
+  ast: ASTConditionalExpression,
+  context: ConversionContext,
+): ConditionalExpression | null {
+  // Reject conditional expressions in SELECT projections
+  if (context.inSelectProjection) {
+    throw new Error(
+      "SELECT projections only support simple column access. Conditional expressions must be computed in application code.",
+    );
+  }
+
+  const condition = convertAstToExpression(ast.test, context);
+  const thenExpr = convertAstToExpression(ast.consequent, context);
+  const elseExpr = convertAstToExpression(ast.alternate, context);
+
+  if (!condition || !thenExpr || !elseExpr) return null;
+
+  // Convert condition to boolean expression if needed
+  let booleanCondition: BooleanExpression;
+  if (isBooleanExpression(condition)) {
+    booleanCondition = condition as BooleanExpression;
+  } else if (condition.type === "column") {
+    // Convert column to booleanColumn
+    booleanCondition = {
+      type: "booleanColumn",
+      name: (condition as ColumnExpression).name,
+    };
+  } else {
+    // For other types, we can't convert to boolean safely
+    return null;
+  }
+
+  return {
+    type: "conditional",
+    condition: booleanCondition,
+    then: thenExpr,
+    else: elseExpr,
   };
 }
