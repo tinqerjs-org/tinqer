@@ -59,9 +59,9 @@ describe("Operation Chaining", () => {
   it("should parse chain with select-where-select", () => {
     const query = () =>
       from<{ id: number; firstName: string; lastName: string; age: number }>("users")
-        .select((x) => ({ id: x.id, fullName: x.firstName + " " + x.lastName, age: x.age }))
+        .select((x) => ({ id: x.id, firstName: x.firstName, lastName: x.lastName, age: x.age }))
         .where((x) => x.age >= 18)
-        .select((x) => ({ userId: x.id, displayName: x.fullName }));
+        .select((x) => ({ userId: x.id, firstName: x.firstName, lastName: x.lastName }));
     const result = parseQuery(query);
 
     expect(getOperation(result)?.operationType).to.equal("select");
