@@ -27,6 +27,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r.priceWithTax).to.be.closeTo(r.price * 1.1, 0.01);
         expect(r.priceWithShipping).to.equal(r.price + 10);
@@ -45,6 +46,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r.totalPrice).to.equal(r.quantity * r.unitPrice);
         expect(r.bulkDiscount).to.be.closeTo(r.totalPrice * 0.9, 0.01);
@@ -66,6 +68,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r.pricePerUnit).to.be.closeTo(r.price / r.stock, 0.01);
       });
@@ -102,6 +105,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r.scaledValue).to.be.greaterThan(10);
         expect(r.scaledValue).to.be.closeTo(r.inventoryValue / 100, 0.01);
@@ -121,6 +125,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r.totalQuantity).to.be.greaterThan(0);
         expect(r.totalValue).to.be.greaterThan(0);
@@ -343,6 +348,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((u) => {
         expect(u.is_active).to.be.true;
         expect(u.age).to.be.at.least(30);
@@ -359,6 +365,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((u) => {
         const condition1 = u.is_active && u.age !== null && u.age < 30;
         const condition2 = !u.is_active && u.age !== null && u.age >= 40;

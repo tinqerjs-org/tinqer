@@ -26,6 +26,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         const condition1 = user.age !== null && user.age >= 25 && user.age <= 35 && user.is_active;
         const condition2 = user.department_id === 4 && user.age !== null && user.age >= 40;
@@ -43,6 +44,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((product) => {
         const priceCondition =
           (product.price > 100 && product.price < 500) ||
@@ -62,6 +64,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect(user.department_id).to.not.equal(1);
         expect(user.age).to.be.at.least(30);
@@ -77,6 +80,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((product) => {
         expect(product.price).to.be.at.least(50);
         expect(product.price).to.be.at.most(300);
@@ -93,6 +97,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         const inFirstRange = user.age !== null && user.age >= 25 && user.age <= 30;
         const inSecondRange = user.age !== null && user.age >= 40 && user.age <= 50;
@@ -106,6 +111,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((product) => {
         expect(product.stock).to.be.greaterThan(100);
         expect(product.stock).to.be.lessThan(500);
@@ -136,6 +142,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((product) => {
         expect(excludedCategories).to.not.include(product.category);
       });
@@ -160,6 +167,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect(user.department_id).to.not.be.null;
         expect(user.is_active).to.be.true;
@@ -174,6 +182,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((product) => {
         expect(product.description).to.not.be.null;
         expect(product.category === null || product.stock > 100).to.be.true;
@@ -188,6 +197,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((product) => {
         expect(product.price * 0.9).to.be.greaterThan(100);
       });
@@ -199,6 +209,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((item) => {
         expect(item.quantity * item.unit_price).to.be.greaterThan(500);
       });
@@ -210,6 +221,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect(user.id % 2).to.equal(0);
       });
@@ -226,6 +238,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect(user.age).to.be.at.least(25);
         expect(user.is_active).to.be.true;
@@ -244,6 +257,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((product) => {
         expect(product.price).to.be.greaterThan(10);
         expect(product.stock).to.be.greaterThan(0);
@@ -277,6 +291,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect(user.age).to.be.at.least(params.minAge);
         expect(user.age).to.be.at.most(params.maxAge);
@@ -299,6 +314,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((product) => {
         expect(product.price).to.be.greaterThan(params.threshold);
         expect(product.stock).to.be.greaterThan(50);
@@ -357,7 +373,9 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(activeResults).to.be.an("array");
+      expect(activeResults.length).to.be.greaterThan(0);
       expect(inactiveResults).to.be.an("array");
+      expect(inactiveResults.length).to.be.greaterThan(0);
       expect(activeResults.length + inactiveResults.length).to.equal(10);
     });
   });

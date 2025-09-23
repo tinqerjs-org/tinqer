@@ -179,6 +179,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r).to.have.property("category");
         expect(r).to.have.property("count");
@@ -200,6 +201,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r.activeUsers).to.be.greaterThan(0);
       });

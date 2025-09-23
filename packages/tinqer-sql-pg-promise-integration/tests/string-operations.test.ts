@@ -44,6 +44,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect(user.name[0]).to.equal("J");
         expect(user.is_active).to.be.true;
@@ -166,6 +167,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r.userName![0]).to.equal("J");
         expect(r.departmentName!).to.match(/ing/);

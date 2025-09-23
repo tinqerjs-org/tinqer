@@ -35,6 +35,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       expect(results[0]).to.have.property("id");
       expect(results[0]).to.have.property("name");
       expect(results[0]).to.not.have.property("email");
@@ -62,6 +63,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect(user.age).to.be.at.least(30);
       });
@@ -75,6 +77,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect(user.age).to.be.at.least(25);
         expect(user.is_active).to.be.true;
@@ -89,6 +92,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect((user.age !== null && user.age < 30) || user.department_id === 4).to.be.true;
       });
@@ -102,6 +106,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
         expect(user.age).to.be.at.least(35);
       });
@@ -115,6 +120,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(1);
       for (let i = 1; i < results.length; i++) {
         expect(results[i]!.name >= results[i - 1]!.name).to.be.true;
       }
@@ -128,6 +134,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(1);
       for (let i = 1; i < results.length; i++) {
         expect(results[i]!.age! <= results[i - 1]!.age!).to.be.true;
       }
@@ -142,6 +149,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       let prevDept = results[0]!.department_id;
       let prevAge = results[0]!.age;
 

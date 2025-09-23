@@ -82,6 +82,7 @@ describe("PostgreSQL Integration - JOINs", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r).to.have.property("orderId");
         expect(r).to.have.property("customerName");
@@ -107,6 +108,7 @@ describe("PostgreSQL Integration - JOINs", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r).to.have.property("customerName");
         expect(r).to.have.property("orderCount");
@@ -144,6 +146,7 @@ describe("PostgreSQL Integration - JOINs", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r).to.have.property("orderId");
         expect(r).to.have.property("productName");
@@ -179,6 +182,7 @@ describe("PostgreSQL Integration - JOINs", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r).to.have.property("userName");
         expect(r).to.have.property("departmentName");
@@ -247,6 +251,7 @@ describe("PostgreSQL Integration - JOINs", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r.orderAmount).to.be.greaterThan(500);
       });
@@ -283,6 +288,7 @@ describe("PostgreSQL Integration - JOINs", () => {
       );
 
       expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r).to.have.property("departmentId");
         expect(r).to.have.property("departmentName");
