@@ -3,6 +3,7 @@
  */
 
 import type { Expression, BooleanExpression, ColumnExpression } from "../expressions/expression.js";
+import type { ResultShape } from "../query-tree/operations.js";
 
 import type {
   Statement,
@@ -33,6 +34,11 @@ export interface ConversionContext {
 
   // Track when we're in a SELECT projection to reject expressions
   inSelectProjection?: boolean;
+
+  // Track the current result shape from JOIN operations
+  currentResultShape?: ResultShape;
+  // Track the parameter name that represents the JOIN result
+  joinResultParam?: string;
 }
 
 /**

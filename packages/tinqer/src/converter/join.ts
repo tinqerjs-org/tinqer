@@ -84,12 +84,25 @@ export function convertJoinOperation(
 
     let outerKey: string | null = null;
     let innerKey: string | null = null;
+    let outerKeySource: number | undefined = undefined;
+    let outerParam: string | null = null;
+    let innerParam: string | null = null;
 
-    // Only support simple column selectors
+    // Check if source operation is a JOIN with a result shape
+    const sourceJoin = source.operationType === "join" ? (source as JoinOperation) : null;
+    const previousResultShape = sourceJoin?.resultShape;
+
+    // Process outer key selector
     if (outerKeySelectorAst && outerKeySelectorAst.type === "ArrowFunctionExpression") {
       const outerArrow = outerKeySelectorAst as ArrowFunctionExpression;
       const paramName = getParameterName(outerArrow);
-      if (paramName) {
+
+      // Create a context with the result shape if we're chaining JOINs
+      const outerContext = { ...context };
+      if (paramName && previousResultShape) {
+        outerContext.currentResultShape = previousResultShape;
+        outerContext.joinResultParam = paramName;
+      } else if (paramName) {
         context.tableParams.add(paramName);
       }
 
@@ -103,9 +116,16 @@ export function convertJoinOperation(
       }
 
       if (bodyExpr) {
-        const expr = convertAstToExpression(bodyExpr, context);
+        const expr = convertAstToExpression(bodyExpr, outerContext);
         if (expr && expr.type === "column") {
-          outerKey = (expr as ColumnExpression).name;
+          const colExpr = expr as ColumnExpression;
+          // For nested paths like orderItem.product_id, we get the final column name
+          outerKey = colExpr.name;
+
+          // Track which source table this key comes from
+          if (colExpr.table && colExpr.table.startsWith("$joinSource")) {
+            outerKeySource = parseInt(colExpr.table.substring(11), 10);
+          }
         }
       }
     }
@@ -142,14 +162,14 @@ export function convertJoinOperation(
       // Store the parameter names for the result selector
       // These will be needed to map properties back to their source tables
       const params = resultArrow.params;
-      const outerParam =
+      outerParam =
         params && params[0]
           ? getParameterName({
               params: [params[0]],
               body: resultArrow.body,
             } as ArrowFunctionExpression)
           : null;
-      const innerParam =
+      innerParam =
         params && params[1]
           ? getParameterName({
               params: [params[1]],
@@ -194,6 +214,7 @@ export function convertJoinOperation(
         inner: innerSource,
         outerKey,
         innerKey,
+        outerKeySource, // Track which source table the key comes from
         resultSelector, // Include the result selector
         resultShape, // Include the result shape
       };

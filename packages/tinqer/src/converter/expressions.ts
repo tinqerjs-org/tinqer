@@ -227,6 +227,37 @@ export function convertMemberExpression(
     }
   }
 
+  // Handle nested member access (e.g., joined.orderItem.product_id)
+  if (ast.object.type === "MemberExpression" && ast.property.type === "Identifier" && !ast.computed) {
+    const innerMember = convertMemberExpression(ast.object as ASTMemberExpression, context);
+    const propertyName = (ast.property as Identifier).name;
+
+    if (innerMember && innerMember.type === "column") {
+      const innerCol = innerMember as ColumnExpression;
+
+      // Check if we're accessing through a JOIN result shape
+      if (context.currentResultShape && innerCol.table === context.joinResultParam) {
+        const shapeProp = context.currentResultShape.properties.get(innerCol.name);
+        if (shapeProp && shapeProp.sourceTable !== undefined) {
+          // This accesses a property through the JOIN result
+          // Return a column that indicates which source table it comes from
+          return {
+            type: "column",
+            name: propertyName,
+            table: `$joinSource${shapeProp.sourceTable}`, // Mark which source table
+          } as ColumnExpression;
+        }
+      }
+
+      // Default nested member access
+      return {
+        type: "column",
+        name: propertyName,
+        table: innerCol.name, // Use the inner column name as the table reference
+      } as ColumnExpression;
+    }
+  }
+
   // Check if both object and property are identifiers
   if (ast.object.type === "Identifier" && ast.property.type === "Identifier" && !ast.computed) {
     const objectName = (ast.object as Identifier).name;
@@ -263,6 +294,22 @@ export function convertMemberExpression(
           type: "param",
           param: paramName,
         } as ParameterExpression;
+      }
+    }
+
+    // Check if this is a reference to the JOIN result parameter
+    if (context.joinResultParam === objectName && context.currentResultShape) {
+      // This is accessing a property of the JOIN result (e.g., joined.orderItem)
+      const shapeProp = context.currentResultShape.properties.get(propertyName);
+      if (shapeProp) {
+        // This property maps to a specific source table
+        // For now, just return a column that preserves the nested path
+        // The actual resolution will need to happen in SQL generation
+        return {
+          type: "column",
+          name: propertyName,
+          table: objectName,
+        } as ColumnExpression;
       }
     }
 
@@ -691,11 +738,24 @@ export function convertObjectExpression(
     if ((prop as any).type === "SpreadElement") {
       const spreadArg = (prop as any).argument;
       if (spreadArg.type === "Identifier") {
-        // For spread of an identifier, we need to copy all its properties
-        // This is complex and would require tracking object shapes
-        // For now, we'll return null to indicate unsupported
-        console.warn("Spread operator in object expressions is not fully supported");
-        return null;
+        const spreadName = spreadArg.name;
+
+        // Check if we're spreading the JOIN result and we have its shape
+        if (context.joinResultParam === spreadName && context.currentResultShape) {
+          // Copy all properties from the result shape
+          for (const [propName, shapeProp] of context.currentResultShape.properties) {
+            // Create a column expression that preserves the source information
+            properties[propName] = {
+              type: "column",
+              name: propName,
+              table: `$spread${shapeProp.sourceTable}`,
+            } as ColumnExpression;
+          }
+        } else {
+          // For other spread cases, we can't handle them yet
+          console.warn("Spread operator without shape information is not supported");
+          return null;
+        }
       }
       continue;
     }

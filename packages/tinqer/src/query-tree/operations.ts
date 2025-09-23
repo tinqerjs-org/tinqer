@@ -65,6 +65,7 @@ export interface JoinOperation extends QueryOperation {
   inner: QueryOperation;
   outerKey: string; // Simple column name
   innerKey: string; // Simple column name
+  outerKeySource?: number; // Which source table the outer key comes from (for chained JOINs)
   resultSelector?: Expression; // The projection expression from the result selector lambda
   resultShape?: ResultShape; // Tracks the shape of the JOIN result for nested property resolution
 }
