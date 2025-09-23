@@ -8,6 +8,7 @@ import { from } from "@webpods/tinqer";
 import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
+import { dbContext } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Terminal Operations", () => {
   before(async () => {
@@ -17,7 +18,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
   describe("first() and firstOrDefault()", () => {
     it("should return first user", async () => {
       const user = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .orderBy((u) => u.id)
           .first(),
       );
@@ -29,7 +30,9 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     });
 
     it("should return first user matching condition", async () => {
-      const user = await executeSimple(db, () => from(db, "users").first((u) => u.age > 40));
+      const user = await executeSimple(db, () =>
+        from(dbContext, "users").first((u) => u.age !== null && u.age > 40),
+      );
 
       expect(user).to.be.an("object");
       expect(user.age).to.be.greaterThan(40);
@@ -37,7 +40,9 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should throw error when no match for first()", async () => {
       try {
-        await executeSimple(db, () => from(db, "users").first((u) => u.age > 100));
+        await executeSimple(db, () =>
+          from(dbContext, "users").first((u) => u.age !== null && u.age > 100),
+        );
         expect.fail("Should have thrown error");
       } catch (error: any) {
         expect(error.message).to.include("No elements found");
@@ -46,7 +51,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should return null for firstOrDefault() when no match", async () => {
       const user = await executeSimple(db, () =>
-        from(db, "users").firstOrDefault((u) => u.age > 100),
+        from(dbContext, "users").firstOrDefault((u) => u.age !== null && u.age > 100),
       );
 
       expect(user).to.be.null;
@@ -54,14 +59,19 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should work with complex queries", async () => {
       const result = await executeSimple(db, () =>
-        from(db, "users")
-          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
-          .where((u) => u.is_active === true)
-          .orderBy((u) => u.age)
-          .select((u, d) => ({
-            userName: u.name,
-            departmentName: d.name,
-            age: u.age,
+        from(dbContext, "users")
+          .join(
+            from(dbContext, "departments"),
+            (u) => u.department_id,
+            (d) => d.id,
+            (u, d) => ({ user: u, department: d }),
+          )
+          .where((joined) => joined.user.is_active === true)
+          .orderBy((joined) => joined.user.age!)
+          .select((joined) => ({
+            userName: joined.user.name,
+            departmentName: joined.department.name,
+            age: joined.user.age,
           }))
           .first(),
       );
@@ -76,7 +86,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
   describe("single() and singleOrDefault()", () => {
     it("should return single user by unique email", async () => {
       const user = await executeSimple(db, () =>
-        from(db, "users").single((u) => u.email === "john@example.com"),
+        from(dbContext, "users").single((u) => u.email === "john@example.com"),
       );
 
       expect(user).to.be.an("object");
@@ -85,7 +95,9 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should throw error when multiple matches for single()", async () => {
       try {
-        await executeSimple(db, () => from(db, "users").single((u) => u.department_id === 1));
+        await executeSimple(db, () =>
+          from(dbContext, "users").single((u) => u.department_id === 1),
+        );
         expect.fail("Should have thrown error");
       } catch (error: any) {
         expect(error.message).to.include("Multiple elements found");
@@ -95,7 +107,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should throw error when no match for single()", async () => {
       try {
         await executeSimple(db, () =>
-          from(db, "users").single((u) => u.email === "nonexistent@example.com"),
+          from(dbContext, "users").single((u) => u.email === "nonexistent@example.com"),
         );
         expect.fail("Should have thrown error");
       } catch (error: any) {
@@ -105,7 +117,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should return null for singleOrDefault() when no match", async () => {
       const user = await executeSimple(db, () =>
-        from(db, "users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
+        from(dbContext, "users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
       );
 
       expect(user).to.be.null;
@@ -114,7 +126,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should throw error for singleOrDefault() with multiple matches", async () => {
       try {
         await executeSimple(db, () =>
-          from(db, "users").singleOrDefault((u) => u.department_id === 1),
+          from(dbContext, "users").singleOrDefault((u) => u.department_id === 1),
         );
         expect.fail("Should have thrown error");
       } catch (error: any) {
@@ -126,7 +138,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
   describe("last() and lastOrDefault()", () => {
     it("should return last user", async () => {
       const user = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .orderBy((u) => u.id)
           .last(),
       );
@@ -137,7 +149,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should return last user matching condition", async () => {
       const user = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .where((u) => u.department_id === 1)
           .orderBy((u) => u.name)
           .last(),
@@ -149,7 +161,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should return null for lastOrDefault() when no match", async () => {
       const user = await executeSimple(db, () =>
-        from(db, "users").lastOrDefault((u) => u.age > 100),
+        from(dbContext, "users").lastOrDefault((u) => u.age !== null && u.age > 100),
       );
 
       expect(user).to.be.null;
@@ -158,28 +170,30 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
   describe("any() and all()", () => {
     it("should return true when any user matches condition", async () => {
-      const hasYoungUsers = await executeSimple(db, () => from(db, "users").any((u) => u.age < 30));
+      const hasYoungUsers = await executeSimple(db, () =>
+        from(dbContext, "users").any((u) => u.age !== null && u.age < 30),
+      );
 
       expect(hasYoungUsers).to.be.true;
     });
 
     it("should return false when no user matches condition", async () => {
       const hasCentenarians = await executeSimple(db, () =>
-        from(db, "users").any((u) => u.age > 100),
+        from(dbContext, "users").any((u) => u.age !== null && u.age > 100),
       );
 
       expect(hasCentenarians).to.be.false;
     });
 
     it("should return true when any() is called without predicate on non-empty table", async () => {
-      const hasUsers = await executeSimple(db, () => from(db, "users").any());
+      const hasUsers = await executeSimple(db, () => from(dbContext, "users").any());
 
       expect(hasUsers).to.be.true;
     });
 
     it("should check if all users match condition", async () => {
       const allHaveEmail = await executeSimple(db, () =>
-        from(db, "users").all((u) => u.email !== null),
+        from(dbContext, "users").all((u) => u.email !== null),
       );
 
       expect(allHaveEmail).to.be.true;
@@ -187,7 +201,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should return false when not all match condition", async () => {
       const allActive = await executeSimple(db, () =>
-        from(db, "users").all((u) => u.is_active === true),
+        from(dbContext, "users").all((u) => u.is_active === true),
       );
 
       expect(allActive).to.be.false; // Some users are inactive
@@ -195,14 +209,14 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should work with WHERE clause", async () => {
       const allEngineersActive = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .where((u) => u.department_id === 1)
           .all((u) => u.is_active === true),
       );
 
       // Check the actual data to verify the result
       const engineerStatus = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .where((u) => u.department_id === 1)
           .select((u) => ({ is_active: u.is_active })),
       );
@@ -215,7 +229,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
   describe("toArray() and toList()", () => {
     it("should return array of results", async () => {
       const users = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .where((u) => u.is_active === true)
           .orderBy((u) => u.name)
           .toArray(),
@@ -230,10 +244,10 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should return list of results", async () => {
       const products = await executeSimple(db, () =>
-        from(db, "products")
+        from(dbContext, "products")
           .where((p) => p.stock > 50)
           .orderByDescending((p) => p.price)
-          .toList(),
+          .toArray(),
       );
 
       expect(products).to.be.an("array");
@@ -243,7 +257,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       // Verify descending order
       for (let i = 1; i < products.length; i++) {
-        expect(products[i - 1].price).to.be.at.least(products[i].price);
+        expect(products[i - 1]!.price).to.be.at.least(products[i]!.price);
       }
     });
   });
@@ -253,7 +267,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const targetEmail = "jane@example.com";
       const user = await execute(
         db,
-        (params) => from(db, "users").single((u) => u.email === params.email),
+        (params) => from(dbContext, "users").single((u) => u.email === params.email),
         { email: targetEmail },
       );
 
@@ -264,7 +278,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should check product availability", async () => {
       const hasExpensiveElectronics = await executeSimple(db, () =>
-        from(db, "products").any((p) => p.category === "Electronics" && p.price > 500),
+        from(dbContext, "products").any((p) => p.category === "Electronics" && p.price > 500),
       );
 
       expect(hasExpensiveElectronics).to.be.true; // Laptop is $999.99
@@ -272,7 +286,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should verify all completed orders have positive totals", async () => {
       const allPositive = await executeSimple(db, () =>
-        from(db, "orders")
+        from(dbContext, "orders")
           .where((o) => o.status === "completed")
           .all((o) => o.total_amount > 0),
       );

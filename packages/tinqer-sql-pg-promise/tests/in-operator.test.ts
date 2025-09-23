@@ -72,7 +72,10 @@ describe("IN Operator", () => {
     });
 
     it("should handle empty array as FALSE", () => {
-      const result = query(() => from<User>("users").where((u) => ([] as number[]).includes(u.id)), {});
+      const result = query(
+        () => from<User>("users").where((u) => ([] as number[]).includes(u.id)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE FALSE');
       expect(result.params).to.deep.equal({});
@@ -204,7 +207,6 @@ describe("IN Operator", () => {
     });
   });
 
-
   describe("NOT IN operations", () => {
     it("should generate NOT IN with negation", () => {
       const result = query(() => from<User>("users").where((u) => ![1, 2, 3].includes(u.id)), {});
@@ -220,7 +222,10 @@ describe("IN Operator", () => {
     });
 
     it("should handle negated empty array as TRUE", () => {
-      const result = query(() => from<User>("users").where((u) => !([] as number[]).includes(u.id)), {});
+      const result = query(
+        () => from<User>("users").where((u) => !([] as number[]).includes(u.id)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE NOT FALSE');
       expect(result.params).to.deep.equal({});

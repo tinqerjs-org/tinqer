@@ -8,6 +8,7 @@ import { from } from "@webpods/tinqer";
 import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
+import { dbContext } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Aggregates", () => {
   before(async () => {
@@ -16,7 +17,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
   describe("COUNT", () => {
     it("should count all users", async () => {
-      const count = await executeSimple(db, () => from(db, "users").count());
+      const count = await executeSimple(db, () => from(dbContext, "users").count());
 
       expect(count).to.be.a("number");
       expect(count).to.equal(10); // We inserted 10 users
@@ -24,7 +25,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
     it("should count with WHERE clause", async () => {
       const count = await executeSimple(db, () =>
-        from(db, "users").count((u) => u.is_active === true),
+        from(dbContext, "users").count((u) => u.is_active === true),
       );
 
       expect(count).to.be.a("number");
@@ -33,8 +34,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
     it("should count with complex conditions", async () => {
       const count = await executeSimple(db, () =>
-        from(db, "users")
-          .where((u) => u.age >= 30)
+        from(dbContext, "users")
+          .where((u) => u.age !== null && u.age >= 30)
           .count(),
       );
 
@@ -45,7 +46,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
   describe("SUM", () => {
     it("should sum product prices", async () => {
-      const sum = await executeSimple(db, () => from(db, "products").sum((p) => p.price));
+      const sum = await executeSimple(db, () => from(dbContext, "products").sum((p) => p.price));
 
       expect(sum).to.be.a("number");
       expect(sum).to.be.greaterThan(0);
@@ -53,7 +54,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
     it("should sum with WHERE clause", async () => {
       const sum = await executeSimple(db, () =>
-        from(db, "products")
+        from(dbContext, "products")
           .where((p) => p.category === "Electronics")
           .sum((p) => p.price),
       );
@@ -63,7 +64,9 @@ describe("PostgreSQL Integration - Aggregates", () => {
     });
 
     it("should sum order totals", async () => {
-      const sum = await executeSimple(db, () => from(db, "orders").sum((o) => o.total_amount));
+      const sum = await executeSimple(db, () =>
+        from(dbContext, "orders").sum((o) => o.total_amount),
+      );
 
       expect(sum).to.be.a("number");
       expect(sum).to.be.greaterThan(0);
@@ -72,7 +75,11 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
   describe("AVERAGE", () => {
     it("should calculate average user age", async () => {
-      const avg = await executeSimple(db, () => from(db, "users").average((u) => u.age));
+      const avg = await executeSimple(db, () =>
+        from(dbContext, "users")
+          .where((u) => u.age !== null)
+          .average((u) => u.age!),
+      );
 
       expect(avg).to.be.a("number");
       expect(avg).to.be.greaterThan(20);
@@ -81,13 +88,13 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
     it("should calculate average product price by category", async () => {
       const avgElectronics = await executeSimple(db, () =>
-        from(db, "products")
+        from(dbContext, "products")
           .where((p) => p.category === "Electronics")
           .average((p) => p.price),
       );
 
       const avgFurniture = await executeSimple(db, () =>
-        from(db, "products")
+        from(dbContext, "products")
           .where((p) => p.category === "Furniture")
           .average((p) => p.price),
       );
@@ -100,8 +107,16 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
   describe("MIN and MAX", () => {
     it("should find minimum and maximum ages", async () => {
-      const minAge = await executeSimple(db, () => from(db, "users").min((u) => u.age));
-      const maxAge = await executeSimple(db, () => from(db, "users").max((u) => u.age));
+      const minAge = await executeSimple(db, () =>
+        from(dbContext, "users")
+          .where((u) => u.age !== null)
+          .min((u) => u.age!),
+      );
+      const maxAge = await executeSimple(db, () =>
+        from(dbContext, "users")
+          .where((u) => u.age !== null)
+          .max((u) => u.age!),
+      );
 
       expect(minAge).to.be.a("number");
       expect(maxAge).to.be.a("number");
@@ -111,8 +126,12 @@ describe("PostgreSQL Integration - Aggregates", () => {
     });
 
     it("should find min/max prices", async () => {
-      const minPrice = await executeSimple(db, () => from(db, "products").min((p) => p.price));
-      const maxPrice = await executeSimple(db, () => from(db, "products").max((p) => p.price));
+      const minPrice = await executeSimple(db, () =>
+        from(dbContext, "products").min((p) => p.price),
+      );
+      const maxPrice = await executeSimple(db, () =>
+        from(dbContext, "products").max((p) => p.price),
+      );
 
       expect(minPrice).to.be.a("number");
       expect(maxPrice).to.be.a("number");
@@ -122,7 +141,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
     it("should find min/max with WHERE", async () => {
       const maxElectronicsPrice = await executeSimple(db, () =>
-        from(db, "products")
+        from(dbContext, "products")
           .where((p) => p.category === "Electronics")
           .max((p) => p.price),
       );
@@ -134,7 +153,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
   describe("GROUP BY", () => {
     it("should group users by department", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .groupBy((u) => u.department_id)
           .select((g) => ({
             department: g.key,
@@ -149,7 +168,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
     it("should group products by category with aggregates", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products")
+        from(dbContext, "products")
           .groupBy((p) => p.category)
           .select((g) => ({
             category: g.key,
@@ -170,13 +189,13 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
     it("should group with WHERE clause", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users")
-          .where((u) => u.is_active === true)
+        from(dbContext, "users")
+          .where((u) => u.is_active === true && u.age !== null)
           .groupBy((u) => u.department_id)
           .select((g) => ({
             department: g.key,
             activeUsers: g.count(),
-            avgAge: g.average((u) => u.age),
+            avgAge: g.average((u) => u.age!),
           })),
       );
 
@@ -188,7 +207,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
     it("should group orders by status", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "orders")
+        from(dbContext, "orders")
           .groupBy((o) => o.status)
           .select((g) => ({
             status: g.key,

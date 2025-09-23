@@ -8,6 +8,7 @@ import { from } from "@webpods/tinqer";
 import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
+import { dbContext } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
   before(async () => {
@@ -17,7 +18,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
   describe("Arithmetic operations", () => {
     it("should handle addition in SELECT", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products").select((p) => ({
+        from(dbContext, "products").select((p) => ({
           name: p.name,
           price: p.price,
           priceWithTax: p.price * 1.1,
@@ -34,7 +35,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
     it("should handle subtraction and multiplication", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "order_items").select((oi) => ({
+        from(dbContext, "order_items").select((oi) => ({
           orderId: oi.order_id,
           quantity: oi.quantity,
           unitPrice: oi.unit_price,
@@ -54,7 +55,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSimple(
         db,
         () =>
-          from(db, "products")
+          from(dbContext, "products")
             .select((p) => ({
               name: p.name,
               price: p.price,
@@ -72,13 +73,13 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
     it("should handle modulo operations", async () => {
       const evenUsers = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .where((u) => u.id % 2 === 0)
           .select((u) => ({ id: u.id, name: u.name })),
       );
 
       const oddUsers = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .where((u) => u.id % 2 === 1)
           .select((u) => ({ id: u.id, name: u.name })),
       );
@@ -91,7 +92,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
     it("should handle complex arithmetic expressions", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products")
+        from(dbContext, "products")
           .where((p) => (p.price * p.stock) / 100 > 10)
           .select((p) => ({
             name: p.name,
@@ -109,7 +110,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
     it("should handle arithmetic in GROUP BY aggregates", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "order_items")
+        from(dbContext, "order_items")
           .groupBy((oi) => oi.order_id)
           .select((g) => ({
             orderId: g.key,
@@ -138,11 +139,11 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       const nullAgeUsers = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.age === null),
+        from(dbContext, "users").where((u) => u.age === null),
       );
 
       const nonNullAgeUsers = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.age !== null),
+        from(dbContext, "users").where((u) => u.age !== null),
       );
 
       expect(nullAgeUsers).to.be.an("array");
@@ -169,7 +170,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       const results = await executeSimple(db, () =>
-        from(db, "products")
+        from(dbContext, "products")
           .where((p) => p.name === "Test Null Product")
           .select((p) => ({
             name: p.name,
@@ -179,8 +180,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       if (results.length > 0) {
-        expect(results[0].stock).to.be.null;
-        expect(results[0].hasStock).to.be.false;
+        expect(results[0]!.stock).to.be.null;
+        expect(results[0]!.hasStock).to.be.false;
       }
 
       // Clean up
@@ -196,7 +197,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       const results = await executeSimple(db, () =>
-        from(db, "departments")
+        from(dbContext, "departments")
           .where((d) => d.id === 999)
           .select((d) => ({
             name: d.name,
@@ -206,7 +207,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
       expect(results).to.be.an("array");
       if (results.length > 0) {
-        expect(results[0].budget).to.equal(0);
+        expect(results[0]!.budget).to.equal(0);
       }
 
       // Clean up
@@ -222,13 +223,13 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       const withDescription = await executeSimple(db, () =>
-        from(db, "products").where(
+        from(dbContext, "products").where(
           (p) => p.description !== null && p.description.includes("laptop"),
         ),
       );
 
       const withoutDescription = await executeSimple(db, () =>
-        from(db, "products").where((p) => p.description === null),
+        from(dbContext, "products").where((p) => p.description === null),
       );
 
       expect(withDescription).to.be.an("array");
@@ -255,12 +256,15 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       const joinResults = await executeSimple(db, () =>
-        from(db, "users")
-          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
-          .select((u, d) => ({
+        from(dbContext, "users").join(
+          from(dbContext, "departments"),
+          (u) => u.department_id,
+          (d) => d.id,
+          (u, d) => ({
             userName: u.name,
             deptName: d.name,
-          })),
+          }),
+        ),
       );
 
       // User with NULL department_id should not appear in results
@@ -282,22 +286,26 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       // COUNT should count rows with NULL
-      const totalCount = await executeSimple(db, () => from(db, "users").count());
+      const totalCount = await executeSimple(db, () => from(dbContext, "users").count());
 
       // AVG, SUM, MIN, MAX ignore NULL values
-      const avgAge = await executeSimple(db, () => from(db, "users").average((u) => u.age));
+      const avgAge = await executeSimple(db, () =>
+        from(dbContext, "users")
+          .where((u) => u.age !== null)
+          .average((u) => u.age!),
+      );
 
       expect(totalCount).to.be.a("number");
       expect(avgAge).to.be.a("number");
 
       // Average should only consider non-NULL values
       const nonNullAges = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .where((u) => u.age !== null)
           .select((u) => ({ age: u.age })),
       );
 
-      const manualAvg = nonNullAges.reduce((sum, u) => sum + u.age, 0) / nonNullAges.length;
+      const manualAvg = nonNullAges.reduce((sum, u) => sum + u.age!, 0) / nonNullAges.length;
       expect(avgAge).to.be.closeTo(manualAvg, 0.1);
 
       // Clean up
@@ -308,11 +316,11 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
   describe("Boolean operations", () => {
     it("should handle boolean fields directly", async () => {
       const activeUsers = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.is_active),
+        from(dbContext, "users").where((u) => u.is_active),
       );
 
       const inactiveUsers = await executeSimple(db, () =>
-        from(db, "users").where((u) => !u.is_active),
+        from(dbContext, "users").where((u) => !u.is_active),
       );
 
       expect(activeUsers).to.be.an("array");
@@ -329,7 +337,9 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
     it("should handle boolean comparisons", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.is_active === true && u.age >= 30),
+        from(dbContext, "users").where(
+          (u) => u.is_active === true && u.age !== null && u.age >= 30,
+        ),
       );
 
       expect(results).to.be.an("array");
@@ -341,15 +351,17 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
     it("should handle complex boolean logic", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where(
-          (u) => (u.is_active && u.age < 30) || (!u.is_active && u.age >= 40),
+        from(dbContext, "users").where(
+          (u) =>
+            (u.is_active && u.age !== null && u.age < 30) ||
+            (!u.is_active && u.age !== null && u.age >= 40),
         ),
       );
 
       expect(results).to.be.an("array");
       results.forEach((u) => {
-        const condition1 = u.is_active && u.age < 30;
-        const condition2 = !u.is_active && u.age >= 40;
+        const condition1 = u.is_active && u.age !== null && u.age < 30;
+        const condition2 = !u.is_active && u.age !== null && u.age >= 40;
         expect(condition1 || condition2).to.be.true;
       });
     });

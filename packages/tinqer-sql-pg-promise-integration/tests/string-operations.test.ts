@@ -8,6 +8,7 @@ import { from } from "@webpods/tinqer";
 import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
+import { dbContext } from "./database-schema.js";
 
 describe("PostgreSQL Integration - String Operations", () => {
   before(async () => {
@@ -17,7 +18,7 @@ describe("PostgreSQL Integration - String Operations", () => {
   describe("startsWith", () => {
     it("should find users with names starting with 'J'", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.name.startsWith("J")),
+        from(dbContext, "users").where((u) => u.name.startsWith("J")),
       );
 
       expect(results).to.be.an("array");
@@ -29,17 +30,17 @@ describe("PostgreSQL Integration - String Operations", () => {
 
     it("should find emails starting with specific prefix", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.email.startsWith("alice")),
+        from(dbContext, "users").where((u) => u.email.startsWith("alice")),
       );
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1);
-      expect(results[0].email).to.equal("alice@example.com");
+      expect(results[0]!.email).to.equal("alice@example.com");
     });
 
     it("should combine startsWith with other conditions", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.name.startsWith("J") && u.is_active === true),
+        from(dbContext, "users").where((u) => u.name.startsWith("J") && u.is_active === true),
       );
 
       expect(results).to.be.an("array");
@@ -53,7 +54,7 @@ describe("PostgreSQL Integration - String Operations", () => {
   describe("endsWith", () => {
     it("should find emails ending with '@example.com'", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.email.endsWith("@example.com")),
+        from(dbContext, "users").where((u) => u.email.endsWith("@example.com")),
       );
 
       expect(results).to.be.an("array");
@@ -65,19 +66,19 @@ describe("PostgreSQL Integration - String Operations", () => {
 
     it("should find products with names ending with specific suffix", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products").where((p) => p.name.endsWith("top")),
+        from(dbContext, "products").where((p) => p.name.endsWith("top")),
       );
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1);
-      expect(results[0].name).to.equal("Laptop");
+      expect(results[0]!.name).to.equal("Laptop");
     });
   });
 
   describe("contains (includes)", () => {
     it("should find users with 'oh' in their name", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.name.includes("oh")),
+        from(dbContext, "users").where((u) => u.name.includes("oh")),
       );
 
       expect(results).to.be.an("array");
@@ -89,20 +90,24 @@ describe("PostgreSQL Integration - String Operations", () => {
 
     it("should find products with 'office' in description", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products").where((p) => p.description.includes("office")),
+        from(dbContext, "products").where(
+          (p) => p.description !== null && p.description.includes("office"),
+        ),
       );
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1); // Ergonomic office chair
-      expect(results[0].name).to.equal("Chair");
+      expect(results[0]!.name).to.equal("Chair");
     });
 
     it("should combine multiple string operations", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products").where(
+        from(dbContext, "products").where(
           (p) =>
+            p.category !== null &&
             p.category.startsWith("Electr") &&
-            (p.name.includes("e") || p.description.includes("performance")),
+            (p.name.includes("e") ||
+              (p.description !== null && p.description.includes("performance"))),
         ),
       );
 
@@ -117,7 +122,9 @@ describe("PostgreSQL Integration - String Operations", () => {
   describe("Complex string queries", () => {
     it("should find users with specific email patterns", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.email.startsWith("j") && u.email.endsWith("@example.com")),
+        from(dbContext, "users").where(
+          (u) => u.email.startsWith("j") && u.email.endsWith("@example.com"),
+        ),
       );
 
       expect(results).to.be.an("array");
@@ -129,8 +136,9 @@ describe("PostgreSQL Integration - String Operations", () => {
 
     it("should search products by multiple string fields", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products").where(
-          (p) => p.name.includes("e") || p.description.includes("wireless"),
+        from(dbContext, "products").where(
+          (p) =>
+            p.name.includes("e") || (p.description !== null && p.description.includes("wireless")),
         ),
       );
 
@@ -140,31 +148,38 @@ describe("PostgreSQL Integration - String Operations", () => {
 
     it("should combine string operations with joins", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users")
-          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
-          .where((u, d) => u.name.startsWith("J") && d.name.includes("ing"))
-          .select((u, d) => ({
-            userName: u.name,
-            userEmail: u.email,
-            departmentName: d.name,
+        from(dbContext, "users")
+          .join(
+            from(dbContext, "departments"),
+            (u) => u.department_id,
+            (d) => d.id,
+            (u, d) => ({ user: u, department: d }),
+          )
+          .where(
+            (joined) => joined.user.name.startsWith("J") && joined.department.name.includes("ing"),
+          )
+          .select((joined) => ({
+            userName: joined.user.name,
+            userEmail: joined.user.email,
+            departmentName: joined.department.name,
           })),
       );
 
       expect(results).to.be.an("array");
       results.forEach((r) => {
-        expect(r.userName[0]).to.equal("J");
-        expect(r.departmentName).to.match(/ing/);
+        expect(r.userName![0]).to.equal("J");
+        expect(r.departmentName!).to.match(/ing/);
       });
     });
 
     it("should handle case-sensitive string operations", async () => {
       // Note: PostgreSQL LIKE is case-sensitive by default
       const upperResults = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.name.includes("J")),
+        from(dbContext, "users").where((u) => u.name.includes("J")),
       );
 
       const lowerResults = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.name.includes("j")),
+        from(dbContext, "users").where((u) => u.name.includes("j")),
       );
 
       // John, Jane, Johnson have capital J
@@ -177,7 +192,7 @@ describe("PostgreSQL Integration - String Operations", () => {
   describe("String operations with aggregates", () => {
     it("should count users by email domain", async () => {
       const count = await executeSimple(db, () =>
-        from(db, "users")
+        from(dbContext, "users")
           .where((u) => u.email.endsWith("@example.com"))
           .count(),
       );
@@ -187,7 +202,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
     it("should group products by name prefix", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products")
+        from(dbContext, "products")
           .where((p) => p.category === "Electronics")
           .groupBy((p) => p.name.includes("e"))
           .select((g) => ({
@@ -205,17 +220,19 @@ describe("PostgreSQL Integration - String Operations", () => {
   describe("String operations with NULL handling", () => {
     it("should handle nullable description fields", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products").where((p) => p.description !== null && p.description.includes("High")),
+        from(dbContext, "products").where(
+          (p) => p.description !== null && p.description.includes("High"),
+        ),
       );
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1); // High-performance laptop
-      expect(results[0].name).to.equal("Laptop");
+      expect(results[0]!.name).to.equal("Laptop");
     });
 
     it("should check for non-null strings", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "products").where((p) => p.description !== null),
+        from(dbContext, "products").where((p) => p.description !== null),
       );
 
       expect(results).to.be.an("array");

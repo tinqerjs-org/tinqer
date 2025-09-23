@@ -8,6 +8,7 @@ import { from } from "@webpods/tinqer";
 import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
+import { dbContext } from "./database-schema.js";
 
 describe("PostgreSQL Integration - JOINs", () => {
   before(async () => {
@@ -17,13 +18,16 @@ describe("PostgreSQL Integration - JOINs", () => {
   describe("INNER JOIN", () => {
     it("should join users with departments", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users")
-          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
-          .select((u, d) => ({
+        from(dbContext, "users").join(
+          from(dbContext, "departments"),
+          (u) => u.department_id,
+          (d) => d.id,
+          (u, d) => ({
             userName: u.name,
             userEmail: u.email,
             departmentName: d.name,
-          })),
+          }),
+        ),
       );
 
       expect(results).to.be.an("array");
@@ -37,14 +41,17 @@ describe("PostgreSQL Integration - JOINs", () => {
 
     it("should join orders with users", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "orders")
-          .join(from(db, "users"), (o, u) => o.user_id === u.id)
-          .select((o, u) => ({
+        from(dbContext, "orders").join(
+          from(dbContext, "users"),
+          (o) => o.user_id,
+          (u) => u.id,
+          (o, u) => ({
             orderId: o.id,
             orderTotal: o.total_amount,
             customerName: u.name,
             customerEmail: u.email,
-          })),
+          }),
+        ),
       );
 
       expect(results).to.be.an("array");
@@ -59,13 +66,18 @@ describe("PostgreSQL Integration - JOINs", () => {
 
     it("should join with WHERE clause", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "orders")
-          .join(from(db, "users"), (o, u) => o.user_id === u.id)
-          .where((o) => o.status === "completed")
-          .select((o, u) => ({
-            orderId: o.id,
-            customerName: u.name,
-            total: o.total_amount,
+        from(dbContext, "orders")
+          .join(
+            from(dbContext, "users"),
+            (o) => o.user_id,
+            (u) => u.id,
+            (o, u) => ({ order: o, user: u }),
+          )
+          .where((joined) => joined.order.status === "completed")
+          .select((joined) => ({
+            orderId: joined.order.id,
+            customerName: joined.user.name,
+            total: joined.order.total_amount,
           })),
       );
 
@@ -79,13 +91,18 @@ describe("PostgreSQL Integration - JOINs", () => {
 
     it("should join with aggregates", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "orders")
-          .join(from(db, "users"), (o, u) => o.user_id === u.id)
-          .groupBy((o, u) => u.name)
+        from(dbContext, "orders")
+          .join(
+            from(dbContext, "users"),
+            (o) => o.user_id,
+            (u) => u.id,
+            (o, u) => ({ order: o, user: u }),
+          )
+          .groupBy((joined) => joined.user.name)
           .select((g) => ({
             customerName: g.key,
             orderCount: g.count(),
-            totalSpent: g.sum((o) => o.total_amount),
+            totalSpent: g.sum((joined) => joined.order.total_amount),
           })),
       );
 
@@ -103,16 +120,26 @@ describe("PostgreSQL Integration - JOINs", () => {
   describe("Multiple JOINs", () => {
     it("should join order_items with orders and products", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "order_items")
-          .join(from(db, "orders"), (oi, o) => oi.order_id === o.id)
-          .join(from(db, "products"), (oi, o, p) => oi.product_id === p.id)
-          .where((oi, o) => o.status === "completed")
-          .select((oi, o, p) => ({
-            orderId: o.id,
-            productName: p.name,
-            quantity: oi.quantity,
-            unitPrice: oi.unit_price,
-            totalPrice: oi.quantity * oi.unit_price,
+        from(dbContext, "order_items")
+          .join(
+            from(dbContext, "orders"),
+            (oi) => oi.order_id,
+            (o) => o.id,
+            (oi, o) => ({ orderItem: oi, order: o }),
+          )
+          .join(
+            from(dbContext, "products"),
+            (joined) => joined.orderItem.product_id,
+            (p) => p.id,
+            (joined, p) => ({ ...joined, product: p }),
+          )
+          .where((joined) => joined.order.status === "completed")
+          .select((joined) => ({
+            orderId: joined.order.id,
+            productName: joined.product.name,
+            quantity: joined.orderItem.quantity,
+            unitPrice: joined.orderItem.unit_price,
+            totalPrice: joined.orderItem.quantity * joined.orderItem.unit_price,
           })),
       );
 
@@ -129,15 +156,25 @@ describe("PostgreSQL Integration - JOINs", () => {
 
     it("should join users with departments and count orders", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users")
-          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
-          .join(from(db, "orders"), (u, d, o) => u.id === o.user_id)
-          .groupBy((u, d) => ({ userName: u.name, deptName: d.name }))
+        from(dbContext, "users")
+          .join(
+            from(dbContext, "departments"),
+            (u) => u.department_id,
+            (d) => d.id,
+            (u, d) => ({ user: u, department: d }),
+          )
+          .join(
+            from(dbContext, "orders"),
+            (joined) => joined.user.id,
+            (o) => o.user_id,
+            (joined, o) => ({ ...joined, order: o }),
+          )
+          .groupBy((joined) => ({ userName: joined.user.name, deptName: joined.department.name }))
           .select((g) => ({
             userName: g.key.userName,
             departmentName: g.key.deptName,
             orderCount: g.count(),
-            totalRevenue: g.sum((u, d, o) => o.total_amount),
+            totalRevenue: g.sum((joined) => joined.order.total_amount),
           })),
       );
 
@@ -154,16 +191,26 @@ describe("PostgreSQL Integration - JOINs", () => {
   describe("Complex JOIN scenarios", () => {
     it("should find top products by revenue", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "order_items")
-          .join(from(db, "products"), (oi, p) => oi.product_id === p.id)
-          .join(from(db, "orders"), (oi, p, o) => oi.order_id === o.id)
-          .where((oi, p, o) => o.status === "completed")
-          .groupBy((oi, p) => ({ id: p.id, name: p.name }))
+        from(dbContext, "order_items")
+          .join(
+            from(dbContext, "products"),
+            (oi) => oi.product_id,
+            (p) => p.id,
+            (oi, p) => ({ orderItem: oi, product: p }),
+          )
+          .join(
+            from(dbContext, "orders"),
+            (joined) => joined.orderItem.order_id,
+            (o) => o.id,
+            (joined, o) => ({ ...joined, order: o }),
+          )
+          .where((joined) => joined.order.status === "completed")
+          .groupBy((joined) => ({ id: joined.product.id, name: joined.product.name }))
           .select((g) => ({
             productId: g.key.id,
             productName: g.key.name,
-            unitsSold: g.sum((oi) => oi.quantity),
-            revenue: g.sum((oi) => oi.quantity * oi.unit_price),
+            unitsSold: g.sum((joined) => joined.orderItem.quantity),
+            revenue: g.sum((joined) => joined.orderItem.quantity * joined.orderItem.unit_price),
           }))
           .orderByDescending((p) => p.revenue)
           .take(5),
@@ -174,22 +221,27 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       // Check that results are properly ordered by revenue
       for (let i = 1; i < results.length; i++) {
-        expect(results[i - 1].revenue).to.be.at.least(results[i].revenue);
+        expect(results[i - 1]!.revenue).to.be.at.least(results[i]!.revenue);
       }
     });
 
     it("should find customers with high-value orders", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users")
-          .join(from(db, "orders"), (u, o) => u.id === o.user_id)
-          .where((u, o) => o.total_amount > 500)
-          .select((u, o) => ({
-            customerId: u.id,
-            customerName: u.name,
-            customerEmail: u.email,
-            orderId: o.id,
-            orderAmount: o.total_amount,
-            orderStatus: o.status,
+        from(dbContext, "users")
+          .join(
+            from(dbContext, "orders"),
+            (u) => u.id,
+            (o) => o.user_id,
+            (u, o) => ({ user: u, order: o }),
+          )
+          .where((joined) => joined.order.total_amount > 500)
+          .select((joined) => ({
+            customerId: joined.user.id,
+            customerName: joined.user.name,
+            customerEmail: joined.user.email,
+            orderId: joined.order.id,
+            orderAmount: joined.order.total_amount,
+            orderStatus: joined.order.status,
           }))
           .orderByDescending((r) => r.orderAmount),
       );
@@ -202,17 +254,31 @@ describe("PostgreSQL Integration - JOINs", () => {
 
     it("should analyze department spending", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "departments")
-          .join(from(db, "users"), (d, u) => d.id === u.department_id)
-          .join(from(db, "orders"), (d, u, o) => u.id === o.user_id)
-          .groupBy((d) => ({ id: d.id, name: d.name, budget: d.budget }))
+        from(dbContext, "departments")
+          .join(
+            from(dbContext, "users"),
+            (d) => d.id,
+            (u) => u.department_id,
+            (d, u) => ({ department: d, user: u }),
+          )
+          .join(
+            from(dbContext, "orders"),
+            (joined) => joined.user.id,
+            (o) => o.user_id,
+            (joined, o) => ({ ...joined, order: o }),
+          )
+          .groupBy((joined) => ({
+            id: joined.department.id,
+            name: joined.department.name,
+            budget: joined.department.budget,
+          }))
           .select((g) => ({
             departmentId: g.key.id,
             departmentName: g.key.name,
             budget: g.key.budget,
-            totalSpending: g.sum((d, u, o) => o.total_amount),
+            totalSpending: g.sum((joined) => joined.order.total_amount),
             orderCount: g.count(),
-            avgOrderValue: g.average((d, u, o) => o.total_amount),
+            avgOrderValue: g.average((joined) => joined.order.total_amount),
           })),
       );
 
