@@ -98,11 +98,15 @@ interface PgDatabase {
  * @param params Parameters to pass to the query builder
  * @returns Promise with query results, properly typed based on the query
  */
-export async function execute<TParams, TResult>(
+export async function execute<TParams, TQuery extends Queryable<any> | TerminalQuery<any>>(
   db: PgDatabase,
-  queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>,
+  queryBuilder: (params: TParams) => TQuery,
   params: TParams,
-): Promise<TResult[] | TResult | null | number | boolean> {
+): Promise<
+  TQuery extends Queryable<infer T> ? T[] :
+  TQuery extends TerminalQuery<infer T> ? T :
+  never
+> {
   const { sql, params: sqlParams } = query(queryBuilder, params);
 
   // Check if this is a terminal operation that returns a single value
@@ -122,7 +126,7 @@ export async function execute<TParams, TResult>(
     case "last":
     case "lastOrDefault":
       // These return a single item
-      const rows = (await db.any(sql, sqlParams)) as TResult[];
+      const rows = await db.any(sql, sqlParams);
       if (rows.length === 0) {
         if (operationType.includes("OrDefault")) {
           return null as any; // Return null for OrDefault operations
@@ -132,13 +136,13 @@ export async function execute<TParams, TResult>(
       if (operationType.startsWith("single") && rows.length > 1) {
         throw new Error(`Multiple elements found for ${operationType} operation`);
       }
-      return rows[0] as TResult; // Return single item
+      return rows[0] as any; // Return single item
 
     case "count":
     case "longCount":
       // These return a number - SQL is: SELECT COUNT(*) FROM ...
       const countResult = (await db.one(sql, sqlParams)) as { count: string };
-      return parseInt(countResult.count, 10);
+      return parseInt(countResult.count, 10) as any;
 
     case "sum":
     case "average":
@@ -176,7 +180,7 @@ export async function execute<TParams, TResult>(
     case "toList":
     default:
       // Regular query that returns an array
-      return (await db.any(sql, sqlParams)) as TResult[];
+      return (await db.any(sql, sqlParams)) as any;
   }
 }
 
@@ -186,10 +190,14 @@ export async function execute<TParams, TResult>(
  * @param queryBuilder Function that builds the query using LINQ operations
  * @returns Promise with query results, properly typed based on the query
  */
-export async function executeSimple<TResult>(
+export async function executeSimple<TQuery extends Queryable<any> | TerminalQuery<any>>(
   db: PgDatabase,
-  queryBuilder: () => Queryable<TResult> | TerminalQuery<TResult>,
-): Promise<TResult[] | TResult | null | number | boolean> {
+  queryBuilder: () => TQuery,
+): Promise<
+  TQuery extends Queryable<infer T> ? T[] :
+  TQuery extends TerminalQuery<infer T> ? T :
+  never
+> {
   return execute(db, queryBuilder, {});
 }
 
