@@ -415,8 +415,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
       expect(result.sql).to.contain(`"price" != $(_price1)`);
       expect(result.sql).to.contain(`"stock" > $(_stock1)`);
       expect(result.sql).to.contain(`"stock" >= $(_stock2)`);
-      expect(result.sql).to.contain(`"discount" < $(_discount1)`);
-      expect(result.sql).to.contain(`"discount" <= $(_discount2)`);
+      expect(result.sql).to.contain(`COALESCE("discount", $(_value1)) < $(_value2)`);
+      expect(result.sql).to.contain(`COALESCE("discount", $(_value3)) <= $(_value4)`);
     });
 
     it("should handle false boolean literals correctly", () => {
