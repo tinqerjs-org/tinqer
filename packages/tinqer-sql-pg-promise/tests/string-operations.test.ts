@@ -200,7 +200,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT "key" AS "name", COUNT(*) AS "count" FROM "products" AS "t0" WHERE "name" LIKE '%' || $(_name1) || '%' GROUP BY "name"`,
+        `SELECT "name" AS "name", COUNT(*) AS "count" FROM "products" AS "t0" WHERE "name" LIKE '%' || $(_name1) || '%' GROUP BY "name"`,
       );
       expect(result.params).to.deep.equal({ _name1: "Phone" });
     });

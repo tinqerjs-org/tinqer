@@ -78,7 +78,7 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT "key" AS "department", COUNT(*) AS "count" FROM "employees" AS "t0" GROUP BY "department"',
+      'SELECT "department" AS "department", COUNT(*) AS "count" FROM "employees" AS "t0" GROUP BY "department"',
     );
   });
 });

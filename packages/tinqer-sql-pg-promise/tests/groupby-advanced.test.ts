@@ -51,7 +51,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "key" AS "category", SUM("amount") AS "totalSales", AVG("amount") AS "avgSale", MAX("amount") AS "maxSale", MIN("amount") AS "minSale", COUNT(*) AS "saleCount" FROM "sales" AS "t0" GROUP BY "category"',
+        'SELECT "category" AS "category", SUM("amount") AS "totalSales", AVG("amount") AS "avgSale", MAX("amount") AS "maxSale", MIN("amount") AS "minSale", COUNT(*) AS "saleCount" FROM "sales" AS "t0" GROUP BY "category"',
       );
     });
 
@@ -95,7 +95,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "key" AS "category", COUNT(*) AS "highValueSales", SUM("amount") AS "totalAmount" FROM "sales" AS "t0" WHERE ("amount" > $(_amount1) AND "discount" < $(_discount1)) GROUP BY "category"',
+        'SELECT "category" AS "category", COUNT(*) AS "highValueSales", SUM("amount") AS "totalAmount" FROM "sales" AS "t0" WHERE ("amount" > $(_amount1) AND "discount" < $(_discount1)) GROUP BY "category"',
       );
       expect(result.params).to.deep.equal({ _amount1: 1000, _discount1: 20 });
     });
@@ -136,7 +136,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "key" AS "salesperson", SUM("amount") AS "totalSales" FROM "sales" AS "t0" GROUP BY "salesperson" ORDER BY "totalSales" ASC',
+        'SELECT "salesperson" AS "salesperson", SUM("amount") AS "totalSales" FROM "sales" AS "t0" GROUP BY "salesperson" ORDER BY "totalSales" ASC',
       );
     });
 
@@ -154,7 +154,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT "key" AS "category", COUNT(*) AS "count" FROM "sales" AS "t0" GROUP BY "category" ORDER BY "category" ASC`,
+        `SELECT "category" AS "category", COUNT(*) AS "count" FROM "sales" AS "t0" GROUP BY "category" ORDER BY "category" ASC`,
       );
     });
 
@@ -172,7 +172,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT "key" AS "region", SUM("amount") AS "revenue" FROM "sales" AS "t0" GROUP BY "region" ORDER BY "revenue" DESC`,
+        `SELECT "region" AS "region", SUM("amount") AS "revenue" FROM "sales" AS "t0" GROUP BY "region" ORDER BY "revenue" DESC`,
       );
     });
   });
@@ -193,7 +193,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT "key" AS "category", SUM("amount") AS "total" FROM "sales" AS "t0" GROUP BY "category" ORDER BY "total" DESC LIMIT $(_limit1)`,
+        `SELECT "category" AS "category", SUM("amount") AS "total" FROM "sales" AS "t0" GROUP BY "category" ORDER BY "total" DESC LIMIT $(_limit1)`,
       );
       expect(result.params).to.deep.equal({ _limit1: 5 });
     });
@@ -385,7 +385,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "key" AS "category" FROM "sales" AS "t0" GROUP BY "category"',
+        'SELECT "category" AS "category" FROM "sales" AS "t0" GROUP BY "category"',
       );
     });
 
@@ -399,7 +399,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT "key" AS "region", COUNT(*) AS "count" FROM "sales" AS "t0" GROUP BY "region"`,
+        `SELECT "region" AS "region", COUNT(*) AS "count" FROM "sales" AS "t0" GROUP BY "region"`,
       );
     });
 

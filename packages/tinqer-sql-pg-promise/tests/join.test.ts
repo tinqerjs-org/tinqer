@@ -118,7 +118,7 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "key" AS "userId", SUM("orderAmount") AS "totalAmount" FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0") AS "t1" ON "t0"."id" = "t1"."userId" GROUP BY "userId"',
+        'SELECT "userId" AS "userId", SUM("orderAmount") AS "totalAmount" FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0") AS "t1" ON "t0"."id" = "t1"."userId" GROUP BY "userId"',
       );
     });
 

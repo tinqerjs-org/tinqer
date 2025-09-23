@@ -172,7 +172,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "key" AS "category", COUNT(*) AS "count" FROM "products" AS "t0" WHERE "category" IN ($(_value1), $(_value2), $(_value3)) GROUP BY "category"',
+        'SELECT "category" AS "category", COUNT(*) AS "count" FROM "products" AS "t0" WHERE "category" IN ($(_value1), $(_value2), $(_value3)) GROUP BY "category"',
       );
       expect(result.params).to.deep.equal({
         _value1: "electronics",

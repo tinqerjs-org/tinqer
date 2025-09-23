@@ -115,7 +115,7 @@ describe("Execute Function", () => {
 
       const sqlResult = query(queryBuilder, {});
       expect(sqlResult.sql).to.equal(
-        'SELECT COUNT(*) WHERE "age" >= $(_age1) FROM "users" AS "t0"',
+        'SELECT COUNT(*) FROM "users" AS "t0" WHERE "age" >= $(_age1)',
       );
       expect(sqlResult.params).to.deep.equal({ _age1: 18 });
     });
