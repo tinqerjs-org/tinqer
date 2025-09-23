@@ -103,9 +103,7 @@ export async function execute<TParams, TQuery extends Queryable<any> | TerminalQ
   queryBuilder: (params: TParams) => TQuery,
   params: TParams,
 ): Promise<
-  TQuery extends Queryable<infer T> ? T[] :
-  TQuery extends TerminalQuery<infer T> ? T :
-  never
+  TQuery extends Queryable<infer T> ? T[] : TQuery extends TerminalQuery<infer T> ? T : never
 > {
   const { sql, params: sqlParams } = query(queryBuilder, params);
 
@@ -194,9 +192,7 @@ export async function executeSimple<TQuery extends Queryable<any> | TerminalQuer
   db: PgDatabase,
   queryBuilder: () => TQuery,
 ): Promise<
-  TQuery extends Queryable<infer T> ? T[] :
-  TQuery extends TerminalQuery<infer T> ? T :
-  never
+  TQuery extends Queryable<infer T> ? T[] : TQuery extends TerminalQuery<infer T> ? T : never
 > {
   return execute(db, queryBuilder, {});
 }

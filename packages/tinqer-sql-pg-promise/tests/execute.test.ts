@@ -109,9 +109,7 @@ describe("Execute Function", () => {
       const queryBuilder = () => from(db, "users").firstOrDefault((u) => u.id === 999);
 
       const sqlResult = query(queryBuilder, {});
-      expect(sqlResult.sql).to.equal(
-        'SELECT * FROM "users" AS t0 WHERE id = $(_id1) LIMIT 1',
-      );
+      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS t0 WHERE id = $(_id1) LIMIT 1');
       expect(sqlResult.params).to.deep.equal({ _id1: 999 });
       // Note: firstOrDefault returns null when no results, not throwing
     });
