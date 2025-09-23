@@ -1,0 +1,42 @@
+{
+  "name": "@webpods/tinqer-sql-better-sqlite3",
+  "version": "0.0.1",
+  "description": "better-sqlite3 SQL generator for Tinqer query builder",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha tests/**/*.test.ts",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@webpods/tinqer": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/chai": "5.2.2",
+    "@types/mocha": "10.0.10",
+    "@types/node": "24.3.3",
+    "better-sqlite3": "^11.5.0",
+    "chai": "5.3.3",
+    "mocha": "11.7.2",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2"
+  },
+  "keywords": [
+    "tinqer",
+    "sqlite",
+    "sqlite3",
+    "better-sqlite3",
+    "sql",
+    "database"
+  ],
+  "author": "WebPods",
+  "license": "MIT"
+}

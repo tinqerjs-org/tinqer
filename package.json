@@ -12,6 +12,7 @@
     "test": "npm test --workspaces",
     "test:tinqer": "npm run test -w @webpods/tinqer",
     "test:sql": "npm run test -w @webpods/tinqer-sql-pg-promise",
+    "test:sqlite": "npm run test -w @webpods/tinqer-sql-better-sqlite3",
     "lint": "./scripts/lint-all.sh",
     "lint:fix": "./scripts/lint-all.sh --fix",
     "format": "./scripts/format-all.sh",
