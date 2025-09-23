@@ -4,30 +4,49 @@
 
 import type { GroupByOperation } from "@webpods/tinqer";
 import type { SqlContext } from "../types.js";
-import { generateValueExpression } from "../expression-generator.js";
+import { generateExpression } from "../expression-generator.js";
 
 /**
  * Generate GROUP BY clause
  */
 export function generateGroupBy(operation: GroupByOperation, context: SqlContext): string {
-  let groupByExpr: string;
+  const keySelector = operation.keySelector;
 
-  if (typeof operation.keySelector === "string") {
-    // Simple column name - check if it maps to a source column
-    if (context.symbolTable) {
-      const sourceRef = context.symbolTable.entries.get(operation.keySelector);
-      if (sourceRef) {
-        groupByExpr = `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
-      } else {
-        groupByExpr = `"${operation.keySelector}"`;
+  // Handle different expression types
+  if (keySelector.type === "object") {
+    // Composite key - generate GROUP BY for each property
+    // e.g., { name: u.name, dept: u.dept } => GROUP BY name, dept
+    const groupByColumns: string[] = [];
+
+    for (const propName in keySelector.properties) {
+      const propExpr = keySelector.properties[propName];
+      if (propExpr) {
+        const sqlExpr = generateExpression(propExpr, context);
+        groupByColumns.push(sqlExpr);
       }
-    } else {
-      groupByExpr = `"${operation.keySelector}"`;
     }
-  } else {
-    // Complex expression
-    groupByExpr = generateValueExpression(operation.keySelector, context);
-  }
 
-  return `GROUP BY ${groupByExpr}`;
+    return groupByColumns.length > 0
+      ? `GROUP BY ${groupByColumns.join(", ")}`
+      : "GROUP BY 1"; // Fallback, shouldn't happen
+
+  } else if (keySelector.type === "column") {
+    // Simple column - check symbol table for mapping
+    const columnName = keySelector.name;
+    if (context.symbolTable) {
+      const sourceRef = context.symbolTable.entries.get(columnName);
+      if (sourceRef) {
+        return `GROUP BY "${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
+      }
+    }
+    // Default to table alias if available
+    const tableAlias = context.currentAlias || "t0";
+    return `GROUP BY "${tableAlias}"."${columnName}"`;
+
+  } else {
+    // Any other expression (method calls, binary ops, etc.)
+    // Generate the expression and use it in GROUP BY
+    const groupByExpr = generateExpression(keySelector, context);
+    return `GROUP BY ${groupByExpr}`;
+  }
 }

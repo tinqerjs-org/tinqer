@@ -122,7 +122,7 @@ export interface ArrayShapeNode {
 export interface GroupByOperation extends QueryOperation {
   operationType: "groupBy";
   source: QueryOperation;
-  keySelector: string; // Only support simple column names
+  keySelector: Expression; // Support any expression including composite keys
 }
 
 /**

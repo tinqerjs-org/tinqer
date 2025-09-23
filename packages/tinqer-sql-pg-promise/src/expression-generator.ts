@@ -203,30 +203,34 @@ function generateNotExpression(expr: NotExpression, context: SqlContext): string
 function generateColumnExpression(expr: ColumnExpression, context: SqlContext): string {
   // Handle GROUP BY key references
   if (context.groupByKey) {
-    // Handle g.key - single column group by
+    // Handle g.key - single column or expression group by
     if (expr.name === "key" && !expr.table) {
-      // Check if groupByKey is a simple string (column name) or an expression
-      if (typeof context.groupByKey === "string") {
-        // Simple column name - check if it maps to a source column
+      // Return the GROUP BY expression
+      if (context.groupByKey.type === "column") {
+        // Simple column - check if it maps to a source column
+        const columnExpr = context.groupByKey as ColumnExpression;
         if (context.symbolTable) {
-          const sourceRef = context.symbolTable.entries.get(context.groupByKey);
+          const sourceRef = context.symbolTable.entries.get(columnExpr.name);
           if (sourceRef) {
             return `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
           }
         }
-        return `"${context.groupByKey}"`;
+        // Use current alias if available
+        const tableAlias = columnExpr.table || context.currentAlias || "t0";
+        return `"${tableAlias}"."${columnExpr.name}"`;
       } else {
-        // Complex expression
-        return generateValueExpression(context.groupByKey, context);
+        // Complex expression (including objects, method calls, etc.)
+        return generateExpression(context.groupByKey, context);
       }
     }
 
-    // Handle g.key.property - composite group by
+    // Handle g.key.property - composite group by with object key
     if (expr.table === "key" && context.groupByKey.type === "object") {
       // Look up the property in the composite key
-      const keyProperty = context.groupByKey.properties[expr.name];
+      const objExpr = context.groupByKey as ObjectExpression;
+      const keyProperty = objExpr.properties[expr.name];
       if (keyProperty) {
-        return generateValueExpression(keyProperty, context);
+        return generateExpression(keyProperty, context);
       }
     }
   }

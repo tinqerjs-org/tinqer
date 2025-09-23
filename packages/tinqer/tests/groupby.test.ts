@@ -22,7 +22,7 @@ describe("GROUP BY Operation", () => {
 
       expect(getOperation(result)?.operationType).to.equal("groupBy");
       const groupByOp = asGroupByOperation(getOperation(result));
-      expect(groupByOp.keySelector).to.equal("category");
+      expect(groupByOp.keySelector).to.deep.equal({ type: "column", name: "category" });
     });
 
     it("should parse groupBy with different column", () => {
@@ -31,7 +31,7 @@ describe("GROUP BY Operation", () => {
 
       expect(getOperation(result)?.operationType).to.equal("groupBy");
       const groupByOp = asGroupByOperation(getOperation(result));
-      expect(groupByOp.keySelector).to.equal("department");
+      expect(groupByOp.keySelector).to.deep.equal({ type: "column", name: "department" });
     });
 
     it("should parse groupBy after where", () => {

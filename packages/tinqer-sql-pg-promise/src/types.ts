@@ -2,6 +2,8 @@
  * Types for SQL generation
  */
 
+import type { Expression } from "@webpods/tinqer";
+
 /**
  * Result of SQL generation
  */
@@ -34,9 +36,10 @@ export interface SqlContext {
   tableAliases: Map<string, string>;
   aliasCounter: number;
   formatParameter: (paramName: string) => string; // Format parameter for SQL dialect
-  groupByKey?: any; // Store the GROUP BY key selector for transforming g.key references
+  groupByKey?: Expression; // Store the GROUP BY key selector expression for transforming g.key references
   symbolTable?: SymbolTable; // Maps projected properties to their source columns
   currentShape?: any; // The current shape of the query result (after JOINs)
+  currentAlias?: string; // Current table alias for resolving column references
 }
 
 /**

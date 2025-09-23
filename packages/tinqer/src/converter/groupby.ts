@@ -3,7 +3,6 @@
  */
 
 import type { GroupByOperation, QueryOperation } from "../query-tree/operations.js";
-import type { ColumnExpression } from "../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
@@ -40,13 +39,17 @@ export function convertGroupByOperation(
       if (bodyExpr) {
         const keySelector = convertAstToExpression(bodyExpr, context);
 
-        // Only support simple column names for groupBy
-        if (keySelector && keySelector.type === "column") {
+        // Support any expression as key selector, including:
+        // - Simple columns: u => u.name
+        // - Object literals (composite keys): u => ({ name: u.name, dept: u.dept })
+        // - Method calls: p => p.name.includes("e")
+        // - Nested property access: joined => joined.user.name
+        if (keySelector) {
           return {
             type: "queryOperation",
             operationType: "groupBy",
             source,
-            keySelector: (keySelector as ColumnExpression).name,
+            keySelector,
           };
         }
       }
