@@ -17,6 +17,7 @@ export interface SqlContext {
   tableAliases: Map<string, string>;
   aliasCounter: number;
   formatParameter: (paramName: string) => string; // Format parameter for SQL dialect
+  groupByKey?: any; // Store the GROUP BY key selector for transforming g.key references
 }
 
 /**

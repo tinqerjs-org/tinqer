@@ -187,6 +187,31 @@ function generateNotExpression(expr: NotExpression, context: SqlContext): string
  * Generate SQL for column references
  */
 function generateColumnExpression(expr: ColumnExpression, context: SqlContext): string {
+  // Handle GROUP BY key references
+  if (context.groupByKey) {
+    // Handle g.key - single column group by
+    if (expr.name === "key" && !expr.table) {
+      // Check if groupByKey is a simple string (column name) or an expression
+      if (typeof context.groupByKey === "string") {
+        // Simple column name
+        return `"${context.groupByKey}"`;
+      } else {
+        // Complex expression
+        return generateValueExpression(context.groupByKey, context);
+      }
+    }
+
+    // Handle g.key.property - composite group by
+    if (expr.table === "key" && context.groupByKey.type === "object") {
+      // Look up the property in the composite key
+      const keyProperty = context.groupByKey.properties[expr.name];
+      if (keyProperty) {
+        return generateValueExpression(keyProperty, context);
+      }
+    }
+  }
+
+  // Regular column handling
   if (expr.table) {
     const alias = context.tableAliases.get(expr.table) || expr.table;
     return `"${alias}"."${expr.name}"`;

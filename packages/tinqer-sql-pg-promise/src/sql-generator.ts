@@ -96,6 +96,13 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
   const minOp = operations.find((op) => op.operationType === "min") as MinOperation;
   const maxOp = operations.find((op) => op.operationType === "max") as MaxOperation;
 
+  // Find GROUP BY early and store in context for SELECT generation
+  const groupByOp = operations.find((op) => op.operationType === "groupBy") as GroupByOperation;
+  if (groupByOp) {
+    // Store the key selector in context for later use in SELECT expressions
+    context.groupByKey = groupByOp.keySelector;
+  }
+
   // Find and process SELECT or aggregate operation
   if (countOp) {
     fragments.push(`SELECT ${generateCount(countOp, context)}`);
@@ -165,8 +172,7 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     fragments.push(`WHERE ${wherePredicates.join(" AND ")}`);
   }
 
-  // Process GROUP BY
-  const groupByOp = operations.find((op) => op.operationType === "groupBy") as GroupByOperation;
+  // Process GROUP BY (already found and stored in context earlier)
   if (groupByOp) {
     fragments.push(generateGroupBy(groupByOp, context));
   }
