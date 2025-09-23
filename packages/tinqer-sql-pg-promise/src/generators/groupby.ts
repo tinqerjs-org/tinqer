@@ -26,10 +26,7 @@ export function generateGroupBy(operation: GroupByOperation, context: SqlContext
       }
     }
 
-    return groupByColumns.length > 0
-      ? `GROUP BY ${groupByColumns.join(", ")}`
-      : "GROUP BY 1"; // Fallback, shouldn't happen
-
+    return groupByColumns.length > 0 ? `GROUP BY ${groupByColumns.join(", ")}` : "GROUP BY 1"; // Fallback, shouldn't happen
   } else if (keySelector.type === "column") {
     // Simple column - check symbol table for mapping
     const columnName = keySelector.name;
@@ -39,10 +36,8 @@ export function generateGroupBy(operation: GroupByOperation, context: SqlContext
         return `GROUP BY "${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
       }
     }
-    // Default to table alias if available
-    const tableAlias = context.currentAlias || "t0";
-    return `GROUP BY "${tableAlias}"."${columnName}"`;
-
+    // For non-JOIN queries, use unqualified column name
+    return `GROUP BY "${columnName}"`;
   } else {
     // Any other expression (method calls, binary ops, etc.)
     // Generate the expression and use it in GROUP BY

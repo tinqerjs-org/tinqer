@@ -215,9 +215,8 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
             return `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
           }
         }
-        // Use current alias if available
-        const tableAlias = columnExpr.table || context.currentAlias || "t0";
-        return `"${tableAlias}"."${columnExpr.name}"`;
+        // For non-JOIN queries, use unqualified column name
+        return `"${columnExpr.name}"`;
       } else {
         // Complex expression (including objects, method calls, etc.)
         return generateExpression(context.groupByKey, context);
