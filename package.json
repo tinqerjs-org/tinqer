@@ -12,7 +12,6 @@
     "test": "npm test --workspaces",
     "test:tinqer": "cd packages/tinqer && npm test",
     "test:sql": "cd packages/tinqer-sql-pg-promise && npm test",
-    "test:sqlite": "cd packages/tinqer-sql-better-sqlite3 && npm test",
     "test:pg-integration": "cd packages/tinqer-sql-pg-promise-integration && npm test",
     "lint": "./scripts/lint-all.sh",
     "lint:fix": "./scripts/lint-all.sh --fix",
@@ -53,8 +52,7 @@
     "orm",
     "database",
     "postgres",
-    "mysql",
-    "sqlite"
+    "mysql"
   ],
   "author": "WebPods",
   "license": "MIT"
