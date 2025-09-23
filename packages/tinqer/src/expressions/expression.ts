@@ -190,7 +190,7 @@ export interface BooleanMethodExpression {
 export interface InExpression {
   type: "in";
   value: ValueExpression;
-  list: ValueExpression[] | ArrayExpression;
+  list: ValueExpression[] | ArrayExpression | ParameterExpression;
 }
 
 /**

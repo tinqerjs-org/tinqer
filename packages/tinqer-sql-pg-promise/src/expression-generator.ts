@@ -175,6 +175,20 @@ function generateLogicalExpression(expr: LogicalExpression, context: SqlContext)
  * Generate SQL for NOT expressions
  */
 function generateNotExpression(expr: NotExpression, context: SqlContext): string {
+  // Special handling for NOT (x = ANY(array)) -> x <> ALL(array) for better PostgreSQL performance
+  if (expr.expression.type === "in") {
+    const inExpr = expr.expression as InExpression;
+    if (!Array.isArray(inExpr.list) && inExpr.list.type === "param") {
+      const value = generateValueExpression(inExpr.value, context);
+      const paramExpr = inExpr.list as ParameterExpression;
+      // Use property if it exists (e.g., params.targetIds), otherwise use param
+      const paramName = paramExpr.property || paramExpr.param;
+      const formattedParam = `\${${paramName}}`;
+      // Convert NOT (x = ANY(array)) to x <> ALL(array)
+      return `${value} <> ALL(${formattedParam})`;
+    }
+  }
+
   const operand = generateBooleanExpression(expr.expression, context);
   // Check if operand is a simple column reference (no operators)
   if (!operand.includes(" ") && !operand.includes("(")) {
@@ -364,7 +378,24 @@ function generateStringMethodExpression(expr: StringMethodExpression, context: S
 function generateInExpression(expr: InExpression, context: SqlContext): string {
   const value = generateValueExpression(expr.value, context);
 
-  // Handle list as array expression or array of values
+  // Handle list as array expression, array of values, or parameter
+  if (!Array.isArray(expr.list) && expr.list.type === "param") {
+    // Handle parameter that represents an array
+    const paramExpr = expr.list as ParameterExpression;
+    // Use property if it exists (e.g., params.targetIds), otherwise use param
+    const paramName = paramExpr.property || paramExpr.param;
+    const formattedParam = `\${${paramName}}`;
+
+    // Check if we need to handle empty array specially
+    // We'll let pg-promise handle the parameter value
+    // If it's empty, pg-promise will pass an empty array
+    // PostgreSQL will correctly return false for = ANY(ARRAY[]::type[])
+
+    // Use ANY for array parameters in PostgreSQL
+    // This converts array.includes(value) to value = ANY(array)
+    return `${value} = ANY(${formattedParam})`;
+  }
+
   let listValues: string[];
   if (Array.isArray(expr.list)) {
     listValues = expr.list.map((item) => generateValueExpression(item, context));
@@ -372,7 +403,7 @@ function generateInExpression(expr: InExpression, context: SqlContext): string {
     const arrayExpr = expr.list as ArrayExpression;
     listValues = arrayExpr.elements.map((item) => generateExpression(item, context));
   } else {
-    throw new Error("IN expression requires an array");
+    throw new Error("IN expression requires an array or array parameter");
   }
 
   if (listValues.length === 0) {

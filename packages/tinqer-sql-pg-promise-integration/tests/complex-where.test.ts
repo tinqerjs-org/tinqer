@@ -122,8 +122,10 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
   describe("IN-like conditions with arrays", () => {
     it("should simulate IN with array includes", async () => {
       const targetIds = [1, 3, 5, 7];
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => targetIds.includes(u.id)),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => params.targetIds.includes(u.id)),
+        { targetIds },
       );
 
       expect(results).to.be.an("array");
@@ -135,10 +137,13 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
 
     it("should simulate NOT IN with negated includes", async () => {
       const excludedCategories = ["Furniture", "Stationery"];
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products").where(
-          (p) => p.category !== null && !excludedCategories.includes(p.category),
-        ),
+      const results = await execute(
+        db,
+        (params) =>
+          from(dbContext, "products").where(
+            (p) => p.category !== null && !params.excludedCategories.includes(p.category),
+          ),
+        { excludedCategories },
       );
 
       expect(results).to.be.an("array");
@@ -150,8 +155,10 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
 
     it("should handle empty array includes", async () => {
       const emptyList: number[] = [];
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => emptyList.includes(u.id)),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => params.emptyList.includes(u.id)),
+        { emptyList },
       );
 
       expect(results).to.be.an("array");

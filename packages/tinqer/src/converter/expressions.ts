@@ -47,7 +47,11 @@ import type {
 } from "../parser/ast-types.js";
 
 import type { ConversionContext } from "./converter-utils.js";
-import type { ColumnShapeNode, ObjectShapeNode, ReferenceShapeNode } from "../query-tree/operations.js";
+import type {
+  ColumnShapeNode,
+  ObjectShapeNode,
+  ReferenceShapeNode,
+} from "../query-tree/operations.js";
 import {
   getParameterName,
   getReturnExpression,
@@ -721,16 +725,23 @@ export function convertCallExpression(
       const methodName = (memberCallee.property as Identifier).name;
 
       // Special handling for array.includes() -> IN expression
-      if (methodName === "includes" && obj && obj.type === "array") {
-        // This is array.includes(value) which should become value IN (array)
-        if (ast.arguments && ast.arguments.length === 1 && ast.arguments[0]) {
-          const valueArg = convertAstToExpression(ast.arguments[0], context);
-          if (valueArg && isValueExpression(valueArg)) {
-            return {
-              type: "in",
-              value: valueArg as ValueExpression,
-              list: obj as ArrayExpression,
-            } as InExpression;
+      if (methodName === "includes") {
+        // Check if obj is an array or a parameter that could be an array
+        const isArrayLike = obj && (obj.type === "array" || obj.type === "param");
+
+        if (isArrayLike) {
+          // This is array.includes(value) which should become value IN (array)
+          if (ast.arguments && ast.arguments.length === 1 && ast.arguments[0]) {
+            const valueArg = convertAstToExpression(ast.arguments[0], context);
+            if (valueArg && isValueExpression(valueArg)) {
+              // If it's a parameter, we'll treat it as an array parameter
+              // The SQL generator will handle it appropriately
+              return {
+                type: "in",
+                value: valueArg as ValueExpression,
+                list: obj as ArrayExpression | ParameterExpression,
+              } as InExpression;
+            }
           }
         }
       }
@@ -797,8 +808,11 @@ export function convertObjectExpression(
 
   for (const prop of ast.properties) {
     // Handle spread operator
-    if ("type" in prop && prop.type === "SpreadElement") {
-      const spreadProp = prop as { type: string; argument: { type: string; name: string } };
+    if ("type" in prop && (prop as { type: string }).type === "SpreadElement") {
+      const spreadProp = prop as unknown as {
+        type: string;
+        argument: { type: string; name: string };
+      };
       const spreadArg = spreadProp.argument;
       if (spreadArg.type === "Identifier") {
         const spreadName = spreadArg.name;

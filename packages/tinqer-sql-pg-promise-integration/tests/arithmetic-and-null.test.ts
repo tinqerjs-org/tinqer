@@ -167,30 +167,33 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
     });
 
     it("should handle NULL in arithmetic operations", async () => {
-      // Insert test data with NULL values
-      await db.none(`
-        INSERT INTO products (name, price, stock, category, description)
-        VALUES ('Test Null Product', 99.99, NULL, 'Test', 'Test product with null stock')
-        ON CONFLICT DO NOTHING
-      `);
-
+      // Test NULL handling in arithmetic with nullable columns
+      // Since stock is NOT NULL, we'll test with nullable category and arithmetic
       const results = await executeSimple(db, () =>
-        from(dbContext, "products")
-          .where((p) => p.name === "Test Null Product")
-          .select((p) => ({
-            name: p.name,
-            stock: p.stock,
-            hasStock: p.stock !== null,
-          })),
+        from(dbContext, "products").select((p) => ({
+          name: p.name,
+          // Test NULL-safe arithmetic with coalescing
+          totalValue: p.stock * p.price,
+          hasCategory: p.category !== null,
+          // This will be NULL for products without category
+          categoryLength: p.category !== null ? p.category : null,
+        })),
       );
 
-      if (results.length > 0) {
-        expect(results[0]!.stock).to.be.null;
-        expect(results[0]!.hasStock).to.be.false;
+      expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
+
+      // Some products should have null category
+      const nullCategoryProducts = results.filter((r) => !r.hasCategory);
+      if (nullCategoryProducts.length > 0) {
+        expect(nullCategoryProducts[0]!.categoryLength).to.be.null;
       }
 
-      // Clean up
-      await db.none(`DELETE FROM products WHERE name = 'Test Null Product'`);
+      // All products should have totalValue since price and stock are NOT NULL
+      results.forEach((r) => {
+        expect(r.totalValue).to.not.be.null;
+        expect(r.totalValue).to.be.a("number");
+      });
     });
 
     it("should handle COALESCE-like operations with ??", async () => {

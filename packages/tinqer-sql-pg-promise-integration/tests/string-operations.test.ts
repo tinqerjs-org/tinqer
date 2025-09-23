@@ -181,13 +181,26 @@ describe("PostgreSQL Integration - String Operations", () => {
       );
 
       const lowerResults = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name.includes("j")),
+        from(dbContext, "users").where((u) => u.name.includes("o")),
       );
 
-      // John, Jane, Johnson have capital J
+      // John, Jane, Bob Johnson have capital J
       expect(upperResults.length).to.be.greaterThan(0);
-      // Only lowercase 'j' in middle of names
+      // Several names have lowercase 'o' (John, Johnson, Brown, Hopper, Ford)
       expect(lowerResults.length).to.be.greaterThan(0);
+
+      // Case sensitivity check - capital D vs lowercase d
+      const capitalD = await executeSimple(db, () =>
+        from(dbContext, "users").where((u) => u.name.includes("D")),
+      );
+      const lowercaseD = await executeSimple(db, () =>
+        from(dbContext, "users").where((u) => u.name.includes("d")),
+      );
+
+      // Diana, John Doe have capital D
+      expect(capitalD.length).to.be.greaterThan(0);
+      // Henry Ford has lowercase d
+      expect(lowercaseD.length).to.be.greaterThan(0);
     });
   });
 
