@@ -25,10 +25,6 @@ import type {
   LastOperation,
   LastOrDefaultOperation,
   JoinOperation,
-  UnionOperation,
-  ConcatOperation,
-  IntersectOperation,
-  ExceptOperation,
   AnyOperation,
   AllOperation,
 } from "@webpods/tinqer";
@@ -51,10 +47,6 @@ import { generateFirst } from "./generators/first.js";
 import { generateSingle } from "./generators/single.js";
 import { generateLast } from "./generators/last.js";
 import { generateJoin } from "./generators/join.js";
-import { generateUnion } from "./generators/union.js";
-import { generateConcat } from "./generators/concat.js";
-import { generateIntersect } from "./generators/intersect.js";
-import { generateExcept } from "./generators/except.js";
 
 /**
  * Generate SQL from a QueryOperation tree
@@ -65,20 +57,6 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     aliasCounter: 0,
     formatParameter: (paramName: string) => `$(${paramName})`, // pg-promise format
   };
-
-  // Handle set operations first - they combine complete queries
-  if (operation.operationType === "union") {
-    return generateUnion(operation as UnionOperation, context);
-  }
-  if (operation.operationType === "concat") {
-    return generateConcat(operation as ConcatOperation, context);
-  }
-  if (operation.operationType === "intersect") {
-    return generateIntersect(operation as IntersectOperation, context);
-  }
-  if (operation.operationType === "except") {
-    return generateExcept(operation as ExceptOperation, context);
-  }
 
   // Collect all operations in the chain
   const operations = collectOperations(operation);

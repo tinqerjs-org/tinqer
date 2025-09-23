@@ -110,12 +110,6 @@ export type {
   MaxOperation,
   ToArrayOperation,
 
-  // Set operations
-  UnionOperation,
-  ConcatOperation,
-  IntersectOperation,
-  ExceptOperation,
-
   // Union types
   ChainableOperation,
   TerminalOperation,

@@ -36,10 +36,6 @@ import { convertMaxOperation } from "./max.js";
 import { convertSingleOperation } from "./single.js";
 import { convertLastOperation } from "./last.js";
 import { convertContainsOperation } from "./contains.js";
-import { convertUnionOperation } from "./union.js";
-import { convertConcatOperation } from "./concat.js";
-import { convertIntersectOperation } from "./intersect.js";
-import { convertExceptOperation } from "./except.js";
 import { convertReverseOperation } from "./reverse.js";
 import { convertToArrayOperation } from "./toarray.js";
 import { convertAnyOperation } from "./any.js";
@@ -262,14 +258,6 @@ export function convertMethodChain(
           return convertLastOperation(callAst, source, context, methodName);
         case "contains":
           return convertContainsOperation(callAst, source, context);
-        case "union":
-          return convertUnionOperation(callAst, source, context);
-        case "concat":
-          return convertConcatOperation(callAst, source, context);
-        case "intersect":
-          return convertIntersectOperation(callAst, source, context);
-        case "except":
-          return convertExceptOperation(callAst, source, context);
         case "reverse":
           return convertReverseOperation(source);
         case "any":

@@ -26,10 +26,7 @@ export function from<TSchema, K extends keyof TSchema & string>(
 ): Queryable<TSchema[K]>;
 
 // Implementation
-export function from(
-  _contextOrTable: unknown,
-  _tableName?: unknown,
-): Queryable<unknown> {
+export function from(_contextOrTable: unknown, _tableName?: unknown): Queryable<unknown> {
   // Runtime doesn't need to differentiate - just return a Queryable
   // Types are enforced at compile time through the overloads
   return new Queryable();
