@@ -11,6 +11,23 @@ export interface SqlResult<TParams> {
 }
 
 /**
+ * Represents a reference to a source column in the database
+ */
+export interface SourceReference {
+  tableAlias: string; // The SQL table alias (e.g., "t0", "t1")
+  columnName: string; // The actual column name in the table
+  expression?: any; // For computed columns (e.g., u.price * 0.9)
+}
+
+/**
+ * Symbol table that maps projected property names to their source columns
+ * Handles both flat (userName) and nested (user.name) property paths
+ */
+export interface SymbolTable {
+  entries: Map<string, SourceReference>; // propertyPath -> source
+}
+
+/**
  * SQL generation context
  */
 export interface SqlContext {
@@ -18,6 +35,8 @@ export interface SqlContext {
   aliasCounter: number;
   formatParameter: (paramName: string) => string; // Format parameter for SQL dialect
   groupByKey?: any; // Store the GROUP BY key selector for transforming g.key references
+  symbolTable?: SymbolTable; // Maps projected properties to their source columns
+  currentShape?: any; // The current shape of the query result (after JOINs)
 }
 
 /**

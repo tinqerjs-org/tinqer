@@ -193,7 +193,13 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
     if (expr.name === "key" && !expr.table) {
       // Check if groupByKey is a simple string (column name) or an expression
       if (typeof context.groupByKey === "string") {
-        // Simple column name
+        // Simple column name - check if it maps to a source column
+        if (context.symbolTable) {
+          const sourceRef = context.symbolTable.entries.get(context.groupByKey);
+          if (sourceRef) {
+            return `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
+          }
+        }
         return `"${context.groupByKey}"`;
       } else {
         // Complex expression
@@ -207,6 +213,32 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
       const keyProperty = context.groupByKey.properties[expr.name];
       if (keyProperty) {
         return generateValueExpression(keyProperty, context);
+      }
+    }
+  }
+
+  // Check if this is a parameter reference from JOIN ($param0, $param1)
+  if (expr.table && expr.table.startsWith("$param")) {
+    const paramIndex = parseInt(expr.table.substring(6), 10);
+    const aliases = Array.from(context.tableAliases.values());
+    const tableAlias = aliases[paramIndex] || `t${paramIndex}`;
+    return `"${tableAlias}"."${expr.name}"`;
+  }
+
+  // Check symbol table for JOIN result references
+  if (context.symbolTable) {
+    // First check for direct property name
+    const sourceRef = context.symbolTable.entries.get(expr.name);
+    if (sourceRef) {
+      return `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
+    }
+
+    // If there's a table prefix, try to build a path
+    if (expr.table) {
+      const path = `${expr.table}.${expr.name}`;
+      const pathRef = context.symbolTable.entries.get(path);
+      if (pathRef) {
+        return `"${pathRef.tableAlias}"."${pathRef.columnName}"`;
       }
     }
   }

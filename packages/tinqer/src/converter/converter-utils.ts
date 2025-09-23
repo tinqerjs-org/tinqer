@@ -24,6 +24,8 @@ export interface ConversionContext {
   tableAliases: Map<string, string>;
   // Track parameters that represent IGrouping<TKey, TElement> after groupBy
   groupingParams?: Set<string>;
+  // Track JOIN result selector parameters (maps param name to table index)
+  joinParams?: Map<string, number>;
 
   // Auto-parameterization: track extracted constants
   autoParams: Map<string, string | number | boolean | null>; // Maps param name to value

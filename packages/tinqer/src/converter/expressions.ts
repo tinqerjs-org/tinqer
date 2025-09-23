@@ -268,6 +268,15 @@ export function convertMemberExpression(
 
     // Check if the object is a table parameter (e.g., x.name where x is table param)
     if (context.tableParams.has(objectName)) {
+      // Check if this is a JOIN parameter (has mapping to table index)
+      if (context.joinParams && context.joinParams.has(objectName)) {
+        // For JOIN parameters, preserve which parameter it refers to
+        return {
+          type: "column",
+          name: propertyName,
+          table: `$param${context.joinParams.get(objectName)}`, // Mark as parameter reference
+        } as ColumnExpression;
+      }
       return {
         type: "column",
         name: propertyName,

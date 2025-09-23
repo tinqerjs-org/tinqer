@@ -158,9 +158,8 @@ describe("Terminal Operations", () => {
             .single(),
         {},
       );
-      // TODO: JOIN projections are not fully implemented yet
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0") AS "t1" ON "t0"."id" = "t1"."userId" LIMIT 2',
+        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "orderAmount" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" LIMIT 2',
       );
       expect(result.params).to.deep.equal({});
     });

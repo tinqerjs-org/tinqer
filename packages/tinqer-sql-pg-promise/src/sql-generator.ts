@@ -31,7 +31,7 @@ import type {
 import type { SqlContext } from "./types.js";
 import { generateFrom } from "./generators/from.js";
 import { generateSelect } from "./generators/select.js";
-import { generateBooleanExpression } from "./expression-generator.js";
+import { generateBooleanExpression, generateExpression } from "./expression-generator.js";
 import { generateOrderBy } from "./generators/orderby.js";
 import { generateThenBy } from "./generators/thenby.js";
 import { generateTake } from "./generators/take.js";
@@ -103,7 +103,25 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     context.groupByKey = groupByOp.keySelector;
   }
 
-  // Find and process SELECT or aggregate operation
+  // Process FROM first to establish base table
+  const fromOp = operations.find((op) => op.operationType === "from") as FromOperation;
+  if (!fromOp) {
+    throw new Error("Query must have a FROM operation");
+  }
+  const fromClause = generateFrom(fromOp, context);
+
+  // Process JOIN operations to build symbol table
+  const joinOps = operations.filter((op) => op.operationType === "join") as JoinOperation[];
+  const joinClauses: string[] = [];
+  joinOps.forEach((joinOp) => {
+    joinClauses.push(generateJoin(joinOp, context));
+  });
+
+  // Check if we have a JOIN with result selector but no explicit SELECT
+  const hasJoinWithResultSelector = joinOps.some((op) => op.resultSelector);
+  const selectOp = operations.find((op) => op.operationType === "select") as SelectOperation;
+
+  // Generate SELECT clause
   if (countOp) {
     fragments.push(`SELECT ${generateCount(countOp, context)}`);
   } else if (sumOp) {
@@ -114,33 +132,32 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     fragments.push(`SELECT ${generateMin(minOp, context)}`);
   } else if (maxOp) {
     fragments.push(`SELECT ${generateMax(maxOp, context)}`);
-  } else {
-    const selectOp = operations.find((op) => op.operationType === "select") as SelectOperation;
-    if (selectOp) {
-      const selectClause = generateSelect(selectOp, context);
-      if (distinctKeyword) {
-        fragments.push(selectClause.replace("SELECT", `SELECT ${distinctKeyword}`));
-      } else {
-        fragments.push(selectClause);
-      }
+  } else if (selectOp) {
+    const selectClause = generateSelect(selectOp, context);
+    if (distinctKeyword) {
+      fragments.push(selectClause.replace("SELECT", `SELECT ${distinctKeyword}`));
     } else {
-      // Default SELECT *
-      fragments.push(distinctKeyword ? `SELECT ${distinctKeyword} *` : "SELECT *");
+      fragments.push(selectClause);
     }
+  } else if (hasJoinWithResultSelector && context.currentShape) {
+    // Use JOIN result selector as implicit SELECT
+    const projectionSql = generateExpression(context.currentShape, context);
+    const selectClause = `SELECT ${projectionSql}`;
+    if (distinctKeyword) {
+      fragments.push(selectClause.replace("SELECT", `SELECT ${distinctKeyword}`));
+    } else {
+      fragments.push(selectClause);
+    }
+  } else {
+    // Default SELECT *
+    fragments.push(distinctKeyword ? `SELECT ${distinctKeyword} *` : "SELECT *");
   }
 
-  // Process FROM
-  const fromOp = operations.find((op) => op.operationType === "from") as FromOperation;
-  if (!fromOp) {
-    throw new Error("Query must have a FROM operation");
-  }
-  fragments.push(generateFrom(fromOp, context));
+  // Add FROM clause
+  fragments.push(fromClause);
 
-  // Process JOIN operations
-  const joinOps = operations.filter((op) => op.operationType === "join") as JoinOperation[];
-  joinOps.forEach((joinOp) => {
-    fragments.push(generateJoin(joinOp, context));
-  });
+  // Add JOIN clauses
+  fragments.push(...joinClauses);
 
   // Process WHERE clauses (combine multiple with AND)
   const whereOps = operations.filter((op) => op.operationType === "where") as WhereOperation[];

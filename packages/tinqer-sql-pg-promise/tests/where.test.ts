@@ -265,7 +265,7 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" INNER JOIN (SELECT * FROM "departments" AS "t0") AS "t1" ON "t0"."deptId" = "t1"."id" WHERE "id" > $(_id1) AND "name" != $(_name1)',
+        'SELECT "t0"."name" AS "user", "t1"."name" AS "dept" FROM "users" AS "t0" INNER JOIN "departments" AS "t1" ON "t0"."deptId" = "t1"."id" WHERE "id" > $(_id1) AND "name" != $(_name1)',
       );
       expect(result.params).to.deep.equal({ _id1: 100, _name1: "" });
     });

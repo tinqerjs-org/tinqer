@@ -3,7 +3,7 @@
  */
 
 import type { JoinOperation, QueryOperation } from "../query-tree/operations.js";
-import type { ColumnExpression } from "../expressions/expression.js";
+import type { ColumnExpression, Expression } from "../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
@@ -25,6 +25,7 @@ export function convertJoinOperation(
     const innerSource = firstArg ? convertMethodChain(firstArg as ASTExpression, context) : null;
     const outerKeySelectorAst = ast.arguments[1];
     const innerKeySelectorAst = ast.arguments[2];
+    const resultSelectorAst = ast.arguments[3]; // Capture the result selector
 
     let outerKey: string | null = null;
     let innerKey: string | null = null;
@@ -78,6 +79,55 @@ export function convertJoinOperation(
       }
     }
 
+    // Process the result selector
+    let resultSelector: Expression | undefined = undefined;
+    if (resultSelectorAst && resultSelectorAst.type === "ArrowFunctionExpression") {
+      const resultArrow = resultSelectorAst as ArrowFunctionExpression;
+
+      // Store the parameter names for the result selector
+      // These will be needed to map properties back to their source tables
+      const params = resultArrow.params;
+      const outerParam =
+        params && params[0]
+          ? getParameterName({
+              params: [params[0]],
+              body: resultArrow.body,
+            } as ArrowFunctionExpression)
+          : null;
+      const innerParam =
+        params && params[1]
+          ? getParameterName({
+              params: [params[1]],
+              body: resultArrow.body,
+            } as ArrowFunctionExpression)
+          : null;
+
+      // Create a special context that tracks which parameter maps to which table
+      const resultContext = {
+        ...context,
+        joinParams: new Map<string, number>(), // parameter name -> table index (0 for outer, 1 for inner)
+      };
+
+      if (outerParam) {
+        resultContext.joinParams?.set(outerParam, 0);
+      }
+      if (innerParam) {
+        resultContext.joinParams?.set(innerParam, 1);
+      }
+
+      // Convert the result selector body to an expression
+      let bodyExpr: ASTExpression | null = null;
+      if (resultArrow.body.type === "BlockStatement") {
+        bodyExpr = getReturnExpression(resultArrow.body.body);
+      } else {
+        bodyExpr = resultArrow.body;
+      }
+
+      if (bodyExpr) {
+        resultSelector = convertAstToExpression(bodyExpr, resultContext) || undefined;
+      }
+    }
+
     if (innerSource && outerKey && innerKey) {
       return {
         type: "queryOperation",
@@ -86,6 +136,7 @@ export function convertJoinOperation(
         inner: innerSource,
         outerKey,
         innerKey,
+        resultSelector, // Include the result selector
       };
     }
   }

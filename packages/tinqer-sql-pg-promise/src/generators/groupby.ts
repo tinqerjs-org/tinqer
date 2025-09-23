@@ -13,8 +13,17 @@ export function generateGroupBy(operation: GroupByOperation, context: SqlContext
   let groupByExpr: string;
 
   if (typeof operation.keySelector === "string") {
-    // Simple column name
-    groupByExpr = `"${operation.keySelector}"`;
+    // Simple column name - check if it maps to a source column
+    if (context.symbolTable) {
+      const sourceRef = context.symbolTable.entries.get(operation.keySelector);
+      if (sourceRef) {
+        groupByExpr = `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
+      } else {
+        groupByExpr = `"${operation.keySelector}"`;
+      }
+    } else {
+      groupByExpr = `"${operation.keySelector}"`;
+    }
   } else {
     // Complex expression
     groupByExpr = generateValueExpression(operation.keySelector, context);

@@ -6,6 +6,7 @@
  */
 
 import type {
+  Expression,
   BooleanExpression,
   ValueExpression,
   ObjectExpression,
@@ -64,6 +65,7 @@ export interface JoinOperation extends QueryOperation {
   inner: QueryOperation;
   outerKey: string; // Simple column name
   innerKey: string; // Simple column name
+  resultSelector?: Expression; // The projection expression from the result selector lambda
 }
 
 /**

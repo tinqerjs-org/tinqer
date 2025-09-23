@@ -135,7 +135,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
       expect(result.sql).to.contain("INNER JOIN");
       expect(result.sql).to.contain("GROUP BY");
-      expect(result.sql).to.contain(`AVG("salary")`);
+      expect(result.sql).to.contain(`AVG("t0"."salary")`);
       expect(result.sql).to.contain("COUNT(*)");
     });
 

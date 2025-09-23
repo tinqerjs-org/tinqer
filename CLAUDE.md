@@ -25,6 +25,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 3. **Get confirmation** - Ensure the user agrees with the approach
 4. **Only then write code** - After the user explicitly asks you to implement
 
+### STOP AND DISCUSS FUNDAMENTAL ISSUES
+
+**CRITICAL**: If you discover fundamental architectural issues or parser limitations:
+
+1. **STOP IMMEDIATELY** - Do not proceed with workarounds or hacks
+2. **Explain the issue clearly** - Show exactly what information is being lost
+3. **Discuss proper solutions** - Work with the user to identify the correct fix
+4. **Never implement hacks** - No "clever" workarounds for parser/architecture problems
+5. **Fix the root cause** - Address issues at their source, not with band-aids
+
 ### NEVER USE MULTIEDIT
 
 **NEVER use the MultiEdit tool.** It has caused issues in multiple projects. Always use individual Edit operations instead, even if it means more edits. This ensures better control and prevents unintended changes.

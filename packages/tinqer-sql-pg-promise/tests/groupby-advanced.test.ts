@@ -259,8 +259,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.contain("INNER JOIN");
-      expect(result.sql).to.contain(`GROUP BY "customerId"`);
-      expect(result.sql).to.contain(`SUM("amount")`);
+      expect(result.sql).to.contain(`GROUP BY "t1"."id"`);
+      expect(result.sql).to.contain(`SUM("t0"."amount")`); // amount comes from orders (t0)
       expect(result.sql).to.contain("COUNT(*)");
     });
   });

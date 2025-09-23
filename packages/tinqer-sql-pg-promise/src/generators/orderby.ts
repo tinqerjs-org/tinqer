@@ -13,8 +13,17 @@ export function generateOrderBy(operation: OrderByOperation, context: SqlContext
   let orderByExpr: string;
 
   if (typeof operation.keySelector === "string") {
-    // Simple column name
-    orderByExpr = `"${operation.keySelector}"`;
+    // Simple column name - check if it maps to a source column
+    if (context.symbolTable) {
+      const sourceRef = context.symbolTable.entries.get(operation.keySelector);
+      if (sourceRef) {
+        orderByExpr = `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
+      } else {
+        orderByExpr = `"${operation.keySelector}"`;
+      }
+    } else {
+      orderByExpr = `"${operation.keySelector}"`;
+    }
   } else {
     // Complex expression
     orderByExpr = generateValueExpression(operation.keySelector, context);
