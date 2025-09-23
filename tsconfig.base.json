@@ -5,7 +5,6 @@
     "moduleResolution": "NodeNext",
     "lib": ["ES2020"],
     "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
@@ -17,8 +16,7 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "allowSyntheticDefaultImports": true
+    "noUncheckedIndexedAccess": true
   },
   "exclude": ["node_modules", "dist", "build", "coverage"]
 }
