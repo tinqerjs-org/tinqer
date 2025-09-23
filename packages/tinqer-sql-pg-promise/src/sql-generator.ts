@@ -19,10 +19,14 @@ import type {
   MinOperation,
   MaxOperation,
   FirstOperation,
+  FirstOrDefaultOperation,
   SingleOperation,
+  SingleOrDefaultOperation,
   LastOperation,
+  LastOrDefaultOperation,
   JoinOperation,
-  UnionOperation,
+  AnyOperation,
+  AllOperation,
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 import { generateFrom } from "./generators/from.js";
@@ -43,7 +47,6 @@ import { generateFirst } from "./generators/first.js";
 import { generateSingle } from "./generators/single.js";
 import { generateLast } from "./generators/last.js";
 import { generateJoin } from "./generators/join.js";
-import { generateUnion } from "./generators/union.js";
 
 /**
  * Generate SQL from a QueryOperation tree
@@ -55,13 +58,16 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     formatParameter: (paramName: string) => `$(${paramName})`, // pg-promise format
   };
 
-  // Handle special operations first
-  if (operation.operationType === "union") {
-    return generateUnion(operation as UnionOperation, context);
-  }
-
   // Collect all operations in the chain
   const operations = collectOperations(operation);
+
+  // Check for ANY or ALL operations - they need special handling
+  const anyOp = operations.find((op) => op.operationType === "any") as AnyOperation;
+  const allOp = operations.find((op) => op.operationType === "all") as AllOperation;
+
+  if (anyOp || allOp) {
+    return generateExistsQuery(operations, anyOp || allOp, context);
+  }
 
   // Build SQL fragments in correct order
   const fragments: string[] = [];
@@ -120,11 +126,35 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
 
   // Process WHERE clauses (combine multiple with AND)
   const whereOps = operations.filter((op) => op.operationType === "where") as WhereOperation[];
-  if (whereOps.length > 0) {
-    const predicates = whereOps.map((whereOp) =>
-      generateBooleanExpression(whereOp.predicate, context),
-    );
-    fragments.push(`WHERE ${predicates.join(" AND ")}`);
+  const wherePredicates: string[] = [];
+
+  // Collect predicates from WHERE operations
+  whereOps.forEach((whereOp) => {
+    wherePredicates.push(generateBooleanExpression(whereOp.predicate, context));
+  });
+
+  // Also check for predicates in terminal operations (first, single, last and their OrDefault variants)
+  const firstOp = operations.find(
+    (op) => op.operationType === "first" || op.operationType === "firstOrDefault",
+  ) as FirstOperation | FirstOrDefaultOperation;
+  const singleOp = operations.find(
+    (op) => op.operationType === "single" || op.operationType === "singleOrDefault",
+  ) as SingleOperation | SingleOrDefaultOperation;
+  const lastOp = operations.find(
+    (op) => op.operationType === "last" || op.operationType === "lastOrDefault",
+  ) as LastOperation | LastOrDefaultOperation;
+
+  if (firstOp?.predicate) {
+    wherePredicates.push(generateBooleanExpression(firstOp.predicate, context));
+  } else if (singleOp?.predicate) {
+    wherePredicates.push(generateBooleanExpression(singleOp.predicate, context));
+  } else if (lastOp?.predicate) {
+    wherePredicates.push(generateBooleanExpression(lastOp.predicate, context));
+  }
+
+  // Add WHERE clause if we have any predicates
+  if (wherePredicates.length > 0) {
+    fragments.push(`WHERE ${wherePredicates.join(" AND ")}`);
   }
 
   // Process GROUP BY
@@ -147,21 +177,22 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     fragments.push(orderByClause);
   }
 
-  // Process terminal operations
-  const firstOp = operations.find((op) => op.operationType === "first") as FirstOperation;
-  const singleOp = operations.find((op) => op.operationType === "single") as SingleOperation;
-  const lastOp = operations.find((op) => op.operationType === "last") as LastOperation;
-
+  // Process terminal operations (LIMIT clauses)
+  // Note: firstOp, singleOp, lastOp are already declared above for predicate handling
   if (firstOp) {
-    const firstClause = generateFirst(firstOp, context);
-    if (!firstClause.startsWith("LIMIT")) {
-      fragments.push(firstClause);
-    } else {
-      fragments.push(firstClause);
-    }
+    fragments.push(generateFirst(firstOp, context));
   } else if (singleOp) {
     fragments.push(generateSingle(singleOp, context));
   } else if (lastOp) {
+    // For LAST, we need to reverse any existing ORDER BY
+    // If there's no ORDER BY, we need to add one (by primary key or first column)
+    if (!orderByOp) {
+      // Add default ORDER BY for LAST to work
+      fragments.push("ORDER BY 1 DESC");
+    } else {
+      // TODO: Reverse the existing ORDER BY direction for LAST
+      // For now, we'll just add the LIMIT
+    }
     fragments.push(generateLast(lastOp, context));
   } else {
     // Process LIMIT/OFFSET
@@ -193,4 +224,69 @@ function collectOperations(operation: QueryOperation): QueryOperation[] {
 
   // Reverse to get operations in execution order (from -> where -> select)
   return operations.reverse();
+}
+
+/**
+ * Generate EXISTS query for ANY/ALL operations
+ */
+function generateExistsQuery(
+  operations: QueryOperation[],
+  terminalOp: AnyOperation | AllOperation,
+  context: SqlContext,
+): string {
+  const fragments: string[] = [];
+
+  // Build the inner SELECT for EXISTS
+  fragments.push("SELECT 1");
+
+  // Process FROM
+  const fromOp = operations.find((op) => op.operationType === "from") as FromOperation;
+  if (!fromOp) {
+    throw new Error("Query must have a FROM operation");
+  }
+  fragments.push(generateFrom(fromOp, context));
+
+  // Process JOIN operations
+  const joinOps = operations.filter((op) => op.operationType === "join") as JoinOperation[];
+  joinOps.forEach((joinOp) => {
+    fragments.push(generateJoin(joinOp, context));
+  });
+
+  // Collect WHERE predicates
+  const wherePredicates: string[] = [];
+
+  // Get WHERE operations
+  const whereOps = operations.filter((op) => op.operationType === "where") as WhereOperation[];
+  whereOps.forEach((whereOp) => {
+    wherePredicates.push(generateBooleanExpression(whereOp.predicate, context));
+  });
+
+  // Add predicate from ANY/ALL operation
+  if (terminalOp.operationType === "any" && (terminalOp as AnyOperation).predicate) {
+    wherePredicates.push(
+      generateBooleanExpression((terminalOp as AnyOperation).predicate!, context),
+    );
+  } else if (terminalOp.operationType === "all") {
+    // For ALL, we check NOT EXISTS where NOT predicate
+    const predicate = generateBooleanExpression((terminalOp as AllOperation).predicate, context);
+    // We'll handle the NOT wrapping later
+    wherePredicates.push(`NOT (${predicate})`);
+  }
+
+  // Add WHERE clause if we have predicates
+  if (wherePredicates.length > 0) {
+    const whereClause = wherePredicates.join(" AND ");
+    fragments.push(`WHERE ${whereClause}`);
+  }
+
+  const innerQuery = fragments.join(" ");
+
+  // Wrap in EXISTS/NOT EXISTS with CASE WHEN for boolean result
+  if (terminalOp.operationType === "any") {
+    return `SELECT CASE WHEN EXISTS(${innerQuery}) THEN 1 ELSE 0 END`;
+  } else {
+    // For ALL: NOT EXISTS(SELECT 1 WHERE NOT predicate)
+    // But we already added the NOT to the predicate above
+    return `SELECT CASE WHEN NOT EXISTS(${innerQuery}) THEN 1 ELSE 0 END`;
+  }
 }

@@ -122,42 +122,6 @@ export interface SkipOperation extends QueryOperation {
 }
 
 /**
- * CONCAT operation
- */
-export interface ConcatOperation extends QueryOperation {
-  operationType: "concat";
-  source: QueryOperation;
-  second: QueryOperation;
-}
-
-/**
- * UNION operation
- */
-export interface UnionOperation extends QueryOperation {
-  operationType: "union";
-  source: QueryOperation;
-  second: QueryOperation;
-}
-
-/**
- * INTERSECT operation
- */
-export interface IntersectOperation extends QueryOperation {
-  operationType: "intersect";
-  source: QueryOperation;
-  second: QueryOperation;
-}
-
-/**
- * EXCEPT operation
- */
-export interface ExceptOperation extends QueryOperation {
-  operationType: "except";
-  source: QueryOperation;
-  second: QueryOperation;
-}
-
-/**
  * REVERSE operation
  */
 export interface ReverseOperation extends QueryOperation {
@@ -265,24 +229,6 @@ export interface LastOrDefaultOperation extends QueryOperation {
   operationType: "lastOrDefault";
   source: QueryOperation;
   predicate?: BooleanExpression;
-}
-
-/**
- * ELEMENT AT operation
- */
-export interface ElementAtOperation extends QueryOperation {
-  operationType: "elementAt";
-  source: QueryOperation;
-  index: number | ParamRef;
-}
-
-/**
- * ELEMENT AT OR DEFAULT operation
- */
-export interface ElementAtOrDefaultOperation extends QueryOperation {
-  operationType: "elementAtOrDefault";
-  source: QueryOperation;
-  index: number | ParamRef;
 }
 
 /**
@@ -427,7 +373,6 @@ export type ChainableOperation =
   | DistinctOperation
   | TakeOperation
   | SkipOperation
-  | UnionOperation
   | ReverseOperation;
 
 /**

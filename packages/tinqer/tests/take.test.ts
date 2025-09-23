@@ -13,10 +13,11 @@ import {
   getOperation,
 } from "./test-utils/operation-helpers.js";
 import type { ParamRef } from "../src/query-tree/operations.js";
+import { db } from "./test-schema.js";
 
 describe("TAKE Operation", () => {
   it("should parse take with constant number", () => {
-    const query = () => from<{ id: number }>("users").take(10);
+    const query = () => from(db, "users").take(10);
     const result = parseQuery(query);
 
     expect(getOperation(result)?.operationType).to.equal("take");
@@ -28,7 +29,7 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take(0)", () => {
-    const query = () => from<{ id: number }>("users").take(0);
+    const query = () => from(db, "users").take(0);
     const result = parseQuery(query);
 
     const takeOp = asTakeOperation(getOperation(result));
@@ -39,7 +40,7 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take with large number", () => {
-    const query = () => from<{ id: number }>("users").take(1000000);
+    const query = () => from(db, "users").take(1000000);
     const result = parseQuery(query);
 
     const takeOp = asTakeOperation(getOperation(result));
@@ -51,7 +52,7 @@ describe("TAKE Operation", () => {
 
   it("should parse take after where", () => {
     const query = () =>
-      from<{ id: number; isActive: boolean }>("users")
+      from(db, "users")
         .where((x) => x.isActive)
         .take(5);
     const result = parseQuery(query);
@@ -68,7 +69,7 @@ describe("TAKE Operation", () => {
 
   it("should parse take after orderBy", () => {
     const query = () =>
-      from<{ id: number; name: string }>("users")
+      from(db, "users")
         .orderBy((x) => x.name)
         .take(10);
     const result = parseQuery(query);
@@ -85,7 +86,7 @@ describe("TAKE Operation", () => {
 
   it("should parse take before select", () => {
     const query = () =>
-      from<{ id: number; name: string }>("users")
+      from(db, "users")
         .take(5)
         .select((x) => x.name);
     const result = parseQuery(query);
@@ -101,7 +102,7 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take with external parameter", () => {
-    const query = (p: { limit: number }) => from<{ id: number }>("users").take(p.limit);
+    const query = (p: { limit: number }) => from(db, "users").take(p.limit);
     const result = parseQuery(query);
 
     const takeOp = asTakeOperation(getOperation(result));

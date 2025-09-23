@@ -32,6 +32,7 @@ export interface ParameterExpression {
   type: "param";
   param: string; // Parameter name (e.g., "p")
   property?: string; // Property path (e.g., "minAge")
+  index?: number; // Array index (e.g., roles[0])
 }
 
 /**
@@ -59,15 +60,7 @@ export interface ConcatExpression {
 export interface StringMethodExpression {
   type: "stringMethod";
   object: ValueExpression;
-  method:
-    | "toLowerCase"
-    | "toUpperCase"
-    | "trim"
-    | "trimStart"
-    | "trimEnd"
-    | "substring"
-    | "substr"
-    | "slice";
+  method: "toLowerCase" | "toUpperCase";
   arguments?: ValueExpression[];
 }
 

@@ -14,11 +14,12 @@ import {
 } from "./test-utils/operation-helpers.js";
 import type { ConcatExpression } from "../src/expressions/expression.js";
 import type { ParamRef } from "../src/query-tree/operations.js";
+import { db } from "./test-schema.js";
 
 describe("ORDER BY Operations", () => {
   describe("orderBy()", () => {
     it("should parse orderBy with simple property", () => {
-      const query = () => from<{ id: number; name: string }>("users").orderBy((x) => x.name);
+      const query = () => from(db, "users").orderBy((x) => x.name);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("orderBy");
@@ -28,7 +29,7 @@ describe("ORDER BY Operations", () => {
     });
 
     it("should parse orderBy with numeric property", () => {
-      const query = () => from<{ id: number; age: number }>("users").orderBy((x) => x.age);
+      const query = () => from(db, "users").orderBy((x) => x.age);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("orderBy");
@@ -39,7 +40,7 @@ describe("ORDER BY Operations", () => {
 
     it("should parse orderBy after where", () => {
       const query = () =>
-        from<{ id: number; name: string; age: number }>("users")
+        from(db, "users")
           .where((x) => x.age >= 18)
           .orderBy((x) => x.name);
       const result = parseQuery(query);
@@ -51,7 +52,7 @@ describe("ORDER BY Operations", () => {
 
     it("should parse orderBy before select", () => {
       const query = () =>
-        from<{ id: number; name: string; age: number }>("users")
+        from(db, "users")
           .orderBy((x) => x.age)
           .select((x) => ({ id: x.id, name: x.name }));
       const result = parseQuery(query);
@@ -62,10 +63,7 @@ describe("ORDER BY Operations", () => {
     });
 
     it("should parse orderBy with computed expression", () => {
-      const query = () =>
-        from<{ firstName: string; lastName: string }>("users").orderBy(
-          (x) => x.firstName + x.lastName,
-        );
+      const query = () => from(db, "users").orderBy((x) => x.firstName + x.lastName);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("orderBy");
@@ -77,8 +75,7 @@ describe("ORDER BY Operations", () => {
 
   describe("orderByDescending()", () => {
     it("should parse orderByDescending with simple property", () => {
-      const query = () =>
-        from<{ id: number; createdAt: Date }>("posts").orderByDescending((x) => x.createdAt);
+      const query = () => from(db, "users").orderByDescending((x) => x.createdAt);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("orderBy");
@@ -88,8 +85,7 @@ describe("ORDER BY Operations", () => {
     });
 
     it("should parse orderByDescending with numeric property", () => {
-      const query = () =>
-        from<{ id: number; salary: number }>("employees").orderByDescending((x) => x.salary);
+      const query = () => from(db, "employees").orderByDescending((x) => x.salary);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("orderBy");
@@ -100,8 +96,8 @@ describe("ORDER BY Operations", () => {
 
     it("should parse ordering with take", () => {
       const query = () =>
-        from<{ id: number; score: number }>("scores")
-          .orderByDescending((x) => x.score)
+        from(db, "users")
+          .orderByDescending((x) => x.age)
           .take(10);
       const result = parseQuery(query);
 

@@ -16,11 +16,12 @@ import {
 } from "./test-utils/operation-helpers.js";
 import type { ComparisonExpression, ColumnExpression } from "../src/expressions/expression.js";
 import type { ParamRef } from "../src/query-tree/operations.js";
+import { db } from "./test-schema.js";
 
 describe("Operation Chaining", () => {
   it("should parse from().where().select() chain", () => {
     const query = () =>
-      from<{ id: number; name: string; age: number; isActive: boolean }>("users")
+      from(db, "users")
         .where((x) => x.age >= 18 && x.isActive)
         .select((x) => ({ id: x.id, name: x.name }));
     const result = parseQuery(query);
@@ -36,7 +37,7 @@ describe("Operation Chaining", () => {
 
   it("should parse complex chain with multiple where operations", () => {
     const query = () =>
-      from<{ id: number; name: string; age: number; role: string }>("users")
+      from(db, "users")
         .where((x) => x.age >= 18)
         .where((x) => x.role == "admin")
         .select((x) => ({ id: x.id, name: x.name }));
@@ -58,10 +59,10 @@ describe("Operation Chaining", () => {
 
   it("should parse chain with select-where-select", () => {
     const query = () =>
-      from<{ id: number; firstName: string; lastName: string; age: number }>("users")
-        .select((x) => ({ id: x.id, fullName: x.firstName + " " + x.lastName, age: x.age }))
+      from(db, "users")
+        .select((x) => ({ id: x.id, firstName: x.firstName, lastName: x.lastName, age: x.age }))
         .where((x) => x.age >= 18)
-        .select((x) => ({ userId: x.id, displayName: x.fullName }));
+        .select((x) => ({ userId: x.id, firstName: x.firstName, lastName: x.lastName }));
     const result = parseQuery(query);
 
     expect(getOperation(result)?.operationType).to.equal("select");
@@ -77,7 +78,7 @@ describe("Operation Chaining", () => {
 
   it("should parse pagination with filtering and ordering", () => {
     const query = () =>
-      from<{ id: number; category: string; price: number; inStock: boolean }>("products")
+      from(db, "products")
         .where((x) => x.inStock)
         .orderByDescending((x) => x.price)
         .skip(10)

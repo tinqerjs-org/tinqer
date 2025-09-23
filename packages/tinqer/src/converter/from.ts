@@ -12,9 +12,18 @@ export function convertFromOperation(
   context: ConversionContext,
 ): FromOperation | null {
   if (ast.arguments && ast.arguments.length > 0) {
-    const arg = ast.arguments[0];
-    if (arg && (arg.type === "StringLiteral" || arg.type === "Literal")) {
-      const tableName = (arg as StringLiteral | Literal).value as string;
+    // Handle both from("table") and from(db, "table") patterns
+    let tableArg;
+    if (ast.arguments.length === 1) {
+      // from("table") - single argument
+      tableArg = ast.arguments[0];
+    } else if (ast.arguments.length === 2) {
+      // from(db, "table") - two arguments, second is table name
+      tableArg = ast.arguments[1];
+    }
+
+    if (tableArg && (tableArg.type === "StringLiteral" || tableArg.type === "Literal")) {
+      const tableName = (tableArg as StringLiteral | Literal).value as string;
       context.currentTable = tableName;
       return {
         type: "queryOperation",

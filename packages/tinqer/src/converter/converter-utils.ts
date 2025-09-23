@@ -10,6 +10,7 @@ import type {
   Expression as ASTExpression,
   ArrowFunctionExpression,
   CallExpression as ASTCallExpression,
+  Identifier,
 } from "../parser/ast-types.js";
 
 /**
@@ -27,6 +28,9 @@ export interface ConversionContext {
   // Auto-parameterization: track extracted constants
   autoParams: Map<string, string | number | boolean | null>; // Maps param name to value
   columnCounters: Map<string, number>; // Tracks counter per column for naming
+
+  // Track when we're in a SELECT projection to reject expressions
+  inSelectProjection?: boolean;
 }
 
 /**
@@ -75,8 +79,12 @@ export function getMethodName(callExpr: ASTCallExpression): string | null {
     if (callExpr.callee.type === "Identifier") {
       return callExpr.callee.name;
     }
-    if (callExpr.callee.type === "MemberExpression" && callExpr.callee.property) {
-      return callExpr.callee.property.name;
+    if (
+      callExpr.callee.type === "MemberExpression" &&
+      callExpr.callee.property &&
+      callExpr.callee.property.type === "Identifier"
+    ) {
+      return (callExpr.callee.property as Identifier).name;
     }
   }
   return null;

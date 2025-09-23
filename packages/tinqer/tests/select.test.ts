@@ -5,6 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery, from } from "../src/index.js";
+import { db } from "./test-schema.js";
 import {
   asSelectOperation,
   asWhereOperation,
@@ -22,8 +23,7 @@ import type { ParamRef } from "../src/query-tree/operations.js";
 describe("SELECT Operation", () => {
   describe("Simple Projections", () => {
     it("should parse simple property selection", () => {
-      const query = () =>
-        from<{ id: number; name: string; age: number }>("users").select((x) => x.name);
+      const query = () => from(db, "users").select((x) => x.name);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("select");
@@ -35,7 +35,7 @@ describe("SELECT Operation", () => {
 
     it("should parse object projection", () => {
       const query = () =>
-        from<{ id: number; name: string; age: number }>("users").select((x) => ({
+        from(db, "users").select((x) => ({
           userId: x.id,
           userName: x.name,
         }));
@@ -56,7 +56,7 @@ describe("SELECT Operation", () => {
   describe("Nested Projections", () => {
     it("should parse nested object projection", () => {
       const query = () =>
-        from<{ id: number; name: string; city: string; country: string }>("users").select((x) => ({
+        from(db, "users").select((x) => ({
           id: x.id,
           details: {
             name: x.name,
@@ -81,45 +81,15 @@ describe("SELECT Operation", () => {
   });
 
   describe("Computed Properties", () => {
-    it("should parse select with computed string properties", () => {
-      const query = () =>
-        from<{ firstName: string; lastName: string; age: number }>("users").select((x) => ({
-          fullName: x.firstName + " " + x.lastName,
-          isAdult: x.age >= 18,
-        }));
-      const result = parseQuery(query);
-
-      const selectOp = asSelectOperation(getOperation(result));
-      const selector = selectOp.selector as ObjectExpression;
-      const fullNameProp = selector.properties.fullName as ConcatExpression;
-      expect(fullNameProp.type).to.equal("concat");
-      const isAdultProp = selector.properties.isAdult as ComparisonExpression;
-      expect(isAdultProp.type).to.equal("comparison");
-    });
-
-    it("should parse select with arithmetic expressions", () => {
-      const query = () =>
-        from<{ salary: number; bonus: number }>("employees").select((x) => ({
-          totalCompensation: x.salary + x.bonus,
-          monthlySalary: x.salary / 12,
-        }));
-      const result = parseQuery(query);
-
-      const selectOp = asSelectOperation(getOperation(result));
-      const selector = selectOp.selector as ObjectExpression;
-      const totalCompProp = selector.properties.totalCompensation as ArithmeticExpression;
-      expect(totalCompProp.type).to.equal("arithmetic");
-      expect(totalCompProp.operator).to.equal("+");
-      const monthlySalaryProp = selector.properties.monthlySalary as ArithmeticExpression;
-      expect(monthlySalaryProp.type).to.equal("arithmetic");
-      expect(monthlySalaryProp.operator).to.equal("/");
-    });
+    // Tests removed: Expressions in SELECT are not supported
+    // SELECT projections must be simple column/field selection
+    // All computations must be done in application code
   });
 
   describe("Chained SELECT Operations", () => {
     it("should parse select after where", () => {
       const query = () =>
-        from<{ id: number; name: string; age: number }>("users")
+        from(db, "users")
           .where((x) => x.age >= 18)
           .select((x) => ({ id: x.id, name: x.name }));
       const result = parseQuery(query);
@@ -131,7 +101,7 @@ describe("SELECT Operation", () => {
 
     it("should parse multiple select operations", () => {
       const query = () =>
-        from<{ id: number; name: string; age: number }>("users")
+        from(db, "users")
           .select((x) => ({ userId: x.id, userName: x.name, userAge: x.age }))
           .select((x) => ({ id: x.userId, displayName: x.userName }));
       const result = parseQuery(query);
@@ -144,22 +114,7 @@ describe("SELECT Operation", () => {
   });
 
   describe("External Parameters", () => {
-    it("should parse select with external parameters", () => {
-      const query = (p: { prefix: string }) =>
-        from<{ id: number; name: string }>("users").select((x) => ({
-          id: x.id,
-          displayName: p.prefix + x.name,
-        }));
-      const result = parseQuery(query);
-
-      const selectOp = asSelectOperation(getOperation(result));
-      const selector = selectOp.selector as ObjectExpression;
-      const displayNameProp = selector.properties.displayName as ConcatExpression;
-      expect(displayNameProp.type).to.equal("concat");
-      const leftParam = displayNameProp.left as ParamRef;
-      expect(leftParam.type).to.equal("param");
-      expect(leftParam.param).to.equal("p");
-      expect(leftParam.property).to.equal("prefix");
-    });
+    // Test removed: String concatenation with external parameters in SELECT is not supported
+    // SELECT projections must be simple column/field selection
   });
 });

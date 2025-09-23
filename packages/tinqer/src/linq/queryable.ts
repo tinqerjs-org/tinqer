@@ -167,6 +167,18 @@ export class Queryable<T> {
     return this;
   }
 
+  concat(_second: Queryable<T>): Queryable<T> {
+    return this;
+  }
+
+  intersect(_second: Queryable<T>): Queryable<T> {
+    return this;
+  }
+
+  except(_second: Queryable<T>): Queryable<T> {
+    return this;
+  }
+
   reverse(): Queryable<T> {
     return this;
   }
@@ -203,10 +215,6 @@ export class Queryable<T> {
 
   // ==================== Aggregates ====================
 
-  count(_predicate?: (_item: T) => boolean): TerminalQuery<number> {
-    return new TerminalQuery<number>();
-  }
-
   sum(_selector?: (_item: T) => number): TerminalQuery<number> {
     return new TerminalQuery<number>();
   }
@@ -231,5 +239,29 @@ export class Queryable<T> {
 
   toArray(): TerminalQuery<T[]> {
     return new TerminalQuery<T[]>();
+  }
+
+  toList(): TerminalQuery<T[]> {
+    return new TerminalQuery<T[]>();
+  }
+
+  // ==================== Boolean Tests ====================
+
+  any(_predicate?: (_item: T) => boolean): TerminalQuery<boolean> {
+    return new TerminalQuery<boolean>();
+  }
+
+  all(_predicate: (_item: T) => boolean): TerminalQuery<boolean> {
+    return new TerminalQuery<boolean>();
+  }
+
+  // ==================== Counting ====================
+
+  count(_predicate?: (_item: T) => boolean): TerminalQuery<number> {
+    return new TerminalQuery<number>();
+  }
+
+  longCount(_predicate?: (_item: T) => boolean): TerminalQuery<bigint> {
+    return new TerminalQuery<bigint>();
   }
 }

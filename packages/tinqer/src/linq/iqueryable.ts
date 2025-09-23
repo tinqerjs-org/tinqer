@@ -189,16 +189,6 @@ export interface IQueryable<T> {
   singleOrDefault(predicate?: (source: T) => boolean, defaultValue?: T): T | undefined;
 
   /**
-   * Returns the element at a specified index
-   */
-  elementAt(index: number): T;
-
-  /**
-   * Returns the element at a specified index or default if out of range
-   */
-  elementAtOrDefault(index: number, defaultValue?: T): T | undefined;
-
-  /**
    * Determines whether any element satisfies a condition
    */
   any(predicate?: (source: T) => boolean): boolean;

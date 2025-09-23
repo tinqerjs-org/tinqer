@@ -36,9 +36,10 @@ import { convertMaxOperation } from "./max.js";
 import { convertSingleOperation } from "./single.js";
 import { convertLastOperation } from "./last.js";
 import { convertContainsOperation } from "./contains.js";
-import { convertUnionOperation } from "./union.js";
 import { convertReverseOperation } from "./reverse.js";
 import { convertToArrayOperation } from "./toarray.js";
+import { convertAnyOperation } from "./any.js";
+import { convertAllOperation } from "./all.js";
 
 // Export the expression converter for use by operation converters
 export { convertAstToExpression } from "./expressions.js";
@@ -230,6 +231,7 @@ export function convertMethodChain(
         case "count":
           return convertCountOperation(callAst, source, context);
         case "toArray":
+        case "toList":
           return convertToArrayOperation(source);
         case "groupBy":
           return convertGroupByOperation(callAst, source, context);
@@ -256,10 +258,12 @@ export function convertMethodChain(
           return convertLastOperation(callAst, source, context, methodName);
         case "contains":
           return convertContainsOperation(callAst, source, context);
-        case "union":
-          return convertUnionOperation(callAst, source, context);
         case "reverse":
           return convertReverseOperation(source);
+        case "any":
+          return convertAnyOperation(callAst, source, context);
+        case "all":
+          return convertAllOperation(callAst, source, context);
         // Add more operations as needed
       }
     }

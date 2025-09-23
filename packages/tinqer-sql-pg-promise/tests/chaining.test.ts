@@ -4,14 +4,14 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { query } from "../dist/index.js";
+import { db, from } from "./test-schema.js";
 
 describe("Complex Query Chaining", () => {
   it("should generate complex query with WHERE, SELECT, ORDER BY, TAKE", () => {
     const result = query(
       (p: { minAge: number }) =>
-        from<{ id: number; name: string; age: number; isActive: boolean }>("users")
+        from(db, "users")
           .where((x) => x.age >= p.minAge && x.isActive)
           .select((x) => ({ id: x.id, name: x.name }))
           .orderBy((x) => x.name)
@@ -28,7 +28,7 @@ describe("Complex Query Chaining", () => {
   it("should generate query with SKIP and TAKE for pagination", () => {
     const result = query(
       (p: { page: number; pageSize: number }) =>
-        from<{ id: number; name: string }>("products")
+        from(db, "products")
           .orderBy((x) => x.name)
           .skip(p.page * p.pageSize)
           .take(p.pageSize),
@@ -44,7 +44,7 @@ describe("Complex Query Chaining", () => {
   it("should generate query with multiple WHERE clauses combined with AND", () => {
     const result = query(
       () =>
-        from<{ id: number; age: number; role: string }>("users")
+        from(db, "users")
           .where((x) => x.age >= 18)
           .where((x) => x.role == "admin"),
       {},
@@ -59,7 +59,7 @@ describe("Complex Query Chaining", () => {
   it("should generate query with DISTINCT", () => {
     const result = query(
       () =>
-        from<{ category: string }>("products")
+        from(db, "products")
           .select((x) => x.category)
           .distinct(),
       {},
@@ -71,7 +71,7 @@ describe("Complex Query Chaining", () => {
   it("should generate query with GROUP BY and COUNT aggregate", () => {
     const result = query(
       () =>
-        from<{ department: string; salary: number }>("employees")
+        from(db, "employees")
           .groupBy((x) => x.department)
           .select((g) => ({ department: g.key, count: g.count() })),
       {},

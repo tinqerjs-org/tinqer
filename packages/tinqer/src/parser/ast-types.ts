@@ -30,7 +30,7 @@ export interface Identifier extends ASTNode {
 export interface MemberExpression extends ASTNode {
   type: "MemberExpression";
   object: Expression;
-  property: Identifier;
+  property: Expression | Identifier; // Can be any expression when computed
   computed: boolean;
 }
 
@@ -55,7 +55,7 @@ export interface BinaryExpression extends ASTNode {
 
 export interface LogicalExpression extends ASTNode {
   type: "LogicalExpression";
-  operator: "&&" | "||";
+  operator: "&&" | "||" | "??";
   left: Expression;
   right: Expression;
 }
@@ -92,6 +92,11 @@ export interface ArrayExpression extends ASTNode {
 
 export interface ParenthesizedExpression extends ASTNode {
   type: "ParenthesizedExpression";
+  expression: Expression;
+}
+
+export interface ChainExpression extends ASTNode {
+  type: "ChainExpression";
   expression: Expression;
 }
 
@@ -146,6 +151,7 @@ export type Expression =
   | ObjectExpression
   | ArrayExpression
   | ParenthesizedExpression
+  | ChainExpression
   | Literal
   | NumericLiteral
   | StringLiteral

@@ -12,14 +12,12 @@ import {
   asOrderByOperation,
   getOperation,
 } from "./test-utils/operation-helpers.js";
+import { db } from "./test-schema.js";
 
 describe("GROUP BY Operation", () => {
   describe("groupBy()", () => {
     it("should parse simple groupBy with column selector", () => {
-      const query = () =>
-        from<{ id: number; category: string; price: number }>("products").groupBy(
-          (x) => x.category,
-        );
+      const query = () => from(db, "products").groupBy((x) => x.category);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("groupBy");
@@ -28,10 +26,7 @@ describe("GROUP BY Operation", () => {
     });
 
     it("should parse groupBy with different column", () => {
-      const query = () =>
-        from<{ id: number; department: string; salary: number }>("employees").groupBy(
-          (x) => x.department,
-        );
+      const query = () => from(db, "employees").groupBy((x) => x.department);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("groupBy");
@@ -41,7 +36,7 @@ describe("GROUP BY Operation", () => {
 
     it("should parse groupBy after where", () => {
       const query = () =>
-        from<{ id: number; category: string; price: number; inStock: boolean }>("products")
+        from(db, "products")
           .where((x) => x.inStock)
           .groupBy((x) => x.category);
       const result = parseQuery(query);
@@ -53,7 +48,7 @@ describe("GROUP BY Operation", () => {
 
     it("should parse groupBy before select", () => {
       const query = () =>
-        from<{ category: string; price: number }>("products")
+        from(db, "products")
           .groupBy((x) => x.category)
           .select((g) => ({ category: g.key }));
       const result = parseQuery(query);
@@ -65,7 +60,7 @@ describe("GROUP BY Operation", () => {
 
     it("should parse groupBy with ordering", () => {
       const query = () =>
-        from<{ category: string; price: number }>("products")
+        from(db, "products")
           .groupBy((x) => x.category)
           .orderBy((g) => g.key);
       const result = parseQuery(query);

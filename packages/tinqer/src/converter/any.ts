@@ -1,12 +1,8 @@
 /**
- * SINGLE and SINGLE OR DEFAULT operation converters
+ * ANY operation converter
  */
 
-import type {
-  SingleOperation,
-  SingleOrDefaultOperation,
-  QueryOperation,
-} from "../query-tree/operations.js";
+import type { AnyOperation, QueryOperation } from "../query-tree/operations.js";
 import type {
   BooleanExpression,
   ColumnExpression,
@@ -21,12 +17,11 @@ import type { ConversionContext } from "./converter-utils.js";
 import { getParameterName, getReturnExpression, isBooleanExpression } from "./converter-utils.js";
 import { convertAstToExpression } from "./expressions.js";
 
-export function convertSingleOperation(
+export function convertAnyOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
   context: ConversionContext,
-  methodName: string,
-): SingleOperation | SingleOrDefaultOperation | null {
+): AnyOperation | null {
   let predicate: BooleanExpression | undefined;
 
   if (ast.arguments && ast.arguments.length > 0) {
@@ -65,11 +60,10 @@ export function convertSingleOperation(
     }
   }
 
-  const operation: SingleOperation | SingleOrDefaultOperation = {
+  return {
     type: "queryOperation",
-    operationType: methodName === "singleOrDefault" ? "singleOrDefault" : "single",
+    operationType: "any",
     source,
     predicate,
   };
-  return operation;
 }
