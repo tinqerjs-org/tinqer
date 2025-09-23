@@ -346,6 +346,23 @@ function generateParameterExpression(expr: ParameterExpression, context: SqlCont
 function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlContext): string {
   const left = generateValueExpression(expr.left, context);
   const right = generateValueExpression(expr.right, context);
+
+  // In PostgreSQL, use || for string concatenation
+  if (expr.operator === "+") {
+    // Check if either operand is definitely a string
+    const isStringConcat =
+      // String constants
+      (expr.left.type === "constant" && typeof (expr.left as any).value === "string") ||
+      (expr.right.type === "constant" && typeof (expr.right as any).value === "string") ||
+      // String method results (toLowerCase, toUpperCase, substring, etc.)
+      (expr.left.type === "stringMethod") ||
+      (expr.right.type === "stringMethod");
+
+    if (isStringConcat) {
+      return `${left} || ${right}`;
+    }
+  }
+
   return `(${left} ${expr.operator} ${right})`;
 }
 
