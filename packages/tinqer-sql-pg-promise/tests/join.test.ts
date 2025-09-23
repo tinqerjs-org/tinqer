@@ -57,7 +57,7 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "departments" AS t0) AS t1 ON t0.departmentId = t1.id',
+        'SELECT * FROM "users" AS "t0" INNER JOIN (SELECT * FROM "departments" AS "t0") AS "t1" ON "t0"."departmentId" = "t1"."id"',
       );
     });
 
@@ -76,7 +76,7 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0) AS t1 ON t0.id = t1.userId WHERE id > $(_id1)',
+        'SELECT * FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0") AS "t1" ON "t0"."id" = "t1"."userId" WHERE "id" > $(_id1)',
       );
       expect(result.params).to.deep.equal({ _id1: 100 });
     });
@@ -94,7 +94,7 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0 WHERE amount > $(_amount1)) AS t1 ON t0.id = t1.userId',
+        'SELECT * FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0" WHERE "amount" > $(_amount1)) AS "t1" ON "t0"."id" = "t1"."userId"',
       );
       expect(result.params).to.deep.equal({ _amount1: 1000 });
     });
@@ -118,7 +118,7 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT key AS userId, SUM(orderAmount) AS totalAmount FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0) AS t1 ON t0.id = t1.userId GROUP BY userId',
+        'SELECT "key" AS "userId", SUM("orderAmount") AS "totalAmount" FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0") AS "t1" ON "t0"."id" = "t1"."userId" GROUP BY "userId"',
       );
     });
 
@@ -137,7 +137,7 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT DISTINCT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "departments" AS t0) AS t1 ON t0.departmentId = t1.id',
+        'SELECT DISTINCT * FROM "users" AS "t0" INNER JOIN (SELECT * FROM "departments" AS "t0") AS "t1" ON "t0"."departmentId" = "t1"."id"',
       );
     });
 
@@ -157,7 +157,7 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS t0 INNER JOIN (SELECT * FROM "orders" AS t0) AS t1 ON t0.id = t1.userId ORDER BY amount ASC LIMIT $(_limit1)',
+        'SELECT * FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0") AS "t1" ON "t0"."id" = "t1"."userId" ORDER BY "amount" ASC LIMIT $(_limit1)',
       );
       expect(result.params).to.deep.equal({ _limit1: 10 });
     });
@@ -246,7 +246,7 @@ describe("Join SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain('FROM "users" AS t0');
+      expect(result.sql).to.contain(`FROM "users" AS "t0"`);
       expect(result.sql).to.contain("INNER JOIN");
       expect(result.sql).to.contain('SELECT * FROM "users"');
     });
@@ -273,9 +273,9 @@ describe("Join SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("AVG(amount)");
-      expect(result.sql).to.contain("MAX(amount)");
-      expect(result.sql).to.contain("MIN(amount)");
+      expect(result.sql).to.contain(`AVG("amount")`);
+      expect(result.sql).to.contain(`MAX("amount")`);
+      expect(result.sql).to.contain(`MIN("amount")`);
     });
 
     it("should handle JOIN with complex conditions", () => {
@@ -293,8 +293,8 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.contain("WHERE");
-      expect(result.sql).to.contain("amount >");
-      expect(result.sql).to.contain("amount <");
+      expect(result.sql).to.contain(`"amount" >`);
+      expect(result.sql).to.contain(`"amount" <`);
     });
 
     it("should handle JOIN with complex WHERE and ORDER BY", () => {

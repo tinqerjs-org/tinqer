@@ -51,7 +51,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT key AS category, SUM(amount) AS totalSales, AVG(amount) AS avgSale, MAX(amount) AS maxSale, MIN(amount) AS minSale, COUNT(*) AS saleCount FROM "sales" AS t0 GROUP BY category',
+        'SELECT "key" AS "category", SUM("amount") AS "totalSales", AVG("amount") AS "avgSale", MAX("amount") AS "maxSale", MIN("amount") AS "minSale", COUNT(*) AS "saleCount" FROM "sales" AS "t0" GROUP BY "category"',
       );
     });
 
@@ -71,11 +71,11 @@ describe("Advanced GROUP BY SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("SUM(amount) AS totalRevenue");
-      expect(result.sql).to.contain("SUM(quantity) AS totalQuantity");
-      expect(result.sql).to.contain("AVG(discount) AS avgDiscount");
-      expect(result.sql).to.contain("MAX(profit) AS maxProfit");
-      expect(result.sql).to.contain("MIN(profit) AS minProfit");
+      expect(result.sql).to.contain(`SUM("amount") AS "totalRevenue"`);
+      expect(result.sql).to.contain(`SUM("quantity") AS "totalQuantity"`);
+      expect(result.sql).to.contain(`AVG("discount") AS "avgDiscount"`);
+      expect(result.sql).to.contain(`MAX("profit") AS "maxProfit"`);
+      expect(result.sql).to.contain(`MIN("profit") AS "minProfit"`);
     });
   });
 
@@ -95,7 +95,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT key AS category, COUNT(*) AS highValueSales, SUM(amount) AS totalAmount FROM "sales" AS t0 WHERE (amount > $(_amount1) AND discount < $(_discount1)) GROUP BY category',
+        'SELECT "key" AS "category", COUNT(*) AS "highValueSales", SUM("amount") AS "totalAmount" FROM "sales" AS "t0" WHERE ("amount" > $(_amount1) AND "discount" < $(_discount1)) GROUP BY "category"',
       );
       expect(result.params).to.deep.equal({ _amount1: 1000, _discount1: 20 });
     });
@@ -115,8 +115,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("WHERE salary > $(_salary1) AND hireYear >= $(_hireYear1)");
-      expect(result.sql).to.contain("GROUP BY department");
+      expect(result.sql).to.contain(`WHERE "salary" > $(_salary1) AND "hireYear" >= $(_hireYear1)`);
+      expect(result.sql).to.contain(`GROUP BY "department"`);
       expect(result.params).to.deep.equal({ _salary1: 50000, _hireYear1: 2020 });
     });
   });
@@ -136,7 +136,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT key AS salesperson, SUM(amount) AS totalSales FROM "sales" AS t0 GROUP BY salesperson ORDER BY totalSales ASC',
+        'SELECT "key" AS "salesperson", SUM("amount") AS "totalSales" FROM "sales" AS "t0" GROUP BY "salesperson" ORDER BY "totalSales" ASC',
       );
     });
 
@@ -154,7 +154,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT key AS category, COUNT(*) AS count FROM "sales" AS t0 GROUP BY category ORDER BY category ASC',
+        `SELECT "key" AS "category", COUNT(*) AS "count" FROM "sales" AS "t0" GROUP BY "category" ORDER BY "category" ASC`,
       );
     });
 
@@ -172,7 +172,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT key AS region, SUM(amount) AS revenue FROM "sales" AS t0 GROUP BY region ORDER BY revenue DESC',
+        `SELECT "key" AS "region", SUM("amount") AS "revenue" FROM "sales" AS "t0" GROUP BY "region" ORDER BY "revenue" DESC`,
       );
     });
   });
@@ -193,7 +193,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT key AS category, SUM(amount) AS total FROM "sales" AS t0 GROUP BY category ORDER BY total DESC LIMIT $(_limit1)',
+        `SELECT "key" AS "category", SUM("amount") AS "total" FROM "sales" AS "t0" GROUP BY "category" ORDER BY "total" DESC LIMIT $(_limit1)`,
       );
       expect(result.params).to.deep.equal({ _limit1: 5 });
     });
@@ -214,8 +214,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("GROUP BY department");
-      expect(result.sql).to.contain("ORDER BY dept ASC");
+      expect(result.sql).to.contain(`GROUP BY "department"`);
+      expect(result.sql).to.contain(`ORDER BY "dept" ASC`);
       expect(result.sql).to.contain("LIMIT $(_limit1) OFFSET $(_offset1)");
       expect(result.params).to.deep.equal({ _offset1: 10, _limit1: 5 });
     });
@@ -259,8 +259,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.contain("INNER JOIN");
-      expect(result.sql).to.contain("GROUP BY customerId");
-      expect(result.sql).to.contain("SUM(amount)");
+      expect(result.sql).to.contain(`GROUP BY "customerId"`);
+      expect(result.sql).to.contain(`SUM("amount")`);
       expect(result.sql).to.contain("COUNT(*)");
     });
   });
@@ -280,8 +280,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
         { minAmount: 500, region: "North" },
       );
 
-      expect(result.sql).to.contain("WHERE (amount >= $(minAmount) AND region = $(region))");
-      expect(result.sql).to.contain("GROUP BY category");
+      expect(result.sql).to.contain(`WHERE ("amount" >= $(minAmount) AND "region" = $(region))`);
+      expect(result.sql).to.contain(`GROUP BY "category"`);
       expect(result.params).to.deep.equal({ minAmount: 500, region: "North" });
     });
 
@@ -301,8 +301,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
         { targetProfit: 100 },
       );
 
-      expect(result.sql).to.contain("profit > $(targetProfit)");
-      expect(result.sql).to.contain("quantity > $(_quantity1)");
+      expect(result.sql).to.contain(`"profit" > $(targetProfit)`);
+      expect(result.sql).to.contain(`"quantity" > $(_quantity1)`);
       expect(result.sql).to.contain("LIMIT $(_limit1)");
       expect(result.params).to.deep.equal({
         targetProfit: 100,
@@ -331,10 +331,10 @@ describe("Advanced GROUP BY SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("WHERE amount > $(_amount1)");
-      expect(result.sql).to.contain("GROUP BY region");
-      expect(result.sql).to.contain("revenue > $(_revenue1)");
-      expect(result.sql).to.contain("ORDER BY revenue DESC");
+      expect(result.sql).to.contain(`WHERE "amount" > $(_amount1)`);
+      expect(result.sql).to.contain(`GROUP BY "region"`);
+      expect(result.sql).to.contain(`"revenue" > $(_revenue1)`);
+      expect(result.sql).to.contain(`ORDER BY "revenue" DESC`);
       expect(result.sql).to.contain("LIMIT $(_limit1)");
       expect(result.params).to.deep.equal({
         _amount1: 100,
@@ -362,10 +362,10 @@ describe("Advanced GROUP BY SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("quantity > $(_quantity1)");
-      expect(result.sql).to.contain("discount < $(_discount1)");
-      expect(result.sql).to.contain("GROUP BY category");
-      expect(result.sql).to.contain("salesCount > $(_salesCount1)");
+      expect(result.sql).to.contain(`"quantity" > $(_quantity1)`);
+      expect(result.sql).to.contain(`"discount" < $(_discount1)`);
+      expect(result.sql).to.contain(`GROUP BY "category"`);
+      expect(result.sql).to.contain(`"salesCount" > $(_salesCount1)`);
       expect(result.params).to.deep.equal({
         _quantity1: 0,
         _discount1: 50,
@@ -384,7 +384,9 @@ describe("Advanced GROUP BY SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT key AS category FROM "sales" AS t0 GROUP BY category');
+      expect(result.sql).to.equal(
+        'SELECT "key" AS "category" FROM "sales" AS "t0" GROUP BY "category"',
+      );
     });
 
     it("should handle GROUP BY with only COUNT", () => {
@@ -397,7 +399,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT key AS region, COUNT(*) AS count FROM "sales" AS t0 GROUP BY region',
+        `SELECT "key" AS "region", COUNT(*) AS "count" FROM "sales" AS "t0" GROUP BY "region"`,
       );
     });
 
@@ -412,7 +414,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.contain("SELECT DISTINCT");
-      expect(result.sql).to.contain("GROUP BY category");
+      expect(result.sql).to.contain(`GROUP BY "category"`);
     });
   });
 });

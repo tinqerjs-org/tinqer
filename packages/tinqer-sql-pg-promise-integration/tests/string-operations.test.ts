@@ -2,24 +2,16 @@
  * String operation integration tests with real PostgreSQL
  */
 
-import { describe, it, before, after } from "mocha";
+import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import pgPromise from "pg-promise";
 import { from } from "@webpods/tinqer";
 import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-
-const pgp = pgPromise();
-const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/tinqer_test";
-const db = pgp(connectionString);
+import { db } from "./shared-db.js";
 
 describe("PostgreSQL Integration - String Operations", () => {
   before(async () => {
     await setupTestDatabase(db);
-  });
-
-  after(() => {
-    pgp.end();
   });
 
   describe("startsWith", () => {
@@ -125,9 +117,7 @@ describe("PostgreSQL Integration - String Operations", () => {
   describe("Complex string queries", () => {
     it("should find users with specific email patterns", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where(
-          (u) => u.email.startsWith("j") && u.email.endsWith("@example.com"),
-        ),
+        from(db, "users").where((u) => u.email.startsWith("j") && u.email.endsWith("@example.com")),
       );
 
       expect(results).to.be.an("array");
@@ -151,10 +141,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should combine string operations with joins", async () => {
       const results = await executeSimple(db, () =>
         from(db, "users")
-          .join(
-            from(db, "departments"),
-            (u, d) => u.department_id === d.id,
-          )
+          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
           .where((u, d) => u.name.startsWith("J") && d.name.includes("ing"))
           .select((u, d) => ({
             userName: u.name,

@@ -20,5 +20,5 @@ export function generateFrom(operation: FromOperation, context: SqlContext): str
   }
 
   const alias = context.tableAliases.get(operation.table);
-  return `FROM ${table} AS ${alias}`;
+  return `FROM ${table} AS "${alias}"`;
 }

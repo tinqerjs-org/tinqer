@@ -18,7 +18,7 @@ describe("Basic Terminal Operations", () => {
   describe("COUNT operations", () => {
     it("should generate SQL for count()", () => {
       const result = query(() => from<User>("users").count(), {});
-      expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" AS t0');
+      expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" AS "t0"');
       expect(result.params).to.deep.equal({});
     });
 
@@ -30,7 +30,7 @@ describe("Basic Terminal Operations", () => {
             .count(),
         {},
       );
-      expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" AS t0 WHERE isActive');
+      expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" AS "t0" WHERE "isActive"');
       expect(result.params).to.deep.equal({});
     });
   });
@@ -39,7 +39,7 @@ describe("Basic Terminal Operations", () => {
     it("should generate SQL for toArray()", () => {
       const result = query(() => from<User>("users").toArray(), {});
       // toArray just executes the query without modifications
-      expect(result.sql).to.equal('SELECT * FROM "users" AS t0');
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0"');
       expect(result.params).to.deep.equal({});
     });
 
@@ -51,13 +51,13 @@ describe("Basic Terminal Operations", () => {
             .toArray(),
         {},
       );
-      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE age > $(_age1)');
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" > $(_age1)');
       expect(result.params).to.deep.equal({ _age1: 18 });
     });
 
     it("should generate SQL for toList()", () => {
       const result = query(() => from<User>("users").toList(), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS t0');
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0"');
       expect(result.params).to.deep.equal({});
     });
   });

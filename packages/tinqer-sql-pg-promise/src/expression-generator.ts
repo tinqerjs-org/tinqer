@@ -59,7 +59,7 @@ export function generateBooleanExpression(expr: BooleanExpression, context: SqlC
     case "not":
       return generateNotExpression(expr, context);
     case "booleanColumn":
-      return expr.name;
+      return `"${expr.name}"`;
     case "booleanConstant":
       return expr.value ? "TRUE" : "FALSE";
     case "booleanMethod":
@@ -189,9 +189,9 @@ function generateNotExpression(expr: NotExpression, context: SqlContext): string
 function generateColumnExpression(expr: ColumnExpression, context: SqlContext): string {
   if (expr.table) {
     const alias = context.tableAliases.get(expr.table) || expr.table;
-    return `${alias}.${expr.name}`;
+    return `"${alias}"."${expr.name}"`;
   }
-  return expr.name;
+  return `"${expr.name}"`;
 }
 
 /**
@@ -377,7 +377,7 @@ function generateObjectExpression(expr: ObjectExpression, context: SqlContext): 
   }
   const parts = Object.entries(expr.properties).map(([key, value]) => {
     const sqlValue = generateExpression(value, context);
-    return `${sqlValue} AS ${key}`;
+    return `${sqlValue} AS "${key}"`;
   });
   return parts.join(", ");
 }

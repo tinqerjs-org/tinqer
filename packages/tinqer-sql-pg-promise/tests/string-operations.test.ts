@@ -26,7 +26,9 @@ describe("String Operations SQL Generation", () => {
     it("should generate SQL for startsWith", () => {
       const result = query(() => from<User>("users").where((u) => u.name.startsWith("John")), {});
 
-      expect(result.sql).to.equal("SELECT * FROM \"users\" AS t0 WHERE name LIKE $(_name1) || '%'");
+      expect(result.sql).to.equal(
+        'SELECT * FROM "users" AS "t0" WHERE "name" LIKE $(_name1) || \'%\'',
+      );
       expect(result.params).to.deep.equal({ _name1: "John" });
     });
 
@@ -37,7 +39,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        "SELECT * FROM \"users\" AS t0 WHERE email LIKE $(prefix) || '%'",
+        'SELECT * FROM "users" AS "t0" WHERE "email" LIKE $(prefix) || \'%\'',
       );
       expect(result.params).to.deep.equal({ prefix: "admin@" });
     });
@@ -62,7 +64,7 @@ describe("String Operations SQL Generation", () => {
       const result = query(() => from<User>("users").where((u) => u.email.endsWith(".com")), {});
 
       expect(result.sql).to.equal(
-        "SELECT * FROM \"users\" AS t0 WHERE email LIKE '%' || $(_email1)",
+        'SELECT * FROM "users" AS "t0" WHERE "email" LIKE \'%\' || $(_email1)',
       );
       expect(result.params).to.deep.equal({ _email1: ".com" });
     });
@@ -73,7 +75,9 @@ describe("String Operations SQL Generation", () => {
         { suffix: "son" },
       );
 
-      expect(result.sql).to.equal("SELECT * FROM \"users\" AS t0 WHERE name LIKE '%' || $(suffix)");
+      expect(result.sql).to.equal(
+        'SELECT * FROM "users" AS "t0" WHERE "name" LIKE \'%\' || $(suffix)',
+      );
       expect(result.params).to.deep.equal({ suffix: "son" });
     });
 
@@ -83,7 +87,7 @@ describe("String Operations SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("id > $(_id1)");
+      expect(result.sql).to.contain(`"id" > $(_id1)`);
       expect(result.sql).to.contain("LIKE '%' || $(_email1)");
       expect(result.params).to.deep.equal({ _id1: 100, _email1: "@example.com" });
     });
@@ -97,7 +101,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        "SELECT * FROM \"products\" AS t0 WHERE description LIKE '%' || $(_description1) || '%'",
+        'SELECT * FROM "products" AS "t0" WHERE "description" LIKE \'%\' || $(_description1) || \'%\'',
       );
       expect(result.params).to.deep.equal({ _description1: "premium" });
     });
@@ -110,7 +114,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        "SELECT * FROM \"products\" AS t0 WHERE name LIKE '%' || $(keyword) || '%'",
+        'SELECT * FROM "products" AS "t0" WHERE "name" LIKE \'%\' || $(keyword) || \'%\'',
       );
       expect(result.params).to.deep.equal({ keyword: "laptop" });
     });
@@ -124,8 +128,8 @@ describe("String Operations SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("name LIKE '%' || $(_name1) || '%'");
-      expect(result.sql).to.contain("description LIKE '%' || $(_description1) || '%'");
+      expect(result.sql).to.contain(`"name" LIKE '%' || $(_name1) || '%'`);
+      expect(result.sql).to.contain(`"description" LIKE '%' || $(_description1) || '%'`);
       expect(result.params).to.deep.equal({ _name1: "Pro", _description1: "quality" });
     });
   });
@@ -143,9 +147,9 @@ describe("String Operations SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("name LIKE $(_name1) || '%'");
-      expect(result.sql).to.contain("email LIKE '%' || $(_email1)");
-      expect(result.sql).to.contain("bio LIKE '%' || $(_bio1) || '%'");
+      expect(result.sql).to.contain(`"name" LIKE $(_name1) || '%'`);
+      expect(result.sql).to.contain(`"email" LIKE '%' || $(_email1)`);
+      expect(result.sql).to.contain(`"bio" LIKE '%' || $(_bio1) || '%'`);
       expect(result.params).to.deep.equal({
         _name1: "Dr.",
         _email1: ".edu",
@@ -164,7 +168,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        "SELECT id AS id, name AS name FROM \"users\" AS t0 WHERE name LIKE $(_name1) || '%'",
+        `SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE "name" LIKE $(_name1) || '%'`,
       );
       expect(result.params).to.deep.equal({ _name1: "A" });
     });
@@ -180,7 +184,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        "SELECT * FROM \"products\" AS t0 WHERE sku LIKE $(_sku1) || '%' ORDER BY name ASC LIMIT $(_limit1)",
+        `SELECT * FROM "products" AS "t0" WHERE "sku" LIKE $(_sku1) || '%' ORDER BY "name" ASC LIMIT $(_limit1)`,
       );
       expect(result.params).to.deep.equal({ _sku1: "ELEC", _limit1: 10 });
     });
@@ -196,7 +200,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        "SELECT key AS name, COUNT(*) AS count FROM \"products\" AS t0 WHERE name LIKE '%' || $(_name1) || '%' GROUP BY name",
+        `SELECT "key" AS "name", COUNT(*) AS "count" FROM "products" AS "t0" WHERE "name" LIKE '%' || $(_name1) || '%' GROUP BY "name"`,
       );
       expect(result.params).to.deep.equal({ _name1: "Phone" });
     });
@@ -210,15 +214,15 @@ describe("String Operations SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("email LIKE $(_email1) || '%'");
-      expect(result.sql).to.contain("email LIKE $(_email2) || '%'");
+      expect(result.sql).to.contain(`"email" LIKE $(_email1) || '%'`);
+      expect(result.sql).to.contain(`"email" LIKE $(_email2) || '%'`);
       expect(result.params).to.deep.equal({ _email1: "Admin", _email2: "admin" });
     });
 
     it("should handle empty string checks", () => {
       const result = query(() => from<User>("users").where((u) => u.bio == ""), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE bio = $(_bio1)');
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "bio" = $(_bio1)');
       expect(result.params).to.deep.equal({ _bio1: "" });
     });
 
@@ -236,8 +240,8 @@ describe("String Operations SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("name LIKE $(_name1) || '%'");
-      expect(result.sql).to.contain("name LIKE '%' || $(_name2) || '%'");
+      expect(result.sql).to.contain(`"name" LIKE $(_name1) || '%'`);
+      expect(result.sql).to.contain(`"name" LIKE '%' || $(_name2) || '%'`);
       expect(result.params).to.deep.equal({ _name1: "John", _name2: "Book" });
     });
   });
@@ -260,7 +264,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle nullable string comparisons", () => {
       const result = query(() => from<User>("users").where((u) => u.bio == null), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE bio IS NULL');
+      expect(result.sql).to.equal(`SELECT * FROM "users" AS "t0" WHERE "bio" IS NULL`);
       expect(result.params).to.deep.equal({});
     });
 
@@ -270,8 +274,8 @@ describe("String Operations SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("bio IS NOT NULL");
-      expect(result.sql).to.contain("bio LIKE '%' || $(_bio1) || '%'");
+      expect(result.sql).to.contain(`"bio" IS NOT NULL`);
+      expect(result.sql).to.contain(`"bio" LIKE '%' || $(_bio1) || '%'`);
       expect(result.params).to.deep.equal({ _bio1: "developer" });
     });
   });

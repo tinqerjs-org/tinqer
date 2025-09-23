@@ -15,7 +15,7 @@ describe("GroupBy SQL Generation", () => {
   it("should generate GROUP BY clause", () => {
     const result = query(() => from<Sale>("sales").groupBy((s) => s.category), {});
 
-    expect(result.sql).to.equal('SELECT * FROM "sales" AS t0 GROUP BY category');
+    expect(result.sql).to.equal('SELECT * FROM "sales" AS "t0" GROUP BY "category"');
   });
 
   it("should combine GROUP BY with WHERE", () => {
@@ -28,7 +28,7 @@ describe("GroupBy SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "sales" AS t0 WHERE amount > $(_amount1) GROUP BY category',
+      'SELECT * FROM "sales" AS "t0" WHERE "amount" > $(_amount1) GROUP BY "category"',
     );
     expect(result.params).to.deep.equal({ _amount1: 100 });
   });
@@ -42,7 +42,9 @@ describe("GroupBy SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT key AS category FROM "sales" AS t0 GROUP BY category');
+    expect(result.sql).to.equal(
+      'SELECT "key" AS "category" FROM "sales" AS "t0" GROUP BY "category"',
+    );
   });
 
   it("should work with GROUP BY and ORDER BY", () => {
@@ -54,7 +56,9 @@ describe("GroupBy SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT * FROM "sales" AS t0 GROUP BY product ORDER BY key ASC');
+    expect(result.sql).to.equal(
+      'SELECT * FROM "sales" AS "t0" GROUP BY "product" ORDER BY "key" ASC',
+    );
   });
 
   it("should handle GROUP BY with COUNT aggregate", () => {
@@ -67,7 +71,7 @@ describe("GroupBy SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT key AS category, COUNT(*) AS count FROM "sales" AS t0 GROUP BY category',
+      'SELECT "key" AS "category", COUNT(*) AS "count" FROM "sales" AS "t0" GROUP BY "category"',
     );
   });
 
@@ -84,7 +88,7 @@ describe("GroupBy SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT key AS category, SUM(amount) AS totalAmount FROM "sales" AS t0 GROUP BY category',
+      'SELECT "key" AS "category", SUM("amount") AS "totalAmount" FROM "sales" AS "t0" GROUP BY "category"',
     );
   });
 
@@ -103,7 +107,7 @@ describe("GroupBy SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT key AS category, COUNT(*) AS count, SUM(amount) AS totalAmount, AVG(amount) AS avgAmount FROM "sales" AS t0 GROUP BY category',
+      'SELECT "key" AS "category", COUNT(*) AS "count", SUM("amount") AS "totalAmount", AVG("amount") AS "avgAmount" FROM "sales" AS "t0" GROUP BY "category"',
     );
   });
 
@@ -123,7 +127,7 @@ describe("GroupBy SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT key AS product, SUM(quantity) AS totalQuantity, MAX(amount) AS maxAmount, MIN(amount) AS minAmount FROM "sales" AS t0 WHERE quantity > $(_quantity1) GROUP BY product',
+      'SELECT "key" AS "product", SUM("quantity") AS "totalQuantity", MAX("amount") AS "maxAmount", MIN("amount") AS "minAmount" FROM "sales" AS "t0" WHERE "quantity" > $(_quantity1) GROUP BY "product"',
     );
     expect(result.params).to.deep.equal({ _quantity1: 10 });
   });

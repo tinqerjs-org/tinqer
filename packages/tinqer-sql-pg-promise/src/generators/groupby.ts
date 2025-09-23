@@ -14,7 +14,7 @@ export function generateGroupBy(operation: GroupByOperation, context: SqlContext
 
   if (typeof operation.keySelector === "string") {
     // Simple column name
-    groupByExpr = operation.keySelector;
+    groupByExpr = `"${operation.keySelector}"`;
   } else {
     // Complex expression
     groupByExpr = generateValueExpression(operation.keySelector, context);

@@ -2,34 +2,23 @@
  * JOIN operation integration tests with real PostgreSQL
  */
 
-import { describe, it, before, after } from "mocha";
+import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import pgPromise from "pg-promise";
 import { from } from "@webpods/tinqer";
 import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-
-const pgp = pgPromise();
-const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/tinqer_test";
-const db = pgp(connectionString);
+import { db } from "./shared-db.js";
 
 describe("PostgreSQL Integration - JOINs", () => {
   before(async () => {
     await setupTestDatabase(db);
   });
 
-  after(() => {
-    pgp.end();
-  });
-
   describe("INNER JOIN", () => {
     it("should join users with departments", async () => {
       const results = await executeSimple(db, () =>
         from(db, "users")
-          .join(
-            from(db, "departments"),
-            (u, d) => u.department_id === d.id,
-          )
+          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
           .select((u, d) => ({
             userName: u.name,
             userEmail: u.email,
@@ -49,10 +38,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join orders with users", async () => {
       const results = await executeSimple(db, () =>
         from(db, "orders")
-          .join(
-            from(db, "users"),
-            (o, u) => o.user_id === u.id,
-          )
+          .join(from(db, "users"), (o, u) => o.user_id === u.id)
           .select((o, u) => ({
             orderId: o.id,
             orderTotal: o.total_amount,
@@ -74,10 +60,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join with WHERE clause", async () => {
       const results = await executeSimple(db, () =>
         from(db, "orders")
-          .join(
-            from(db, "users"),
-            (o, u) => o.user_id === u.id,
-          )
+          .join(from(db, "users"), (o, u) => o.user_id === u.id)
           .where((o) => o.status === "completed")
           .select((o, u) => ({
             orderId: o.id,
@@ -97,10 +80,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join with aggregates", async () => {
       const results = await executeSimple(db, () =>
         from(db, "orders")
-          .join(
-            from(db, "users"),
-            (o, u) => o.user_id === u.id,
-          )
+          .join(from(db, "users"), (o, u) => o.user_id === u.id)
           .groupBy((o, u) => u.name)
           .select((g) => ({
             customerName: g.key,
@@ -124,14 +104,8 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join order_items with orders and products", async () => {
       const results = await executeSimple(db, () =>
         from(db, "order_items")
-          .join(
-            from(db, "orders"),
-            (oi, o) => oi.order_id === o.id,
-          )
-          .join(
-            from(db, "products"),
-            (oi, o, p) => oi.product_id === p.id,
-          )
+          .join(from(db, "orders"), (oi, o) => oi.order_id === o.id)
+          .join(from(db, "products"), (oi, o, p) => oi.product_id === p.id)
           .where((oi, o) => o.status === "completed")
           .select((oi, o, p) => ({
             orderId: o.id,
@@ -156,14 +130,8 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join users with departments and count orders", async () => {
       const results = await executeSimple(db, () =>
         from(db, "users")
-          .join(
-            from(db, "departments"),
-            (u, d) => u.department_id === d.id,
-          )
-          .join(
-            from(db, "orders"),
-            (u, d, o) => u.id === o.user_id,
-          )
+          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
+          .join(from(db, "orders"), (u, d, o) => u.id === o.user_id)
           .groupBy((u, d) => ({ userName: u.name, deptName: d.name }))
           .select((g) => ({
             userName: g.key.userName,
@@ -187,14 +155,8 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should find top products by revenue", async () => {
       const results = await executeSimple(db, () =>
         from(db, "order_items")
-          .join(
-            from(db, "products"),
-            (oi, p) => oi.product_id === p.id,
-          )
-          .join(
-            from(db, "orders"),
-            (oi, p, o) => oi.order_id === o.id,
-          )
+          .join(from(db, "products"), (oi, p) => oi.product_id === p.id)
+          .join(from(db, "orders"), (oi, p, o) => oi.order_id === o.id)
           .where((oi, p, o) => o.status === "completed")
           .groupBy((oi, p) => ({ id: p.id, name: p.name }))
           .select((g) => ({
@@ -219,10 +181,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should find customers with high-value orders", async () => {
       const results = await executeSimple(db, () =>
         from(db, "users")
-          .join(
-            from(db, "orders"),
-            (u, o) => u.id === o.user_id,
-          )
+          .join(from(db, "orders"), (u, o) => u.id === o.user_id)
           .where((u, o) => o.total_amount > 500)
           .select((u, o) => ({
             customerId: u.id,
@@ -244,14 +203,8 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should analyze department spending", async () => {
       const results = await executeSimple(db, () =>
         from(db, "departments")
-          .join(
-            from(db, "users"),
-            (d, u) => d.id === u.department_id,
-          )
-          .join(
-            from(db, "orders"),
-            (d, u, o) => u.id === o.user_id,
-          )
+          .join(from(db, "users"), (d, u) => d.id === u.department_id)
+          .join(from(db, "orders"), (d, u, o) => u.id === o.user_id)
           .groupBy((d) => ({ id: d.id, name: d.name, budget: d.budget }))
           .select((g) => ({
             departmentId: g.key.id,

@@ -69,6 +69,17 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     return generateExistsQuery(operations, anyOp || allOp, context);
   }
 
+  // Find terminal operations early as they affect other clauses
+  const firstOp = operations.find(
+    (op) => op.operationType === "first" || op.operationType === "firstOrDefault",
+  ) as FirstOperation | FirstOrDefaultOperation;
+  const singleOp = operations.find(
+    (op) => op.operationType === "single" || op.operationType === "singleOrDefault",
+  ) as SingleOperation | SingleOrDefaultOperation;
+  const lastOp = operations.find(
+    (op) => op.operationType === "last" || op.operationType === "lastOrDefault",
+  ) as LastOperation | LastOrDefaultOperation;
+
   // Build SQL fragments in correct order
   const fragments: string[] = [];
 
@@ -134,15 +145,7 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
   });
 
   // Also check for predicates in terminal operations (first, single, last and their OrDefault variants)
-  const firstOp = operations.find(
-    (op) => op.operationType === "first" || op.operationType === "firstOrDefault",
-  ) as FirstOperation | FirstOrDefaultOperation;
-  const singleOp = operations.find(
-    (op) => op.operationType === "single" || op.operationType === "singleOrDefault",
-  ) as SingleOperation | SingleOrDefaultOperation;
-  const lastOp = operations.find(
-    (op) => op.operationType === "last" || op.operationType === "lastOrDefault",
-  ) as LastOperation | LastOrDefaultOperation;
+  // Note: firstOp, singleOp, and lastOp are already declared above
 
   if (firstOp?.predicate) {
     wherePredicates.push(generateBooleanExpression(firstOp.predicate, context));
@@ -165,13 +168,29 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
 
   // Process ORDER BY and THEN BY
   const orderByOp = operations.find((op) => op.operationType === "orderBy") as OrderByOperation;
+
   if (orderByOp) {
-    let orderByClause = generateOrderBy(orderByOp, context);
+    // Check if we need to reverse for LAST operation
+    const shouldReverse = !!lastOp;
+
+    let orderByClause = generateOrderBy(
+      {
+        ...orderByOp,
+        descending: shouldReverse ? !orderByOp.descending : orderByOp.descending,
+      } as OrderByOperation,
+      context,
+    );
 
     // Collect all THEN BY operations
     const thenByOps = operations.filter((op) => op.operationType === "thenBy") as ThenByOperation[];
     thenByOps.forEach((thenByOp) => {
-      orderByClause += generateThenBy(thenByOp, context);
+      orderByClause += generateThenBy(
+        {
+          ...thenByOp,
+          descending: shouldReverse ? !thenByOp.descending : thenByOp.descending,
+        } as ThenByOperation,
+        context,
+      );
     });
 
     fragments.push(orderByClause);
@@ -184,15 +203,13 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
   } else if (singleOp) {
     fragments.push(generateSingle(singleOp, context));
   } else if (lastOp) {
-    // For LAST, we need to reverse any existing ORDER BY
-    // If there's no ORDER BY, we need to add one (by primary key or first column)
+    // For LAST, we need an ORDER BY to be meaningful
+    // If there's no ORDER BY, we need to add one (by first column)
     if (!orderByOp) {
       // Add default ORDER BY for LAST to work
       fragments.push("ORDER BY 1 DESC");
-    } else {
-      // TODO: Reverse the existing ORDER BY direction for LAST
-      // For now, we'll just add the LIMIT
     }
+    // The ORDER BY reversal is already handled above
     fragments.push(generateLast(lastOp, context));
   } else {
     // Process LIMIT/OFFSET

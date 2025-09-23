@@ -12,7 +12,7 @@ describe("Aggregate SQL Generation", () => {
     it("should generate COUNT(*)", () => {
       const result = query(() => from(db, "users").count(), {});
 
-      expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" AS t0');
+      expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" AS "t0"');
     });
 
     it("should generate COUNT with WHERE", () => {
@@ -24,7 +24,7 @@ describe("Aggregate SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" AS t0 WHERE isActive');
+      expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" AS "t0" WHERE "isActive"');
     });
   });
 
@@ -32,7 +32,7 @@ describe("Aggregate SQL Generation", () => {
     it("should generate SUM", () => {
       const result = query(() => from(db, "orders").sum((x) => x.total), {});
 
-      expect(result.sql).to.equal('SELECT SUM(total) FROM "orders" AS t0');
+      expect(result.sql).to.equal('SELECT SUM("total") FROM "orders" AS "t0"');
     });
   });
 
@@ -40,7 +40,7 @@ describe("Aggregate SQL Generation", () => {
     it("should generate AVG", () => {
       const result = query(() => from(db, "products").average((x) => x.price), {});
 
-      expect(result.sql).to.equal('SELECT AVG(price) FROM "products" AS t0');
+      expect(result.sql).to.equal('SELECT AVG("price") FROM "products" AS "t0"');
     });
   });
 
@@ -48,7 +48,7 @@ describe("Aggregate SQL Generation", () => {
     it("should generate MIN", () => {
       const result = query(() => from(db, "users").min((x) => x.age), {});
 
-      expect(result.sql).to.equal('SELECT MIN(age) FROM "users" AS t0');
+      expect(result.sql).to.equal('SELECT MIN("age") FROM "users" AS "t0"');
     });
   });
 
@@ -56,7 +56,7 @@ describe("Aggregate SQL Generation", () => {
     it("should generate MAX", () => {
       const result = query(() => from(db, "employees").max((x) => x.salary), {});
 
-      expect(result.sql).to.equal('SELECT MAX(salary) FROM "employees" AS t0');
+      expect(result.sql).to.equal('SELECT MAX("salary") FROM "employees" AS "t0"');
     });
   });
 });

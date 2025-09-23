@@ -424,12 +424,6 @@ export function convertBinaryExpression(
       (right.type === "param" && isLikelyStringParam((right as ParameterExpression).property));
 
     if (leftIsString || rightIsString || leftLikelyString || rightLikelyString) {
-      // Reject string concatenation in SELECT projections
-      if (context.inSelectProjection) {
-        throw new Error(
-          "SELECT projections only support simple column access. String concatenation must be computed in application code.",
-        );
-      }
       // For string concatenation, use the already converted left and right
       // which have column hints if applicable (from the earlier conversion)
       return {
@@ -442,12 +436,6 @@ export function convertBinaryExpression(
 
   // Arithmetic operators
   if (["+", "-", "*", "/", "%"].includes(operator)) {
-    // Reject arithmetic expressions in SELECT projections
-    if (context.inSelectProjection) {
-      throw new Error(
-        "SELECT projections only support simple column access. Arithmetic operations must be computed in application code.",
-      );
-    }
     return {
       type: "arithmetic",
       operator: operator as "+" | "-" | "*" | "/" | "%",
@@ -496,12 +484,6 @@ export function convertLogicalExpression(
 
   // Handle ?? (nullish coalescing) as COALESCE
   if (ast.operator === "??" && isValueExpression(left) && isValueExpression(right)) {
-    // Reject coalesce expressions in SELECT projections
-    if (context.inSelectProjection) {
-      throw new Error(
-        "SELECT projections only support simple column access. Coalesce expressions must be computed in application code.",
-      );
-    }
     return {
       type: "coalesce",
       expressions: [left as ValueExpression, right as ValueExpression],
@@ -510,12 +492,6 @@ export function convertLogicalExpression(
 
   // Handle || as coalesce when not both boolean expressions (for backward compatibility)
   if (ast.operator === "||" && isValueExpression(left) && isValueExpression(right)) {
-    // Reject coalesce expressions in SELECT projections
-    if (context.inSelectProjection) {
-      throw new Error(
-        "SELECT projections only support simple column access. Coalesce expressions must be computed in application code.",
-      );
-    }
     return {
       type: "coalesce",
       expressions: [left as ValueExpression, right as ValueExpression],
@@ -772,13 +748,6 @@ export function convertConditionalExpression(
   ast: ASTConditionalExpression,
   context: ConversionContext,
 ): ConditionalExpression | null {
-  // Reject conditional expressions in SELECT projections
-  if (context.inSelectProjection) {
-    throw new Error(
-      "SELECT projections only support simple column access. Conditional expressions must be computed in application code.",
-    );
-  }
-
   const condition = convertAstToExpression(ast.test, context);
   const thenExpr = convertAstToExpression(ast.consequent, context);
   const elseExpr = convertAstToExpression(ast.alternate, context);

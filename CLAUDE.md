@@ -29,6 +29,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 **NEVER use the MultiEdit tool.** It has caused issues in multiple projects. Always use individual Edit operations instead, even if it means more edits. This ensures better control and prevents unintended changes.
 
+### NEVER USE AUTOMATED SCRIPTS FOR FIXES
+
+**NEVER attempt automated fixes via scripts.** When fixing tests or making repetitive changes:
+
+- DO NOT create scripts to automate replacements
+- DO NOT use sed, awk, or other text processing tools
+- DO NOT write JavaScript/Python scripts for bulk changes
+- ALWAYS make changes manually using the Edit tool
+- Even if there are hundreds of similar changes, do them one by one
+
+This ensures accuracy and prevents cascading errors from incorrect pattern matching.
+
 ## Session Startup & Task Management
 
 ### First Steps When Starting a Session

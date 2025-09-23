@@ -23,7 +23,7 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle simple FROM without any operations", () => {
       const result = query(() => from<TestTable>("test_table"), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test_table" AS t0');
+      expect(result.sql).to.equal('SELECT * FROM "test_table" AS "t0"');
       expect(result.params).to.deep.equal({});
     });
 
@@ -34,13 +34,13 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle table names with underscores", () => {
       const result = query(() => from<TestTable>("user_accounts_table"), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "user_accounts_table" AS t0');
+      expect(result.sql).to.equal('SELECT * FROM "user_accounts_table" AS "t0"');
     });
 
     it("should handle table names with numbers", () => {
       const result = query(() => from<TestTable>("table123"), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "table123" AS t0');
+      expect(result.sql).to.equal('SELECT * FROM "table123" AS "t0"');
     });
 
     it("should handle column names with underscores", () => {
@@ -50,7 +50,7 @@ describe("Edge Cases and Error Handling", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "test" AS t0 WHERE column_with_underscore = $(_column_with_underscore1)',
+        'SELECT * FROM "test" AS "t0" WHERE "column_with_underscore" = $(_column_with_underscore1)',
       );
       expect(result.params).to.deep.equal({ _column_with_underscore1: "test" });
     });
@@ -62,7 +62,7 @@ describe("Edge Cases and Error Handling", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "test" AS t0 WHERE UPPERCASE_COLUMN = $(_UPPERCASE_COLUMN1)',
+        'SELECT * FROM "test" AS "t0" WHERE "UPPERCASE_COLUMN" = $(_UPPERCASE_COLUMN1)',
       );
       expect(result.params).to.deep.equal({ _UPPERCASE_COLUMN1: "TEST" });
     });
@@ -75,7 +75,7 @@ describe("Edge Cases and Error Handling", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE id = $(_id1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "id" = $(_id1)');
       expect(result.params).to.deep.equal({ _id1: Number.MAX_SAFE_INTEGER });
     });
 
@@ -84,7 +84,7 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle zero values", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.value == 0), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE value = $(_value1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "value" = $(_value1)');
       expect(result.params).to.deep.equal({ _value1: 0 });
     });
 
@@ -95,14 +95,14 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle empty strings", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.name == ""), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE name = $(_name1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "name" = $(_name1)');
       expect(result.params).to.deep.equal({ _name1: "" });
     });
 
     it("should handle strings with quotes", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.name == "O'Brien"), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE name = $(_name1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "name" = $(_name1)');
       expect(result.params).to.deep.equal({ _name1: "O'Brien" });
     });
 
@@ -112,7 +112,7 @@ describe("Edge Cases and Error Handling", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE name = $(_name1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "name" = $(_name1)');
       expect(result.params).to.deep.equal({ _name1: 'He said "Hello"' });
     });
 
@@ -122,7 +122,7 @@ describe("Edge Cases and Error Handling", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE name = $(_name1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "name" = $(_name1)');
       expect(result.params).to.deep.equal({ _name1: "test@#$%^&*()" });
     });
 
@@ -132,7 +132,7 @@ describe("Edge Cases and Error Handling", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE name = $(_name1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "name" = $(_name1)');
       expect(result.params).to.deep.equal({ _name1: "line1\nline2\ttab" });
     });
 
@@ -142,7 +142,7 @@ describe("Edge Cases and Error Handling", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE name = $(_name1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "name" = $(_name1)');
       expect(result.params).to.deep.equal({ _name1: "Hello 世界 🌍" });
     });
   });
@@ -151,14 +151,14 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle explicit null comparisons", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.value == null), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE value IS NULL');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "value" IS NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should handle null inequality", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.value != null), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE value IS NOT NULL');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "value" IS NOT NULL');
       expect(result.params).to.deep.equal({});
     });
 
@@ -169,28 +169,28 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle true literal", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.flag == true), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE flag = $(_flag1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "flag" = $(_flag1)');
       expect(result.params).to.deep.equal({ _flag1: true });
     });
 
     it("should handle false literal", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.flag == false), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE flag = $(_flag1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "flag" = $(_flag1)');
       expect(result.params).to.deep.equal({ _flag1: false });
     });
 
     it("should handle boolean field directly", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.flag), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE flag');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "flag"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should handle negated boolean", () => {
       const result = query(() => from<TestTable>("test").where((t) => !t.flag), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE NOT flag');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE NOT "flag"');
       expect(result.params).to.deep.equal({});
     });
   });
@@ -207,13 +207,13 @@ describe("Edge Cases and Error Handling", () => {
         {},
       );
 
-      expect(result.sql).to.contain("id > $(_id1)");
-      expect(result.sql).to.contain("id < $(_id2)");
-      expect(result.sql).to.contain("id > $(_id3)");
-      expect(result.sql).to.contain("id < $(_id4)");
-      expect(result.sql).to.contain("flag = $(_flag1)");
-      expect(result.sql).to.contain("name != $(_name1)");
-      expect(result.sql).to.contain("value IS NOT NULL");
+      expect(result.sql).to.contain('"id" > $(_id1)');
+      expect(result.sql).to.contain('"id" < $(_id2)');
+      expect(result.sql).to.contain('"id" > $(_id3)');
+      expect(result.sql).to.contain('"id" < $(_id4)');
+      expect(result.sql).to.contain('"flag" = $(_flag1)');
+      expect(result.sql).to.contain('"name" != $(_name1)');
+      expect(result.sql).to.contain('"value" IS NOT NULL');
     });
 
     it("should handle many chained operations", () => {
@@ -245,28 +245,28 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle SKIP 0", () => {
       const result = query(() => from<TestTable>("test").skip(0), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 OFFSET $(_offset1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" OFFSET $(_offset1)');
       expect(result.params).to.deep.equal({ _offset1: 0 });
     });
 
     it("should handle TAKE 0", () => {
       const result = query(() => from<TestTable>("test").take(0), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 LIMIT $(_limit1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" LIMIT $(_limit1)');
       expect(result.params).to.deep.equal({ _limit1: 0 });
     });
 
     it("should handle very large SKIP", () => {
       const result = query(() => from<TestTable>("test").skip(1000000), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 OFFSET $(_offset1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" OFFSET $(_offset1)');
       expect(result.params).to.deep.equal({ _offset1: 1000000 });
     });
 
     it("should handle very large TAKE", () => {
       const result = query(() => from<TestTable>("test").take(999999), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 LIMIT $(_limit1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" LIMIT $(_limit1)');
       expect(result.params).to.deep.equal({ _limit1: 999999 });
     });
   });
@@ -275,7 +275,7 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle empty parameter object", () => {
       const result = query((params: {}) => from<TestTable>("test"), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0"');
       expect(result.params).to.deep.equal({});
     });
 
@@ -288,7 +288,7 @@ describe("Edge Cases and Error Handling", () => {
         { name: null },
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE name = $(name)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "name" = $(name)');
       expect(result.params).to.deep.equal({ name: null });
     });
 
@@ -313,7 +313,7 @@ describe("Edge Cases and Error Handling", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "reserved" AS t0 WHERE (select = $(_select1) AND from = $(_from1))',
+        'SELECT * FROM "reserved" AS "t0" WHERE ("select" = $(_select1) AND "from" = $(_from1))',
       );
       expect(result.params).to.deep.equal({ _select1: "value", _from1: "test" });
     });
@@ -329,9 +329,9 @@ describe("Edge Cases and Error Handling", () => {
         {},
       );
 
-      expect(result.sql).to.contain("select AS selectCol");
-      expect(result.sql).to.contain("where AS whereCol");
-      expect(result.sql).to.contain("order AS orderCol");
+      expect(result.sql).to.contain('"select" AS "selectCol"');
+      expect(result.sql).to.contain('"where" AS "whereCol"');
+      expect(result.sql).to.contain('"order" AS "orderCol"');
     });
   });
 
@@ -339,14 +339,14 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle strings with only whitespace", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.name == "   "), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE name = $(_name1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "name" = $(_name1)');
       expect(result.params).to.deep.equal({ _name1: "   " });
     });
 
     it("should handle strings with leading/trailing whitespace", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.name == "  test  "), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE name = $(_name1)');
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" WHERE "name" = $(_name1)');
       expect(result.params).to.deep.equal({ _name1: "  test  " });
     });
   });
