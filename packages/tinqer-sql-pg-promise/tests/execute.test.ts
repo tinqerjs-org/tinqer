@@ -105,6 +105,27 @@ describe("Execute Function", () => {
       expect(sqlResult.params).to.deep.equal({ _id1: 1 });
     });
 
+    it("should handle firstOrDefault() operation", async () => {
+      const queryBuilder = () => from(db, "users").firstOrDefault((u) => u.id === 999);
+
+      const sqlResult = query(queryBuilder, {});
+      expect(sqlResult.sql).to.equal(
+        'SELECT * FROM "users" AS t0 WHERE id = $(_id1) LIMIT 1',
+      );
+      expect(sqlResult.params).to.deep.equal({ _id1: 999 });
+      // Note: firstOrDefault returns null when no results, not throwing
+    });
+
+    it("should handle singleOrDefault() operation", async () => {
+      const queryBuilder = () => from(db, "users").singleOrDefault((u) => u.id === 999);
+
+      const sqlResult = query(queryBuilder, {});
+      // SingleOrDefault also adds LIMIT 2 to check for multiple results
+      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS t0 WHERE id = $(_id1) LIMIT 2');
+      expect(sqlResult.params).to.deep.equal({ _id1: 999 });
+      // Note: singleOrDefault returns null when no results, throws if multiple
+    });
+
     it("should handle last() operation", async () => {
       const queryBuilder = () =>
         from(db, "users")

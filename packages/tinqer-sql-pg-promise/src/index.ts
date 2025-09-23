@@ -102,7 +102,7 @@ export async function execute<TParams, TResult>(
   db: PgDatabase,
   queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>,
   params: TParams,
-): Promise<TResult[] | TResult | number | boolean> {
+): Promise<TResult[] | TResult | null | number | boolean> {
   const { sql, params: sqlParams } = query(queryBuilder, params);
 
   // Check if this is a terminal operation that returns a single value
@@ -189,7 +189,7 @@ export async function execute<TParams, TResult>(
 export async function executeSimple<TResult>(
   db: PgDatabase,
   queryBuilder: () => Queryable<TResult> | TerminalQuery<TResult>,
-): Promise<TResult[] | TResult | number | boolean> {
+): Promise<TResult[] | TResult | null | number | boolean> {
   return execute(db, queryBuilder, {});
 }
 
