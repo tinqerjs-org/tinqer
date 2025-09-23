@@ -10,7 +10,7 @@ import type { SqlContext } from "../types.js";
  */
 export function generateAverage(operation: AverageOperation, _context: SqlContext): string {
   if (operation.selector) {
-    return `AVG(${operation.selector})`;
+    return `AVG("${operation.selector}")`;
   }
   return "AVG(*)";
 }

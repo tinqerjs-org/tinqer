@@ -9,7 +9,6 @@ import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 
-
 describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
   before(async () => {
     await setupTestDatabase(db);
@@ -52,14 +51,17 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
     });
 
     it("should handle division", async () => {
-      const results = await executeSimple(db, () =>
-        from(db, "products").select((p) => ({
-          name: p.name,
-          price: p.price,
-          stock: p.stock,
-          pricePerUnit: p.price / p.stock,
-        }))
-        .where((p) => p.stock > 0), // Avoid division by zero
+      const results = await executeSimple(
+        db,
+        () =>
+          from(db, "products")
+            .select((p) => ({
+              name: p.name,
+              price: p.price,
+              stock: p.stock,
+              pricePerUnit: p.price / p.stock,
+            }))
+            .where((p) => p.stock > 0), // Avoid division by zero
       );
 
       expect(results).to.be.an("array");
@@ -220,7 +222,9 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       const withDescription = await executeSimple(db, () =>
-        from(db, "products").where((p) => p.description !== null && p.description.includes("laptop")),
+        from(db, "products").where(
+          (p) => p.description !== null && p.description.includes("laptop"),
+        ),
       );
 
       const withoutDescription = await executeSimple(db, () =>
@@ -252,10 +256,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
       const joinResults = await executeSimple(db, () =>
         from(db, "users")
-          .join(
-            from(db, "departments"),
-            (u, d) => u.department_id === d.id,
-          )
+          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
           .select((u, d) => ({
             userName: u.name,
             deptName: d.name,
@@ -281,14 +282,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       // COUNT should count rows with NULL
-      const totalCount = await executeSimple(db, () =>
-        from(db, "users").count(),
-      );
+      const totalCount = await executeSimple(db, () => from(db, "users").count());
 
       // AVG, SUM, MIN, MAX ignore NULL values
-      const avgAge = await executeSimple(db, () =>
-        from(db, "users").average((u) => u.age),
-      );
+      const avgAge = await executeSimple(db, () => from(db, "users").average((u) => u.age));
 
       expect(totalCount).to.be.a("number");
       expect(avgAge).to.be.a("number");

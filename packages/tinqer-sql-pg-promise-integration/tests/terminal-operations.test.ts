@@ -9,7 +9,6 @@ import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 
-
 describe("PostgreSQL Integration - Terminal Operations", () => {
   before(async () => {
     await setupTestDatabase(db);
@@ -30,9 +29,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     });
 
     it("should return first user matching condition", async () => {
-      const user = await executeSimple(db, () =>
-        from(db, "users").first((u) => u.age > 40),
-      );
+      const user = await executeSimple(db, () => from(db, "users").first((u) => u.age > 40));
 
       expect(user).to.be.an("object");
       expect(user.age).to.be.greaterThan(40);
@@ -40,9 +37,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should throw error when no match for first()", async () => {
       try {
-        await executeSimple(db, () =>
-          from(db, "users").first((u) => u.age > 100),
-        );
+        await executeSimple(db, () => from(db, "users").first((u) => u.age > 100));
         expect.fail("Should have thrown error");
       } catch (error: any) {
         expect(error.message).to.include("No elements found");
@@ -60,10 +55,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should work with complex queries", async () => {
       const result = await executeSimple(db, () =>
         from(db, "users")
-          .join(
-            from(db, "departments"),
-            (u, d) => u.department_id === d.id,
-          )
+          .join(from(db, "departments"), (u, d) => u.department_id === d.id)
           .where((u) => u.is_active === true)
           .orderBy((u) => u.age)
           .select((u, d) => ({
@@ -93,9 +85,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
     it("should throw error when multiple matches for single()", async () => {
       try {
-        await executeSimple(db, () =>
-          from(db, "users").single((u) => u.department_id === 1),
-        );
+        await executeSimple(db, () => from(db, "users").single((u) => u.department_id === 1));
         expect.fail("Should have thrown error");
       } catch (error: any) {
         expect(error.message).to.include("Multiple elements found");
@@ -168,9 +158,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
   describe("any() and all()", () => {
     it("should return true when any user matches condition", async () => {
-      const hasYoungUsers = await executeSimple(db, () =>
-        from(db, "users").any((u) => u.age < 30),
-      );
+      const hasYoungUsers = await executeSimple(db, () => from(db, "users").any((u) => u.age < 30));
 
       expect(hasYoungUsers).to.be.true;
     });
@@ -184,9 +172,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     });
 
     it("should return true when any() is called without predicate on non-empty table", async () => {
-      const hasUsers = await executeSimple(db, () =>
-        from(db, "users").any(),
-      );
+      const hasUsers = await executeSimple(db, () => from(db, "users").any());
 
       expect(hasUsers).to.be.true;
     });

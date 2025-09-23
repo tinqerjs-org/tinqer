@@ -8,7 +8,8 @@ import pgPromise from "pg-promise";
 export const pgp = pgPromise();
 
 // Create a single database connection for all tests
-const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/tinqer_test";
+const connectionString =
+  process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/tinqer_test";
 export const db = pgp(connectionString);
 
 // This will be called once after all tests complete

@@ -173,18 +173,24 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     // Check if we need to reverse for LAST operation
     const shouldReverse = !!lastOp;
 
-    let orderByClause = generateOrderBy({
-      ...orderByOp,
-      descending: shouldReverse ? !orderByOp.descending : orderByOp.descending
-    } as OrderByOperation, context);
+    let orderByClause = generateOrderBy(
+      {
+        ...orderByOp,
+        descending: shouldReverse ? !orderByOp.descending : orderByOp.descending,
+      } as OrderByOperation,
+      context,
+    );
 
     // Collect all THEN BY operations
     const thenByOps = operations.filter((op) => op.operationType === "thenBy") as ThenByOperation[];
     thenByOps.forEach((thenByOp) => {
-      orderByClause += generateThenBy({
-        ...thenByOp,
-        descending: shouldReverse ? !thenByOp.descending : thenByOp.descending
-      } as ThenByOperation, context);
+      orderByClause += generateThenBy(
+        {
+          ...thenByOp,
+          descending: shouldReverse ? !thenByOp.descending : thenByOp.descending,
+        } as ThenByOperation,
+        context,
+      );
     });
 
     fragments.push(orderByClause);

@@ -10,7 +10,7 @@ import type { SqlContext } from "../types.js";
  */
 export function generateMax(operation: MaxOperation, _context: SqlContext): string {
   if (operation.selector) {
-    return `MAX(${operation.selector})`;
+    return `MAX("${operation.selector}")`;
   }
   return "MAX(*)";
 }

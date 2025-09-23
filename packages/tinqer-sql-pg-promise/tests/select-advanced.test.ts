@@ -60,11 +60,11 @@ describe("Advanced SELECT Projection SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("id AS");
-      expect(result.sql).to.contain("name AS");
-      expect(result.sql).to.contain("price AS");
-      expect(result.sql).to.contain("cost AS");
-      expect(result.sql).to.contain("stock AS");
+      expect(result.sql).to.contain(`"id" AS`);
+      expect(result.sql).to.contain(`"name" AS`);
+      expect(result.sql).to.contain(`"price" AS`);
+      expect(result.sql).to.contain(`"cost" AS`);
+      expect(result.sql).to.contain(`"stock" AS`);
     });
   });
 
@@ -91,9 +91,9 @@ describe("Advanced SELECT Projection SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("WHERE (stock > $(_stock1) AND price > $(_price1))");
-      expect(result.sql).to.contain("id AS id");
-      expect(result.sql).to.contain("name AS name");
+      expect(result.sql).to.contain('WHERE ("stock" > $(_stock1) AND "price" > $(_price1))');
+      expect(result.sql).to.contain('"id" AS "id"');
+      expect(result.sql).to.contain('"name" AS "name"');
       expect(result.params).to.deep.equal({
         _stock1: 0,
         _price1: 10,
@@ -135,7 +135,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
       expect(result.sql).to.contain("INNER JOIN");
       expect(result.sql).to.contain("GROUP BY");
-      expect(result.sql).to.contain("AVG(salary)");
+      expect(result.sql).to.contain(`AVG("salary")`);
       expect(result.sql).to.contain("COUNT(*)");
     });
 
@@ -152,8 +152,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
       );
 
       expect(result.sql).to.contain("SELECT DISTINCT");
-      expect(result.sql).to.contain("categoryId AS category");
-      expect(result.sql).to.contain("name AS name");
+      expect(result.sql).to.contain(`"categoryId" AS "category"`);
+      expect(result.sql).to.contain(`"name" AS "name"`);
     });
   });
 
@@ -174,9 +174,9 @@ describe("Advanced SELECT Projection SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("$(_value1) AS constant");
-      expect(result.sql).to.contain("$(_value2) AS message");
-      expect(result.sql).to.contain("$(_value3) AS flag");
+      expect(result.sql).to.contain(`$(_value1) AS "constant"`);
+      expect(result.sql).to.contain(`$(_value2) AS "message"`);
+      expect(result.sql).to.contain(`$(_value3) AS "flag"`);
       expect(result.params).to.deep.equal({
         _value1: 42,
         _value2: "Hello World",
@@ -205,11 +205,11 @@ describe("Advanced SELECT Projection SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("id AS userId");
-      expect(result.sql).to.contain("firstName AS userFirstName");
-      expect(result.sql).to.contain("lastName AS userLastName");
-      expect(result.sql).to.contain("email AS userEmail");
-      expect(result.sql).to.contain("age AS userAge");
+      expect(result.sql).to.contain(`"id" AS "userId"`);
+      expect(result.sql).to.contain(`"firstName" AS "userFirstName"`);
+      expect(result.sql).to.contain(`"lastName" AS "userLastName"`);
+      expect(result.sql).to.contain(`"email" AS "userEmail"`);
+      expect(result.sql).to.contain(`"age" AS "userAge"`);
     });
 
     // Test removed: SELECT with many fields containing expressions no longer supported
@@ -231,8 +231,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
         { page: 2, pageSize: 20 },
       );
 
-      expect(result.sql).to.contain("SELECT id AS id, name AS name, price AS price");
-      expect(result.sql).to.contain("ORDER BY id ASC");
+      expect(result.sql).to.contain(`SELECT "id" AS "id", "name" AS "name", "price" AS "price"`);
+      expect(result.sql).to.contain(`ORDER BY "id" ASC`);
       expect(result.sql).to.contain("LIMIT $(pageSize) OFFSET ($(page) * $(pageSize))");
       expect(result.params).to.deep.equal({ page: 2, pageSize: 20 });
     });

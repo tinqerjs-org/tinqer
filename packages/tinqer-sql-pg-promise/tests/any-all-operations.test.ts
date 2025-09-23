@@ -19,7 +19,7 @@ describe("ANY and ALL Operations", () => {
     it("should generate SQL for any() without predicate", () => {
       const result = query(() => from<User>("users").any(), {});
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS t0) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0") THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({});
     });
@@ -27,7 +27,7 @@ describe("ANY and ALL Operations", () => {
     it("should generate SQL for any() with predicate", () => {
       const result = query(() => from<User>("users").any((u) => u.age >= 18), {});
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS t0 WHERE age >= $(_age1)) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0" WHERE "age" >= $(_age1)) THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({ _age1: 18 });
     });
@@ -35,7 +35,7 @@ describe("ANY and ALL Operations", () => {
     it("should generate SQL for any() with boolean column", () => {
       const result = query(() => from<User>("users").any((u) => u.isActive), {});
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS t0 WHERE isActive) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0" WHERE "isActive") THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({});
     });
@@ -49,7 +49,7 @@ describe("ANY and ALL Operations", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS t0 WHERE age > $(_age1) AND isActive) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0" WHERE "age" > $(_age1) AND "isActive") THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({ _age1: 21 });
     });
@@ -59,7 +59,7 @@ describe("ANY and ALL Operations", () => {
     it("should generate SQL for all() with predicate", () => {
       const result = query(() => from<User>("users").all((u) => u.age >= 18), {});
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS t0 WHERE NOT (age >= $(_age1))) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS "t0" WHERE NOT ("age" >= $(_age1))) THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({ _age1: 18 });
     });
@@ -67,7 +67,7 @@ describe("ANY and ALL Operations", () => {
     it("should generate SQL for all() with boolean column", () => {
       const result = query(() => from<User>("users").all((u) => u.isActive), {});
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS t0 WHERE NOT (isActive)) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS "t0" WHERE NOT ("isActive")) THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({});
     });
@@ -81,7 +81,7 @@ describe("ANY and ALL Operations", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS t0 WHERE name != $(_name1) AND NOT (age < $(_age1))) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS "t0" WHERE "name" != $(_name1) AND NOT ("age" < $(_age1))) THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({ _name1: "admin", _age1: 100 });
     });
@@ -94,7 +94,7 @@ describe("ANY and ALL Operations", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS t0 WHERE ((age > $(_age1) AND isActive) AND name != $(_name1))) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0" WHERE (("age" > $(_age1) AND "isActive") AND "name" != $(_name1))) THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({ _age1: 18, _name1: "test" });
     });
@@ -105,7 +105,7 @@ describe("ANY and ALL Operations", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS t0 WHERE NOT ((age > $(_age1) OR name = $(_name1)))) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS "t0" WHERE NOT (("age" > $(_age1) OR "name" = $(_name1)))) THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({ _age1: 0, _name1: "admin" });
     });
@@ -120,7 +120,7 @@ describe("ANY and ALL Operations", () => {
       );
       // SELECT projection is ignored for ANY - we just check existence
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS t0) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0") THEN 1 ELSE 0 END',
       );
       expect(result.params).to.deep.equal({});
     });

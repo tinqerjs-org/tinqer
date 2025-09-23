@@ -14,7 +14,7 @@ describe("Distinct SQL Generation", () => {
   it("should generate DISTINCT for all columns", () => {
     const result = query(() => from<Product>("products").distinct(), {});
 
-    expect(result.sql).to.equal('SELECT DISTINCT * FROM "products" AS t0');
+    expect(result.sql).to.equal('SELECT DISTINCT * FROM "products" AS "t0"');
   });
 
   it("should combine DISTINCT with WHERE", () => {
@@ -26,7 +26,9 @@ describe("Distinct SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT DISTINCT * FROM "products" AS t0 WHERE price > $(_price1)');
+    expect(result.sql).to.equal(
+      'SELECT DISTINCT * FROM "products" AS "t0" WHERE "price" > $(_price1)',
+    );
     expect(result.params).to.deep.equal({ _price1: 100 });
   });
 
@@ -39,7 +41,7 @@ describe("Distinct SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT DISTINCT category AS category FROM "products" AS t0');
+    expect(result.sql).to.equal('SELECT DISTINCT "category" AS "category" FROM "products" AS "t0"');
   });
 
   it("should work with DISTINCT, WHERE, and ORDER BY", () => {
@@ -53,7 +55,7 @@ describe("Distinct SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT DISTINCT * FROM "products" AS t0 WHERE price < $(_price1) ORDER BY brand ASC',
+      'SELECT DISTINCT * FROM "products" AS "t0" WHERE "price" < $(_price1) ORDER BY "brand" ASC',
     );
     expect(result.params).to.deep.equal({ _price1: 500 });
   });

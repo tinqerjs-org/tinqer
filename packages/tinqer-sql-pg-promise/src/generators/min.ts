@@ -10,7 +10,7 @@ import type { SqlContext } from "../types.js";
  */
 export function generateMin(operation: MinOperation, _context: SqlContext): string {
   if (operation.selector) {
-    return `MIN(${operation.selector})`;
+    return `MIN("${operation.selector}")`;
   }
   return "MIN(*)";
 }

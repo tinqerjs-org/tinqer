@@ -9,7 +9,6 @@ import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 
-
 describe("PostgreSQL Integration - Complex WHERE", () => {
   before(async () => {
     await setupTestDatabase(db);
@@ -20,8 +19,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSimple(db, () =>
         from(db, "users").where(
           (u) =>
-            (u.age >= 25 && u.age <= 35 && u.is_active) ||
-            (u.department_id === 4 && u.age >= 40),
+            (u.age >= 25 && u.age <= 35 && u.is_active) || (u.department_id === 4 && u.age >= 40),
         ),
       );
 
@@ -45,7 +43,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       expect(results).to.be.an("array");
       results.forEach((product) => {
         const priceCondition =
-          (product.price > 100 && product.price < 500) || (product.price > 800 && product.stock > 40);
+          (product.price > 100 && product.price < 500) ||
+          (product.price > 800 && product.stock > 40);
         const categoryCondition =
           product.category === "Electronics" ||
           (product.category === "Furniture" && product.stock < 50);
@@ -55,9 +54,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
 
     it("should handle multiple NOT conditions", async () => {
       const results = await executeSimple(db, () =>
-        from(db, "users").where(
-          (u) => !(u.department_id === 1) && !(u.age < 30) && !(!u.is_active),
-        ),
+        from(db, "users").where((u) => !(u.department_id === 1) && !(u.age < 30) && !!u.is_active),
       );
 
       expect(results).to.be.an("array");
@@ -200,9 +197,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     });
 
     it("should handle division and modulo", async () => {
-      const results = await executeSimple(db, () =>
-        from(db, "users").where((u) => u.id % 2 === 0),
-      );
+      const results = await executeSimple(db, () => from(db, "users").where((u) => u.id % 2 === 0));
 
       expect(results).to.be.an("array");
       results.forEach((user) => {
@@ -274,9 +269,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       results.forEach((user) => {
         expect(user.age).to.be.at.least(params.minAge);
         expect(user.age).to.be.at.most(params.maxAge);
-        expect(
-          user.department_id === params.targetDept || user.is_active === params.mustBeActive,
-        ).to.be.true;
+        expect(user.department_id === params.targetDept || user.is_active === params.mustBeActive)
+          .to.be.true;
       });
     });
 

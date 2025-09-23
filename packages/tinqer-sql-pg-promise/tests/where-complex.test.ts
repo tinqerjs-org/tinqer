@@ -41,8 +41,10 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("(((age >= $(_age1) AND age <= $(_age2)) AND isActive)");
-      expect(result.sql).to.contain("OR (role = $(_role1) AND departmentId = $(_departmentId1)))");
+      expect(result.sql).to.contain('(("age" >= $(_age1) AND "age" <= $(_age2)) AND "isActive")');
+      expect(result.sql).to.contain(
+        'OR ("role" = $(_role1) AND "departmentId" = $(_departmentId1)))',
+      );
       expect(result.params).to.deep.equal({
         _age1: 18,
         _age2: 65,
@@ -63,12 +65,12 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("price > $(_price1)");
-      expect(result.sql).to.contain("price < $(_price2)");
-      expect(result.sql).to.contain("discount IS NOT NULL");
-      expect(result.sql).to.contain("discount > $(_discount1)");
-      expect(result.sql).to.contain("isAvailable");
-      expect(result.sql).to.contain("stock > $(_stock1)");
+      expect(result.sql).to.contain(`"price" > $(_price1)`);
+      expect(result.sql).to.contain(`"price" < $(_price2)`);
+      expect(result.sql).to.contain(`"discount" IS NOT NULL`);
+      expect(result.sql).to.contain(`"discount" > $(_discount1)`);
+      expect(result.sql).to.contain(`"isAvailable"`);
+      expect(result.sql).to.contain(`"stock" > $(_stock1)`);
       expect(result.params).to.deep.equal({
         _price1: 100,
         _price2: 500,
@@ -101,7 +103,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS t0 WHERE (price >= $(_price1) AND price <= $(_price2))',
+        'SELECT * FROM "products" AS "t0" WHERE ("price" >= $(_price1) AND "price" <= $(_price2))',
       );
       expect(result.params).to.deep.equal({ _price1: 50, _price2: 200 });
     });
@@ -116,8 +118,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("age >= $(_age1)");
-      expect(result.sql).to.contain("age <= $(_age2)");
+      expect(result.sql).to.contain(`"age" >= $(_age1)`);
+      expect(result.sql).to.contain(`"age" <= $(_age2)`);
       expect(result.params).to.have.property("_age1", 25);
       expect(result.params).to.have.property("_age2", 35);
     });
@@ -129,7 +131,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS t0 WHERE (stock > $(_stock1) AND stock < $(_stock2))',
+        'SELECT * FROM "products" AS "t0" WHERE ("stock" > $(_stock1) AND "stock" < $(_stock2))',
       );
       expect(result.params).to.deep.equal({ _stock1: 10, _stock2: 100 });
     });
@@ -146,7 +148,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS t0 WHERE ((role = $(_role1) OR role = $(_role2)) OR role = $(_role3))',
+        'SELECT * FROM "users" AS "t0" WHERE (("role" = $(_role1) OR "role" = $(_role2)) OR "role" = $(_role3))',
       );
       expect(result.params).to.deep.equal({
         _role1: "admin",
@@ -165,7 +167,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS t0 WHERE ((role != $(_role1) AND role != $(_role2)) AND role != $(_role3))',
+        'SELECT * FROM "users" AS "t0" WHERE (("role" != $(_role1) AND "role" != $(_role2)) AND "role" != $(_role3))',
       );
       expect(result.params).to.deep.equal({
         _role1: "guest",
@@ -185,10 +187,10 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("salary IS NULL");
-      expect(result.sql).to.contain("role = $(_role1)");
-      expect(result.sql).to.contain("salary IS NOT NULL");
-      expect(result.sql).to.contain("salary > $(_salary1)");
+      expect(result.sql).to.contain(`"salary" IS NULL`);
+      expect(result.sql).to.contain(`"role" = $(_role1)`);
+      expect(result.sql).to.contain(`"salary" IS NOT NULL`);
+      expect(result.sql).to.contain(`"salary" > $(_salary1)`);
       expect(result.params).to.deep.equal({
         _role1: "intern",
         _salary1: 0,
@@ -213,7 +215,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
     it("should handle arithmetic comparisons", () => {
       const result = query(() => from<Product>("products").where((p) => p.price * 0.9 > 100), {});
 
-      expect(result.sql).to.contain("(price * $(_price1)) > $(_value1)");
+      expect(result.sql).to.contain(`("price" * $(_price1)) > $(_value1)`);
       expect(result.params).to.deep.equal({ _price1: 0.9, _value1: 100 });
     });
 
@@ -235,7 +237,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
     it("should handle division and modulo", () => {
       const result = query(() => from<User>("users").where((u) => u.id % 2 == 0), {});
 
-      expect(result.sql).to.contain("(id % $(_id1)) = $(_value1)");
+      expect(result.sql).to.contain(`("id" % $(_id1)) = $(_value1)`);
       expect(result.params).to.deep.equal({ _id1: 2, _value1: 0 });
     });
   });
@@ -251,9 +253,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("isActive = $(_isActive1)");
-      expect(result.sql).to.contain("age >= $(_age1)");
-      expect(result.sql).to.contain("name != $(_name1)");
+      expect(result.sql).to.contain(`"isActive" = $(_isActive1)`);
+      expect(result.sql).to.contain(`"age" >= $(_age1)`);
+      expect(result.sql).to.contain(`"name" != $(_name1)`);
       expect(result.params).to.deep.equal({
         _isActive1: true,
         _age1: 21,
@@ -269,9 +271,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("id > $(_id1)");
-      expect(result.sql).to.contain("isActive");
-      expect(result.sql).to.contain("age IS NOT NULL");
+      expect(result.sql).to.contain(`"id" > $(_id1)`);
+      expect(result.sql).to.contain(`"isActive"`);
+      expect(result.sql).to.contain(`"age" IS NOT NULL`);
       expect(result.params).to.deep.equal({
         _id1: 0,
       });
@@ -290,7 +292,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS t0 WHERE age >= $(_age1) AND isActive AND role != $(_role1)',
+        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1) AND "isActive" AND "role" != $(_role1)',
       );
       expect(result.params).to.deep.equal({ _age1: 18, _role1: "guest" });
     });
@@ -307,11 +309,11 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("price > $(_price1)");
-      expect(result.sql).to.contain("stock > $(_stock1)");
-      expect(result.sql).to.contain("isAvailable");
-      expect(result.sql).to.contain("categoryId != $(_categoryId1)");
-      expect(result.sql).to.contain("name != $(_name1)");
+      expect(result.sql).to.contain(`"price" > $(_price1)`);
+      expect(result.sql).to.contain(`"stock" > $(_stock1)`);
+      expect(result.sql).to.contain(`"isAvailable"`);
+      expect(result.sql).to.contain(`"categoryId" != $(_categoryId1)`);
+      expect(result.sql).to.contain(`"name" != $(_name1)`);
       expect(result.params).to.deep.equal({
         _price1: 10,
         _stock1: 0,
@@ -335,9 +337,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
         { minAge: 25, maxAge: 55, roles: ["admin", "manager"], isActive: true },
       );
 
-      expect(result.sql).to.contain("age >= $(minAge)");
-      expect(result.sql).to.contain("age <= $(maxAge)");
-      expect(result.sql).to.contain("isActive = $(isActive)");
+      expect(result.sql).to.contain(`"age" >= $(minAge)`);
+      expect(result.sql).to.contain(`"age" <= $(maxAge)`);
+      expect(result.sql).to.contain(`"isActive" = $(isActive)`);
       expect(result.params).to.deep.equal({
         minAge: 25,
         maxAge: 55,
@@ -359,10 +361,10 @@ describe("Complex WHERE Clause SQL Generation", () => {
         { threshold: 100 },
       );
 
-      expect(result.sql).to.contain("price > $(threshold)");
-      expect(result.sql).to.contain("stock > $(_stock1)");
-      expect(result.sql).to.contain("discount IS NOT NULL");
-      expect(result.sql).to.contain("isAvailable = $(_isAvailable1)");
+      expect(result.sql).to.contain(`"price" > $(threshold)`);
+      expect(result.sql).to.contain(`"stock" > $(_stock1)`);
+      expect(result.sql).to.contain(`"discount" IS NOT NULL`);
+      expect(result.sql).to.contain(`"isAvailable" = $(_isAvailable1)`);
       expect(result.params).to.deep.equal({
         threshold: 100,
         _stock1: 10,
@@ -409,18 +411,18 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("id = $(_id1)");
-      expect(result.sql).to.contain("price != $(_price1)");
-      expect(result.sql).to.contain("stock > $(_stock1)");
-      expect(result.sql).to.contain("stock >= $(_stock2)");
-      expect(result.sql).to.contain("discount < $(_discount1)");
-      expect(result.sql).to.contain("discount <= $(_discount2)");
+      expect(result.sql).to.contain(`"id" = $(_id1)`);
+      expect(result.sql).to.contain(`"price" != $(_price1)`);
+      expect(result.sql).to.contain(`"stock" > $(_stock1)`);
+      expect(result.sql).to.contain(`"stock" >= $(_stock2)`);
+      expect(result.sql).to.contain(`"discount" < $(_discount1)`);
+      expect(result.sql).to.contain(`"discount" <= $(_discount2)`);
     });
 
     it("should handle false boolean literals correctly", () => {
       const result = query(() => from<User>("users").where((u) => u.isActive == false), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE isActive = $(_isActive1)');
+      expect(result.sql).to.equal(`SELECT * FROM "users" AS "t0" WHERE "isActive" = $(_isActive1)`);
       expect(result.params).to.deep.equal({ _isActive1: false });
     });
   });

@@ -10,7 +10,7 @@ import type { SqlContext } from "../types.js";
  */
 export function generateSum(operation: SumOperation, _context: SqlContext): string {
   if (operation.selector) {
-    return `SUM(${operation.selector})`;
+    return `SUM("${operation.selector}")`;
   }
   return "SUM(*)";
 }

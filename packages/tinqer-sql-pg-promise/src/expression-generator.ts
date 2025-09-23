@@ -59,7 +59,7 @@ export function generateBooleanExpression(expr: BooleanExpression, context: SqlC
     case "not":
       return generateNotExpression(expr, context);
     case "booleanColumn":
-      return expr.name;
+      return `"${expr.name}"`;
     case "booleanConstant":
       return expr.value ? "TRUE" : "FALSE";
     case "booleanMethod":
