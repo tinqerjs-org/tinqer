@@ -151,15 +151,15 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle explicit null comparisons", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.value == null), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE value = $(_value1)');
-      expect(result.params).to.deep.equal({ _value1: null });
+      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE value IS NULL');
+      expect(result.params).to.deep.equal({});
     });
 
     it("should handle null inequality", () => {
       const result = query(() => from<TestTable>("test").where((t) => t.value != null), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE value != $(_value1)');
-      expect(result.params).to.deep.equal({ _value1: null });
+      expect(result.sql).to.equal('SELECT * FROM "test" AS t0 WHERE value IS NOT NULL');
+      expect(result.params).to.deep.equal({});
     });
 
     // Removed: || operator and ternary operator
@@ -213,7 +213,7 @@ describe("Edge Cases and Error Handling", () => {
       expect(result.sql).to.contain("id < $(_id4)");
       expect(result.sql).to.contain("flag = $(_flag1)");
       expect(result.sql).to.contain("name != $(_name1)");
-      expect(result.sql).to.contain("value != $(_value1)");
+      expect(result.sql).to.contain("value IS NOT NULL");
     });
 
     it("should handle many chained operations", () => {
@@ -236,7 +236,8 @@ describe("Edge Cases and Error Handling", () => {
       expect(result.sql).to.contain("SELECT");
       expect(result.sql).to.contain("ORDER BY");
       expect(result.sql).to.contain("LIMIT");
-      expect(Object.keys(result.params).length).to.be.greaterThan(5);
+      // One less param now that null is not parameterized
+      expect(Object.keys(result.params).length).to.equal(5);
     });
   });
 

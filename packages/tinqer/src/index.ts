@@ -90,7 +90,6 @@ export type {
   DistinctOperation,
   TakeOperation,
   SkipOperation,
-  UnionOperation,
   ReverseOperation,
 
   // Terminal operations
@@ -101,12 +100,20 @@ export type {
   LastOperation,
   LastOrDefaultOperation,
   ContainsOperation,
+  AnyOperation,
+  AllOperation,
   CountOperation,
   SumOperation,
   AverageOperation,
   MinOperation,
   MaxOperation,
   ToArrayOperation,
+
+  // Set operations
+  UnionOperation,
+  ConcatOperation,
+  IntersectOperation,
+  ExceptOperation,
 
   // Union types
   ChainableOperation,

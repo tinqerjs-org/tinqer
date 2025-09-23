@@ -86,16 +86,14 @@ describe("Auto-Parameterization SQL Generation", () => {
     });
   });
 
-  it("should handle null auto-parameterization", () => {
+  it("should handle null comparisons with IS NULL/IS NOT NULL", () => {
     const queryBuilder = () =>
       from<{ email: string | null }>("users").where((x) => x.email != null);
 
     const result = query(queryBuilder, {});
 
-    expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE email != $(_email1)');
-    expect(result.params).to.deep.equal({
-      _email1: null,
-    });
+    expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE email IS NOT NULL');
+    expect(result.params).to.deep.equal({});
   });
 
   it("should handle multiple uses of same column", () => {

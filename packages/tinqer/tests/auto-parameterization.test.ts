@@ -93,18 +93,20 @@ describe("Auto-Parameterization", () => {
   });
 
   describe("Null literals", () => {
-    it("should auto-parameterize null constants", () => {
+    it("should NOT auto-parameterize null constants (for IS NULL generation)", () => {
       const query = () => from<{ email: string | null }>("users").where((x) => x.email == null);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _email1: null });
+      // Null should not be parameterized - it becomes a ConstantExpression for IS NULL
+      expect(result?.autoParams).to.deep.equal({});
     });
 
     it("should handle null check with != operator", () => {
       const query = () => from<{ phone: string | null }>("users").where((x) => x.phone != null);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _phone1: null });
+      // Null should not be parameterized - it becomes a ConstantExpression for IS NOT NULL
+      expect(result?.autoParams).to.deep.equal({});
     });
   });
 
@@ -120,7 +122,7 @@ describe("Auto-Parameterization", () => {
         _age1: 18,
         _name1: "John",
         _isActive1: true,
-        _email1: null,
+        // Note: null is NOT parameterized (for IS NOT NULL generation)
       });
     });
 

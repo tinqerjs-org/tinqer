@@ -7,7 +7,11 @@ import type {
   FirstOrDefaultOperation,
   QueryOperation,
 } from "../query-tree/operations.js";
-import type { BooleanExpression } from "../expressions/expression.js";
+import type {
+  BooleanExpression,
+  ColumnExpression,
+  BooleanColumnExpression,
+} from "../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
@@ -45,8 +49,17 @@ export function convertFirstOperation(
 
       if (bodyExpr) {
         const expr = convertAstToExpression(bodyExpr, context);
-        if (expr && isBooleanExpression(expr)) {
-          predicate = expr as BooleanExpression;
+        if (expr) {
+          if (isBooleanExpression(expr)) {
+            predicate = expr as BooleanExpression;
+          } else if (expr.type === "column") {
+            // If we get a column expression in a predicate context,
+            // treat it as a boolean column
+            predicate = {
+              type: "booleanColumn",
+              name: (expr as ColumnExpression).name,
+            } as BooleanColumnExpression;
+          }
         }
       }
     }
@@ -87,8 +100,17 @@ export function convertFirstOrDefaultOperation(
 
       if (bodyExpr) {
         const expr = convertAstToExpression(bodyExpr, context);
-        if (expr && isBooleanExpression(expr)) {
-          predicate = expr as BooleanExpression;
+        if (expr) {
+          if (isBooleanExpression(expr)) {
+            predicate = expr as BooleanExpression;
+          } else if (expr.type === "column") {
+            // If we get a column expression in a predicate context,
+            // treat it as a boolean column
+            predicate = {
+              type: "booleanColumn",
+              name: (expr as ColumnExpression).name,
+            } as BooleanColumnExpression;
+          }
         }
       }
     }

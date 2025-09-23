@@ -65,15 +65,14 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
       expect(result.sql).to.contain("price > $(_price1)");
       expect(result.sql).to.contain("price < $(_price2)");
-      expect(result.sql).to.contain("discount != $(_discount1)");
-      expect(result.sql).to.contain("discount > $(_discount2)");
+      expect(result.sql).to.contain("discount IS NOT NULL");
+      expect(result.sql).to.contain("discount > $(_discount1)");
       expect(result.sql).to.contain("isAvailable");
       expect(result.sql).to.contain("stock > $(_stock1)");
       expect(result.params).to.deep.equal({
         _price1: 100,
         _price2: 500,
-        _discount1: null,
-        _discount2: 20,
+        _discount1: 20,
         _stock1: 0,
       });
     });
@@ -186,15 +185,13 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("salary = $(_salary1)");
+      expect(result.sql).to.contain("salary IS NULL");
       expect(result.sql).to.contain("role = $(_role1)");
-      expect(result.sql).to.contain("salary != $(_salary2)");
-      expect(result.sql).to.contain("salary > $(_salary3)");
+      expect(result.sql).to.contain("salary IS NOT NULL");
+      expect(result.sql).to.contain("salary > $(_salary1)");
       expect(result.params).to.deep.equal({
-        _salary1: null,
         _role1: "intern",
-        _salary2: null,
-        _salary3: 0,
+        _salary1: 0,
       });
     });
 
@@ -274,10 +271,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
       expect(result.sql).to.contain("id > $(_id1)");
       expect(result.sql).to.contain("isActive");
-      expect(result.sql).to.contain("age != $(_age1)");
+      expect(result.sql).to.contain("age IS NOT NULL");
       expect(result.params).to.deep.equal({
         _id1: 0,
-        _age1: null,
       });
     });
   });
@@ -365,12 +361,11 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
       expect(result.sql).to.contain("price > $(threshold)");
       expect(result.sql).to.contain("stock > $(_stock1)");
-      expect(result.sql).to.contain("discount != $(_discount1)");
+      expect(result.sql).to.contain("discount IS NOT NULL");
       expect(result.sql).to.contain("isAvailable = $(_isAvailable1)");
       expect(result.params).to.deep.equal({
         threshold: 100,
         _stock1: 10,
-        _discount1: null,
         _isAvailable1: true,
       });
     });

@@ -2,22 +2,21 @@
  * LAST operation generator
  */
 
-import type { LastOperation } from "@webpods/tinqer";
+import type { LastOperation, LastOrDefaultOperation } from "@webpods/tinqer";
 import type { SqlContext } from "../types.js";
-import { generateBooleanExpression } from "../expression-generator.js";
 
 /**
- * Generate SQL for LAST operation
- * In PostgreSQL, this requires ORDER BY DESC with LIMIT 1
- * Note: The orchestrator should handle reversing the ORDER BY
+ * Generate SQL for LAST or LASTORDEFAULT operations
+ * In PostgreSQL, this requires reversing any existing ORDER BY and adding LIMIT 1
+ * Note: If no ORDER BY exists, we should error since LAST is undefined without order
+ * Note: Predicates are handled as WHERE operations before this
  */
-export function generateLast(operation: LastOperation, context: SqlContext): string {
-  if (operation.predicate) {
-    // LAST with WHERE condition
-    const predicate = generateBooleanExpression(operation.predicate, context);
-    return `WHERE ${predicate} ORDER BY 1 DESC LIMIT 1`;
-  } else {
-    // Simple LAST - need to reverse order
-    return "ORDER BY 1 DESC LIMIT 1";
-  }
+export function generateLast(
+  _operation: LastOperation | LastOrDefaultOperation,
+  _context: SqlContext,
+): string {
+  // LAST/LASTORDEFAULT requires an ORDER BY to be meaningful
+  // The SQL generator should handle reversing existing ORDER BY or adding a default one
+  // For now, just return LIMIT 1 and let the orchestrator handle the ordering
+  return "LIMIT 1";
 }

@@ -20,9 +20,12 @@ import type {
   AggregateExpression,
   ConditionalExpression,
   CoalesceExpression,
+  InExpression,
+  ArrayExpression,
 } from "../expressions/expression.js";
 
 import type {
+  ASTNode,
   Expression as ASTExpression,
   Identifier,
   MemberExpression as ASTMemberExpression,
@@ -34,6 +37,7 @@ import type {
   ObjectExpression as ASTObjectExpression,
   ConditionalExpression as ASTConditionalExpression,
   ChainExpression as ASTChainExpression,
+  ArrayExpression as ASTArrayExpression,
   Literal,
   NumericLiteral,
   StringLiteral,
@@ -94,6 +98,9 @@ export function convertAstToExpression(
     case "ArrowFunctionExpression":
       return convertLambdaExpression(ast, context);
 
+    case "ArrayExpression":
+      return convertArrayExpression(ast, context);
+
     case "UnaryExpression": {
       const unaryExpr = ast as ASTUnaryExpression;
       if (unaryExpr.operator === "!") {
@@ -134,7 +141,7 @@ export function convertAstToExpression(
     }
 
     default:
-      console.warn("Unsupported AST node type:", ast.type);
+      console.warn("Unsupported AST node type:", (ast as ASTNode).type);
       return null;
   }
 }
@@ -487,7 +494,21 @@ export function convertLogicalExpression(
     } as LogicalExpression;
   }
 
-  // Handle || as coalesce when not both boolean expressions
+  // Handle ?? (nullish coalescing) as COALESCE
+  if (ast.operator === "??" && isValueExpression(left) && isValueExpression(right)) {
+    // Reject coalesce expressions in SELECT projections
+    if (context.inSelectProjection) {
+      throw new Error(
+        "SELECT projections only support simple column access. Coalesce expressions must be computed in application code.",
+      );
+    }
+    return {
+      type: "coalesce",
+      expressions: [left as ValueExpression, right as ValueExpression],
+    } as CoalesceExpression;
+  }
+
+  // Handle || as coalesce when not both boolean expressions (for backward compatibility)
   if (ast.operator === "||" && isValueExpression(left) && isValueExpression(right)) {
     // Reject coalesce expressions in SELECT projections
     if (context.inSelectProjection) {
@@ -508,7 +529,7 @@ export function convertLiteral(
   ast: Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
   context: ConversionContext,
   columnHint?: string,
-): ParameterExpression {
+): ParameterExpression | ConstantExpression {
   let value: string | number | boolean | null;
   if (ast.type === "NumericLiteral") {
     value = (ast as NumericLiteral).value;
@@ -520,6 +541,14 @@ export function convertLiteral(
     value = null;
   } else {
     value = (ast as Literal).value;
+  }
+
+  // Special case for null - don't parameterize it so we can generate IS NULL/IS NOT NULL
+  if (value === null) {
+    return {
+      type: "constant",
+      value: null,
+    } as ConstantExpression;
   }
 
   // Generate parameter name based on column hint
@@ -601,8 +630,23 @@ export function convertCallExpression(
     if (memberCallee.property.type === "Identifier") {
       const methodName = (memberCallee.property as Identifier).name;
 
+      // Special handling for array.includes() -> IN expression
+      if (methodName === "includes" && obj && obj.type === "array") {
+        // This is array.includes(value) which should become value IN (array)
+        if (ast.arguments && ast.arguments.length === 1 && ast.arguments[0]) {
+          const valueArg = convertAstToExpression(ast.arguments[0], context);
+          if (valueArg && isValueExpression(valueArg)) {
+            return {
+              type: "in",
+              value: valueArg as ValueExpression,
+              list: obj as ArrayExpression,
+            } as InExpression;
+          }
+        }
+      }
+
       if (obj && isValueExpression(obj)) {
-        // Boolean methods
+        // Boolean methods for strings
         if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
           // Extract column hint from the method object for parameter naming
           let columnHint: string | undefined;
@@ -636,12 +680,12 @@ export function convertCallExpression(
           } as BooleanMethodExpression;
         }
 
-        // String methods
-        if (["toLowerCase", "toUpperCase", "trim"].includes(methodName)) {
+        // String methods - only support toLowerCase and toUpperCase
+        if (["toLowerCase", "toUpperCase"].includes(methodName)) {
           return {
             type: "stringMethod",
             object: obj as ValueExpression,
-            method: methodName as "toLowerCase" | "toUpperCase" | "trim",
+            method: methodName as "toLowerCase" | "toUpperCase",
           } as StringMethodExpression;
         }
       }
@@ -674,6 +718,27 @@ export function convertObjectExpression(
   return {
     type: "object",
     properties,
+  };
+}
+
+export function convertArrayExpression(
+  ast: ASTArrayExpression,
+  context: ConversionContext,
+): ArrayExpression | null {
+  const elements: Expression[] = [];
+
+  for (const element of ast.elements) {
+    if (element) {
+      const expr = convertAstToExpression(element, context);
+      if (expr) {
+        elements.push(expr);
+      }
+    }
+  }
+
+  return {
+    type: "array",
+    elements,
   };
 }
 

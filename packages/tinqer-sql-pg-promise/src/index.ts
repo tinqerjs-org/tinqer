@@ -55,5 +55,33 @@ export function query<TParams, TResult>(
   return { sql, params: finalParams };
 }
 
+/**
+ * Simpler API for generating SQL with auto-parameterization
+ * @param queryable A Queryable or TerminalQuery object
+ * @returns Object with text (SQL string) and parameters
+ */
+export function toSql<T>(queryable: Queryable<T> | TerminalQuery<T>): {
+  text: string;
+  parameters: Record<string, unknown>;
+} {
+  // Create a dummy function that returns the queryable
+  const queryBuilder = () => queryable;
+
+  // Parse and generate SQL
+  const parseResult = parseQuery(queryBuilder);
+
+  if (!parseResult) {
+    throw new Error("Failed to parse query");
+  }
+
+  // Generate SQL with auto-parameters
+  const sql = generateSql(parseResult.operation, parseResult.autoParams);
+
+  return {
+    text: sql,
+    parameters: parseResult.autoParams,
+  };
+}
+
 // Export types
 export type { SqlResult } from "./types.js";

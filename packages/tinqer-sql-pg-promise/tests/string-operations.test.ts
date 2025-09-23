@@ -260,8 +260,8 @@ describe("String Operations SQL Generation", () => {
     it("should handle nullable string comparisons", () => {
       const result = query(() => from<User>("users").where((u) => u.bio == null), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE bio = $(_bio1)');
-      expect(result.params).to.deep.equal({ _bio1: null });
+      expect(result.sql).to.equal('SELECT * FROM "users" AS t0 WHERE bio IS NULL');
+      expect(result.params).to.deep.equal({});
     });
 
     it("should handle nullable string with string operations", () => {
@@ -270,9 +270,9 @@ describe("String Operations SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("bio != $(_bio1)");
-      expect(result.sql).to.contain("bio LIKE '%' || $(_bio2) || '%'");
-      expect(result.params).to.deep.equal({ _bio1: null, _bio2: "developer" });
+      expect(result.sql).to.contain("bio IS NOT NULL");
+      expect(result.sql).to.contain("bio LIKE '%' || $(_bio1) || '%'");
+      expect(result.params).to.deep.equal({ _bio1: "developer" });
     });
   });
 });

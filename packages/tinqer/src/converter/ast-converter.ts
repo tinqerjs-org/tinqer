@@ -37,8 +37,13 @@ import { convertSingleOperation } from "./single.js";
 import { convertLastOperation } from "./last.js";
 import { convertContainsOperation } from "./contains.js";
 import { convertUnionOperation } from "./union.js";
+import { convertConcatOperation } from "./concat.js";
+import { convertIntersectOperation } from "./intersect.js";
+import { convertExceptOperation } from "./except.js";
 import { convertReverseOperation } from "./reverse.js";
 import { convertToArrayOperation } from "./toarray.js";
+import { convertAnyOperation } from "./any.js";
+import { convertAllOperation } from "./all.js";
 
 // Export the expression converter for use by operation converters
 export { convertAstToExpression } from "./expressions.js";
@@ -230,6 +235,7 @@ export function convertMethodChain(
         case "count":
           return convertCountOperation(callAst, source, context);
         case "toArray":
+        case "toList":
           return convertToArrayOperation(source);
         case "groupBy":
           return convertGroupByOperation(callAst, source, context);
@@ -258,8 +264,18 @@ export function convertMethodChain(
           return convertContainsOperation(callAst, source, context);
         case "union":
           return convertUnionOperation(callAst, source, context);
+        case "concat":
+          return convertConcatOperation(callAst, source, context);
+        case "intersect":
+          return convertIntersectOperation(callAst, source, context);
+        case "except":
+          return convertExceptOperation(callAst, source, context);
         case "reverse":
           return convertReverseOperation(source);
+        case "any":
+          return convertAnyOperation(callAst, source, context);
+        case "all":
+          return convertAllOperation(callAst, source, context);
         // Add more operations as needed
       }
     }

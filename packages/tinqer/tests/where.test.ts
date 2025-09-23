@@ -175,10 +175,11 @@ describe("WHERE Operation", () => {
       const whereOp = asWhereOperation(getOperation(result));
       const predicate = whereOp.predicate as ComparisonExpression;
       expect(predicate.type).to.equal("comparison");
-      const rightParam = predicate.right as ParameterExpression;
-      expect(rightParam.type).to.equal("param");
-      expect(rightParam.param).to.equal("_email1");
-      expect(result?.autoParams).to.deep.equal({ _email1: null });
+      const rightConst = predicate.right as ConstantExpression;
+      expect(rightConst.type).to.equal("constant");
+      expect(rightConst.value).to.equal(null);
+      // Null is not auto-parameterized (for IS NULL generation)
+      expect(result?.autoParams).to.deep.equal({});
     });
   });
 

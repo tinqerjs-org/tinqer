@@ -93,10 +93,9 @@ describe("Arithmetic Expression SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("discount != $(_discount1)");
+      expect(result.sql).to.contain("discount IS NOT NULL");
       expect(result.sql).to.contain("(price - discount) > $(_value1)");
       expect(result.params).to.deep.equal({
-        _discount1: null,
         _value1: 50,
       });
     });

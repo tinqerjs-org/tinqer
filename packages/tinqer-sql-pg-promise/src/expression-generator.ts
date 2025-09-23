@@ -8,6 +8,7 @@ import type {
   ValueExpression,
   ComparisonExpression,
   LogicalExpression,
+  InExpression,
   ColumnExpression,
   ConstantExpression,
   ParameterExpression,
@@ -63,6 +64,8 @@ export function generateBooleanExpression(expr: BooleanExpression, context: SqlC
       return expr.value ? "TRUE" : "FALSE";
     case "booleanMethod":
       return generateBooleanMethodExpression(expr, context);
+    case "in":
+      return generateInExpression(expr as InExpression, context);
     default:
       throw new Error(`Unsupported boolean expression type: ${(expr as any).type}`);
   }
@@ -101,6 +104,23 @@ function generateComparisonExpression(expr: ComparisonExpression, context: SqlCo
   // Handle cases where left or right side might be boolean expressions
   const left = generateExpressionForComparison(expr.left, context);
   const right = generateExpressionForComparison(expr.right, context);
+
+  // Special handling for NULL comparisons
+  if (right === "NULL") {
+    if (expr.operator === "==") {
+      return `${left} IS NULL`;
+    } else if (expr.operator === "!=") {
+      return `${left} IS NOT NULL`;
+    }
+  }
+  if (left === "NULL") {
+    if (expr.operator === "==") {
+      return `${right} IS NULL`;
+    } else if (expr.operator === "!=") {
+      return `${right} IS NOT NULL`;
+    }
+  }
+
   const operator = mapComparisonOperator(expr.operator);
   return `${left} ${operator} ${right}`;
 }
@@ -244,25 +264,34 @@ function generateStringMethodExpression(expr: StringMethodExpression, context: S
       return `LOWER(${object})`;
     case "toUpperCase":
       return `UPPER(${object})`;
-    case "trim":
-    case "trimStart":
-    case "trimEnd":
-      return `TRIM(${object})`;
-    case "substring":
-    case "substr":
-    case "slice":
-      if (expr.arguments && expr.arguments.length > 0) {
-        const start = generateValueExpression(expr.arguments[0]!, context);
-        if (expr.arguments.length > 1) {
-          const length = generateValueExpression(expr.arguments[1]!, context);
-          return `SUBSTRING(${object} FROM ${start} FOR ${length})`;
-        }
-        return `SUBSTRING(${object} FROM ${start})`;
-      }
-      throw new Error("substring requires at least one argument");
     default:
       throw new Error(`Unsupported string method: ${expr.method}`);
   }
+}
+
+/**
+ * Generate SQL for IN expressions
+ */
+function generateInExpression(expr: InExpression, context: SqlContext): string {
+  const value = generateValueExpression(expr.value, context);
+
+  // Handle list as array expression or array of values
+  let listValues: string[];
+  if (Array.isArray(expr.list)) {
+    listValues = expr.list.map((item) => generateValueExpression(item, context));
+  } else if (expr.list.type === "array") {
+    const arrayExpr = expr.list as ArrayExpression;
+    listValues = arrayExpr.elements.map((item) => generateExpression(item, context));
+  } else {
+    throw new Error("IN expression requires an array");
+  }
+
+  if (listValues.length === 0) {
+    // Empty IN list always returns false
+    return "FALSE";
+  }
+
+  return `${value} IN (${listValues.join(", ")})`;
 }
 
 /**

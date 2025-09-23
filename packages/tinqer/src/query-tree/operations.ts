@@ -268,24 +268,6 @@ export interface LastOrDefaultOperation extends QueryOperation {
 }
 
 /**
- * ELEMENT AT operation
- */
-export interface ElementAtOperation extends QueryOperation {
-  operationType: "elementAt";
-  source: QueryOperation;
-  index: number | ParamRef;
-}
-
-/**
- * ELEMENT AT OR DEFAULT operation
- */
-export interface ElementAtOrDefaultOperation extends QueryOperation {
-  operationType: "elementAtOrDefault";
-  source: QueryOperation;
-  index: number | ParamRef;
-}
-
-/**
  * ANY operation
  */
 export interface AnyOperation extends QueryOperation {
@@ -413,6 +395,7 @@ export interface ToLookupOperation extends QueryOperation {
   elementSelector?: ValueExpression | ObjectExpression;
 }
 
+
 /**
  * Union type for all chainable operations
  */
@@ -428,6 +411,9 @@ export type ChainableOperation =
   | TakeOperation
   | SkipOperation
   | UnionOperation
+  | ConcatOperation
+  | IntersectOperation
+  | ExceptOperation
   | ReverseOperation;
 
 /**

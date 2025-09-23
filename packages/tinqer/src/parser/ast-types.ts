@@ -55,7 +55,7 @@ export interface BinaryExpression extends ASTNode {
 
 export interface LogicalExpression extends ASTNode {
   type: "LogicalExpression";
-  operator: "&&" | "||";
+  operator: "&&" | "||" | "??";
   left: Expression;
   right: Expression;
 }

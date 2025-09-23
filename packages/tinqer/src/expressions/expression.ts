@@ -60,15 +60,7 @@ export interface ConcatExpression {
 export interface StringMethodExpression {
   type: "stringMethod";
   object: ValueExpression;
-  method:
-    | "toLowerCase"
-    | "toUpperCase"
-    | "trim"
-    | "trimStart"
-    | "trimEnd"
-    | "substring"
-    | "substr"
-    | "slice";
+  method: "toLowerCase" | "toUpperCase";
   arguments?: ValueExpression[];
 }
 
