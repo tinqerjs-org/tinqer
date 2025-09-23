@@ -273,7 +273,7 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Parameter edge cases", () => {
     it("should handle empty parameter object", () => {
-      const result = query((params: {}) => from<TestTable>("test"), {});
+      const result = query((_params: {}) => from<TestTable>("test"), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" AS "t0"');
       expect(result.params).to.deep.equal({});

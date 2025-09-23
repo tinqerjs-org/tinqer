@@ -2,7 +2,7 @@
  * PostgreSQL SQL generator for Tinqer using pg-promise format
  */
 
-import { parseQuery, type Queryable, type TerminalQuery } from "@webpods/tinqer";
+import { parseQuery, type Queryable, type OrderedQueryable, type TerminalQuery } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
 import type { SqlResult } from "./types.js";
 
@@ -13,7 +13,7 @@ import type { SqlResult } from "./types.js";
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function query<TParams, TResult>(
-  queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>,
+  queryBuilder: (params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
   params: TParams,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>> {
   // Parse the query to get the operation tree and auto-params
@@ -60,7 +60,7 @@ export function query<TParams, TResult>(
  * @param queryable A Queryable or TerminalQuery object
  * @returns Object with text (SQL string) and parameters
  */
-export function toSql<T>(queryable: Queryable<T> | TerminalQuery<T>): {
+export function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>): {
   text: string;
   parameters: Record<string, unknown>;
 } {
@@ -98,12 +98,14 @@ interface PgDatabase {
  * @param params Parameters to pass to the query builder
  * @returns Promise with query results, properly typed based on the query
  */
-export async function execute<TParams, TQuery extends Queryable<any> | TerminalQuery<any>>(
+export async function execute<TParams, TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>>(
   db: PgDatabase,
   queryBuilder: (params: TParams) => TQuery,
   params: TParams,
 ): Promise<
-  TQuery extends Queryable<infer T> ? T[] : TQuery extends TerminalQuery<infer T> ? T : never
+  TQuery extends Queryable<infer T> ? T[] :
+  TQuery extends OrderedQueryable<infer T> ? T[] :
+  TQuery extends TerminalQuery<infer T> ? T : never
 > {
   const { sql, params: sqlParams } = query(queryBuilder, params);
 
@@ -188,11 +190,13 @@ export async function execute<TParams, TQuery extends Queryable<any> | TerminalQ
  * @param queryBuilder Function that builds the query using LINQ operations
  * @returns Promise with query results, properly typed based on the query
  */
-export async function executeSimple<TQuery extends Queryable<any> | TerminalQuery<any>>(
+export async function executeSimple<TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>>(
   db: PgDatabase,
   queryBuilder: () => TQuery,
 ): Promise<
-  TQuery extends Queryable<infer T> ? T[] : TQuery extends TerminalQuery<infer T> ? T : never
+  TQuery extends Queryable<infer T> ? T[] :
+  TQuery extends OrderedQueryable<infer T> ? T[] :
+  TQuery extends TerminalQuery<infer T> ? T : never
 > {
   return execute(db, queryBuilder, {});
 }

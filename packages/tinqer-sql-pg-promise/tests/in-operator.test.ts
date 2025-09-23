@@ -72,7 +72,7 @@ describe("IN Operator", () => {
     });
 
     it("should handle empty array as FALSE", () => {
-      const result = query(() => from<User>("users").where((u) => [].includes(u.id)), {});
+      const result = query(() => from<User>("users").where((u) => ([] as number[]).includes(u.id)), {});
 
       expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE FALSE');
       expect(result.params).to.deep.equal({});
@@ -204,21 +204,6 @@ describe("IN Operator", () => {
     });
   });
 
-  describe("IN with parameters", () => {
-    it("should work with external parameters for the array", () => {
-      const result = query(
-        (p: { allowedRoles: string[] }) =>
-          from<User>("users").where((u) => p.allowedRoles.includes(u.role)),
-        { allowedRoles: ["admin", "user"] },
-      );
-
-      // Note: This may not work as expected since we'd need to handle parameter arrays specially
-      // For now, this test documents the expected behavior
-      // The actual implementation might need more work to support parameter arrays
-
-      // Skipping this test for now as it requires more complex parameter handling
-    });
-  });
 
   describe("NOT IN operations", () => {
     it("should generate NOT IN with negation", () => {
@@ -235,7 +220,7 @@ describe("IN Operator", () => {
     });
 
     it("should handle negated empty array as TRUE", () => {
-      const result = query(() => from<User>("users").where((u) => ![].includes(u.id)), {});
+      const result = query(() => from<User>("users").where((u) => !([] as number[]).includes(u.id)), {});
 
       expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE NOT FALSE');
       expect(result.params).to.deep.equal({});

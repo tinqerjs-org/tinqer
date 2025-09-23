@@ -4,42 +4,10 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { execute, executeSimple, query } from "../dist/index.js";
+import { query } from "../dist/index.js";
 import { db, from } from "./test-schema.js";
 
-// Mock database for testing
-class MockDb {
-  async any<T>(sql: string, params: any): Promise<T[]> {
-    // Return mock data based on the SQL
-    if (sql.includes("SELECT * FROM")) {
-      return [{ id: 1, name: "John", age: 25 } as any, { id: 2, name: "Jane", age: 30 } as any];
-    }
-    if (sql.includes("SELECT id AS id, name AS name")) {
-      return [{ id: 1, name: "John" } as any, { id: 2, name: "Jane" } as any];
-    }
-    return [];
-  }
-
-  async one<T>(sql: string, params: any): Promise<T> {
-    if (sql.includes("COUNT(*)")) {
-      return { count: "2" } as any;
-    }
-    if (sql.includes("SUM(")) {
-      return { result: 55 } as any;
-    }
-    if (sql.includes("AVG(")) {
-      return { result: 27.5 } as any;
-    }
-    if (sql.includes("EXISTS")) {
-      return { exists: true } as any;
-    }
-    return {} as T;
-  }
-}
-
 describe("Execute Function", () => {
-  const mockDb = new MockDb();
-
   describe("Basic queries", () => {
     it("should execute a simple query and return typed results", async () => {
       const queryBuilder = () => from(db, "users");

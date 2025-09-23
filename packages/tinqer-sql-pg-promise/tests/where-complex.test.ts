@@ -405,8 +405,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
               p.price != 0 ||
               p.stock > 10 ||
               p.stock >= 5 ||
-              p.discount < 50 ||
-              p.discount <= 75,
+              (p.discount ?? 0) < 50 ||
+              (p.discount ?? 0) <= 75,
           ),
         {},
       );

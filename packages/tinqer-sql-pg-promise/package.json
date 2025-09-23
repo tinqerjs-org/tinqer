@@ -12,6 +12,7 @@
   "scripts": {
     "build": "tsc",
     "test": "mocha tests/**/*.test.ts",
+    "test:build": "tsc -p tsconfig.test.json --noEmit",
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {},

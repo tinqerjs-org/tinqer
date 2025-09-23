@@ -9,14 +9,16 @@ import { query } from "@webpods/tinqer-sql-pg-promise";
 
 describe("Null Coalescing Operator (??) with query", () => {
   it("should generate COALESCE for ?? operator in WHERE clause", () => {
-    const result = query(() => from("users").where((u) => (u.status ?? "active") === "active"), {});
+    interface User { status?: string }
+    const result = query(() => from<User>("users").where((u) => (u.status ?? "active") === "active"), {});
 
     expect(result.sql).to.contain("COALESCE");
     expect(result.sql).to.contain("status");
   });
 
   it("should work with numeric values", () => {
-    const result = query(() => from("orders").where((o) => (o.priority ?? 5) < 3), {});
+    interface Order { priority?: number }
+    const result = query(() => from<Order>("orders").where((o) => (o.priority ?? 5) < 3), {});
 
     expect(result.sql).to.contain("COALESCE");
     expect(result.sql).to.contain("priority");

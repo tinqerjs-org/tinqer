@@ -7,7 +7,8 @@
   "scripts": {
     "test": "mocha tests/**/*.test.ts",
     "test:watch": "mocha tests/**/*.test.ts --watch",
-    "test:grep": "mocha tests/**/*.test.ts --grep"
+    "test:grep": "mocha tests/**/*.test.ts --grep",
+    "test:build": "tsc --noEmit"
   },
   "dependencies": {
     "@webpods/tinqer": "file:../tinqer",

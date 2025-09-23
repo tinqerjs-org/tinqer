@@ -17,6 +17,7 @@ echo "=== Building Tinqer ==="
 PACKAGES=(
   "tinqer"
   "tinqer-sql-pg-promise"
+  "tinqer-sql-pg-promise-integration"
 )
 
 # 1 ▸ clean first

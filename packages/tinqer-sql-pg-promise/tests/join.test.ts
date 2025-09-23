@@ -130,7 +130,7 @@ describe("Join SQL Generation", () => {
               from<Department>("departments"),
               (u) => u.departmentId,
               (d) => d.id,
-              (u, d) => ({ deptName: d.name }),
+              (_u, d) => ({ deptName: d.name }),
             )
             .distinct(),
         {},
