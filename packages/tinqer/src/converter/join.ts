@@ -2,7 +2,15 @@
  * JOIN operation converter
  */
 
-import type { JoinOperation, QueryOperation, ResultShape, ShapeProperty } from "../query-tree/operations.js";
+import type {
+  JoinOperation,
+  QueryOperation,
+  ResultShape,
+  ShapeNode,
+  ColumnShapeNode,
+  ObjectShapeNode,
+  ReferenceShapeNode,
+} from "../query-tree/operations.js";
 import type { ColumnExpression, Expression, ObjectExpression } from "../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
@@ -16,6 +24,7 @@ import { convertMethodChain } from "./ast-converter.js";
 
 /**
  * Build a ResultShape from a JOIN result selector expression
+ * Preserves full nested structure for complete fidelity
  */
 function buildResultShape(
   expr: Expression | undefined,
@@ -26,47 +35,107 @@ function buildResultShape(
     return undefined;
   }
 
-  const objExpr = expr as ObjectExpression;
-  const shape: ResultShape = {
-    properties: new Map<string, ShapeProperty>(),
-  };
-
-  for (const [propName, propExpr] of Object.entries(objExpr.properties)) {
-    // Check if this is a reference to one of the JOIN parameters
-    if (propExpr.type === "column") {
-      const colExpr = propExpr as ColumnExpression;
-
-      // Check if this references the outer or inner parameter
-      if (colExpr.table === outerParam && outerParam) {
-        // This property references the outer table
-        shape.properties.set(propName, {
-          sourceTable: 0,
-          columnName: colExpr.name,
-        });
-      } else if (colExpr.table === innerParam && innerParam) {
-        // This property references the inner table
-        shape.properties.set(propName, {
-          sourceTable: 1,
-          columnName: colExpr.name,
-        });
-      } else if (!colExpr.table) {
-        // Direct parameter reference (e.g., { orderItem: oi })
-        if (colExpr.name === outerParam && outerParam) {
-          shape.properties.set(propName, {
-            sourceTable: 0,
-            // This represents the entire outer table row
-          });
-        } else if (colExpr.name === innerParam && innerParam) {
-          shape.properties.set(propName, {
-            sourceTable: 1,
-            // This represents the entire inner table row
-          });
-        }
-      }
-    }
+  const rootNode = buildShapeNode(expr, outerParam, innerParam);
+  if (rootNode && rootNode.type === "object") {
+    return rootNode as ResultShape;
   }
 
-  return shape;
+  return undefined;
+}
+
+/**
+ * Recursively build a ShapeNode from an expression
+ */
+function buildShapeNode(
+  expr: Expression,
+  outerParam: string | null,
+  innerParam: string | null,
+): ShapeNode | undefined {
+  switch (expr.type) {
+    case "object": {
+      const objExpr = expr as ObjectExpression;
+      const properties = new Map<string, ShapeNode>();
+
+      for (const [propName, propExpr] of Object.entries(objExpr.properties)) {
+        const node = buildShapeNode(propExpr, outerParam, innerParam);
+        if (node) {
+          properties.set(propName, node);
+        }
+      }
+
+      return {
+        type: "object",
+        properties,
+      } as ObjectShapeNode;
+    }
+
+    case "column": {
+      const colExpr = expr as ColumnExpression;
+
+      // Check if this is a $param marker from JOIN context
+      if (colExpr.table && colExpr.table.startsWith("$param")) {
+        const paramIndex = parseInt(colExpr.table.substring(6), 10);
+
+        // Check if this is a direct reference to the entire parameter
+        // (when colExpr.name matches the parameter name)
+        if (
+          (paramIndex === 0 && colExpr.name === outerParam) ||
+          (paramIndex === 1 && colExpr.name === innerParam)
+        ) {
+          return {
+            type: "reference",
+            sourceTable: paramIndex,
+          } as ReferenceShapeNode;
+        }
+
+        // Otherwise it's a column from that table
+        return {
+          type: "column",
+          sourceTable: paramIndex,
+          columnName: colExpr.name,
+        } as ColumnShapeNode;
+      }
+      // Check if this is a property access (e.g., u.name)
+      else if (colExpr.table === outerParam && outerParam) {
+        return {
+          type: "column",
+          sourceTable: 0,
+          columnName: colExpr.name,
+        } as ColumnShapeNode;
+      } else if (colExpr.table === innerParam && innerParam) {
+        return {
+          type: "column",
+          sourceTable: 1,
+          columnName: colExpr.name,
+        } as ColumnShapeNode;
+      } else if (!colExpr.table) {
+        // Direct parameter reference (e.g., { orderItem: oi })
+        // Check both table and column name cases
+        if (
+          (colExpr.name === outerParam && outerParam) ||
+          (colExpr.table === outerParam && outerParam)
+        ) {
+          return {
+            type: "reference",
+            sourceTable: 0,
+          } as ReferenceShapeNode;
+        } else if (
+          (colExpr.name === innerParam && innerParam) ||
+          (colExpr.table === innerParam && innerParam)
+        ) {
+          return {
+            type: "reference",
+            sourceTable: 1,
+          } as ReferenceShapeNode;
+        }
+      }
+      break;
+    }
+
+    // Add more cases as needed (arithmetic, concat, etc.)
+  }
+
+  return undefined;
 }
 
 export function convertJoinOperation(
@@ -182,6 +251,13 @@ export function convertJoinOperation(
         ...context,
         joinParams: new Map<string, number>(), // parameter name -> table index (0 for outer, 1 for inner)
       };
+
+      // If we're chaining JOINs and the outer param comes from a previous JOIN result,
+      // pass through its shape information
+      if (outerParam && previousResultShape) {
+        resultContext.currentResultShape = previousResultShape;
+        resultContext.joinResultParam = outerParam;
+      }
 
       if (outerParam) {
         resultContext.joinParams?.set(outerParam, 0);

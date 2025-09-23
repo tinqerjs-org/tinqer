@@ -71,16 +71,49 @@ export interface JoinOperation extends QueryOperation {
 }
 
 /**
- * Represents the shape of a JOIN result
+ * Represents the shape of a JOIN result with full nested structure preservation
  */
 export interface ResultShape {
-  properties: Map<string, ShapeProperty>;
+  type: "object";
+  properties: Map<string, ShapeNode>;
 }
 
-export interface ShapeProperty {
-  sourceTable: number; // 0 for outer, 1 for inner, or higher for chained JOINs
-  columnName?: string; // For direct column references
-  nestedShape?: ResultShape; // For nested objects
+/**
+ * A node in the shape tree that can be a column, object, or reference
+ */
+export type ShapeNode = ColumnShapeNode | ObjectShapeNode | ReferenceShapeNode | ArrayShapeNode;
+
+/**
+ * Represents a direct column reference
+ */
+export interface ColumnShapeNode {
+  type: "column";
+  sourceTable: number; // Which JOIN parameter (0=outer, 1=inner)
+  columnName: string; // The actual column name
+}
+
+/**
+ * Represents a nested object with properties
+ */
+export interface ObjectShapeNode {
+  type: "object";
+  properties: Map<string, ShapeNode>;
+}
+
+/**
+ * Represents a reference to an entire table/parameter
+ */
+export interface ReferenceShapeNode {
+  type: "reference";
+  sourceTable: number; // References the entire table
+}
+
+/**
+ * Represents an array (for future support)
+ */
+export interface ArrayShapeNode {
+  type: "array";
+  elementShape: ShapeNode;
 }
 
 /**

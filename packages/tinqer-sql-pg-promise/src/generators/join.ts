@@ -7,12 +7,93 @@ import type {
   Expression,
   ObjectExpression,
   ColumnExpression,
+  ResultShape,
+  ShapeNode,
+  ColumnShapeNode,
+  ObjectShapeNode,
+  ReferenceShapeNode,
 } from "@webpods/tinqer";
 import type { SqlContext, SymbolTable, SourceReference } from "../types.js";
 import { generateSql } from "../sql-generator.js";
 
 /**
- * Build symbol table from JOIN result selector
+ * Build symbol table from ResultShape (new approach with full fidelity)
+ */
+function buildSymbolTableFromShape(
+  resultShape: ResultShape | undefined,
+  outerAlias: string,
+  innerAlias: string,
+  context: SqlContext,
+): void {
+  if (!resultShape) {
+    return;
+  }
+
+  // Initialize symbol table if not exists
+  if (!context.symbolTable) {
+    context.symbolTable = {
+      entries: new Map<string, SourceReference>(),
+    };
+  }
+
+  // Process each property in the result shape
+  for (const [propName, shapeNode] of resultShape.properties) {
+    processShapeNode(propName, shapeNode, outerAlias, innerAlias, context.symbolTable, "");
+  }
+}
+
+/**
+ * Recursively process shape nodes to build symbol table entries
+ */
+function processShapeNode(
+  propName: string,
+  node: ShapeNode,
+  outerAlias: string,
+  innerAlias: string,
+  symbolTable: SymbolTable,
+  parentPath: string,
+): void {
+  const fullPath = parentPath ? `${parentPath}.${propName}` : propName;
+
+  switch (node.type) {
+    case "column": {
+      const colNode = node as ColumnShapeNode;
+      const tableAlias = colNode.sourceTable === 0 ? outerAlias : innerAlias;
+
+      symbolTable.entries.set(fullPath, {
+        tableAlias,
+        columnName: colNode.columnName,
+      });
+      break;
+    }
+
+    case "object": {
+      // Nested object - recurse
+      const objNode = node as ObjectShapeNode;
+      for (const [nestedProp, nestedNode] of objNode.properties) {
+        processShapeNode(nestedProp, nestedNode, outerAlias, innerAlias, symbolTable, fullPath);
+      }
+      break;
+    }
+
+    case "reference": {
+      // Reference to entire table - we can't map individual columns yet
+      // but we can store that this path references a specific table
+      const refNode = node as ReferenceShapeNode;
+      const tableAlias = refNode.sourceTable === 0 ? outerAlias : innerAlias;
+
+      // Store a special marker for reference nodes
+      symbolTable.entries.set(fullPath, {
+        tableAlias,
+        columnName: "*", // Special marker for "all columns from this table"
+      });
+      break;
+    }
+  }
+}
+
+/**
+ * Build symbol table from JOIN result selector (legacy approach)
  */
 function buildSymbolTable(
   resultSelector: Expression | undefined,
@@ -89,10 +170,15 @@ export function generateJoin(operation: JoinOperation, context: SqlContext): str
   const outerAlias = context.tableAliases.values().next().value || "t0";
   const innerAlias = `t${context.aliasCounter++}`;
 
-  // Build symbol table from result selector
-  if (operation.resultSelector) {
+  // Build symbol table from result shape (preferred) or result selector (fallback)
+  if (operation.resultShape) {
+    buildSymbolTableFromShape(operation.resultShape, outerAlias, innerAlias, context);
+  } else if (operation.resultSelector) {
     buildSymbolTable(operation.resultSelector, outerAlias, innerAlias, context);
-    // Store the result shape for later operations
+  }
+
+  // Store the result selector for SELECT generation
+  if (operation.resultSelector) {
     context.currentShape = operation.resultSelector;
   }
 

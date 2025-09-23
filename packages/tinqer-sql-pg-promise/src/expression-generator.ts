@@ -217,12 +217,31 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
     }
   }
 
-  // Check if this is a parameter reference from JOIN ($param0, $param1)
-  if (expr.table && expr.table.startsWith("$param")) {
-    const paramIndex = parseInt(expr.table.substring(6), 10);
-    const aliases = Array.from(context.tableAliases.values());
-    const tableAlias = aliases[paramIndex] || `t${paramIndex}`;
-    return `"${tableAlias}"."${expr.name}"`;
+  // Check if this is a special marker from JOIN processing
+  if (expr.table && expr.table.startsWith("$")) {
+    // Handle $param0, $param1 (direct parameter references)
+    if (expr.table.startsWith("$param")) {
+      const paramIndex = parseInt(expr.table.substring(6), 10);
+      const aliases = Array.from(context.tableAliases.values());
+      const tableAlias = aliases[paramIndex] || `t${paramIndex}`;
+      return `"${tableAlias}"."${expr.name}"`;
+    }
+
+    // Handle $joinSource0, $joinSource1 (nested JOIN property access)
+    if (expr.table.startsWith("$joinSource")) {
+      const sourceIndex = parseInt(expr.table.substring(11), 10);
+      const aliases = Array.from(context.tableAliases.values());
+      const tableAlias = aliases[sourceIndex] || `t${sourceIndex}`;
+      return `"${tableAlias}"."${expr.name}"`;
+    }
+
+    // Handle $spread0, $spread1 (spread operator from JOIN result)
+    if (expr.table.startsWith("$spread")) {
+      const sourceIndex = parseInt(expr.table.substring(7), 10);
+      const aliases = Array.from(context.tableAliases.values());
+      const tableAlias = aliases[sourceIndex] || `t${sourceIndex}`;
+      return `"${tableAlias}"."${expr.name}"`;
+    }
   }
 
   // Check symbol table for JOIN result references
@@ -230,6 +249,12 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
     // First check for direct property name
     const sourceRef = context.symbolTable.entries.get(expr.name);
     if (sourceRef) {
+      // If it's a reference node (marked with "*"), we need special handling
+      if (sourceRef.columnName === "*" && expr.table) {
+        // This is accessing a property through a reference
+        // The symbol table entry tells us which table the reference points to
+        return `"${sourceRef.tableAlias}"."${expr.name}"`;
+      }
       return `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
     }
 
@@ -239,6 +264,13 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
       const pathRef = context.symbolTable.entries.get(path);
       if (pathRef) {
         return `"${pathRef.tableAlias}"."${pathRef.columnName}"`;
+      }
+
+      // Check if the table itself is a reference in the symbol table
+      const tableRef = context.symbolTable.entries.get(expr.table);
+      if (tableRef && tableRef.columnName === "*") {
+        // This is a reference node - resolve to the actual table
+        return `"${tableRef.tableAlias}"."${expr.name}"`;
       }
     }
   }

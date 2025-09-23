@@ -140,13 +140,31 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
       fragments.push(selectClause);
     }
   } else if (hasJoinWithResultSelector && context.currentShape) {
-    // Use JOIN result selector as implicit SELECT
-    const projectionSql = generateExpression(context.currentShape, context);
-    const selectClause = `SELECT ${projectionSql}`;
-    if (distinctKeyword) {
-      fragments.push(selectClause.replace("SELECT", `SELECT ${distinctKeyword}`));
+    // Check if the result selector contains references (entire table rows)
+    // This happens when we have { orderItem: oi, order: o } where oi and o are table parameters
+    let hasReferences = false;
+    if (context.symbolTable) {
+      for (const [_, sourceRef] of context.symbolTable.entries) {
+        if (sourceRef.columnName === "*") {
+          hasReferences = true;
+          break;
+        }
+      }
+    }
+
+    if (hasReferences) {
+      // When we have references to entire tables, use SELECT *
+      // The actual column mapping will be handled by the client
+      fragments.push(distinctKeyword ? `SELECT ${distinctKeyword} *` : "SELECT *");
     } else {
-      fragments.push(selectClause);
+      // Use JOIN result selector as implicit SELECT with specific columns
+      const projectionSql = generateExpression(context.currentShape, context);
+      const selectClause = `SELECT ${projectionSql}`;
+      if (distinctKeyword) {
+        fragments.push(selectClause.replace("SELECT", `SELECT ${distinctKeyword}`));
+      } else {
+        fragments.push(selectClause);
+      }
     }
   } else {
     // Default SELECT *
