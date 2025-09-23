@@ -166,7 +166,7 @@ describe("Auto-Parameterization", () => {
     });
 
     it("should use value for constants without column context", () => {
-      const query = () => from(db, "users").where((x) => 5 < 10);
+      const query = () => from(db, "users").where((_x) => 5 < 10);
       const result = parseQuery(query);
 
       // When there's no column context, use "value" as the base name

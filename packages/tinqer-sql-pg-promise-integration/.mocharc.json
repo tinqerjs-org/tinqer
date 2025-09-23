@@ -1,7 +1,8 @@
 {
-  "node-option": ["import=tsx"],
+  "loader": "ts-node/esm",
+  "node-option": ["loader=ts-node/esm", "no-warnings"],
   "extension": ["ts"],
-  "spec": "tests/**/*.test.ts",
+  "spec": ["tests/hooks.ts", "tests/**/*.test.ts"],
   "timeout": 10000,
   "reporter": "spec",
   "recursive": true

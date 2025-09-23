@@ -15,7 +15,7 @@ export function generateThenBy(operation: ThenByOperation, context: SqlContext):
 
   if (typeof operation.keySelector === "string") {
     // Simple column name
-    orderByExpr = operation.keySelector;
+    orderByExpr = `"${operation.keySelector}"`;
   } else {
     // Complex expression
     orderByExpr = generateValueExpression(operation.keySelector, context);

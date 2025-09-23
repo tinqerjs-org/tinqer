@@ -2,24 +2,17 @@
  * Complex WHERE clause integration tests with real PostgreSQL
  */
 
-import { describe, it, before, after } from "mocha";
+import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import pgPromise from "pg-promise";
 import { from } from "@webpods/tinqer";
 import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
+import { db } from "./shared-db.js";
 
-const pgp = pgPromise();
-const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/tinqer_test";
-const db = pgp(connectionString);
 
 describe("PostgreSQL Integration - Complex WHERE", () => {
   before(async () => {
     await setupTestDatabase(db);
-  });
-
-  after(() => {
-    pgp.end();
   });
 
   describe("Nested logical conditions", () => {

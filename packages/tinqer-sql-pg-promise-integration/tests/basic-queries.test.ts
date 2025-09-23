@@ -2,24 +2,16 @@
  * Basic query integration tests with real PostgreSQL
  */
 
-import { describe, it, before, after } from "mocha";
+import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import pgPromise from "pg-promise";
 import { from } from "@webpods/tinqer";
 import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-
-const pgp = pgPromise();
-const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/tinqer_test";
-const db = pgp(connectionString);
+import { db } from "./shared-db.js";
 
 describe("PostgreSQL Integration - Basic Queries", () => {
   before(async () => {
     await setupTestDatabase(db);
-  });
-
-  after(() => {
-    pgp.end();
   });
 
   describe("SELECT queries", () => {

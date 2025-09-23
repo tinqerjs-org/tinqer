@@ -18,10 +18,10 @@ export function generateJoin(operation: JoinOperation, context: SqlContext): str
   const innerAlias = `t${context.aliasCounter++}`;
 
   // Build JOIN clause
-  const joinClause = `INNER JOIN (${innerSql}) AS ${innerAlias}`;
+  const joinClause = `INNER JOIN (${innerSql}) AS "${innerAlias}"`;
 
   // Build ON clause
-  const onClause = `ON ${outerAlias}.${operation.outerKey} = ${innerAlias}.${operation.innerKey}`;
+  const onClause = `ON "${outerAlias}"."${operation.outerKey}" = "${innerAlias}"."${operation.innerKey}"`;
 
   return `${joinClause} ${onClause}`;
 }
