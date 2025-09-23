@@ -395,7 +395,6 @@ export interface ToLookupOperation extends QueryOperation {
   elementSelector?: ValueExpression | ObjectExpression;
 }
 
-
 /**
  * Union type for all chainable operations
  */

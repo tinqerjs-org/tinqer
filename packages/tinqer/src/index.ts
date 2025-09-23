@@ -10,6 +10,7 @@ export { Queryable, OrderedQueryable } from "./linq/queryable.js";
 export { TerminalQuery } from "./linq/terminal-query.js";
 export { from } from "./linq/from.js";
 export { Grouping } from "./linq/grouping.js";
+export { DatabaseContext, createContext } from "./linq/database-context.js";
 
 // ==================== LINQ Interfaces ====================
 // Type contracts

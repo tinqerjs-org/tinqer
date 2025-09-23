@@ -13,12 +13,13 @@ import {
   getOperation,
 } from "./test-utils/operation-helpers.js";
 import type { ArithmeticExpression } from "../src/expressions/expression.js";
+import { db } from "./test-schema.js";
 
 describe("THEN BY Operations", () => {
   describe("thenBy()", () => {
     it("should parse orderBy followed by thenBy", () => {
       const query = () =>
-        from<{ id: number; category: string; name: string }>("products")
+        from(db, "products")
           .orderBy((x) => x.category)
           .thenBy((x) => x.name);
       const result = parseQuery(query);
@@ -35,15 +36,15 @@ describe("THEN BY Operations", () => {
 
     it("should parse multiple thenBy operations", () => {
       const query = () =>
-        from<{ country: string; city: string; street: string }>("addresses")
+        from(db, "users")
           .orderBy((x) => x.country)
           .thenBy((x) => x.city)
-          .thenBy((x) => x.street);
+          .thenBy((x) => x.name);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("thenBy");
       const lastThenByOp = asThenByOperation(getOperation(result));
-      expect(lastThenByOp.keySelector).to.equal("street");
+      expect(lastThenByOp.keySelector).to.equal("name");
 
       const middleThenByOp = asThenByOperation(lastThenByOp.source);
       expect(middleThenByOp.operationType).to.equal("thenBy");
@@ -56,9 +57,9 @@ describe("THEN BY Operations", () => {
 
     it("should parse thenBy with computed expression", () => {
       const query = () =>
-        from<{ category: string; price: number; discount: number }>("products")
+        from(db, "products")
           .orderBy((x) => x.category)
-          .thenBy((x) => x.price - x.discount);
+          .thenBy((x) => x.price - x.cost);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("thenBy");
@@ -72,7 +73,7 @@ describe("THEN BY Operations", () => {
   describe("thenByDescending()", () => {
     it("should parse orderBy followed by thenByDescending", () => {
       const query = () =>
-        from<{ department: string; salary: number }>("employees")
+        from(db, "employees")
           .orderBy((x) => x.department)
           .thenByDescending((x) => x.salary);
       const result = parseQuery(query);
@@ -85,10 +86,10 @@ describe("THEN BY Operations", () => {
 
     it("should parse mixed thenBy and thenByDescending", () => {
       const query = () =>
-        from<{ category: string; rating: number; price: number }>("products")
+        from(db, "products")
           .orderBy((x) => x.category)
-          .thenByDescending((x) => x.rating)
-          .thenBy((x) => x.price);
+          .thenByDescending((x) => x.price)
+          .thenBy((x) => x.cost);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("thenBy");

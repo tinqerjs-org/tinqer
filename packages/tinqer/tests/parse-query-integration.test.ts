@@ -21,10 +21,11 @@ import type {
   BooleanMethodExpression,
   ColumnExpression,
 } from "../src/expressions/expression.js";
+import { db } from "./test-schema.js";
 
 describe("Parse Query Integration Tests", () => {
   it("should parse a simple from query", () => {
-    const query = () => from<{ id: number; name: string }>("users");
+    const query = () => from(db, "users");
     const result = parseQuery(query);
 
     expect(getOperation(result)).to.not.be.null;
@@ -34,7 +35,7 @@ describe("Parse Query Integration Tests", () => {
   });
 
   it("should parse a where clause", () => {
-    const query = () => from<{ id: number; age: number }>("users").where((x) => x.age >= 18);
+    const query = () => from(db, "users").where((x) => x.age >= 18);
     const result = parseQuery(query);
 
     expect(getOperation(result)).to.not.be.null;
@@ -47,7 +48,7 @@ describe("Parse Query Integration Tests", () => {
 
   it("should parse a select projection", () => {
     const query = () =>
-      from<{ id: number; name: string; age: number }>("users").select((x) => ({
+      from(db, "users").select((x) => ({
         id: x.id,
         name: x.name,
       }));
@@ -62,7 +63,7 @@ describe("Parse Query Integration Tests", () => {
 
   it("should parse a complex query chain", () => {
     const query = () =>
-      from<{ id: number; name: string; age: number; isActive: boolean }>("users")
+      from(db, "users")
         .where((x) => x.age >= 18 && x.isActive)
         .select((x) => ({ id: x.id, name: x.name }))
         .orderBy((x) => x.name)
@@ -95,8 +96,7 @@ describe("Parse Query Integration Tests", () => {
   });
 
   it("should parse query with external parameters", () => {
-    const query = (p: { minAge: number }) =>
-      from<{ id: number; age: number }>("users").where((x) => x.age >= p.minAge);
+    const query = (p: { minAge: number }) => from(db, "users").where((x) => x.age >= p.minAge);
     const result = parseQuery(query);
 
     expect(getOperation(result)).to.not.be.null;
@@ -114,21 +114,21 @@ describe("Parse Query Integration Tests", () => {
   });
 
   it("should parse terminal operations", () => {
-    const query1 = () => from<{ id: number }>("users").count();
+    const query1 = () => from(db, "users").count();
     const result1 = parseQuery(query1);
     expect(getOperation(result1)?.operationType).to.equal("count");
 
-    const query2 = () => from<{ id: number }>("users").first();
+    const query2 = () => from(db, "users").first();
     const result2 = parseQuery(query2);
     expect(getOperation(result2)?.operationType).to.equal("first");
 
-    const query3 = () => from<{ id: number }>("users").toArray();
+    const query3 = () => from(db, "users").toArray();
     const result3 = parseQuery(query3);
     expect(getOperation(result3)?.operationType).to.equal("toArray");
   });
 
   it("should parse string methods", () => {
-    const query = () => from<{ name: string }>("users").where((x) => x.name.startsWith("John"));
+    const query = () => from(db, "users").where((x) => x.name.startsWith("John"));
     const result = parseQuery(query);
 
     expect(getOperation(result)).to.not.be.null;

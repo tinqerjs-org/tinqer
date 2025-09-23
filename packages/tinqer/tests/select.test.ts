@@ -5,6 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery, from } from "../src/index.js";
+import { db } from "./test-schema.js";
 import {
   asSelectOperation,
   asWhereOperation,
@@ -22,8 +23,7 @@ import type { ParamRef } from "../src/query-tree/operations.js";
 describe("SELECT Operation", () => {
   describe("Simple Projections", () => {
     it("should parse simple property selection", () => {
-      const query = () =>
-        from<{ id: number; name: string; age: number }>("users").select((x) => x.name);
+      const query = () => from(db, "users").select((x) => x.name);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("select");
@@ -35,7 +35,7 @@ describe("SELECT Operation", () => {
 
     it("should parse object projection", () => {
       const query = () =>
-        from<{ id: number; name: string; age: number }>("users").select((x) => ({
+        from(db, "users").select((x) => ({
           userId: x.id,
           userName: x.name,
         }));
@@ -56,7 +56,7 @@ describe("SELECT Operation", () => {
   describe("Nested Projections", () => {
     it("should parse nested object projection", () => {
       const query = () =>
-        from<{ id: number; name: string; city: string; country: string }>("users").select((x) => ({
+        from(db, "users").select((x) => ({
           id: x.id,
           details: {
             name: x.name,
@@ -89,7 +89,7 @@ describe("SELECT Operation", () => {
   describe("Chained SELECT Operations", () => {
     it("should parse select after where", () => {
       const query = () =>
-        from<{ id: number; name: string; age: number }>("users")
+        from(db, "users")
           .where((x) => x.age >= 18)
           .select((x) => ({ id: x.id, name: x.name }));
       const result = parseQuery(query);
@@ -101,7 +101,7 @@ describe("SELECT Operation", () => {
 
     it("should parse multiple select operations", () => {
       const query = () =>
-        from<{ id: number; name: string; age: number }>("users")
+        from(db, "users")
           .select((x) => ({ userId: x.id, userName: x.name, userAge: x.age }))
           .select((x) => ({ id: x.userId, displayName: x.userName }));
       const result = parseQuery(query);
