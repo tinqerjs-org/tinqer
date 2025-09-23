@@ -155,6 +155,11 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     wherePredicates.push(generateBooleanExpression(lastOp.predicate, context));
   }
 
+  // Also check for COUNT predicate
+  if (countOp?.predicate) {
+    wherePredicates.push(generateBooleanExpression(countOp.predicate, context));
+  }
+
   // Add WHERE clause if we have any predicates
   if (wherePredicates.length > 0) {
     fragments.push(`WHERE ${wherePredicates.join(" AND ")}`);
