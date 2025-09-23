@@ -63,6 +63,58 @@ const userCount = users.count((u) => u.isActive);
 const allUsers = users.toArray();
 ```
 
+## Executing Queries
+
+Tinqer provides two ways to work with queries:
+
+### Generating SQL
+
+Use `query()` to generate SQL and parameters:
+
+```typescript
+import { query } from "@webpods/tinqer-sql-pg-promise";
+
+const result = query(
+  (p: { minAge: number }) => from<User>("users").where((u) => u.age >= p.minAge),
+  { minAge: 18 },
+);
+
+console.log(result.sql); // SELECT * FROM "users" AS t0 WHERE age >= $(minAge)
+console.log(result.params); // { minAge: 18 }
+
+// Execute with pg-promise
+const rows = await db.any(result.sql, result.params);
+```
+
+### Direct Execution
+
+Use `execute()` for type-safe query execution:
+
+```typescript
+import { execute } from "@webpods/tinqer-sql-pg-promise";
+import db from "./database"; // Your pg-promise instance
+
+// Returns User[]
+const users = await execute(db, () => from<User>("users").where((u) => u.age >= 18), {});
+
+// Returns { id: number, name: string }[]
+const userInfo = await execute(
+  db,
+  () =>
+    from<User>("users")
+      .where((u) => u.isActive)
+      .select((u) => ({ id: u.id, name: u.name })),
+  {},
+);
+
+// Terminal operations return single values
+const firstUser = await execute(db, () => from<User>("users").first(), {}); // Returns User (not User[])
+
+const userCount = await execute(db, () => from<User>("users").count(), {}); // Returns number
+
+const hasAdults = await execute(db, () => from<User>("users").any((u) => u.age >= 18), {}); // Returns boolean
+```
+
 ## API Reference
 
 ### Chainable Operations
