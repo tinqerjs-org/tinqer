@@ -66,6 +66,20 @@ export interface JoinOperation extends QueryOperation {
   outerKey: string; // Simple column name
   innerKey: string; // Simple column name
   resultSelector?: Expression; // The projection expression from the result selector lambda
+  resultShape?: ResultShape; // Tracks the shape of the JOIN result for nested property resolution
+}
+
+/**
+ * Represents the shape of a JOIN result
+ */
+export interface ResultShape {
+  properties: Map<string, ShapeProperty>;
+}
+
+export interface ShapeProperty {
+  sourceTable: number; // 0 for outer, 1 for inner, or higher for chained JOINs
+  columnName?: string; // For direct column references
+  nestedShape?: ResultShape; // For nested objects
 }
 
 /**

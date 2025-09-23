@@ -687,12 +687,26 @@ export function convertObjectExpression(
   const properties: Record<string, Expression> = {};
 
   for (const prop of ast.properties) {
-    if (prop.key.type === "Identifier") {
+    // Handle spread operator
+    if ((prop as any).type === "SpreadElement") {
+      const spreadArg = (prop as any).argument;
+      if (spreadArg.type === "Identifier") {
+        // For spread of an identifier, we need to copy all its properties
+        // This is complex and would require tracking object shapes
+        // For now, we'll return null to indicate unsupported
+        console.warn("Spread operator in object expressions is not fully supported");
+        return null;
+      }
+      continue;
+    }
+
+    // Handle regular properties
+    if (prop.key && prop.key.type === "Identifier") {
       const key = (prop.key as Identifier).name;
       const value = convertAstToExpression(prop.value, context);
       if (!value) return null;
       properties[key] = value;
-    } else if (prop.key.type === "Literal" || prop.key.type === "StringLiteral") {
+    } else if (prop.key && (prop.key.type === "Literal" || prop.key.type === "StringLiteral")) {
       const key = String((prop.key as Literal | StringLiteral).value);
       const value = convertAstToExpression(prop.value, context);
       if (!value) return null;

@@ -462,6 +462,7 @@ function isValueExpression(expr: Expression): expr is ValueExpression {
     "stringMethod",
     "case",
     "aggregate",
+    "coalesce",
   ].includes((expr as any).type);
 }
 

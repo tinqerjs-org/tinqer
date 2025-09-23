@@ -2,8 +2,8 @@
  * JOIN operation converter
  */
 
-import type { JoinOperation, QueryOperation } from "../query-tree/operations.js";
-import type { ColumnExpression, Expression } from "../expressions/expression.js";
+import type { JoinOperation, QueryOperation, ResultShape, ShapeProperty } from "../query-tree/operations.js";
+import type { ColumnExpression, Expression, ObjectExpression } from "../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
@@ -13,6 +13,61 @@ import type { ConversionContext } from "./converter-utils.js";
 import { getParameterName, getReturnExpression } from "./converter-utils.js";
 import { convertAstToExpression } from "./expressions.js";
 import { convertMethodChain } from "./ast-converter.js";
+
+/**
+ * Build a ResultShape from a JOIN result selector expression
+ */
+function buildResultShape(
+  expr: Expression | undefined,
+  outerParam: string | null,
+  innerParam: string | null,
+): ResultShape | undefined {
+  if (!expr || expr.type !== "object") {
+    return undefined;
+  }
+
+  const objExpr = expr as ObjectExpression;
+  const shape: ResultShape = {
+    properties: new Map<string, ShapeProperty>(),
+  };
+
+  for (const [propName, propExpr] of Object.entries(objExpr.properties)) {
+    // Check if this is a reference to one of the JOIN parameters
+    if (propExpr.type === "column") {
+      const colExpr = propExpr as ColumnExpression;
+
+      // Check if this references the outer or inner parameter
+      if (colExpr.table === outerParam && outerParam) {
+        // This property references the outer table
+        shape.properties.set(propName, {
+          sourceTable: 0,
+          columnName: colExpr.name,
+        });
+      } else if (colExpr.table === innerParam && innerParam) {
+        // This property references the inner table
+        shape.properties.set(propName, {
+          sourceTable: 1,
+          columnName: colExpr.name,
+        });
+      } else if (!colExpr.table) {
+        // Direct parameter reference (e.g., { orderItem: oi })
+        if (colExpr.name === outerParam && outerParam) {
+          shape.properties.set(propName, {
+            sourceTable: 0,
+            // This represents the entire outer table row
+          });
+        } else if (colExpr.name === innerParam && innerParam) {
+          shape.properties.set(propName, {
+            sourceTable: 1,
+            // This represents the entire inner table row
+          });
+        }
+      }
+    }
+  }
+
+  return shape;
+}
 
 export function convertJoinOperation(
   ast: ASTCallExpression,
@@ -129,6 +184,9 @@ export function convertJoinOperation(
     }
 
     if (innerSource && outerKey && innerKey) {
+      // Build the result shape from the result selector
+      const resultShape = buildResultShape(resultSelector, outerParam, innerParam);
+
       return {
         type: "queryOperation",
         operationType: "join",
@@ -137,6 +195,7 @@ export function convertJoinOperation(
         outerKey,
         innerKey,
         resultSelector, // Include the result selector
+        resultShape, // Include the result shape
       };
     }
   }

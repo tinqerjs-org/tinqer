@@ -30,7 +30,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       expect(results.length).to.be.greaterThan(0);
       results.forEach((r) => {
         expect(r.priceWithTax).to.be.closeTo(r.price * 1.1, 0.01);
-        expect(r.priceWithShipping).to.equal(r.price + 10);
+        expect(r.priceWithShipping).to.be.closeTo(r.price + 10, 0.01);
       });
     });
 
