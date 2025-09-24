@@ -14,7 +14,7 @@ describe("Auto-Parameterization", () => {
       const query = () => from(db, "users").where((x) => x.age >= 18);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _age1: 18 });
+      expect(result?.autoParams).to.deep.equal({ __p1: 18 });
       expect(getOperation(result)).to.not.be.null;
     });
 
@@ -25,28 +25,28 @@ describe("Auto-Parameterization", () => {
           .where((x) => x.age <= 65);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _age1: 18, _age2: 65 });
+      expect(result?.autoParams).to.deep.equal({ __p1: 18, __p2: 65 });
     });
 
     it("should auto-parameterize in take operations", () => {
       const query = () => from(db, "users").take(10);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _limit1: 10 });
+      expect(result?.autoParams).to.deep.equal({ __p1: 10 });
     });
 
     it("should auto-parameterize in skip operations", () => {
       const query = () => from(db, "users").skip(20);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _offset1: 20 });
+      expect(result?.autoParams).to.deep.equal({ __p1: 20 });
     });
 
     it("should handle both skip and take", () => {
       const query = () => from(db, "users").skip(10).take(25);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _offset1: 10, _limit1: 25 });
+      expect(result?.autoParams).to.deep.equal({ __p1: 10, __p2: 25 });
     });
   });
 
@@ -55,7 +55,7 @@ describe("Auto-Parameterization", () => {
       const query = () => from(db, "users").where((x) => x.name == "John");
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _name1: "John" });
+      expect(result?.autoParams).to.deep.equal({ __p1: "John" });
     });
 
     it("should handle multiple string constants with same column", () => {
@@ -63,7 +63,7 @@ describe("Auto-Parameterization", () => {
         from(db, "users").where((x) => x.role == "admin" || x.role == "moderator");
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _role1: "admin", _role2: "moderator" });
+      expect(result?.autoParams).to.deep.equal({ __p1: "admin", __p2: "moderator" });
     });
 
     it("should handle string constants with different columns", () => {
@@ -71,7 +71,7 @@ describe("Auto-Parameterization", () => {
         from(db, "users").where((x) => x.firstName == "John" && x.lastName == "Doe");
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _firstName1: "John", _lastName1: "Doe" });
+      expect(result?.autoParams).to.deep.equal({ __p1: "John", __p2: "Doe" });
     });
   });
 
@@ -80,14 +80,14 @@ describe("Auto-Parameterization", () => {
       const query = () => from(db, "users").where((x) => x.isActive == true);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _isActive1: true });
+      expect(result?.autoParams).to.deep.equal({ __p1: true });
     });
 
     it("should handle false values", () => {
       const query = () => from(db, "users").where((x) => x.isDeleted == false);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _isDeleted1: false });
+      expect(result?.autoParams).to.deep.equal({ __p1: false });
     });
   });
 
@@ -118,9 +118,9 @@ describe("Auto-Parameterization", () => {
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({
-        _age1: 18,
-        _name1: "John",
-        _isActive1: true,
+        __p1: 18,
+        __p2: "John",
+        __p3: true,
         // Note: null is NOT parameterized (for IS NOT NULL generation)
       });
     });
@@ -133,8 +133,8 @@ describe("Auto-Parameterization", () => {
       // The 10 gets column hint from price (left side of +)
       // The 100 gets generic "value" since left side is complex arithmetic
       expect(result?.autoParams).to.deep.equal({
-        _price1: 10, // Gets hint from price column in x.price + 10
-        _value1: 100, // No column hint for comparison with arithmetic expression
+        __p1: 10, // First literal encountered (10)
+        __p2: 100, // Second literal encountered (100)
       });
     });
 
@@ -149,32 +149,32 @@ describe("Auto-Parameterization", () => {
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({
-        _age1: 21,
-        _isActive1: true,
-        _offset1: 50,
-        _limit1: 25,
+        __p1: 21,
+        __p2: true,
+        __p3: 50,
+        __p4: 25,
       });
     });
   });
 
-  describe("Column hint logic", () => {
-    it("should use column name for hint when comparing with column", () => {
+  describe("Sequential auto-param numbering", () => {
+    it("should use sequential numbering regardless of column context", () => {
       const query = () => from(db, "users").where((x) => x.age > 100);
       const result = parseQuery(query);
 
-      expect(result?.autoParams).to.deep.equal({ _age1: 100 });
+      expect(result?.autoParams).to.deep.equal({ __p1: 100 });
     });
 
-    it("should use value for constants without column context", () => {
+    it("should use sequential numbering for constants without table context", () => {
       const query = () => from(db, "users").where((_x) => 5 < 10);
       const result = parseQuery(query);
 
-      // When there's no column context, use "value" as the base name
-      expect(result?.autoParams).to.have.property("_value1", 5);
-      expect(result?.autoParams).to.have.property("_value2", 10);
+      // Sequential numbering for all auto-params
+      expect(result?.autoParams).to.have.property("__p1", 5);
+      expect(result?.autoParams).to.have.property("__p2", 10);
     });
 
-    it("should increment counter for same column", () => {
+    it("should use sequential numbering for multiple literals", () => {
       const query = () =>
         from(db, "orders").where(
           (x) => x.status == "pending" || x.status == "processing" || x.status == "shipped",
@@ -182,9 +182,9 @@ describe("Auto-Parameterization", () => {
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({
-        _status1: "pending",
-        _status2: "processing",
-        _status3: "shipped",
+        __p1: "pending",
+        __p2: "processing",
+        __p3: "shipped",
       });
     });
   });
@@ -206,8 +206,8 @@ describe("Auto-Parameterization", () => {
 
       // Only the constants should be auto-parameterized
       expect(result?.autoParams).to.deep.equal({
-        _age1: 18,
-        _isActive1: true,
+        __p1: 18,
+        __p2: true,
       });
     });
   });

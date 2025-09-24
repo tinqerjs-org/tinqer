@@ -11,6 +11,7 @@ import type {
 } from "../parser/ast-types.js";
 import type { ConversionContext } from "./converter-utils.js";
 import { convertAstToExpression } from "./expressions.js";
+import { createAutoParam } from "./converter-utils.js";
 
 export function convertSkipOperation(
   ast: ASTCallExpression,
@@ -29,12 +30,10 @@ export function convertSkipOperation(
           ? (arg as NumericLiteral).value
           : ((arg as Literal).value as number);
 
-      const counter = (context.columnCounters.get("offset") || 0) + 1;
-      context.columnCounters.set("offset", counter);
-      const paramName = `_offset${counter}`;
-
-      // Store the parameter value
-      context.autoParams.set(paramName, value);
+      // Create auto-parameter with field context
+      const paramName = createAutoParam(context, value, {
+        fieldName: "OFFSET",
+      });
 
       return {
         type: "queryOperation",

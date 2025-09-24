@@ -76,9 +76,9 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "t0"."name" AS "user", "t1"."amount" AS "total" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" WHERE "id" > $(_id1)',
+        'SELECT "t0"."name" AS "user", "t1"."amount" AS "total" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" WHERE "id" > $(__p1)',
       );
-      expect(result.params).to.deep.equal({ _id1: 100 });
+      expect(result.params).to.deep.equal({ __p1: 100 });
     });
 
     it("should handle JOIN with complex inner query", () => {
@@ -94,9 +94,9 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "orderAmount" FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0" WHERE "amount" > $(_amount1)) AS "t1" ON "t0"."id" = "t1"."userId"',
+        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "orderAmount" FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0" WHERE "amount" > $(__p1)) AS "t1" ON "t0"."id" = "t1"."userId"',
       );
-      expect(result.params).to.deep.equal({ _amount1: 1000 });
+      expect(result.params).to.deep.equal({ __p1: 1000 });
     });
 
     it("should handle JOIN with GROUP BY", () => {
@@ -157,9 +157,9 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "amount" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" ORDER BY "t1"."amount" ASC LIMIT $(_limit1)',
+        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "amount" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" ORDER BY "t1"."amount" ASC LIMIT $(__p1)',
       );
-      expect(result.params).to.deep.equal({ _limit1: 10 });
+      expect(result.params).to.deep.equal({ __p1: 10 });
     });
   });
 
@@ -317,10 +317,10 @@ describe("Join SQL Generation", () => {
       expect(result.sql).to.contain("WHERE");
       expect(result.sql).to.contain("ORDER BY");
       expect(result.sql).to.contain("LIMIT");
-      expect(result.params).to.have.property("_id1");
-      expect(result.params).to.have.property("_status1");
-      expect(result.params).to.have.property("_amount1");
-      expect(result.params).to.have.property("_limit1");
+      expect(result.params).to.have.property("__p1");
+      expect(result.params).to.have.property("__p2");
+      expect(result.params).to.have.property("__p3");
+      expect(result.params).to.have.property("__p4");
     });
 
     it("should handle JOIN with pagination", () => {

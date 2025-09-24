@@ -59,6 +59,7 @@ import {
   isValueExpression,
   isLikelyStringColumn,
   isLikelyStringParam,
+  createAutoParam,
 } from "./converter-utils.js";
 
 /**
@@ -108,6 +109,8 @@ export function convertAstToExpression(
 
     case "UnaryExpression": {
       const unaryExpr = ast as ASTUnaryExpression;
+
+      // Handle logical NOT
       if (unaryExpr.operator === "!") {
         const expr = convertAstToExpression(unaryExpr.argument, context);
 
@@ -127,6 +130,55 @@ export function convertAstToExpression(
           };
         }
       }
+
+      // Handle unary minus (negative numbers)
+      if (unaryExpr.operator === "-") {
+        // Check if the argument is a numeric literal
+        if (unaryExpr.argument.type === "NumericLiteral") {
+          const value = -(unaryExpr.argument as NumericLiteral).value;
+          // Auto-parameterize the negative number
+          const paramName = createAutoParam(context, value);
+          return {
+            type: "param",
+            param: paramName,
+          } as ParameterExpression;
+        }
+
+        // Check if it's a regular Literal with numeric value
+        if (unaryExpr.argument.type === "Literal") {
+          const literalValue = (unaryExpr.argument as Literal).value;
+          if (typeof literalValue === "number") {
+            const value = -literalValue;
+            // Auto-parameterize the negative number
+            const paramName = createAutoParam(context, value);
+            return {
+              type: "param",
+              param: paramName,
+            } as ParameterExpression;
+          }
+        }
+
+        // For other expressions (e.g., -params.value), convert and negate
+        const argExpr = convertAstToExpression(unaryExpr.argument, context);
+        if (argExpr) {
+          // For parameters or columns, create arithmetic expression
+          return {
+            type: "arithmetic",
+            operator: "*",
+            left: {
+              type: "constant",
+              value: -1,
+            } as ConstantExpression,
+            right: argExpr,
+          } as ArithmeticExpression;
+        }
+      }
+
+      // Handle unary plus (just pass through)
+      if (unaryExpr.operator === "+") {
+        return convertAstToExpression(unaryExpr.argument, context);
+      }
+
       return null;
     }
 
@@ -181,11 +233,10 @@ export function convertIdentifier(ast: Identifier, context: ConversionContext): 
     } as ParameterExpression;
   }
 
-  // Otherwise, it might be a column name (rare case)
-  return {
-    type: "column",
-    name,
-  } as ColumnExpression;
+  // Unknown identifier - this should not be allowed
+  throw new Error(
+    `Unknown identifier '${name}'. Variables must be passed via params object or referenced as table parameters.`,
+  );
 }
 
 export function convertMemberExpression(
@@ -318,12 +369,8 @@ export function convertMemberExpression(
       }
 
       if (value !== undefined) {
-        // Convert to auto-parameterized parameter using column hint
-        const columnName = "id"; // Use generic hint for Number constants
-        const counter = (context.columnCounters.get(columnName) || 0) + 1;
-        context.columnCounters.set(columnName, counter);
-        const paramName = `_${columnName}${counter}`;
-        context.autoParams.set(paramName, value);
+        // Convert to auto-parameterized parameter
+        const paramName = createAutoParam(context, value);
 
         return {
           type: "param",
@@ -520,6 +567,22 @@ export function convertBinaryExpression(
 
   // Check for string concatenation
   if (operator === "+") {
+    // Validate expressions without table context in SELECT projections
+    if (context.inSelectProjection && context.hasTableParam === false) {
+      const leftIsNonTableParam =
+        left.type === "constant" ||
+        (left.type === "param" && !context.tableParams.has((left as ParameterExpression).param));
+      const rightIsNonTableParam =
+        right.type === "constant" ||
+        (right.type === "param" && !context.tableParams.has((right as ParameterExpression).param));
+
+      if (leftIsNonTableParam && rightIsNonTableParam) {
+        throw new Error(
+          "Expressions without table context are not allowed in SELECT projections. " +
+            "Use a table parameter (e.g., select(i => ...) instead of select(() => ...)).",
+        );
+      }
+    }
     // Treat as concat if we have a string literal or concat expression
     const leftIsString =
       (left.type === "constant" && typeof (left as ConstantExpression).value === "string") ||
@@ -645,14 +708,11 @@ export function convertLiteral(
     } as ConstantExpression;
   }
 
-  // Generate parameter name based on column hint
-  const columnName = columnHint || "value";
-  const counter = (context.columnCounters.get(columnName) || 0) + 1;
-  context.columnCounters.set(columnName, counter);
-  const paramName = `_${columnName}${counter}`;
-
-  // Store the parameter value
-  context.autoParams.set(paramName, value);
+  // Create auto-parameter with field context
+  const paramName = createAutoParam(context, value, {
+    fieldName: columnHint,
+    tableName: context.currentTable,
+  });
 
   // Return a parameter expression instead of constant
   return {
@@ -768,7 +828,6 @@ export function convertCallExpression(
               return convertLiteral(
                 arg as Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
                 context,
-                columnHint,
               );
             }
             return convertAstToExpression(arg, context);

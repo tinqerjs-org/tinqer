@@ -44,7 +44,11 @@ export function convertSelectOperation(
       const body = (lambdaAst as ArrowFunctionExpression).body;
 
       // Set flag to indicate we're in a SELECT projection
-      const selectContext = { ...context, inSelectProjection: true };
+      const selectContext = {
+        ...context,
+        inSelectProjection: true,
+        hasTableParam: paramName !== null,
+      };
 
       // Special case: identity selector (e.g., .select(u => u))
       // This should select all columns (SELECT *)

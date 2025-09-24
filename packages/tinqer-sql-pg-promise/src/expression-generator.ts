@@ -346,7 +346,83 @@ function generateParameterExpression(expr: ParameterExpression, context: SqlCont
 function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlContext): string {
   const left = generateValueExpression(expr.left, context);
   const right = generateValueExpression(expr.right, context);
+
+  // In PostgreSQL, use || for string concatenation
+  if (expr.operator === "+") {
+    // Check if either operand is definitely a string
+    const isStringConcat =
+      // String constants
+      (expr.left.type === "constant" && typeof (expr.left as any).value === "string") ||
+      (expr.right.type === "constant" && typeof (expr.right as any).value === "string") ||
+      // String method results (toLowerCase, toUpperCase, substring, etc.)
+      expr.left.type === "stringMethod" ||
+      expr.right.type === "stringMethod" ||
+      // Check if expressions are likely to produce strings
+      isLikelyStringExpression(expr.left) ||
+      isLikelyStringExpression(expr.right) ||
+      // Check for string-related parameter names (heuristic)
+      (expr.left.type === "param" && isLikelyStringParam(expr.left as any)) ||
+      (expr.right.type === "param" && isLikelyStringParam(expr.right as any));
+
+    if (isStringConcat) {
+      return `${left} || ${right}`;
+    }
+  }
+
   return `(${left} ${expr.operator} ${right})`;
+}
+
+/**
+ * Check if a parameter expression is likely a string based on naming patterns
+ */
+function isLikelyStringParam(expr: { param: string }): boolean {
+  const param = expr.param;
+
+  // Check for common string parameter patterns
+  const stringPatterns = [
+    /_text\d*$/i,
+    /_name\d*$/i,
+    /_title\d*$/i,
+    /_description\d*$/i,
+    /_message\d*$/i,
+    /_suffix\d*$/i,
+    /_prefix\d*$/i,
+    /_email\d*$/i,
+    /_url\d*$/i,
+    /_path\d*$/i,
+    /_label\d*$/i,
+    /_firstName\d*$/i,
+    /_lastName\d*$/i,
+  ];
+
+  return stringPatterns.some((pattern) => pattern.test(param));
+}
+
+/**
+ * Check if an expression is likely to produce a string value
+ */
+function isLikelyStringExpression(expr: Expression): boolean {
+  // Check for COALESCE with string-like columns
+  if (expr.type === "coalesce") {
+    const coalesceExpr = expr as CoalesceExpression;
+    // If any expression in COALESCE is string-like, the result is string-like
+    return coalesceExpr.expressions.some((e: Expression) => {
+      if (e.type === "column") {
+        const col = e as ColumnExpression;
+        // Check if column name suggests it's a string
+        return /text|name|title|description|message|email|url|path|label/i.test(col.name);
+      }
+      if (e.type === "constant") {
+        return typeof (e as any).value === "string";
+      }
+      if (e.type === "stringMethod") {
+        return true;
+      }
+      return false;
+    });
+  }
+
+  return false;
 }
 
 /**

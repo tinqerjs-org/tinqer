@@ -31,7 +31,8 @@ export function query<TParams, TResult>(
   }
 
   // Merge user params with auto-extracted params
-  const mergedParams = { ...params, ...parseResult.autoParams };
+  // User params take priority over auto-params to avoid collisions
+  const mergedParams = { ...parseResult.autoParams, ...params };
 
   // Process array indexing in parameters
   // Look for parameters like "roles[0]" and resolve them

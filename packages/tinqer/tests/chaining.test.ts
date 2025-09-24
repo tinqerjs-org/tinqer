@@ -92,13 +92,13 @@ describe("Operation Chaining", () => {
     expect(takeOp.operationType).to.equal("take");
     const takeParam = takeOp.count as ParamRef;
     expect(takeParam.type).to.equal("param");
-    expect(takeParam.param).to.equal("_limit1");
+    expect(takeParam.param).to.equal("__p2");
     const skipOp = asSkipOperation(takeOp.source);
     expect(skipOp.operationType).to.equal("skip");
     const skipParam = skipOp.count as ParamRef;
     expect(skipParam.type).to.equal("param");
-    expect(skipParam.param).to.equal("_offset1");
-    expect(result?.autoParams).to.deep.equal({ _offset1: 10, _limit1: 20 });
+    expect(skipParam.param).to.equal("__p1");
+    expect(result?.autoParams).to.deep.equal({ __p1: 10, __p2: 20 });
     const orderByOp = asOrderByOperation(skipOp.source);
     expect(orderByOp.operationType).to.equal("orderBy");
     expect(orderByOp.descending).to.equal(true);

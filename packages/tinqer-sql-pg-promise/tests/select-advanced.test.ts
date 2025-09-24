@@ -91,12 +91,12 @@ describe("Advanced SELECT Projection SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain('WHERE ("stock" > $(_stock1) AND "price" > $(_price1))');
+      expect(result.sql).to.contain('WHERE ("stock" > $(__p1) AND "price" > $(__p2))');
       expect(result.sql).to.contain('"id" AS "id"');
       expect(result.sql).to.contain('"name" AS "name"');
       expect(result.params).to.deep.equal({
-        _stock1: 0,
-        _price1: 10,
+        __p1: 0,
+        __p2: 10,
       });
     });
   });
@@ -174,13 +174,13 @@ describe("Advanced SELECT Projection SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain(`$(_value1) AS "constant"`);
-      expect(result.sql).to.contain(`$(_value2) AS "message"`);
-      expect(result.sql).to.contain(`$(_value3) AS "flag"`);
+      expect(result.sql).to.contain(`$(__p1) AS "constant"`);
+      expect(result.sql).to.contain(`$(__p2) AS "message"`);
+      expect(result.sql).to.contain(`$(__p3) AS "flag"`);
       expect(result.params).to.deep.equal({
-        _value1: 42,
-        _value2: "Hello World",
-        _value3: true,
+        __p1: 42,
+        __p2: "Hello World",
+        __p3: true,
       });
     });
 

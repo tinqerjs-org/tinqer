@@ -12,7 +12,7 @@ import type {
 } from "../parser/ast-types.js";
 
 import { findArrowFunction, getParameterName, getMethodName } from "./converter-utils.js";
-import type { ConversionContext } from "./converter-utils.js";
+import type { ConversionContext, AutoParamInfo } from "./converter-utils.js";
 
 // Re-export ConversionContext for external use
 export type { ConversionContext } from "./converter-utils.js";
@@ -51,61 +51,63 @@ import type { ParseResult } from "../parser/parse-query.js";
  * This handles the method chain: from().where().select() etc.
  */
 export function convertAstToQueryOperationWithParams(ast: unknown): ParseResult | null {
-  try {
-    const program = ast as Program;
+  const program = ast as Program;
 
-    // Find the arrow function in the AST
-    const firstStatement = program.body[0] as ExpressionStatement;
-    const arrowFunc = findArrowFunction(firstStatement.expression);
+  // Find the arrow function in the AST
+  const firstStatement = program.body[0] as ExpressionStatement;
+  const arrowFunc = findArrowFunction(firstStatement.expression);
 
-    if (!arrowFunc) {
-      return null;
-    }
-
-    // Get the parameter name (if any)
-    const paramName = getParameterName(arrowFunc);
-
-    // Create conversion context with auto-param tracking
-    const context: ConversionContext = {
-      tableParams: new Set(),
-      queryParams: paramName ? new Set([paramName]) : new Set(),
-      tableAliases: new Map(),
-      autoParams: new Map(),
-      columnCounters: new Map(),
-    };
-
-    // Convert the body (should be a method chain)
-    let operation: QueryOperation | null = null;
-
-    // Handle both Expression body and BlockStatement body
-    if (arrowFunc.body.type === "BlockStatement") {
-      // For block statements, look for a return statement
-      const returnExpr = getReturnExpression(arrowFunc.body.body);
-      if (returnExpr) {
-        operation = convertMethodChain(returnExpr, context);
-      }
-    } else {
-      operation = convertMethodChain(arrowFunc.body, context);
-    }
-
-    if (!operation) {
-      return null;
-    }
-
-    // Convert Map to plain object for autoParams
-    const autoParams: Record<string, string | number | boolean | null> = {};
-    context.autoParams.forEach((value, key) => {
-      autoParams[key] = value;
-    });
-
-    return {
-      operation,
-      autoParams,
-    };
-  } catch (error) {
-    console.error("Failed to convert AST to QueryOperation:", error);
+  if (!arrowFunc) {
     return null;
   }
+
+  // Get the parameter name (if any)
+  const paramName = getParameterName(arrowFunc);
+
+  // Create conversion context with auto-param tracking
+  const context: ConversionContext = {
+    tableParams: new Set(),
+    queryParams: paramName ? new Set([paramName]) : new Set(),
+    tableAliases: new Map(),
+    autoParams: new Map(),
+    autoParamCounter: 0,
+  };
+
+  // Convert the body (should be a method chain)
+  let operation: QueryOperation | null = null;
+
+  // Handle both Expression body and BlockStatement body
+  if (arrowFunc.body.type === "BlockStatement") {
+    // For block statements, look for a return statement
+    const returnExpr = getReturnExpression(arrowFunc.body.body);
+    if (returnExpr) {
+      operation = convertMethodChain(returnExpr, context);
+    }
+  } else {
+    operation = convertMethodChain(arrowFunc.body, context);
+  }
+
+  if (!operation) {
+    return null;
+  }
+
+  // Convert Map to plain object for autoParams - extract just the values for backward compatibility
+  const autoParams: Record<string, string | number | boolean | null> = {};
+  context.autoParams.forEach((paramInfo, key) => {
+    autoParams[key] = paramInfo.value;
+  });
+
+  // Also provide enhanced parameter info for tools that need field context
+  const autoParamInfos: Record<string, AutoParamInfo> = {};
+  context.autoParams.forEach((paramInfo, key) => {
+    autoParamInfos[key] = paramInfo;
+  });
+
+  return {
+    operation,
+    autoParams,
+    autoParamInfos, // Enhanced field context information
+  };
 }
 
 /**
@@ -155,7 +157,7 @@ export function convertAstToQueryOperation(ast: unknown): QueryOperation | null 
       queryParams: paramName ? new Set([paramName]) : new Set(),
       tableAliases: new Map(),
       autoParams: new Map(),
-      columnCounters: new Map(),
+      autoParamCounter: 0,
     };
 
     // Convert the body (should be a method chain)
@@ -170,8 +172,7 @@ export function convertAstToQueryOperation(ast: unknown): QueryOperation | null 
     } else {
       return convertMethodChain(arrowFunc.body, context);
     }
-  } catch (error) {
-    console.error("Failed to convert AST to QueryOperation:", error);
+  } catch {
     return null;
   }
 }

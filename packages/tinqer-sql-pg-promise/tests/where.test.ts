@@ -12,22 +12,22 @@ describe("WHERE SQL Generation", () => {
     it("should generate equality comparison", () => {
       const result = query(() => from(db, "users").where((x) => x.id == 1), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(_id1)');
-      expect(result.params).to.deep.equal({ _id1: 1 });
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(__p1)');
+      expect(result.params).to.deep.equal({ __p1: 1 });
     });
 
     it("should generate greater than comparison", () => {
       const result = query(() => from(db, "users").where((x) => x.age > 18), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" > $(_age1)');
-      expect(result.params).to.deep.equal({ _age1: 18 });
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" > $(__p1)');
+      expect(result.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should generate greater than or equal comparison", () => {
       const result = query(() => from(db, "users").where((x) => x.age >= 18), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1)');
-      expect(result.params).to.deep.equal({ _age1: 18 });
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1)');
+      expect(result.params).to.deep.equal({ __p1: 18 });
     });
   });
 
@@ -36,9 +36,9 @@ describe("WHERE SQL Generation", () => {
       const result = query(() => from(db, "users").where((x) => x.age >= 18 && x.isActive), {});
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("age" >= $(_age1) AND "isActive")',
+        'SELECT * FROM "users" AS "t0" WHERE ("age" >= $(__p1) AND "isActive")',
       );
-      expect(result.params).to.deep.equal({ _age1: 18 });
+      expect(result.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should generate OR condition", () => {
@@ -48,9 +48,9 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("role" = $(_role1) OR "role" = $(_role2))',
+        'SELECT * FROM "users" AS "t0" WHERE ("role" = $(__p1) OR "role" = $(__p2))',
       );
-      expect(result.params).to.deep.equal({ _role1: "admin", _role2: "moderator" });
+      expect(result.params).to.deep.equal({ __p1: "admin", __p2: "moderator" });
     });
   });
 
@@ -90,9 +90,9 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1) AND "role" = $(_role1)',
+        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "role" = $(__p2)',
       );
-      expect(result.params).to.deep.equal({ _age1: 18, _role1: "admin" });
+      expect(result.params).to.deep.equal({ __p1: 18, __p2: "admin" });
     });
 
     it("should combine three WHERE clauses with AND", () => {
@@ -106,9 +106,9 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1) AND "role" = $(_role1) AND "active" = $(_active1)',
+        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "role" = $(__p2) AND "active" = $(__p3)',
       );
-      expect(result.params).to.deep.equal({ _age1: 18, _role1: "admin", _active1: true });
+      expect(result.params).to.deep.equal({ __p1: 18, __p2: "admin", __p3: true });
     });
 
     it("should handle complex conditions in multiple WHERE clauses", () => {
@@ -122,14 +122,14 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("age" >= $(_age1) AND "age" <= $(_age2)) AND ("role" = $(_role1) OR "role" = $(_role2)) AND "department" != $(_department1)',
+        'SELECT * FROM "users" AS "t0" WHERE ("age" >= $(__p1) AND "age" <= $(__p2)) AND ("role" = $(__p3) OR "role" = $(__p4)) AND "department" != $(__p5)',
       );
       expect(result.params).to.deep.equal({
-        _age1: 18,
-        _age2: 65,
-        _role1: "admin",
-        _role2: "moderator",
-        _department1: "temp",
+        __p1: 18,
+        __p2: 65,
+        __p3: "admin",
+        __p4: "moderator",
+        __p5: "temp",
       });
     });
 
@@ -144,9 +144,9 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE "age" >= $(_age1) AND "role" = $(_role1)',
+        'SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "role" = $(__p2)',
       );
-      expect(result.params).to.deep.equal({ _age1: 21, _role1: "admin" });
+      expect(result.params).to.deep.equal({ __p1: 21, __p2: "admin" });
     });
 
     it("should combine WHERE clauses with ORDER BY", () => {
@@ -160,9 +160,9 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1) AND "active" = $(_active1) ORDER BY "name" ASC',
+        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "active" = $(__p2) ORDER BY "name" ASC',
       );
-      expect(result.params).to.deep.equal({ _age1: 18, _active1: true });
+      expect(result.params).to.deep.equal({ __p1: 18, __p2: true });
     });
 
     it("should combine WHERE clauses with TAKE and SKIP", () => {
@@ -177,13 +177,13 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "tasks" AS "t0" WHERE "status" = $(_status1) AND "priority" > $(_priority1) LIMIT $(_limit1) OFFSET $(_offset1)',
+        'SELECT * FROM "tasks" AS "t0" WHERE "status" = $(__p1) AND "priority" > $(__p2) LIMIT $(__p4) OFFSET $(__p3)',
       );
       expect(result.params).to.deep.equal({
-        _status1: "pending",
-        _priority1: 5,
-        _limit1: 5,
-        _offset1: 10,
+        __p1: "pending",
+        __p2: 5,
+        __p4: 5,
+        __p3: 10,
       });
     });
 
@@ -198,9 +198,9 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "sales" AS "t0" WHERE "amount" > $(_amount1) AND "status" = $(_status1) GROUP BY "category"',
+        'SELECT * FROM "sales" AS "t0" WHERE "amount" > $(__p1) AND "status" = $(__p2) GROUP BY "category"',
       );
-      expect(result.params).to.deep.equal({ _amount1: 100, _status1: "completed" });
+      expect(result.params).to.deep.equal({ __p1: 100, __p2: "completed" });
     });
 
     it("should handle single WHERE with multiple conditions vs multiple WHERE clauses", () => {
@@ -221,14 +221,14 @@ describe("WHERE SQL Generation", () => {
 
       // They generate slightly different but equivalent SQL
       expect(single.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("age" >= $(_age1) AND "role" = $(_role1))',
+        'SELECT * FROM "users" AS "t0" WHERE ("age" >= $(__p1) AND "role" = $(__p2))',
       );
-      expect(single.params).to.deep.equal({ _age1: 18, _role1: "admin" });
+      expect(single.params).to.deep.equal({ __p1: 18, __p2: "admin" });
 
       expect(multiple.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1) AND "role" = $(_role1)',
+        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "role" = $(__p2)',
       );
-      expect(multiple.params).to.deep.equal({ _age1: 18, _role1: "admin" });
+      expect(multiple.params).to.deep.equal({ __p1: 18, __p2: "admin" });
 
       // Both are valid PostgreSQL and produce the same results
     });
@@ -244,9 +244,9 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(minAge) AND "role" = $(targetRole) AND "active" = $(_active1)',
+        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(minAge) AND "role" = $(targetRole) AND "active" = $(__p1)',
       );
-      expect(result.params).to.deep.equal({ minAge: 21, targetRole: "admin", _active1: true });
+      expect(result.params).to.deep.equal({ minAge: 21, targetRole: "admin", __p1: true });
     });
 
     it("should handle WHERE clauses with JOIN", () => {
@@ -265,9 +265,9 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "t0"."name" AS "user", "t1"."name" AS "dept" FROM "users" AS "t0" INNER JOIN "departments" AS "t1" ON "t0"."deptId" = "t1"."id" WHERE "id" > $(_id1) AND "name" != $(_name1)',
+        'SELECT "t0"."name" AS "user", "t1"."name" AS "dept" FROM "users" AS "t0" INNER JOIN "departments" AS "t1" ON "t0"."deptId" = "t1"."id" WHERE "id" > $(__p1) AND "name" != $(__p2)',
       );
-      expect(result.params).to.deep.equal({ _id1: 100, _name1: "" });
+      expect(result.params).to.deep.equal({ __p1: 100, __p2: "" });
     });
   });
 });

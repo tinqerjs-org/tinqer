@@ -46,9 +46,9 @@ describe("Arithmetic Expression SQL Generation", () => {
       const result = query(() => from<Product>("products").where((p) => p.price - p.cost > 50), {});
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE ("price" - "cost") > $(_value1)',
+        'SELECT * FROM "products" AS "t0" WHERE ("price" - "cost") > $(__p1)',
       );
-      expect(result.params).to.deep.equal({ _value1: 50 });
+      expect(result.params).to.deep.equal({ __p1: 50 });
     });
 
     it("should handle complex arithmetic in WHERE", () => {
@@ -58,9 +58,9 @@ describe("Arithmetic Expression SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "financial" AS "t0" WHERE ("revenue" / "employees") > $(_value1)',
+        'SELECT * FROM "financial" AS "t0" WHERE ("revenue" / "employees") > $(__p1)',
       );
-      expect(result.params).to.deep.equal({ _value1: 100000 });
+      expect(result.params).to.deep.equal({ __p1: 100000 });
     });
 
     it("should handle multiple arithmetic conditions", () => {
@@ -73,12 +73,12 @@ describe("Arithmetic Expression SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE (("price" * $(_price1)) > $(_value1) AND ("cost" * "quantity") < $(_value2))',
+        'SELECT * FROM "products" AS "t0" WHERE (("price" * $(__p1)) > $(__p2) AND ("cost" * "quantity") < $(__p3))',
       );
       expect(result.params).to.deep.equal({
-        _price1: 0.9,
-        _value1: 100,
-        _value2: 10000,
+        __p1: 0.9,
+        __p2: 100,
+        __p3: 10000,
       });
     });
   });
@@ -94,9 +94,9 @@ describe("Arithmetic Expression SQL Generation", () => {
       );
 
       expect(result.sql).to.contain('"discount" IS NOT NULL');
-      expect(result.sql).to.contain('("price" - "discount") > $(_value1)');
+      expect(result.sql).to.contain('("price" - "discount") > $(__p1)');
       expect(result.params).to.deep.equal({
-        _value1: 50,
+        __p1: 50,
       });
     });
   });
@@ -111,13 +111,13 @@ describe("Arithmetic Expression SQL Generation", () => {
         { baseDiscount: 0.1 },
       );
 
-      expect(result.sql).to.contain('"price" * (($(_value1) - $(baseDiscount)) - $(_value2))');
-      expect(result.sql).to.contain("> $(_value3)");
+      expect(result.sql).to.contain('"price" * (($(__p1) - $(baseDiscount)) - $(__p2))');
+      expect(result.sql).to.contain("> $(__p3)");
       expect(result.params).to.deep.equal({
         baseDiscount: 0.1,
-        _value1: 1,
-        _value2: 0.05,
-        _value3: 100,
+        __p1: 1,
+        __p2: 0.05,
+        __p3: 100,
       });
     });
   });
@@ -136,10 +136,8 @@ describe("Arithmetic Expression SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "financial" AS "t0" WHERE "revenue" > $(_revenue1)',
-      );
-      expect(result.params).to.deep.equal({ _revenue1: 1000000000 });
+      expect(result.sql).to.equal('SELECT * FROM "financial" AS "t0" WHERE "revenue" > $(__p1)');
+      expect(result.params).to.deep.equal({ __p1: 1000000000 });
     });
 
     // Test removed: Decimal precision with arithmetic no longer supported in SELECT projections
