@@ -184,9 +184,9 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT * FROM "products" AS "t0" WHERE "sku" LIKE $(_sku1) || '%' ORDER BY "name" ASC LIMIT $(_limit1)`,
+        `SELECT * FROM "products" AS "t0" WHERE "sku" LIKE $(_sku1) || '%' ORDER BY "name" ASC LIMIT $(__p1)`,
       );
-      expect(result.params).to.deep.equal({ _sku1: "ELEC", _limit1: 10 });
+      expect(result.params).to.deep.equal({ _sku1: "ELEC", __p1: 10 });
     });
 
     it("should handle string operations with GROUP BY", () => {

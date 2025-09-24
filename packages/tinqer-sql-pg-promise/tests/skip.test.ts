@@ -21,9 +21,9 @@ describe("Skip SQL Generation", () => {
     const result = query(() => from<User>("users").skip(20).take(10), {});
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" LIMIT $(_limit1) OFFSET $(_offset1)',
+      'SELECT * FROM "users" AS "t0" LIMIT $(__p1) OFFSET $(_offset1)',
     );
-    expect(result.params).to.deep.equal({ _limit1: 10, _offset1: 20 });
+    expect(result.params).to.deep.equal({ __p1: 10, _offset1: 20 });
   });
 
   it("should combine skip with where and orderBy", () => {
@@ -37,9 +37,9 @@ describe("Skip SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1) ORDER BY "name" ASC OFFSET $(_offset1)',
+      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) ORDER BY "name" ASC OFFSET $(_offset1)',
     );
-    expect(result.params).to.deep.equal({ _age1: 21, _offset1: 5 });
+    expect(result.params).to.deep.equal({ __p1: 21, _offset1: 5 });
   });
 
   it("should throw error when using local variables", () => {

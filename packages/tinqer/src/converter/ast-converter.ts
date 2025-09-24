@@ -71,7 +71,7 @@ export function convertAstToQueryOperationWithParams(ast: unknown): ParseResult 
       queryParams: paramName ? new Set([paramName]) : new Set(),
       tableAliases: new Map(),
       autoParams: new Map(),
-      columnCounters: new Map(),
+      autoParamCounter: 0,
     };
 
     // Convert the body (should be a method chain)
@@ -155,7 +155,7 @@ export function convertAstToQueryOperation(ast: unknown): QueryOperation | null 
       queryParams: paramName ? new Set([paramName]) : new Set(),
       tableAliases: new Map(),
       autoParams: new Map(),
-      columnCounters: new Map(),
+      autoParamCounter: 0,
     };
 
     // Convert the body (should be a method chain)

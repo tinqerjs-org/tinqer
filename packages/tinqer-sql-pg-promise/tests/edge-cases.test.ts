@@ -252,8 +252,8 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle TAKE 0", () => {
       const result = query(() => from<TestTable>("test").take(0), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" LIMIT $(_limit1)');
-      expect(result.params).to.deep.equal({ _limit1: 0 });
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" LIMIT $(__p1)');
+      expect(result.params).to.deep.equal({ __p1: 0 });
     });
 
     it("should handle very large SKIP", () => {
@@ -266,8 +266,8 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle very large TAKE", () => {
       const result = query(() => from<TestTable>("test").take(999999), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" LIMIT $(_limit1)');
-      expect(result.params).to.deep.equal({ _limit1: 999999 });
+      expect(result.sql).to.equal('SELECT * FROM "test" AS "t0" LIMIT $(__p1)');
+      expect(result.params).to.deep.equal({ __p1: 999999 });
     });
   });
 

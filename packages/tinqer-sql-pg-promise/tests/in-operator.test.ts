@@ -90,13 +90,13 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("id" IN ($(_value1), $(_value2), $(_value3)) AND "age" > $(_age1))',
+        'SELECT * FROM "users" AS "t0" WHERE ("id" IN ($(_value1), $(_value2), $(_value3)) AND "age" > $(__p1))',
       );
       expect(result.params).to.deep.equal({
         _value1: 1,
         _value2: 2,
         _value3: 3,
-        _age1: 18,
+        __p1: 18,
       });
     });
 
@@ -193,7 +193,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "id" IN ($(_value1), $(_value2), $(_value3), $(_value4), $(_value5)) ORDER BY "id" ASC LIMIT $(_limit1) OFFSET $(_offset1)',
+        'SELECT * FROM "users" AS "t0" WHERE "id" IN ($(_value1), $(_value2), $(_value3), $(_value4), $(_value5)) ORDER BY "id" ASC LIMIT $(__p1) OFFSET $(_offset1)',
       );
       expect(result.params).to.deep.equal({
         _value1: 1,
@@ -201,7 +201,7 @@ describe("IN Operator", () => {
         _value3: 3,
         _value4: 4,
         _value5: 5,
-        _limit1: 5,
+        __p1: 5,
         _offset1: 10,
       });
     });

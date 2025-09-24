@@ -70,7 +70,7 @@ describe("GROUP BY with Composite Keys", () => {
       );
 
       expect(result.sql).to.include("GROUP BY UPPER(");
-      expect(result.sql).to.include("\"year\" * ");
+      expect(result.sql).to.include('"year" * ');
     });
 
     it("should group by mixed expressions", () => {
@@ -92,8 +92,8 @@ describe("GROUP BY with Composite Keys", () => {
       );
 
       expect(result.sql).to.include("GROUP BY");
-      expect(result.sql).to.include("\"amount\" > ");
-      expect(result.params._amount1).to.equal(1000);
+      expect(result.sql).to.include('"amount" > ');
+      expect(result.params.__p1).to.equal(1000);
     });
   });
 
@@ -192,9 +192,9 @@ describe("GROUP BY with Composite Keys", () => {
       );
 
       expect(result.sql).to.include("LIMIT");
-      expect(result.params).to.have.property("_limit1");
-      if (result.params._limit1) {
-        expect(result.params._limit1).to.equal(10);
+      expect(result.params).to.have.property("__p1");
+      if (result.params.__p1) {
+        expect(result.params.__p1).to.equal(10);
       }
     });
 
@@ -217,12 +217,12 @@ describe("GROUP BY with Composite Keys", () => {
       expect(result.sql).to.include("OFFSET");
       expect(result.sql).to.include("LIMIT");
       expect(result.params).to.have.property("_offset1");
-      expect(result.params).to.have.property("_limit1");
+      expect(result.params).to.have.property("__p1");
       if (result.params._offset1) {
         expect(result.params._offset1).to.equal(20);
       }
-      if (result.params._limit1) {
-        expect(result.params._limit1).to.equal(10);
+      if (result.params.__p1) {
+        expect(result.params.__p1).to.equal(10);
       }
     });
   });

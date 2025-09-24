@@ -73,7 +73,7 @@ describe("Auto-Parameterization SQL Generation", () => {
         'AND "discount" <= $(_discount1) ' +
         'AND "category" = $(category) ' +
         'AND "inStock" = $(_inStock1) ' +
-        'ORDER BY "price" DESC LIMIT $(_limit1) OFFSET $(_offset1)',
+        'ORDER BY "price" DESC LIMIT $(__p1) OFFSET $(_offset1)',
     );
     expect(result.params).to.deep.equal({
       category: "electronics",
@@ -81,7 +81,7 @@ describe("Auto-Parameterization SQL Generation", () => {
       _discount1: 0.5,
       _inStock1: true,
       _offset1: 10,
-      _limit1: 5,
+      __p1: 5,
     });
   });
 
@@ -104,12 +104,12 @@ describe("Auto-Parameterization SQL Generation", () => {
     const result = query(queryBuilder, {});
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1) ' +
+      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) ' +
         'AND "age" <= $(_age2) ' +
         'AND "age" != $(_age3)',
     );
     expect(result.params).to.deep.equal({
-      _age1: 18,
+      __p1: 18,
       _age2: 65,
       _age3: 30,
     });

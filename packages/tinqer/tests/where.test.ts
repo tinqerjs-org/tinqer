@@ -34,8 +34,8 @@ describe("WHERE Operation", () => {
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
-      expect(whereOp.predicate).to.deep.equal(expr.ne(expr.column("age"), expr.parameter("_age1")));
-      expect(result?.autoParams).to.deep.equal({ _age1: 30 });
+      expect(whereOp.predicate).to.deep.equal(expr.ne(expr.column("age"), expr.parameter("__p1")));
+      expect(result?.autoParams).to.deep.equal({ __p1: 30 });
     });
 
     it("should parse greater than comparison (>)", () => {
@@ -43,8 +43,8 @@ describe("WHERE Operation", () => {
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
-      expect(whereOp.predicate).to.deep.equal(expr.gt(expr.column("age"), expr.parameter("_age1")));
-      expect(result?.autoParams).to.deep.equal({ _age1: 18 });
+      expect(whereOp.predicate).to.deep.equal(expr.gt(expr.column("age"), expr.parameter("__p1")));
+      expect(result?.autoParams).to.deep.equal({ __p1: 18 });
     });
 
     it("should parse greater than or equal comparison (>=)", () => {
@@ -52,10 +52,8 @@ describe("WHERE Operation", () => {
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
-      expect(whereOp.predicate).to.deep.equal(
-        expr.gte(expr.column("age"), expr.parameter("_age1")),
-      );
-      expect(result?.autoParams).to.deep.equal({ _age1: 21 });
+      expect(whereOp.predicate).to.deep.equal(expr.gte(expr.column("age"), expr.parameter("__p1")));
+      expect(result?.autoParams).to.deep.equal({ __p1: 21 });
     });
 
     it("should parse less than comparison (<)", () => {
@@ -63,8 +61,8 @@ describe("WHERE Operation", () => {
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
-      expect(whereOp.predicate).to.deep.equal(expr.lt(expr.column("age"), expr.parameter("_age1")));
-      expect(result?.autoParams).to.deep.equal({ _age1: 65 });
+      expect(whereOp.predicate).to.deep.equal(expr.lt(expr.column("age"), expr.parameter("__p1")));
+      expect(result?.autoParams).to.deep.equal({ __p1: 65 });
     });
 
     it("should parse less than or equal comparison (<=)", () => {
@@ -72,10 +70,8 @@ describe("WHERE Operation", () => {
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
-      expect(whereOp.predicate).to.deep.equal(
-        expr.lte(expr.column("age"), expr.parameter("_age1")),
-      );
-      expect(result?.autoParams).to.deep.equal({ _age1: 100 });
+      expect(whereOp.predicate).to.deep.equal(expr.lte(expr.column("age"), expr.parameter("__p1")));
+      expect(result?.autoParams).to.deep.equal({ __p1: 100 });
     });
   });
 
@@ -87,11 +83,11 @@ describe("WHERE Operation", () => {
       const whereOp = asWhereOperation(getOperation(result));
       expect(whereOp.predicate).to.deep.equal(
         expr.and(
-          expr.gte(expr.column("age"), expr.parameter("_age1")),
+          expr.gte(expr.column("age"), expr.parameter("__p1")),
           expr.booleanColumn("isActive"),
         ),
       );
-      expect(result?.autoParams).to.deep.equal({ _age1: 18 });
+      expect(result?.autoParams).to.deep.equal({ __p1: 18 });
     });
 
     it("should parse OR logical expression (||)", () => {
@@ -125,13 +121,13 @@ describe("WHERE Operation", () => {
       expect(whereOp.predicate).to.deep.equal(
         expr.or(
           expr.and(
-            expr.gte(expr.column("age"), expr.parameter("_age1")),
+            expr.gte(expr.column("age"), expr.parameter("__p1")),
             expr.booleanColumn("isActive"),
           ),
           expr.eq(expr.column("role"), expr.parameter("_role1")),
         ),
       );
-      expect(result?.autoParams).to.deep.equal({ _age1: 18, _role1: "admin" });
+      expect(result?.autoParams).to.deep.equal({ __p1: 18, _role1: "admin" });
     });
   });
 
@@ -195,7 +191,7 @@ describe("WHERE Operation", () => {
       expect(innerWhere.predicate.type).to.equal("comparison");
 
       // Check auto-parameterization for the constant
-      expect(result?.autoParams).to.deep.equal({ _age1: 18 });
+      expect(result?.autoParams).to.deep.equal({ __p1: 18 });
     });
   });
 

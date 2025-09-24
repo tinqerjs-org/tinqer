@@ -46,8 +46,8 @@ describe("TAKE Operation", () => {
     const takeOp = asTakeOperation(getOperation(result));
     const countParam = takeOp.count as ParamRef;
     expect(countParam.type).to.equal("param");
-    expect(countParam.param).to.equal("_limit1");
-    expect(result?.autoParams).to.deep.equal({ _limit1: 1000000 });
+    expect(countParam.param).to.equal("__p1");
+    expect(result?.autoParams).to.deep.equal({ __p1: 1000000 });
   });
 
   it("should parse take after where", () => {
@@ -61,8 +61,8 @@ describe("TAKE Operation", () => {
     const takeOp = asTakeOperation(getOperation(result));
     const countParam = takeOp.count as ParamRef;
     expect(countParam.type).to.equal("param");
-    expect(countParam.param).to.equal("_limit1");
-    expect(result?.autoParams).to.deep.equal({ _limit1: 5 });
+    expect(countParam.param).to.equal("__p1");
+    expect(result?.autoParams).to.deep.equal({ __p1: 5 });
     const whereOp = asWhereOperation(takeOp.source);
     expect(whereOp.operationType).to.equal("where");
   });
@@ -97,8 +97,8 @@ describe("TAKE Operation", () => {
     expect(takeOp.operationType).to.equal("take");
     const countParam = takeOp.count as ParamRef;
     expect(countParam.type).to.equal("param");
-    expect(countParam.param).to.equal("_limit1");
-    expect(result?.autoParams).to.deep.equal({ _limit1: 5 });
+    expect(countParam.param).to.equal("__p1");
+    expect(result?.autoParams).to.deep.equal({ __p1: 5 });
   });
 
   it("should parse take with external parameter", () => {

@@ -24,8 +24,8 @@ describe("Terminal Operations", () => {
 
     it("should generate SQL for first() with predicate", () => {
       const result = query(() => from<User>("users").first((u) => u.age > 18), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" > $(_age1) LIMIT 1');
-      expect(result.params).to.deep.equal({ _age1: 18 });
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" > $(__p1) LIMIT 1');
+      expect(result.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should generate SQL for firstOrDefault()", () => {
@@ -49,9 +49,9 @@ describe("Terminal Operations", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" > $(_age1) AND "isActive" LIMIT 1',
+        'SELECT * FROM "users" AS "t0" WHERE "age" > $(__p1) AND "isActive" LIMIT 1',
       );
-      expect(result.params).to.deep.equal({ _age1: 18 });
+      expect(result.params).to.deep.equal({ __p1: 18 });
     });
   });
 
@@ -119,9 +119,9 @@ describe("Terminal Operations", () => {
     it("should generate SQL for lastOrDefault() with predicate", () => {
       const result = query(() => from<User>("users").lastOrDefault((u) => u.age < 30), {});
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" < $(_age1) ORDER BY 1 DESC LIMIT 1',
+        'SELECT * FROM "users" AS "t0" WHERE "age" < $(__p1) ORDER BY 1 DESC LIMIT 1',
       );
-      expect(result.params).to.deep.equal({ _age1: 30 });
+      expect(result.params).to.deep.equal({ __p1: 30 });
     });
   });
 

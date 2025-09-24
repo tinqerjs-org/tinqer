@@ -51,8 +51,8 @@ describe("Basic Terminal Operations", () => {
             .toArray(),
         {},
       );
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" > $(_age1)');
-      expect(result.params).to.deep.equal({ _age1: 18 });
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" > $(__p1)');
+      expect(result.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should generate SQL for toList()", () => {

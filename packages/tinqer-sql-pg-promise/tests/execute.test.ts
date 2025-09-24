@@ -33,8 +33,8 @@ describe("Execute Function", () => {
       const queryBuilder = () => from(db, "users").where((u) => u.age >= 18);
 
       const sqlResult = query(queryBuilder, {});
-      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1)');
-      expect(sqlResult.params).to.deep.equal({ _age1: 18 });
+      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1)');
+      expect(sqlResult.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should execute with parameters", async () => {
@@ -114,10 +114,8 @@ describe("Execute Function", () => {
       const queryBuilder = () => from(db, "users").count((u) => u.age >= 18);
 
       const sqlResult = query(queryBuilder, {});
-      expect(sqlResult.sql).to.equal(
-        'SELECT COUNT(*) FROM "users" AS "t0" WHERE "age" >= $(_age1)',
-      );
-      expect(sqlResult.params).to.deep.equal({ _age1: 18 });
+      expect(sqlResult.sql).to.equal('SELECT COUNT(*) FROM "users" AS "t0" WHERE "age" >= $(__p1)');
+      expect(sqlResult.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should handle sum() operation", async () => {
@@ -162,9 +160,9 @@ describe("Execute Function", () => {
 
       const sqlResult = query(queryBuilder, {});
       expect(sqlResult.sql).to.equal(
-        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0" WHERE "age" >= $(_age1)) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0" WHERE "age" >= $(__p1)) THEN 1 ELSE 0 END',
       );
-      expect(sqlResult.params).to.deep.equal({ _age1: 18 });
+      expect(sqlResult.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should handle all() operation", async () => {
@@ -183,8 +181,8 @@ describe("Execute Function", () => {
           .toArray();
 
       const sqlResult = query(queryBuilder, {});
-      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1)');
-      expect(sqlResult.params).to.deep.equal({ _age1: 18 });
+      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1)');
+      expect(sqlResult.params).to.deep.equal({ __p1: 18 });
     });
   });
 

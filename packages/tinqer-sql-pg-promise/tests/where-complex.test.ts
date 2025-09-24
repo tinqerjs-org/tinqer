@@ -41,12 +41,12 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain('(("age" >= $(_age1) AND "age" <= $(_age2)) AND "isActive")');
+      expect(result.sql).to.contain('(("age" >= $(__p1) AND "age" <= $(_age2)) AND "isActive")');
       expect(result.sql).to.contain(
         'OR ("role" = $(_role1) AND "departmentId" = $(_departmentId1)))',
       );
       expect(result.params).to.deep.equal({
-        _age1: 18,
+        __p1: 18,
         _age2: 65,
         _role1: "admin",
         _departmentId1: 1,
@@ -90,7 +90,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
       expect(result.sql).to.contain("NOT");
       expect(result.params).to.have.property("_role1", "guest");
-      expect(result.params).to.have.property("_age1", 18);
+      expect(result.params).to.have.property("__p1", 18);
       expect(result.params).to.have.property("_age2", 99);
     });
   });
@@ -118,9 +118,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain(`"age" >= $(_age1)`);
+      expect(result.sql).to.contain(`"age" >= $(__p1)`);
       expect(result.sql).to.contain(`"age" <= $(_age2)`);
-      expect(result.params).to.have.property("_age1", 25);
+      expect(result.params).to.have.property("__p1", 25);
       expect(result.params).to.have.property("_age2", 35);
     });
 
@@ -254,11 +254,11 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.contain(`"isActive" = $(_isActive1)`);
-      expect(result.sql).to.contain(`"age" >= $(_age1)`);
+      expect(result.sql).to.contain(`"age" >= $(__p1)`);
       expect(result.sql).to.contain(`"name" != $(_name1)`);
       expect(result.params).to.deep.equal({
         _isActive1: true,
-        _age1: 21,
+        __p1: 21,
         _name1: "Anonymous",
         _value1: 0,
         _value2: 30000,
@@ -292,9 +292,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1) AND "isActive" AND "role" != $(_role1)',
+        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "isActive" AND "role" != $(_role1)',
       );
-      expect(result.params).to.deep.equal({ _age1: 18, _role1: "guest" });
+      expect(result.params).to.deep.equal({ __p1: 18, _role1: "guest" });
     });
 
     it("should combine 5 WHERE clauses", () => {

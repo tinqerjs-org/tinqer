@@ -193,9 +193,9 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT "category" AS "category", SUM("amount") AS "total" FROM "sales" AS "t0" GROUP BY "category" ORDER BY "total" DESC LIMIT $(_limit1)`,
+        `SELECT "category" AS "category", SUM("amount") AS "total" FROM "sales" AS "t0" GROUP BY "category" ORDER BY "total" DESC LIMIT $(__p1)`,
       );
-      expect(result.params).to.deep.equal({ _limit1: 5 });
+      expect(result.params).to.deep.equal({ __p1: 5 });
     });
 
     it("should paginate grouped results", () => {
@@ -216,8 +216,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
       expect(result.sql).to.contain(`GROUP BY "department"`);
       expect(result.sql).to.contain(`ORDER BY "dept" ASC`);
-      expect(result.sql).to.contain("LIMIT $(_limit1) OFFSET $(_offset1)");
-      expect(result.params).to.deep.equal({ _offset1: 10, _limit1: 5 });
+      expect(result.sql).to.contain("LIMIT $(__p1) OFFSET $(_offset1)");
+      expect(result.params).to.deep.equal({ _offset1: 10, __p1: 5 });
     });
   });
 
@@ -303,11 +303,11 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
       expect(result.sql).to.contain(`"profit" > $(targetProfit)`);
       expect(result.sql).to.contain(`"quantity" > $(_quantity1)`);
-      expect(result.sql).to.contain("LIMIT $(_limit1)");
+      expect(result.sql).to.contain("LIMIT $(__p1)");
       expect(result.params).to.deep.equal({
         targetProfit: 100,
         _quantity1: 10,
-        _limit1: 10,
+        __p1: 10,
       });
     });
   });
@@ -335,11 +335,11 @@ describe("Advanced GROUP BY SQL Generation", () => {
       expect(result.sql).to.contain(`GROUP BY "region"`);
       expect(result.sql).to.contain(`"revenue" > $(_revenue1)`);
       expect(result.sql).to.contain(`ORDER BY "revenue" DESC`);
-      expect(result.sql).to.contain("LIMIT $(_limit1)");
+      expect(result.sql).to.contain("LIMIT $(__p1)");
       expect(result.params).to.deep.equal({
         _amount1: 100,
         _revenue1: 10000,
-        _limit1: 3,
+        __p1: 3,
       });
     });
 

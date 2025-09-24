@@ -20,9 +20,9 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE ("age" >= $(minAge) AND "isActive") ORDER BY "name" ASC LIMIT $(_limit1)',
+      'SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE ("age" >= $(minAge) AND "isActive") ORDER BY "name" ASC LIMIT $(__p1)',
     );
-    expect(result.params).to.deep.equal({ minAge: 18, _limit1: 10 });
+    expect(result.params).to.deep.equal({ minAge: 18, __p1: 10 });
   });
 
   it("should generate query with SKIP and TAKE for pagination", () => {
@@ -51,9 +51,9 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(_age1) AND "role" = $(_role1)',
+      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "role" = $(_role1)',
     );
-    expect(result.params).to.deep.equal({ _age1: 18, _role1: "admin" });
+    expect(result.params).to.deep.equal({ __p1: 18, _role1: "admin" });
   });
 
   it("should generate query with DISTINCT", () => {

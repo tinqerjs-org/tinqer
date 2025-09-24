@@ -55,8 +55,8 @@ const activeAdults = from<User>("users")
 ```typescript
 const result = query(() => from<User>("users").where((u) => u.age >= 18), {});
 
-console.log(result.sql); // SELECT * FROM "users" AS t0 WHERE age >= $(_age1)
-console.log(result.params); // { _age1: 18 }
+console.log(result.sql); // SELECT * FROM "users" AS t0 WHERE age >= $(__p1)
+console.log(result.params); // { __p1: 18 }
 ```
 
 ### Executing Queries
@@ -406,8 +406,8 @@ Constants in queries are automatically parameterized:
 
 ```typescript
 const result = query(() => from<User>("users").where((u) => u.age >= 18 && u.name === "John"), {});
-// SQL: WHERE (age >= $(_age1) AND name = $(_name1))
-// Params: { _age1: 18, _name1: "John" }
+// SQL: WHERE (age >= $(__p1) AND name = $(_name1))
+// Params: { __p1: 18, _name1: "John" }
 ```
 
 ## Supported Operators
@@ -641,9 +641,9 @@ Generates:
 ```sql
 SELECT id AS id, name AS name
 FROM "users" AS t0
-WHERE age >= $(_age1)
+WHERE age >= $(__p1)
 ORDER BY name ASC
-LIMIT $(_limit1)
+LIMIT $(__p1)
 ```
 
 ### Join Query

@@ -157,9 +157,9 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "amount" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" ORDER BY "t1"."amount" ASC LIMIT $(_limit1)',
+        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "amount" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" ORDER BY "t1"."amount" ASC LIMIT $(__p1)',
       );
-      expect(result.params).to.deep.equal({ _limit1: 10 });
+      expect(result.params).to.deep.equal({ __p1: 10 });
     });
   });
 
@@ -320,7 +320,7 @@ describe("Join SQL Generation", () => {
       expect(result.params).to.have.property("_id1");
       expect(result.params).to.have.property("_status1");
       expect(result.params).to.have.property("_amount1");
-      expect(result.params).to.have.property("_limit1");
+      expect(result.params).to.have.property("__p1");
     });
 
     it("should handle JOIN with pagination", () => {
