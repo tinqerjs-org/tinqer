@@ -29,9 +29,9 @@ export function convertSkipOperation(
           ? (arg as NumericLiteral).value
           : ((arg as Literal).value as number);
 
-      const counter = (context.columnCounters.get("offset") || 0) + 1;
-      context.columnCounters.set("offset", counter);
-      const paramName = `_offset${counter}`;
+      // Generate parameter name using reserved prefix
+      context.autoParamCounter++;
+      const paramName = `__p${context.autoParamCounter}`;
 
       // Store the parameter value
       context.autoParams.set(paramName, value);

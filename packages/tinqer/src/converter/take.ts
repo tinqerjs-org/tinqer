@@ -28,9 +28,9 @@ export function convertTakeOperation(
           ? (arg as NumericLiteral).value
           : ((arg as Literal).value as number);
 
-      const counter = (context.columnCounters.get("limit") || 0) + 1;
-      context.columnCounters.set("limit", counter);
-      const paramName = `_limit${counter}`;
+      // Generate parameter name using reserved prefix
+      context.autoParamCounter++;
+      const paramName = `__p${context.autoParamCounter}`;
 
       // Store the parameter value
       context.autoParams.set(paramName, value);
