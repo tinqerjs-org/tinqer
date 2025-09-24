@@ -136,9 +136,7 @@ describe("Arithmetic Expression SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "financial" AS "t0" WHERE "revenue" > $(__p1)',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "financial" AS "t0" WHERE "revenue" > $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 1000000000 });
     });
 
