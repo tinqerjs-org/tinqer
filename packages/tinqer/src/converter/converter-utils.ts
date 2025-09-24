@@ -44,6 +44,8 @@ export interface ConversionContext {
 
   // Track when we're in a SELECT projection to reject expressions
   inSelectProjection?: boolean;
+  // Track if the SELECT has a table parameter
+  hasTableParam?: boolean;
 
   // Track the current result shape from JOIN operations
   currentResultShape?: ResultShape;

@@ -273,31 +273,6 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
       expect(result.params).to.deep.equal({});
     });
 
-    // ARCHITECTURAL LIMITATION: SQL generator doesn't have access to parameter values at generation time
-    // To fix: Would need to pass parameter values to SQL generator to check for null/undefined
-    it.skip("should handle null parameter values (requires architecture change)", () => {
-      const result = query(
-        (params) => from<TestTable>("items").where((i) => i.value === params.threshold),
-        { threshold: null },
-      );
-
-      // Currently generates: "value" = $(threshold) which fails with NULL
-      // Should generate: "value" IS NULL
-      expect(result.sql).to.include("IS NULL");
-    });
-
-    // ARCHITECTURAL LIMITATION: Same as above - SQL generator needs parameter values
-    it.skip("should handle undefined parameter values (requires architecture change)", () => {
-      const result = query(
-        (params) => from<TestTable>("items").where((i) => i.text === params.search),
-        { search: undefined },
-      );
-
-      // Currently generates: "text" = $(search) which fails with undefined
-      // Should generate: "text" IS NULL
-      expect(result.sql).to.include("IS NULL");
-    });
-
     it("should handle parameter name collision with auto-params", () => {
       const result = query(
         (params) =>

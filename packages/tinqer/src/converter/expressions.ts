@@ -233,11 +233,10 @@ export function convertIdentifier(ast: Identifier, context: ConversionContext): 
     } as ParameterExpression;
   }
 
-  // Otherwise, it might be a column name (rare case)
-  return {
-    type: "column",
-    name,
-  } as ColumnExpression;
+  // Unknown identifier - this should not be allowed
+  throw new Error(
+    `Unknown identifier '${name}'. Variables must be passed via params object or referenced as table parameters.`,
+  );
 }
 
 export function convertMemberExpression(
@@ -568,6 +567,22 @@ export function convertBinaryExpression(
 
   // Check for string concatenation
   if (operator === "+") {
+    // Validate expressions without table context in SELECT projections
+    if (context.inSelectProjection && context.hasTableParam === false) {
+      const leftIsNonTableParam =
+        left.type === "constant" ||
+        (left.type === "param" && !context.tableParams.has((left as ParameterExpression).param));
+      const rightIsNonTableParam =
+        right.type === "constant" ||
+        (right.type === "param" && !context.tableParams.has((right as ParameterExpression).param));
+
+      if (leftIsNonTableParam && rightIsNonTableParam) {
+        throw new Error(
+          "Expressions without table context are not allowed in SELECT projections. " +
+            "Use a table parameter (e.g., select(i => ...) instead of select(() => ...)).",
+        );
+      }
+    }
     // Treat as concat if we have a string literal or concat expression
     const leftIsString =
       (left.type === "constant" && typeof (left as ConstantExpression).value === "string") ||

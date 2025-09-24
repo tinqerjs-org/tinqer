@@ -261,9 +261,11 @@ export function convertJoinOperation(
 
       if (outerParam) {
         resultContext.joinParams?.set(outerParam, 0);
+        resultContext.tableParams.add(outerParam); // Also add to tableParams for validation
       }
       if (innerParam) {
         resultContext.joinParams?.set(innerParam, 1);
+        resultContext.tableParams.add(innerParam); // Also add to tableParams for validation
       }
 
       // Convert the result selector body to an expression
