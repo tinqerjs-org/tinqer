@@ -75,7 +75,7 @@ describe("Parse Query Integration Tests", () => {
     const takeOp = asTakeOperation(getOperation(result));
     const takeParam = takeOp.count as ParamRef;
     expect(takeParam.type).to.equal("param");
-    expect(takeParam.param).to.equal("__p1");
+    expect(takeParam.param).to.equal("__p2");
     expect(result?.autoParams).to.deep.equal({ __p1: 18, __p2: 10 });
 
     const orderByOp = asOrderByOperation(takeOp.source);

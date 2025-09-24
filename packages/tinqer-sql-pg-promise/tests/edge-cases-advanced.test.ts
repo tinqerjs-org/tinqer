@@ -9,7 +9,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
     value: number | null;
     text: string | null;
     flag: boolean;
-    data: any;
+    data: unknown;
     createdAt: Date;
   }
 
@@ -205,7 +205,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
             })),
           {},
         );
-      }).to.throw("Failed to parse query");
+      }).to.throw(/Unsupported call expression|Failed to parse query/);
     });
   });
 

@@ -48,9 +48,7 @@ describe("Take SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" ORDER BY "name" ASC LIMIT $(__p1)',
-    );
+    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" ORDER BY "name" ASC LIMIT $(__p1)');
     expect(result.params).to.deep.equal({ __p1: 3 });
   });
 });

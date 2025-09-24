@@ -19,9 +19,9 @@ import type {
  */
 export interface AutoParamInfo {
   value: string | number | boolean | null;
-  fieldName?: string;    // e.g., "age", "name", "LIMIT", "OFFSET"
-  tableName?: string;    // e.g., "users", "orders"
-  sourceTable?: number;  // For JOINs: 0=outer, 1=inner
+  fieldName?: string; // e.g., "age", "name", "LIMIT", "OFFSET"
+  tableName?: string; // e.g., "users", "orders"
+  sourceTable?: number; // For JOINs: 0=outer, 1=inner
 }
 
 /**

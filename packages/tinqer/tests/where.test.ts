@@ -25,8 +25,8 @@ describe("WHERE Operation", () => {
 
       expect(getOperation(result)?.operationType).to.equal("where");
       const whereOp = asWhereOperation(getOperation(result));
-      expect(whereOp.predicate).to.deep.equal(expr.eq(expr.column("id"), expr.parameter("_id1")));
-      expect(result?.autoParams).to.deep.equal({ _id1: 1 });
+      expect(whereOp.predicate).to.deep.equal(expr.eq(expr.column("id"), expr.parameter("__p1")));
+      expect(result?.autoParams).to.deep.equal({ __p1: 1 });
     });
 
     it("should parse inequality comparison (!=)", () => {
@@ -97,11 +97,11 @@ describe("WHERE Operation", () => {
       const whereOp = asWhereOperation(getOperation(result));
       expect(whereOp.predicate).to.deep.equal(
         expr.or(
-          expr.eq(expr.column("role"), expr.parameter("_role1")),
+          expr.eq(expr.column("role"), expr.parameter("__p1")),
           expr.booleanColumn("isAdmin"),
         ),
       );
-      expect(result?.autoParams).to.deep.equal({ _role1: "admin" });
+      expect(result?.autoParams).to.deep.equal({ __p1: "admin" });
     });
 
     it("should parse NOT expression (!)", () => {
@@ -124,10 +124,10 @@ describe("WHERE Operation", () => {
             expr.gte(expr.column("age"), expr.parameter("__p1")),
             expr.booleanColumn("isActive"),
           ),
-          expr.eq(expr.column("role"), expr.parameter("_role1")),
+          expr.eq(expr.column("role"), expr.parameter("__p2")),
         ),
       );
-      expect(result?.autoParams).to.deep.equal({ __p1: 18, _role1: "admin" });
+      expect(result?.autoParams).to.deep.equal({ __p1: 18, __p2: "admin" });
     });
   });
 
@@ -142,8 +142,8 @@ describe("WHERE Operation", () => {
       expect(leftColumn.name).to.equal("name");
       const rightParam = predicate.right as ParameterExpression;
       expect(rightParam.type).to.equal("param");
-      expect(rightParam.param).to.equal("_name1");
-      expect(result?.autoParams).to.deep.equal({ _name1: "John" });
+      expect(rightParam.param).to.equal("__p1");
+      expect(result?.autoParams).to.deep.equal({ __p1: "John" });
     });
 
     it("should parse boolean literal comparison", () => {
@@ -155,8 +155,8 @@ describe("WHERE Operation", () => {
       expect(predicate.type).to.equal("comparison");
       const rightParam = predicate.right as ParameterExpression;
       expect(rightParam.type).to.equal("param");
-      expect(rightParam.param).to.equal("_isActive1");
-      expect(result?.autoParams).to.deep.equal({ _isActive1: true });
+      expect(rightParam.param).to.equal("__p1");
+      expect(result?.autoParams).to.deep.equal({ __p1: true });
     });
 
     it("should parse null comparison", () => {

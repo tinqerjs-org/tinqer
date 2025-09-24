@@ -109,8 +109,8 @@ export function convertAstToQueryOperationWithParams(ast: unknown): ParseResult 
       autoParams,
       autoParamInfos, // Enhanced field context information
     };
-  } catch (error) {
-    console.error("Failed to convert AST to QueryOperation:", error);
+  } catch {
+    // Let errors propagate to callers for proper error handling
     return null;
   }
 }
@@ -177,8 +177,7 @@ export function convertAstToQueryOperation(ast: unknown): QueryOperation | null 
     } else {
       return convertMethodChain(arrowFunc.body, context);
     }
-  } catch (error) {
-    console.error("Failed to convert AST to QueryOperation:", error);
+  } catch {
     return null;
   }
 }

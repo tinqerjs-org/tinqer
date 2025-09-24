@@ -20,9 +20,7 @@ describe("Skip SQL Generation", () => {
   it("should combine skip with take for pagination", () => {
     const result = query(() => from<User>("users").skip(20).take(10), {});
 
-    expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" LIMIT $(__p1) OFFSET $(_offset1)',
-    );
+    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" LIMIT $(__p1) OFFSET $(_offset1)');
     expect(result.params).to.deep.equal({ __p1: 10, _offset1: 20 });
   });
 
