@@ -59,6 +59,7 @@ import {
   isValueExpression,
   isLikelyStringColumn,
   isLikelyStringParam,
+  createAutoParam,
 } from "./converter-utils.js";
 
 /**
@@ -136,9 +137,7 @@ export function convertAstToExpression(
         if (unaryExpr.argument.type === "NumericLiteral") {
           const value = -(unaryExpr.argument as NumericLiteral).value;
           // Auto-parameterize the negative number
-          context.autoParamCounter++;
-          const paramName = `__p${context.autoParamCounter}`;
-          context.autoParams.set(paramName, value);
+          const paramName = createAutoParam(context, value);
           return {
             type: "param",
             param: paramName,
@@ -151,9 +150,7 @@ export function convertAstToExpression(
           if (typeof literalValue === "number") {
             const value = -literalValue;
             // Auto-parameterize the negative number
-            context.autoParamCounter++;
-            const paramName = `__p${context.autoParamCounter}`;
-            context.autoParams.set(paramName, value);
+            const paramName = createAutoParam(context, value);
             return {
               type: "param",
               param: paramName,
@@ -374,9 +371,7 @@ export function convertMemberExpression(
 
       if (value !== undefined) {
         // Convert to auto-parameterized parameter
-        context.autoParamCounter++;
-        const paramName = `__p${context.autoParamCounter}`;
-        context.autoParams.set(paramName, value);
+        const paramName = createAutoParam(context, value);
 
         return {
           type: "param",
@@ -526,6 +521,7 @@ export function convertBinaryExpression(
     left = convertLiteral(
       ast.left as Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
       context,
+      columnHint,
     );
   } else {
     left = convertAstToExpression(ast.left, context);
@@ -544,6 +540,7 @@ export function convertBinaryExpression(
     right = convertLiteral(
       ast.right as Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
       context,
+      columnHint,
     );
   } else {
     right = convertAstToExpression(ast.right, context);
@@ -673,6 +670,7 @@ export function convertLogicalExpression(
 export function convertLiteral(
   ast: Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
   context: ConversionContext,
+  columnHint?: string,
 ): ParameterExpression | ConstantExpression {
   let value: string | number | boolean | null;
   if (ast.type === "NumericLiteral") {
@@ -695,12 +693,11 @@ export function convertLiteral(
     } as ConstantExpression;
   }
 
-  // Generate parameter name using reserved prefix
-  context.autoParamCounter++;
-  const paramName = `__p${context.autoParamCounter}`;
-
-  // Store the parameter value
-  context.autoParams.set(paramName, value);
+  // Create auto-parameter with field context
+  const paramName = createAutoParam(context, value, {
+    fieldName: columnHint,
+    tableName: context.currentTable,
+  });
 
   // Return a parameter expression instead of constant
   return {

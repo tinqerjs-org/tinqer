@@ -34,9 +34,9 @@ describe("Take SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE "age" > $(__p1) LIMIT $(__p1)',
+      'SELECT * FROM "users" AS "t0" WHERE "age" > $(__p1) LIMIT $(__p2)',
     );
-    expect(result.params).to.deep.equal({ __p1: 18, __p1: 5 });
+    expect(result.params).to.deep.equal({ __p1: 18, __p2: 5 });
   });
 
   it("should combine take with orderBy", () => {

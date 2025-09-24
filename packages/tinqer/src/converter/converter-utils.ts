@@ -15,6 +15,16 @@ import type {
 } from "../parser/ast-types.js";
 
 /**
+ * Enhanced auto-parameter information with field context
+ */
+export interface AutoParamInfo {
+  value: string | number | boolean | null;
+  fieldName?: string;    // e.g., "age", "name", "LIMIT", "OFFSET"
+  tableName?: string;    // e.g., "users", "orders"
+  sourceTable?: number;  // For JOINs: 0=outer, 1=inner
+}
+
+/**
  * Context for tracking parameter origins during conversion
  */
 export interface ConversionContext {
@@ -28,8 +38,8 @@ export interface ConversionContext {
   // Track JOIN result selector parameters (maps param name to table index)
   joinParams?: Map<string, number>;
 
-  // Auto-parameterization: track extracted constants
-  autoParams: Map<string, string | number | boolean | null>; // Maps param name to value
+  // Enhanced auto-parameterization with field context
+  autoParams: Map<string, AutoParamInfo>; // Maps param name to enhanced info
   autoParamCounter: number; // Simple counter for auto-param naming
 
   // Track when we're in a SELECT projection to reject expressions
@@ -172,4 +182,29 @@ export function convertColumnToBooleanColumn(expr: Expression): BooleanExpressio
     };
   }
   return expr;
+}
+
+/**
+ * Create auto-parameter with field context and add to conversion context
+ */
+export function createAutoParam(
+  context: ConversionContext,
+  value: string | number | boolean | null,
+  options: {
+    fieldName?: string;
+    tableName?: string;
+    sourceTable?: number;
+  } = {},
+): string {
+  context.autoParamCounter++;
+  const paramName = `__p${context.autoParamCounter}`;
+
+  context.autoParams.set(paramName, {
+    value,
+    fieldName: options.fieldName,
+    tableName: options.tableName,
+    sourceTable: options.sourceTable,
+  });
+
+  return paramName;
 }

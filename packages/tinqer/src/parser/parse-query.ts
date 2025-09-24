@@ -7,6 +7,7 @@ import { parseJavaScript } from "./oxc-parser.js";
 import { convertAstToQueryOperationWithParams } from "../converter/ast-converter.js";
 import type { Queryable, OrderedQueryable } from "../linq/queryable.js";
 import type { TerminalQuery } from "../linq/terminal-query.js";
+import type { AutoParamInfo } from "../converter/converter-utils.js";
 
 /**
  * Result of parsing a query, including auto-extracted parameters
@@ -14,6 +15,7 @@ import type { TerminalQuery } from "../linq/terminal-query.js";
 export interface ParseResult {
   operation: QueryOperation;
   autoParams: Record<string, string | number | boolean | null>;
+  autoParamInfos?: Record<string, AutoParamInfo>; // Enhanced field context information
 }
 
 /**

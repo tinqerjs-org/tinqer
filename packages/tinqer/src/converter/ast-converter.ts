@@ -12,7 +12,7 @@ import type {
 } from "../parser/ast-types.js";
 
 import { findArrowFunction, getParameterName, getMethodName } from "./converter-utils.js";
-import type { ConversionContext } from "./converter-utils.js";
+import type { ConversionContext, AutoParamInfo } from "./converter-utils.js";
 
 // Re-export ConversionContext for external use
 export type { ConversionContext } from "./converter-utils.js";
@@ -92,15 +92,22 @@ export function convertAstToQueryOperationWithParams(ast: unknown): ParseResult 
       return null;
     }
 
-    // Convert Map to plain object for autoParams
+    // Convert Map to plain object for autoParams - extract just the values for backward compatibility
     const autoParams: Record<string, string | number | boolean | null> = {};
-    context.autoParams.forEach((value, key) => {
-      autoParams[key] = value;
+    context.autoParams.forEach((paramInfo, key) => {
+      autoParams[key] = paramInfo.value;
+    });
+
+    // Also provide enhanced parameter info for tools that need field context
+    const autoParamInfos: Record<string, AutoParamInfo> = {};
+    context.autoParams.forEach((paramInfo, key) => {
+      autoParamInfos[key] = paramInfo;
     });
 
     return {
       operation,
       autoParams,
+      autoParamInfos, // Enhanced field context information
     };
   } catch (error) {
     console.error("Failed to convert AST to QueryOperation:", error);

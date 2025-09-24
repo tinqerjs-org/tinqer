@@ -51,9 +51,9 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "role" = $(_role1)',
+      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "role" = $(__p2)',
     );
-    expect(result.params).to.deep.equal({ __p1: 18, _role1: "admin" });
+    expect(result.params).to.deep.equal({ __p1: 18, __p2: "admin" });
   });
 
   it("should generate query with DISTINCT", () => {

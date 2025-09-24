@@ -11,6 +11,7 @@ import type {
   Identifier,
 } from "../parser/ast-types.js";
 import type { ConversionContext } from "./converter-utils.js";
+import { createAutoParam } from "./converter-utils.js";
 
 export function convertTakeOperation(
   ast: ASTCallExpression,
@@ -28,12 +29,10 @@ export function convertTakeOperation(
           ? (arg as NumericLiteral).value
           : ((arg as Literal).value as number);
 
-      // Generate parameter name using reserved prefix
-      context.autoParamCounter++;
-      const paramName = `__p${context.autoParamCounter}`;
-
-      // Store the parameter value
-      context.autoParams.set(paramName, value);
+      // Create auto-parameter with field context
+      const paramName = createAutoParam(context, value, {
+        fieldName: "LIMIT",
+      });
 
       return {
         type: "queryOperation",
