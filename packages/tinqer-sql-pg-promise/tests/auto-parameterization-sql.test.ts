@@ -69,19 +69,19 @@ describe("Auto-Parameterization SQL Generation", () => {
     const result = query(queryBuilder, { category: "electronics" });
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "products" AS "t0" WHERE "price" > $(_price1) ' +
-        'AND "discount" <= $(_discount1) ' +
+      'SELECT * FROM "products" AS "t0" WHERE "price" > $(__p1) ' +
+        'AND "discount" <= $(__p2) ' +
         'AND "category" = $(category) ' +
-        'AND "inStock" = $(_inStock1) ' +
-        'ORDER BY "price" DESC LIMIT $(__p1) OFFSET $(_offset1)',
+        'AND "inStock" = $(__p3) ' +
+        'ORDER BY "price" DESC LIMIT $(__p5) OFFSET $(__p4)',
     );
     expect(result.params).to.deep.equal({
       category: "electronics",
-      _price1: 100,
-      _discount1: 0.5,
-      _inStock1: true,
-      _offset1: 10,
-      __p1: 5,
+      __p1: 100,
+      __p2: 0.5,
+      __p3: true,
+      __p4: 10,
+      __p5: 5,
     });
   });
 
@@ -105,13 +105,13 @@ describe("Auto-Parameterization SQL Generation", () => {
 
     expect(result.sql).to.equal(
       'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) ' +
-        'AND "age" <= $(_age2) ' +
-        'AND "age" != $(_age3)',
+        'AND "age" <= $(__p2) ' +
+        'AND "age" != $(__p3)',
     );
     expect(result.params).to.deep.equal({
       __p1: 18,
-      _age2: 65,
-      _age3: 30,
+      __p2: 65,
+      __p3: 30,
     });
   });
 
@@ -124,9 +124,9 @@ describe("Auto-Parameterization SQL Generation", () => {
     const result = query(queryBuilder, {});
 
     // The potentially dangerous string is safely parameterized
-    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "username" = $(_username1)');
+    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "username" = $(__p1)');
     expect(result.params).to.deep.equal({
-      _username1: "admin' OR '1'='1", // Safely passed as parameter, not concatenated
+      __p1: "admin' OR '1'='1", // Safely passed as parameter, not concatenated
     });
   });
 });

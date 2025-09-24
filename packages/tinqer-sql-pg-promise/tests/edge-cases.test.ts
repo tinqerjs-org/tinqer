@@ -50,9 +50,9 @@ describe("Edge Cases and Error Handling", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "test" AS "t0" WHERE "column_with_underscore" = $(_column_with_underscore1)',
+        'SELECT * FROM "test" AS "t0" WHERE "column_with_underscore" = $(__p1)',
       );
-      expect(result.params).to.deep.equal({ _column_with_underscore1: "test" });
+      expect(result.params).to.deep.equal({ __p1: "test" });
     });
 
     it("should handle uppercase column names", () => {
@@ -62,9 +62,9 @@ describe("Edge Cases and Error Handling", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "test" AS "t0" WHERE "UPPERCASE_COLUMN" = $(_UPPERCASE_COLUMN1)',
+        'SELECT * FROM "test" AS "t0" WHERE "UPPERCASE_COLUMN" = $(__p1)',
       );
-      expect(result.params).to.deep.equal({ _UPPERCASE_COLUMN1: "TEST" });
+      expect(result.params).to.deep.equal({ __p1: "TEST" });
     });
   });
 

@@ -81,9 +81,9 @@ describe("ANY and ALL Operations", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS "t0" WHERE "name" != $(_name1) AND NOT ("age" < $(__p1))) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS "t0" WHERE "name" != $(__p1) AND NOT ("age" < $(__p2))) THEN 1 ELSE 0 END',
       );
-      expect(result.params).to.deep.equal({ _name1: "admin", __p1: 100 });
+      expect(result.params).to.deep.equal({ __p1: "admin", __p2: 100 });
     });
   });
 
@@ -94,9 +94,9 @@ describe("ANY and ALL Operations", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0" WHERE (("age" > $(__p1) AND "isActive") AND "name" != $(_name1))) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" AS "t0" WHERE (("age" > $(__p1) AND "isActive") AND "name" != $(__p2))) THEN 1 ELSE 0 END',
       );
-      expect(result.params).to.deep.equal({ __p1: 18, _name1: "test" });
+      expect(result.params).to.deep.equal({ __p1: 18, __p2: "test" });
     });
 
     it("should handle all() with complex conditions", () => {
@@ -105,9 +105,9 @@ describe("ANY and ALL Operations", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS "t0" WHERE NOT (("age" > $(__p1) OR "name" = $(_name1)))) THEN 1 ELSE 0 END',
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" AS "t0" WHERE NOT (("age" > $(__p1) OR "name" = $(__p2)))) THEN 1 ELSE 0 END',
       );
-      expect(result.params).to.deep.equal({ __p1: 0, _name1: "admin" });
+      expect(result.params).to.deep.equal({ __p1: 0, __p2: "admin" });
     });
 
     it("should work with SELECT and any()", () => {
