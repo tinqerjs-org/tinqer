@@ -13,15 +13,15 @@ describe("Skip SQL Generation", () => {
   it("should generate OFFSET clause", () => {
     const result = query(() => from<User>("users").skip(10), {});
 
-    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" OFFSET $(_offset1)');
-    expect(result.params).to.deep.equal({ _offset1: 10 });
+    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" OFFSET $(__p1)');
+    expect(result.params).to.deep.equal({ __p1: 10 });
   });
 
   it("should combine skip with take for pagination", () => {
     const result = query(() => from<User>("users").skip(20).take(10), {});
 
-    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" LIMIT $(__p1) OFFSET $(_offset1)');
-    expect(result.params).to.deep.equal({ __p1: 10, _offset1: 20 });
+    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" LIMIT $(__p2) OFFSET $(__p1)');
+    expect(result.params).to.deep.equal({ __p2: 10, __p1: 20 });
   });
 
   it("should combine skip with where and orderBy", () => {
@@ -35,9 +35,9 @@ describe("Skip SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) ORDER BY "name" ASC OFFSET $(_offset1)',
+      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) ORDER BY "name" ASC OFFSET $(__p2)',
     );
-    expect(result.params).to.deep.equal({ __p1: 21, _offset1: 5 });
+    expect(result.params).to.deep.equal({ __p1: 21, __p2: 5 });
   });
 
   it("should throw error when using local variables", () => {

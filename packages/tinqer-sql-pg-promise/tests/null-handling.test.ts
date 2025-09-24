@@ -84,9 +84,9 @@ describe("NULL Handling", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("id" > $(_id1) AND "middleName" IS NOT NULL)',
+        'SELECT * FROM "users" AS "t0" WHERE ("id" > $(__p1) AND "middleName" IS NOT NULL)',
       );
-      expect(result.params).to.deep.equal({ _id1: 10 });
+      expect(result.params).to.deep.equal({ __p1: 10 });
     });
   });
 });

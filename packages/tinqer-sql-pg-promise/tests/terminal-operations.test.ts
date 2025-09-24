@@ -64,8 +64,8 @@ describe("Terminal Operations", () => {
 
     it("should generate SQL for single() with predicate", () => {
       const result = query(() => from<User>("users").single((u) => u.id == 1), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(_id1) LIMIT 2');
-      expect(result.params).to.deep.equal({ _id1: 1 });
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(__p1) LIMIT 2');
+      expect(result.params).to.deep.equal({ __p1: 1 });
     });
 
     it("should generate SQL for singleOrDefault()", () => {
@@ -76,8 +76,8 @@ describe("Terminal Operations", () => {
 
     it("should generate SQL for singleOrDefault() with predicate", () => {
       const result = query(() => from<User>("users").singleOrDefault((u) => u.name == "John"), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "name" = $(_name1) LIMIT 2');
-      expect(result.params).to.deep.equal({ _name1: "John" });
+      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "name" = $(__p1) LIMIT 2');
+      expect(result.params).to.deep.equal({ __p1: "John" });
     });
   });
 

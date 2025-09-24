@@ -60,8 +60,8 @@ describe("Execute Function", () => {
       const queryBuilder = () => from(db, "users").first((u) => u.id === 1);
 
       const sqlResult = query(queryBuilder, {});
-      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(_id1) LIMIT 1');
-      expect(sqlResult.params).to.deep.equal({ _id1: 1 });
+      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(__p1) LIMIT 1');
+      expect(sqlResult.params).to.deep.equal({ __p1: 1 });
     });
 
     it("should handle single() operation", async () => {
@@ -69,16 +69,16 @@ describe("Execute Function", () => {
 
       const sqlResult = query(queryBuilder, {});
       // Single adds LIMIT 2 to check for multiple results
-      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(_id1) LIMIT 2');
-      expect(sqlResult.params).to.deep.equal({ _id1: 1 });
+      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(__p1) LIMIT 2');
+      expect(sqlResult.params).to.deep.equal({ __p1: 1 });
     });
 
     it("should handle firstOrDefault() operation", async () => {
       const queryBuilder = () => from(db, "users").firstOrDefault((u) => u.id === 999);
 
       const sqlResult = query(queryBuilder, {});
-      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(_id1) LIMIT 1');
-      expect(sqlResult.params).to.deep.equal({ _id1: 999 });
+      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(__p1) LIMIT 1');
+      expect(sqlResult.params).to.deep.equal({ __p1: 999 });
       // Note: firstOrDefault returns null when no results, not throwing
     });
 
@@ -87,8 +87,8 @@ describe("Execute Function", () => {
 
       const sqlResult = query(queryBuilder, {});
       // SingleOrDefault also adds LIMIT 2 to check for multiple results
-      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(_id1) LIMIT 2');
-      expect(sqlResult.params).to.deep.equal({ _id1: 999 });
+      expect(sqlResult.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(__p1) LIMIT 2');
+      expect(sqlResult.params).to.deep.equal({ __p1: 999 });
       // Note: singleOrDefault returns null when no results, throws if multiple
     });
 

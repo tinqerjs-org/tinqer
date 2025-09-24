@@ -160,8 +160,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
       );
 
       expect(result.sql).to.include('"flag" = ');
-      expect(result.params._flag1).to.equal(true);
-      expect(result.params._flag2).to.equal(false);
+      expect(result.params.__p1).to.equal(true);
+      expect(result.params.__p2).to.equal(false);
     });
 
     it("should handle complex boolean algebra", () => {

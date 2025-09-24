@@ -95,9 +95,9 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "category" AS "category", COUNT(*) AS "highValueSales", SUM("amount") AS "totalAmount" FROM "sales" AS "t0" WHERE ("amount" > $(_amount1) AND "discount" < $(_discount1)) GROUP BY "category"',
+        'SELECT "category" AS "category", COUNT(*) AS "highValueSales", SUM("amount") AS "totalAmount" FROM "sales" AS "t0" WHERE ("amount" > $(__p1) AND "discount" < $(__p2)) GROUP BY "category"',
       );
-      expect(result.params).to.deep.equal({ _amount1: 1000, _discount1: 20 });
+      expect(result.params).to.deep.equal({ __p1: 1000, __p2: 20 });
     });
 
     it("should handle multiple WHERE clauses before GROUP BY", () => {
@@ -115,9 +115,9 @@ describe("Advanced GROUP BY SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain(`WHERE "salary" > $(_salary1) AND "hireYear" >= $(_hireYear1)`);
+      expect(result.sql).to.contain(`WHERE "salary" > $(__p1) AND "hireYear" >= $(__p2)`);
       expect(result.sql).to.contain(`GROUP BY "department"`);
-      expect(result.params).to.deep.equal({ _salary1: 50000, _hireYear1: 2020 });
+      expect(result.params).to.deep.equal({ __p1: 50000, __p2: 2020 });
     });
   });
 
@@ -216,8 +216,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
       expect(result.sql).to.contain(`GROUP BY "department"`);
       expect(result.sql).to.contain(`ORDER BY "dept" ASC`);
-      expect(result.sql).to.contain("LIMIT $(__p1) OFFSET $(_offset1)");
-      expect(result.params).to.deep.equal({ _offset1: 10, __p1: 5 });
+      expect(result.sql).to.contain("LIMIT $(__p2) OFFSET $(__p1)");
+      expect(result.params).to.deep.equal({ __p1: 10, __p2: 5 });
     });
   });
 
@@ -302,12 +302,12 @@ describe("Advanced GROUP BY SQL Generation", () => {
       );
 
       expect(result.sql).to.contain(`"profit" > $(targetProfit)`);
-      expect(result.sql).to.contain(`"quantity" > $(_quantity1)`);
-      expect(result.sql).to.contain("LIMIT $(__p1)");
+      expect(result.sql).to.contain(`"quantity" > $(__p1)`);
+      expect(result.sql).to.contain("LIMIT $(__p2)");
       expect(result.params).to.deep.equal({
         targetProfit: 100,
-        _quantity1: 10,
         __p1: 10,
+        __p2: 10,
       });
     });
   });
@@ -331,15 +331,15 @@ describe("Advanced GROUP BY SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain(`WHERE "amount" > $(_amount1)`);
+      expect(result.sql).to.contain(`WHERE "amount" > $(__p1)`);
       expect(result.sql).to.contain(`GROUP BY "region"`);
-      expect(result.sql).to.contain(`"revenue" > $(_revenue1)`);
+      expect(result.sql).to.contain(`"revenue" > $(__p2)`);
       expect(result.sql).to.contain(`ORDER BY "revenue" DESC`);
-      expect(result.sql).to.contain("LIMIT $(__p1)");
+      expect(result.sql).to.contain("LIMIT $(__p3)");
       expect(result.params).to.deep.equal({
-        _amount1: 100,
-        _revenue1: 10000,
-        __p1: 3,
+        __p1: 100,
+        __p2: 10000,
+        __p3: 3,
       });
     });
 
@@ -362,14 +362,14 @@ describe("Advanced GROUP BY SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain(`"quantity" > $(_quantity1)`);
-      expect(result.sql).to.contain(`"discount" < $(_discount1)`);
+      expect(result.sql).to.contain(`"quantity" > $(__p1)`);
+      expect(result.sql).to.contain(`"discount" < $(__p2)`);
       expect(result.sql).to.contain(`GROUP BY "category"`);
-      expect(result.sql).to.contain(`"salesCount" > $(_salesCount1)`);
+      expect(result.sql).to.contain(`"salesCount" > $(__p3)`);
       expect(result.params).to.deep.equal({
-        _quantity1: 0,
-        _discount1: 50,
-        _salesCount1: 5,
+        __p1: 0,
+        __p2: 50,
+        __p3: 5,
       });
     });
   });

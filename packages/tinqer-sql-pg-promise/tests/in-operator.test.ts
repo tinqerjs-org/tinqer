@@ -30,14 +30,14 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "id" IN ($(_value1), $(_value2), $(_value3), $(_value4), $(_value5))',
+        'SELECT * FROM "users" AS "t0" WHERE "id" IN ($(__p1), $(__p2), $(__p3), $(__p4), $(__p5))',
       );
       expect(result.params).to.deep.equal({
-        _value1: 1,
-        _value2: 2,
-        _value3: 3,
-        _value4: 4,
-        _value5: 5,
+        __p1: 1,
+        __p2: 2,
+        __p3: 3,
+        __p4: 4,
+        __p5: 5,
       });
     });
 
@@ -48,12 +48,12 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "role" IN ($(_value1), $(_value2), $(_value3))',
+        'SELECT * FROM "users" AS "t0" WHERE "role" IN ($(__p1), $(__p2), $(__p3))',
       );
       expect(result.params).to.deep.equal({
-        _value1: "admin",
-        _value2: "user",
-        _value3: "guest",
+        __p1: "admin",
+        __p2: "user",
+        __p3: "guest",
       });
     });
 
@@ -63,11 +63,9 @@ describe("IN Operator", () => {
         {},
       );
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE "category" IN ($(_value1))',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "products" AS "t0" WHERE "category" IN ($(__p1))');
       expect(result.params).to.deep.equal({
-        _value1: "electronics",
+        __p1: "electronics",
       });
     });
 
@@ -90,13 +88,13 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("id" IN ($(_value1), $(_value2), $(_value3)) AND "age" > $(__p1))',
+        'SELECT * FROM "users" AS "t0" WHERE ("id" IN ($(__p1), $(__p2), $(__p3)) AND "age" > $(__p4))',
       );
       expect(result.params).to.deep.equal({
-        _value1: 1,
-        _value2: 2,
-        _value3: 3,
-        __p1: 18,
+        __p1: 1,
+        __p2: 2,
+        __p3: 3,
+        __p4: 18,
       });
     });
 
@@ -110,12 +108,12 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE ("category" IN ($(_value1), $(_value2)) OR "price" < $(_price1))',
+        'SELECT * FROM "products" AS "t0" WHERE ("category" IN ($(__p1), $(__p2)) OR "price" < $(__p3))',
       );
       expect(result.params).to.deep.equal({
-        _value1: "electronics",
-        _value2: "computers",
-        _price1: 100,
+        __p1: "electronics",
+        __p2: "computers",
+        __p3: 100,
       });
     });
 
@@ -129,14 +127,14 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("id" IN ($(_value1), $(_value2), $(_value3)) AND "role" IN ($(_value4), $(_value5)))',
+        'SELECT * FROM "users" AS "t0" WHERE ("id" IN ($(__p1), $(__p2), $(__p3)) AND "role" IN ($(__p4), $(__p5)))',
       );
       expect(result.params).to.deep.equal({
-        _value1: 1,
-        _value2: 2,
-        _value3: 3,
-        _value4: "admin",
-        _value5: "moderator",
+        __p1: 1,
+        __p2: 2,
+        __p3: 3,
+        __p4: "admin",
+        __p5: "moderator",
       });
     });
   });
@@ -153,11 +151,11 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE "role" IN ($(_value1), $(_value2)) ORDER BY "name" ASC',
+        'SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE "role" IN ($(__p1), $(__p2)) ORDER BY "name" ASC',
       );
       expect(result.params).to.deep.equal({
-        _value1: "admin",
-        _value2: "moderator",
+        __p1: "admin",
+        __p2: "moderator",
       });
     });
 
@@ -172,12 +170,12 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "category" AS "category", COUNT(*) AS "count" FROM "products" AS "t0" WHERE "category" IN ($(_value1), $(_value2), $(_value3)) GROUP BY "category"',
+        'SELECT "category" AS "category", COUNT(*) AS "count" FROM "products" AS "t0" WHERE "category" IN ($(__p1), $(__p2), $(__p3)) GROUP BY "category"',
       );
       expect(result.params).to.deep.equal({
-        _value1: "electronics",
-        _value2: "computers",
-        _value3: "phones",
+        __p1: "electronics",
+        __p2: "computers",
+        __p3: "phones",
       });
     });
 
@@ -193,16 +191,16 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "id" IN ($(_value1), $(_value2), $(_value3), $(_value4), $(_value5)) ORDER BY "id" ASC LIMIT $(__p1) OFFSET $(_offset1)',
+        'SELECT * FROM "users" AS "t0" WHERE "id" IN ($(__p1), $(__p2), $(__p3), $(__p4), $(__p5)) ORDER BY "id" ASC LIMIT $(__p7) OFFSET $(__p6)',
       );
       expect(result.params).to.deep.equal({
-        _value1: 1,
-        _value2: 2,
-        _value3: 3,
-        _value4: 4,
-        _value5: 5,
-        __p1: 5,
-        _offset1: 10,
+        __p1: 1,
+        __p2: 2,
+        __p3: 3,
+        __p4: 4,
+        __p5: 5,
+        __p7: 5,
+        __p6: 10,
       });
     });
   });
@@ -212,12 +210,12 @@ describe("IN Operator", () => {
       const result = query(() => from<User>("users").where((u) => ![1, 2, 3].includes(u.id)), {});
 
       expect(result.sql).to.equal(
-        `SELECT * FROM "users" AS "t0" WHERE NOT ("id" IN ($(_value1), $(_value2), $(_value3)))`,
+        `SELECT * FROM "users" AS "t0" WHERE NOT ("id" IN ($(__p1), $(__p2), $(__p3)))`,
       );
       expect(result.params).to.deep.equal({
-        _value1: 1,
-        _value2: 2,
-        _value3: 3,
+        __p1: 1,
+        __p2: 2,
+        __p3: 3,
       });
     });
 

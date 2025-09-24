@@ -113,9 +113,9 @@ describe("GROUP BY with Composite Keys", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "category" AS "category", "quarter" AS "quarter", SUM("amount") AS "total" FROM "sales" AS "t0" WHERE "year" >= $(_year1) GROUP BY "category", "quarter"',
+        'SELECT "category" AS "category", "quarter" AS "quarter", SUM("amount") AS "total" FROM "sales" AS "t0" WHERE "year" >= $(__p1) GROUP BY "category", "quarter"',
       );
-      expect(result.params._year1).to.equal(2020);
+      expect(result.params.__p1).to.equal(2020);
     });
 
     it("should handle multiple WHERE with composite GROUP BY", () => {
@@ -216,13 +216,13 @@ describe("GROUP BY with Composite Keys", () => {
 
       expect(result.sql).to.include("OFFSET");
       expect(result.sql).to.include("LIMIT");
-      expect(result.params).to.have.property("_offset1");
       expect(result.params).to.have.property("__p1");
-      if (result.params._offset1) {
-        expect(result.params._offset1).to.equal(20);
-      }
+      expect(result.params).to.have.property("__p2");
       if (result.params.__p1) {
-        expect(result.params.__p1).to.equal(10);
+        expect(result.params.__p1).to.equal(20);
+      }
+      if (result.params.__p2) {
+        expect(result.params.__p2).to.equal(10);
       }
     });
   });
