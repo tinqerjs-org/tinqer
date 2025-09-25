@@ -10,7 +10,7 @@ import type { WhereContext } from "./context.js";
  * Visit column access (e.g., x.name, x.address.city)
  */
 export function visitColumnAccess(
-  node: MemberExpression | any,
+  node: MemberExpression | { type: string; expression?: MemberExpression },
   context: WhereContext,
 ): ColumnExpression | null {
   // Handle optional chaining
@@ -30,7 +30,9 @@ export function visitColumnAccess(
 
       // Check if this is accessing a JOIN result property
       if (context.joinResultParam === objectName && context.currentResultShape) {
-        const resultShape = context.currentResultShape as { properties: Map<string, { type: string; columnName?: string; sourceTable?: number }> };
+        const resultShape = context.currentResultShape as {
+          properties: Map<string, { type: string; columnName?: string; sourceTable?: number }>;
+        };
         const shapeProp = resultShape.properties.get(propertyName);
         if (shapeProp) {
           if (shapeProp.type === "column") {

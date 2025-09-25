@@ -89,7 +89,9 @@ function visitMemberAccess(
       // Check if this is accessing a JOIN result property
       const extContext = context as OrderByContext & {
         joinResultParam?: string;
-        currentResultShape?: { properties: Map<string, { type: string; columnName?: string; sourceTable?: number }> }
+        currentResultShape?: {
+          properties: Map<string, { type: string; columnName?: string; sourceTable?: number }>;
+        };
       };
       if (extContext.joinResultParam === objectName && extContext.currentResultShape) {
         const shapeProp = extContext.currentResultShape.properties.get(propertyName);
