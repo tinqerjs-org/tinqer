@@ -42,8 +42,8 @@ export function visitLogical(
   }
 
   // Convert columns to booleanColumns if needed
-  let finalLeft = ensureBoolean(left);
-  let finalRight = ensureBoolean(right);
+  const finalLeft = ensureBoolean(left);
+  const finalRight = ensureBoolean(right);
 
   // Handle || as coalesce when not both boolean (backward compatibility)
   if (node.operator === "||") {

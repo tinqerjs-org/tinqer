@@ -11,7 +11,7 @@ import type {
 
 import type { BinaryExpression } from "../../parser/ast-types.js";
 import type { WhereContext, VisitorResult } from "./context.js";
-import { visitValue } from "./predicate.js";
+import { visitValue } from "./value.js";
 
 /**
  * Check if node is a literal
