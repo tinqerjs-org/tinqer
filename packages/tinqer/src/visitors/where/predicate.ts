@@ -303,12 +303,28 @@ export function visitValue(
       const binary = node as BinaryExpression;
       // Arithmetic expression
       if (["+", "-", "*", "/", "%"].includes(binary.operator)) {
-        // Recursively visit left and right
-        const leftResult = visitValue(binary.left, { ...context, autoParamCounter: currentCounter });
+        // First check if left side is a column to get field context
+        let fieldContext: any = {};
+        if (binary.left.type === "MemberExpression") {
+          const leftColumn = visitColumnAccess(binary.left as MemberExpression, context);
+          if (leftColumn) {
+            fieldContext = {
+              _currentFieldName: leftColumn.name,
+              _currentTableName: context.currentTable,
+              _currentSourceTable: undefined,
+            };
+          }
+        }
+
+        // Create context with field info for literal processing
+        const enhancedContext = { ...context, ...fieldContext, autoParamCounter: currentCounter };
+
+        // Recursively visit left and right with enhanced context
+        const leftResult = visitValue(binary.left, enhancedContext);
         if (!leftResult.value) return { value: null, counter: currentCounter };
         currentCounter = leftResult.counter;
 
-        const rightResult = visitValue(binary.right, { ...context, autoParamCounter: currentCounter });
+        const rightResult = visitValue(binary.right, { ...enhancedContext, autoParamCounter: currentCounter });
         if (!rightResult.value) return { value: null, counter: currentCounter };
         currentCounter = rightResult.counter;
 

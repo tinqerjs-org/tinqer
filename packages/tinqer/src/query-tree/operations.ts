@@ -159,7 +159,7 @@ export interface DistinctOperation extends QueryOperation {
 export interface TakeOperation extends QueryOperation {
   operationType: "take";
   source: QueryOperation;
-  count: number | ParamRef;
+  count: number | ParamRef | import("../expressions/expression.js").ValueExpression;
 }
 
 /**
@@ -168,7 +168,7 @@ export interface TakeOperation extends QueryOperation {
 export interface SkipOperation extends QueryOperation {
   operationType: "skip";
   source: QueryOperation;
-  count: number | ParamRef;
+  count: number | ParamRef | import("../expressions/expression.js").ValueExpression;
 }
 
 /**

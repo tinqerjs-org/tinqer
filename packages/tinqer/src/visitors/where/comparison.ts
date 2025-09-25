@@ -32,19 +32,34 @@ export function visitComparison(
   if (!operator) return { value: null, counter: currentCounter };
 
   // First detect field names by looking at the structure
-  let fieldName: string | undefined;
-  let tableName: string | undefined;
+  let leftFieldName: string | undefined;
+  let leftTableName: string | undefined;
+  let rightFieldName: string | undefined;
+  let rightTableName: string | undefined;
   let leftExpr: ValueExpression | null = null;
   let rightExpr: ValueExpression | null = null;
+
+  // Helper to extract field context from expressions (only for direct columns)
+  const extractFieldFromExpression = (expr: ValueExpression): { fieldName?: string; tableName?: string } => {
+    if (expr.type === "column") {
+      return {
+        fieldName: (expr as ColumnExpression).name,
+        tableName: context.currentTable,
+      };
+    }
+    // Don't extract field from arithmetic - literals in arithmetic get context internally
+    return {};
+  };
 
   // Process non-literals first to detect field names and save results
   if (!isLiteral(node.left)) {
     const leftResult = visitValue(node.left, { ...context, autoParamCounter: currentCounter });
     leftExpr = leftResult.value;
     currentCounter = leftResult.counter;
-    if (leftExpr && leftExpr.type === "column") {
-      fieldName = (leftExpr as ColumnExpression).name;
-      tableName = context.currentTable;
+    if (leftExpr) {
+      const extracted = extractFieldFromExpression(leftExpr);
+      leftFieldName = extracted.fieldName;
+      leftTableName = extracted.tableName;
     }
   }
 
@@ -52,33 +67,53 @@ export function visitComparison(
     const rightResult = visitValue(node.right, { ...context, autoParamCounter: currentCounter });
     rightExpr = rightResult.value;
     currentCounter = rightResult.counter;
-    if (rightExpr && rightExpr.type === "column") {
-      fieldName = (rightExpr as ColumnExpression).name;
-      tableName = context.currentTable;
+    if (rightExpr) {
+      const extracted = extractFieldFromExpression(rightExpr);
+      rightFieldName = extracted.fieldName;
+      rightTableName = extracted.tableName;
     }
   }
 
-  // Create a temporary context with field info for literal processing
-  const enhancedContext = fieldName ? {
-    ...context,
-    autoParamCounter: currentCounter,
-    _currentFieldName: fieldName,
-    _currentTableName: tableName,
-    _currentSourceTable: undefined, // Add sourceTable as undefined for now
-  } : { ...context, autoParamCounter: currentCounter };
-
-  // Visit literals with field context, or reuse already-processed non-literals
+  // Visit literals with appropriate field context
   let left = leftExpr;
   let right = rightExpr;
 
   if (!left) {
-    const leftResult = visitValue(node.left, enhancedContext);
+    // Left is a literal - use field context from right side if it's a column
+    const leftContext = rightFieldName ? {
+      ...context,
+      autoParamCounter: currentCounter,
+      _currentFieldName: rightFieldName,
+      _currentTableName: rightTableName,
+      _currentSourceTable: undefined,
+    } : {
+      ...context,
+      autoParamCounter: currentCounter,
+      _currentTableName: context.currentTable, // Keep table context even without field
+      _currentSourceTable: undefined,
+    };
+
+    const leftResult = visitValue(node.left, leftContext);
     left = leftResult.value;
     currentCounter = leftResult.counter;
   }
 
   if (!right) {
-    const rightResult = visitValue(node.right, { ...enhancedContext, autoParamCounter: currentCounter });
+    // Right is a literal - use field context from left side if it's a column
+    const rightContext = leftFieldName ? {
+      ...context,
+      autoParamCounter: currentCounter,
+      _currentFieldName: leftFieldName,
+      _currentTableName: leftTableName,
+      _currentSourceTable: undefined,
+    } : {
+      ...context,
+      autoParamCounter: currentCounter,
+      _currentTableName: context.currentTable, // Keep table context even without field
+      _currentSourceTable: undefined,
+    };
+
+    const rightResult = visitValue(node.right, rightContext);
     right = rightResult.value;
     currentCounter = rightResult.counter;
   }
