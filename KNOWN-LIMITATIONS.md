@@ -2,9 +2,13 @@
 
 ## Chained JOINs with Result Selectors
 
-**Status:** Architectural limitation requiring significant refactoring
+**Status:** Architectural limitation - requires subquery/CTE support
 
-**Issue:** When using chained JOINs where the first JOIN has a result selector that transforms/renames columns, subsequent JOINs cannot properly reference the transformed columns.
+**Issue:** Result selectors in intermediate JOINs are not supported. When a JOIN has a result selector that transforms or renames columns, those transformed columns cannot be referenced by subsequent JOINs. This is because the result selector creates a projection, but the SQL generator doesn't wrap it in a subquery, so the projected columns don't exist for the next JOIN to reference.
+
+### Technical Explanation
+
+When you write a chained JOIN with result selectors, the parsed query understands the column mappings, but the SQL generator produces invalid SQL because it tries to reference columns that only exist in the projection, not in the base tables.
 
 ### Example of Problematic Pattern
 
