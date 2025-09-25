@@ -7,6 +7,9 @@ import type {
   ValueExpression,
   ParameterExpression,
   ArithmeticExpression,
+  ConcatExpression,
+  ColumnExpression,
+  CoalesceExpression,
 } from "../../expressions/expression.js";
 
 import type {
@@ -21,6 +24,7 @@ import type {
 } from "../../parser/ast-types.js";
 
 import type { WhereContext, VisitorResult } from "./context.js";
+import type { VisitorContext } from "../types.js";
 import { visitColumnAccess } from "./column.js";
 import { visitPredicate } from "./predicate.js";
 import { visitBooleanMethod } from "./boolean-method.js";
@@ -37,17 +41,29 @@ export function visitValue(
   let currentCounter = context.autoParamCounter;
 
   switch (node.type) {
+    case "ChainExpression": {
+      // Optional chaining: u.bio?.length
+      const chain = node as { expression: ASTExpression };
+      if (chain.expression) {
+        return visitValue(chain.expression, {
+          ...context,
+          autoParamCounter: currentCounter,
+        });
+      }
+      return { value: null, counter: currentCounter };
+    }
+
     case "MemberExpression": {
       const member = node as MemberExpression;
 
       // First try using the common member access visitor which handles global constants
       const memberResult = visitMemberAccess(
         member,
-        context as any, // WhereContext extends VisitorContext
+        context as VisitorContext,
         (n, ctx) => {
           const result = visitValue(n as ASTExpression, ctx as WhereContext);
           return result.value;
-        }
+        },
       );
       if (memberResult && (memberResult.type === "param" || memberResult.type === "column")) {
         // Update counter if it's an auto-param (like Number.MAX_SAFE_INTEGER)
@@ -219,8 +235,8 @@ export function visitValue(
 
     case "LogicalExpression": {
       const logical = node as ASTLogicalExpression;
-      // Null coalescing operator
-      if (logical.operator === "??") {
+      // Null coalescing operators (?? and ||)
+      if (logical.operator === "??" || logical.operator === "||") {
         // Visit left side
         const leftResult = visitValue(logical.left, {
           ...context,
@@ -241,7 +257,7 @@ export function visitValue(
           value: {
             type: "coalesce",
             expressions: [leftResult.value, rightResult.value],
-          } as any,
+          } as CoalesceExpression,
           counter: currentCounter,
         };
       }
@@ -280,6 +296,27 @@ export function visitValue(
         if (!rightResult.value) return { value: null, counter: currentCounter };
         currentCounter = rightResult.counter;
 
+        // Check for string concatenation with + operator
+        if (binary.operator === "+") {
+          // If either operand is a string column or string constant, treat as concatenation
+          const isStringConcat =
+            (leftResult.value.type === "column" && isStringColumn(leftResult.value, context)) ||
+            (rightResult.value.type === "column" && isStringColumn(rightResult.value, context)) ||
+            (leftResult.value.type === "param" &&
+              typeof getParamValue(leftResult.value, context) === "string");
+
+          if (isStringConcat) {
+            return {
+              value: {
+                type: "concat",
+                left: leftResult.value,
+                right: rightResult.value,
+              } as ConcatExpression,
+              counter: currentCounter,
+            };
+          }
+        }
+
         return {
           value: {
             type: "arithmetic",
@@ -311,4 +348,26 @@ export function visitValue(
     default:
       return { value: null, counter: currentCounter };
   }
+}
+
+/**
+ * Check if a column expression represents a string column
+ * In a real system, this would check the schema. For now, we assume
+ * common string column names.
+ */
+function isStringColumn(column: ColumnExpression, _context: WhereContext): boolean {
+  const stringColumns = ["name", "email", "bio", "description", "title", "content", "text"];
+  return stringColumns.includes(column.name.toLowerCase());
+}
+
+/**
+ * Get the value of a parameter expression
+ */
+function getParamValue(param: ParameterExpression, context: WhereContext): unknown {
+  if (param.param.startsWith("__p")) {
+    // Auto-parameter
+    return context.autoParams.get(param.param);
+  }
+  // Query parameter - we don't have the value at parse time
+  return undefined;
 }

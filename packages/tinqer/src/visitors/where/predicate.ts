@@ -84,6 +84,19 @@ export function visitPredicate(
       return { value: null, counter: currentCounter };
     }
 
+    case "ChainExpression": {
+      // Optional chaining: u.bio?.includes("text")
+      const chain = node as any; // ChainExpression type
+      if (chain.expression) {
+        // Unwrap and visit the inner expression
+        return visitPredicate(chain.expression, {
+          ...context,
+          autoParamCounter: currentCounter,
+        });
+      }
+      return { value: null, counter: currentCounter };
+    }
+
     case "CallExpression": {
       // Boolean methods like x.name.startsWith("John")
       const result = visitBooleanMethod(node as CallExpression, {

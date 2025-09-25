@@ -40,9 +40,26 @@ export function visitJoinOperation(
           firstArg as ASTExpression,
           visitorContext.tableParams,
           visitorContext.queryParams,
+          visitorContext,
         )
       : null;
     const innerSource = innerSourceResult?.operation || null;
+
+    // Update visitor context with inner source's auto-params and counter
+    if (innerSourceResult?.autoParams) {
+      // Find the highest param number used
+      let maxParamNum = visitorContext.autoParamCounter;
+      for (const key of Object.keys(innerSourceResult.autoParams)) {
+        if (key.startsWith("__p")) {
+          const num = parseInt(key.substring(3), 10);
+          if (!isNaN(num) && num > maxParamNum) {
+            maxParamNum = num;
+          }
+        }
+      }
+      // Update the counter to be the next available number
+      visitorContext.autoParamCounter = maxParamNum;
+    }
 
     if (innerSource && predicateArg && predicateArg.type === "ArrowFunctionExpression") {
       const predicateArrow = predicateArg as ArrowFunctionExpression;
@@ -79,9 +96,21 @@ export function visitJoinOperation(
         }
 
         if (bodyExpr) {
-          const result = visitExpression(bodyExpr, predicateContext, visitorContext.queryParams);
+          const result = visitExpression(
+            bodyExpr,
+            predicateContext,
+            visitorContext.queryParams,
+            visitorContext.autoParamCounter,
+          );
 
           if (result && result.expression) {
+            // Update the counter after this expression
+            visitorContext.autoParamCounter = result.counter;
+
+            // Merge autoParams back to context
+            for (const [key, value] of Object.entries(result.autoParams)) {
+              visitorContext.autoParams.set(key, value);
+            }
             const expr = result.expression;
 
             // Extract join keys from equality comparison (u.id === ud.userId)
@@ -146,9 +175,27 @@ export function visitJoinOperation(
           firstArg as ASTExpression,
           visitorContext.tableParams,
           visitorContext.queryParams,
+          visitorContext,
         )
       : null;
     const innerSource = innerSourceResult?.operation || null;
+
+    // Update visitor context with inner source's auto-params and counter
+    if (innerSourceResult?.autoParams) {
+      // Find the highest param number used
+      let maxParamNum = visitorContext.autoParamCounter;
+      for (const key of Object.keys(innerSourceResult.autoParams)) {
+        if (key.startsWith("__p")) {
+          const num = parseInt(key.substring(3), 10);
+          if (!isNaN(num) && num > maxParamNum) {
+            maxParamNum = num;
+          }
+        }
+      }
+      // Update the counter to be the next available number
+      visitorContext.autoParamCounter = maxParamNum;
+    }
+
     const outerKeySelectorAst = ast.arguments[1];
     const innerKeySelectorAst = ast.arguments[2];
     const resultSelectorAst = ast.arguments[3]; // Capture the result selector
@@ -196,10 +243,18 @@ export function visitJoinOperation(
           bodyExpr,
           outerContext.tableParams,
           outerContext.queryParams,
+          visitorContext.autoParamCounter,
         );
         if (result) {
           const expr = result.expression;
           Object.assign(autoParams, result.autoParams);
+          // Update the counter
+          visitorContext.autoParamCounter = result.counter;
+
+          // Merge autoParams back to context
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           if (expr && expr.type === "column") {
             const colExpr = expr as ColumnExpression;
             // For nested paths like orderItem.product_id, we get the final column name
@@ -239,10 +294,18 @@ export function visitJoinOperation(
           bodyExpr,
           innerContext.tableParams,
           innerContext.queryParams,
+          visitorContext.autoParamCounter,
         );
         if (result) {
           const expr = result.expression;
           Object.assign(autoParams, result.autoParams);
+          // Update the counter
+          visitorContext.autoParamCounter = result.counter;
+
+          // Merge autoParams back to context
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           if (expr && expr.type === "column") {
             innerKey = (expr as ColumnExpression).name;
           }

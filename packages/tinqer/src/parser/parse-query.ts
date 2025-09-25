@@ -69,6 +69,9 @@ export function parseQuery<TParams, TResult>(
     };
   } catch (error) {
     console.error("Failed to parse query:", error);
+    if (error instanceof Error) {
+      console.error("Stack trace:", error.stack);
+    }
     return null;
   }
 }

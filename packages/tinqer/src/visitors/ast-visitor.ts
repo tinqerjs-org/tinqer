@@ -4,6 +4,7 @@
 
 import type { QueryOperation } from "../query-tree/operations.js";
 import type { Expression as ASTExpression } from "../parser/ast-types.js";
+import type { VisitorContext } from "./types.js";
 import { convertAstToQueryOperationWithParams } from "../parser/ast-visitor.js";
 
 /**
@@ -14,9 +15,14 @@ export function visitAstToQueryOperation(
   ast: ASTExpression,
   _tableParams: Set<string>,
   _queryParams: Set<string>,
+  visitorContext?: VisitorContext,
 ): { operation: QueryOperation | null; autoParams: Record<string, unknown> } | null {
-  // Use the main parser to convert the AST
-  const result = convertAstToQueryOperationWithParams(ast);
+  // Pass existing context to preserve auto-param counter and existing params
+  const result = convertAstToQueryOperationWithParams(
+    ast,
+    visitorContext?.autoParamCounter,
+    visitorContext?.autoParams,
+  );
 
   if (!result || !result.operation) {
     return null;

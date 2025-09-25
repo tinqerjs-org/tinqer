@@ -51,7 +51,11 @@ export interface VisitorParseResult {
 /**
  * Convert AST to QueryOperation using visitor pattern
  */
-export function convertAstToQueryOperationWithParams(ast: ASTExpression): {
+export function convertAstToQueryOperationWithParams(
+  ast: ASTExpression,
+  startCounter?: number,
+  existingAutoParams?: Map<string, unknown>,
+): {
   operation: QueryOperation | null;
   autoParams: Record<string, unknown>;
   autoParamInfos?: Record<
@@ -66,8 +70,8 @@ export function convertAstToQueryOperationWithParams(ast: ASTExpression): {
   const visitorContext: VisitorContext = {
     tableParams: new Set(tableParams),
     queryParams: new Set(queryParams),
-    autoParams: new Map(),
-    autoParamCounter: 0,
+    autoParams: existingAutoParams || new Map(),
+    autoParamCounter: startCounter || 0,
     autoParamInfos: new Map(), // Initialize enhanced field context tracking
   };
 
@@ -276,6 +280,16 @@ function visitCallExpression(
           for (const [key, value] of Object.entries(result.autoParams)) {
             visitorContext.autoParams.set(key, value);
           }
+
+          // Update context with JOIN result shape for subsequent operations
+          const joinOp = result.operation as any;
+          if (joinOp.resultShape) {
+            visitorContext.currentResultShape = joinOp.resultShape;
+            // Create a virtual table parameter for the JOIN result
+            visitorContext.joinResultParam = "$joinResult";
+            visitorContext.tableParams.add("$joinResult");
+          }
+
           return result.operation;
         }
         return null;

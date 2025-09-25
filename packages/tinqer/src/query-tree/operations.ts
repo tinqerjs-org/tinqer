@@ -53,7 +53,7 @@ export interface WhereOperation extends QueryOperation {
 export interface SelectOperation extends QueryOperation {
   operationType: "select";
   source: QueryOperation;
-  selector: ValueExpression | ObjectExpression;
+  selector: ValueExpression | ObjectExpression | null; // null means SELECT *
 }
 
 /**

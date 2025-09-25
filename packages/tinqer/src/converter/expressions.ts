@@ -243,6 +243,17 @@ export function convertMemberExpression(
   ast: ASTMemberExpression,
   context: ConversionContext,
 ): Expression | null {
+  // Handle ChainExpression in the object (for optional chaining like u.bio?.includes)
+  if (ast.object.type === "ChainExpression") {
+    const chain = ast.object as ASTChainExpression;
+    // Create a new member expression with the unwrapped object
+    const unwrappedMember: ASTMemberExpression = {
+      ...ast,
+      object: chain.expression,
+    };
+    return convertMemberExpression(unwrappedMember, context);
+  }
+
   // Handle array indexing (e.g., params.roles[0])
   if (ast.computed && ast.object.type === "Identifier") {
     const objectName = (ast.object as Identifier).name;
@@ -725,9 +736,16 @@ export function convertCallExpression(
   ast: ASTCallExpression,
   context: ConversionContext,
 ): Expression | null {
+  // Unwrap ChainExpression if present (for optional chaining)
+  let callee = ast.callee;
+  if (callee.type === "ChainExpression") {
+    const chain = callee as ASTChainExpression;
+    callee = chain.expression;
+  }
+
   // Handle method calls
-  if (ast.callee.type === "MemberExpression") {
-    const memberCallee = ast.callee as ASTMemberExpression;
+  if (callee.type === "MemberExpression") {
+    const memberCallee = callee as ASTMemberExpression;
 
     // Check if this is an aggregate method on a grouping parameter
     // In C# LINQ, after groupBy, the parameter represents IGrouping<TKey, TElement>
@@ -779,7 +797,14 @@ export function convertCallExpression(
       }
     }
 
-    const obj = convertAstToExpression(memberCallee.object, context);
+    // Unwrap ChainExpression in the object if present
+    let objectNode = memberCallee.object;
+    if (objectNode.type === "ChainExpression") {
+      const chain = objectNode as ASTChainExpression;
+      objectNode = chain.expression;
+    }
+
+    const obj = convertAstToExpression(objectNode, context);
 
     if (memberCallee.property.type === "Identifier") {
       const methodName = (memberCallee.property as Identifier).name;

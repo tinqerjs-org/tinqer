@@ -54,6 +54,12 @@ export function visitWhereOperation(
     if (firstParam && firstParam.type === "Identifier") {
       const paramName = (firstParam as Identifier).name;
       context.tableParams.add(paramName);
+
+      // If we have a JOIN result shape, map the parameter to it
+      if (visitorContext.currentResultShape) {
+        context.currentResultShape = visitorContext.currentResultShape;
+        context.joinResultParam = paramName;
+      }
     }
   }
 

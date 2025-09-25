@@ -22,19 +22,34 @@ export function visitBooleanMethod(
 ): VisitorResult<BooleanExpression | null> {
   let currentCounter = context.autoParamCounter;
 
-  if (node.callee.type !== "MemberExpression") return { value: null, counter: currentCounter };
+  // Handle optional chaining in callee
+  let calleeNode = node.callee;
+  if (calleeNode.type === "ChainExpression") {
+    const chain = calleeNode as any;
+    if (chain.expression) {
+      calleeNode = chain.expression;
+    }
+  }
 
-  const memberCallee = node.callee as MemberExpression;
+  if (calleeNode.type !== "MemberExpression") return { value: null, counter: currentCounter };
+
+  const memberCallee = calleeNode as MemberExpression;
   if (memberCallee.property.type !== "Identifier") return { value: null, counter: currentCounter };
 
   const methodName = (memberCallee.property as Identifier).name;
 
-  // Unwrap the object to handle parentheses and TypeScript casts
+  // Unwrap the object to handle parentheses, TypeScript casts, and optional chaining
   let objectNode = memberCallee.object as any;
-  while (objectNode.type === "ParenthesizedExpression" || objectNode.type === "TSAsExpression") {
+  while (
+    objectNode.type === "ParenthesizedExpression" ||
+    objectNode.type === "TSAsExpression" ||
+    objectNode.type === "ChainExpression"
+  ) {
     if (objectNode.type === "ParenthesizedExpression") {
       objectNode = objectNode.expression;
     } else if (objectNode.type === "TSAsExpression") {
+      objectNode = objectNode.expression;
+    } else if (objectNode.type === "ChainExpression") {
       objectNode = objectNode.expression;
     }
   }

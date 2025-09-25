@@ -10,6 +10,12 @@ import type {
   ColumnExpression,
   ArithmeticExpression,
   ConcatExpression,
+  BooleanExpression,
+  CaseExpression,
+  ComparisonExpression,
+  LogicalExpression,
+  NotExpression,
+  IsNullExpression,
 } from "../../expressions/expression.js";
 
 import type {
@@ -81,7 +87,7 @@ export function visitProjection(node: ASTExpression, context: SelectContext): Ex
 
     case "LogicalExpression": {
       // Null coalescing operator (??)
-      const logical = node as any;
+      const logical = node as { operator: string; left: ASTExpression; right: ASTExpression };
       if (logical.operator === "??") {
         const left = visitProjection(logical.left, context);
         const right = visitProjection(logical.right, context);
@@ -90,7 +96,7 @@ export function visitProjection(node: ASTExpression, context: SelectContext): Ex
           return {
             type: "coalesce",
             expressions: [left, right],
-          } as any;
+          } as ValueExpression;
         }
       }
       return null;
@@ -310,7 +316,7 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
         return {
           type: "aggregate",
           function: "count",
-        } as any;
+        } as Expression;
       } else if (methodName === "sum") {
         // sum() requires a selector argument
         if (node.arguments && node.arguments.length > 0) {
@@ -324,7 +330,7 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
                 type: "aggregate",
                 function: "sum",
                 expression: selector,
-              } as any;
+              } as Expression;
             }
           }
         }
@@ -342,7 +348,7 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
                 type: "aggregate",
                 function: functionName,
                 expression: selector,
-              } as any;
+              } as Expression;
             }
           }
         }
@@ -360,6 +366,22 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
       object: obj as ValueExpression,
       method: methodName as "toLowerCase" | "toUpperCase",
     };
+  }
+
+  // Check for unsupported Date methods
+  if (methodName === "getTime") {
+    throw new Error(`Unsupported method: ${methodName}(). Date arithmetic is not supported.`);
+  }
+
+  // Check for Date.now() static call
+  if (
+    memberCallee.object.type === "Identifier" &&
+    (memberCallee.object as Identifier).name === "Date" &&
+    methodName === "now"
+  ) {
+    throw new Error(
+      "Unsupported call expression: Date.now(). External functions are not supported.",
+    );
   }
 
   return null;
@@ -442,7 +464,10 @@ function visitUnaryProjection(node: UnaryExpression, context: SelectContext): Ex
 /**
  * Visit conditional (ternary) expression
  */
-function visitConditionalProjection(node: any, context: SelectContext): Expression | null {
+function visitConditionalProjection(
+  node: { test: ASTExpression; consequent: ASTExpression; alternate: ASTExpression },
+  context: SelectContext,
+): Expression | null {
   // Ternary operator: condition ? thenExpr : elseExpr
   // Converts to SQL: CASE WHEN condition THEN thenExpr ELSE elseExpr END
 
@@ -472,16 +497,20 @@ function visitConditionalProjection(node: any, context: SelectContext): Expressi
 
   return {
     type: "case",
-    condition,
-    then: thenExpr,
-    else: elseExpr,
-  } as any;
+    conditions: [
+      {
+        when: condition as BooleanExpression,
+        then: thenExpr as ValueExpression,
+      },
+    ],
+    else: elseExpr as ValueExpression,
+  } as CaseExpression;
 }
 
 /**
  * Helper to convert AST boolean expressions for CASE WHEN
  */
-function visitBooleanCondition(node: any, context: SelectContext): any {
+function visitBooleanCondition(node: ASTExpression, context: SelectContext): BooleanExpression | null {
   if (!node) return null;
 
   switch (node.type) {
@@ -496,10 +525,10 @@ function visitBooleanCondition(node: any, context: SelectContext): any {
             node.operator === "===" ? "==" : node.operator === "!==" ? "!=" : node.operator;
           return {
             type: "comparison",
-            operator: op,
-            left,
-            right,
-          };
+            operator: op as "==" | "!=" | ">" | ">=" | "<" | "<=",
+            left: left as ValueExpression,
+            right: right as ValueExpression,
+          } as ComparisonExpression;
         }
       }
       break;
@@ -515,9 +544,9 @@ function visitBooleanCondition(node: any, context: SelectContext): any {
           return {
             type: "logical",
             operator: node.operator === "&&" ? "and" : "or",
-            left,
-            right,
-          };
+            left: left as BooleanExpression,
+            right: right as BooleanExpression,
+          } as LogicalExpression;
         }
       }
       break;
@@ -530,8 +559,8 @@ function visitBooleanCondition(node: any, context: SelectContext): any {
         if (inner) {
           return {
             type: "not",
-            expression: inner,
-          };
+            expression: inner as BooleanExpression,
+          } as NotExpression;
         }
       }
       break;
@@ -544,11 +573,11 @@ function visitBooleanCondition(node: any, context: SelectContext): any {
         // Convert column to IS NOT NULL check
         return {
           type: "isNull",
-          expression: expr,
-          not: true,
-        };
+          expression: expr as ValueExpression,
+          negated: true,
+        } as IsNullExpression;
       }
-      return expr;
+      return expr as BooleanExpression;
     }
 
     case "MemberExpression": {
@@ -558,11 +587,11 @@ function visitBooleanCondition(node: any, context: SelectContext): any {
         // Convert column to IS NOT NULL check
         return {
           type: "isNull",
-          expression: expr,
-          not: true,
-        };
+          expression: expr as ValueExpression,
+          negated: true,
+        } as IsNullExpression;
       }
-      return expr;
+      return expr as BooleanExpression;
     }
   }
 
