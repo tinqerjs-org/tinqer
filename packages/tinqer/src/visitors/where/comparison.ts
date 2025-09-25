@@ -64,6 +64,7 @@ export function visitComparison(
     autoParamCounter: currentCounter,
     _currentFieldName: fieldName,
     _currentTableName: tableName,
+    _currentSourceTable: undefined, // Add sourceTable as undefined for now
   } : { ...context, autoParamCounter: currentCounter };
 
   // Visit literals with field context, or reuse already-processed non-literals

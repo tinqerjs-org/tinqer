@@ -8,6 +8,7 @@ import type {
   ColumnExpression,
   ValueExpression,
   ParameterExpression,
+  ArithmeticExpression,
 } from "../../expressions/expression.js";
 
 import type {
@@ -182,8 +183,27 @@ export function visitValue(
 
   switch (node.type) {
     case "MemberExpression": {
-      // Column reference - no counter change
-      const column = visitColumnAccess(node as MemberExpression, context);
+      const member = node as MemberExpression;
+
+      // Check if it's a query parameter member access (e.g., p.minAge)
+      if (member.object.type === "Identifier") {
+        const objectName = (member.object as Identifier).name;
+        if (context.queryParams.has(objectName) && member.property.type === "Identifier") {
+          // This is an external parameter like p.minAge - return as parameter
+          const propertyName = (member.property as Identifier).name;
+          return {
+            value: {
+              type: "param",
+              param: objectName,
+              property: propertyName,
+            } as ParameterExpression,
+            counter: currentCounter
+          };
+        }
+      }
+
+      // Otherwise it's a column reference
+      const column = visitColumnAccess(member, context);
       return { value: column, counter: currentCounter };
     }
 
@@ -215,6 +235,7 @@ export function visitValue(
           value: lit.value as string | number | boolean | null,
           fieldName: (context as any)._currentFieldName,
           tableName: (context as any)._currentTableName,
+          sourceTable: (context as any)._currentSourceTable,
         });
       }
 
@@ -262,6 +283,7 @@ export function visitValue(
               value: value,
               fieldName: (context as any)._currentFieldName,
               tableName: (context as any)._currentTableName,
+              sourceTable: (context as any)._currentSourceTable,
             });
           }
 
@@ -273,6 +295,32 @@ export function visitValue(
             counter: currentCounter
           };
         }
+      }
+      return { value: null, counter: currentCounter };
+    }
+
+    case "BinaryExpression": {
+      const binary = node as BinaryExpression;
+      // Arithmetic expression
+      if (["+", "-", "*", "/", "%"].includes(binary.operator)) {
+        // Recursively visit left and right
+        const leftResult = visitValue(binary.left, { ...context, autoParamCounter: currentCounter });
+        if (!leftResult.value) return { value: null, counter: currentCounter };
+        currentCounter = leftResult.counter;
+
+        const rightResult = visitValue(binary.right, { ...context, autoParamCounter: currentCounter });
+        if (!rightResult.value) return { value: null, counter: currentCounter };
+        currentCounter = rightResult.counter;
+
+        return {
+          value: {
+            type: "arithmetic",
+            operator: binary.operator as "+" | "-" | "*" | "/" | "%",
+            left: leftResult.value,
+            right: rightResult.value,
+          } as ArithmeticExpression,
+          counter: currentCounter
+        };
       }
       return { value: null, counter: currentCounter };
     }
