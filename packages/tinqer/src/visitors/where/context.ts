@@ -13,6 +13,7 @@ export interface WhereContext {
   // Auto-generated parameters for literals
   autoParams: Map<string, unknown>;
   autoParamCounter: number;
+  autoParamInfos?: Map<string, { value: unknown; fieldName?: string; tableName?: string; sourceTable?: number }>;
 
   // Current table being queried
   currentTable?: string;
@@ -37,9 +38,28 @@ export function createWhereContext(
 /**
  * Generate auto-parameter name for literal values
  */
-export function createAutoParam(context: WhereContext, value: unknown): string {
+export function createAutoParam(
+  context: WhereContext,
+  value: unknown,
+  options: {
+    fieldName?: string;
+    tableName?: string;
+    sourceTable?: number;
+  } = {},
+): string {
   context.autoParamCounter++;
   const paramName = `__p${context.autoParamCounter}`;
   context.autoParams.set(paramName, value);
+
+  // Store enhanced field context if available
+  if (context.autoParamInfos) {
+    context.autoParamInfos.set(paramName, {
+      value: value as string | number | boolean | null,
+      fieldName: options.fieldName,
+      tableName: options.tableName,
+      sourceTable: options.sourceTable,
+    });
+  }
+
   return paramName;
 }

@@ -29,17 +29,18 @@ export function visitComparison(
   const operator = normalizeComparisonOperator(node.operator);
   if (!operator) return null;
 
-  // First, detect field names by checking if either side is a column
-  let fieldName: string | undefined;
-  let tableName: string | undefined;
-
-  // Check left side for column (without creating parameters yet)
   const leftNode = node.left as ASTExpression;
   const rightNode = node.right as ASTExpression;
 
-  // Peek at non-literal expressions to find column names
+  // First, detect field names by processing non-literals
+  let fieldName: string | undefined;
+  let tableName: string | undefined;
+  let leftExpr: ValueExpression | null = null;
+  let rightExpr: ValueExpression | null = null;
+
+  // Process non-literals first to detect field names
   if (!isLiteral(leftNode)) {
-    const leftExpr = visitExpression(leftNode, context) as ValueExpression;
+    leftExpr = visitExpression(leftNode, context) as ValueExpression;
     if (leftExpr && leftExpr.type === "column") {
       const col = leftExpr as ColumnExpression;
       fieldName = col.name;
@@ -47,8 +48,8 @@ export function visitComparison(
     }
   }
 
-  if (!fieldName && !isLiteral(rightNode)) {
-    const rightExpr = visitExpression(rightNode, context) as ValueExpression;
+  if (!isLiteral(rightNode)) {
+    rightExpr = visitExpression(rightNode, context) as ValueExpression;
     if (rightExpr && rightExpr.type === "column") {
       const col = rightExpr as ColumnExpression;
       fieldName = col.name;
@@ -56,20 +57,14 @@ export function visitComparison(
     }
   }
 
-  // Now process both sides, with field context for literals
-  let left: ValueExpression | null = null;
-  if (isLiteral(leftNode)) {
-    left = visitLiteralWithContext(leftNode, context, fieldName, tableName) as ValueExpression;
-  } else {
-    left = visitExpression(leftNode, context) as ValueExpression;
-  }
+  // Now process literals with field context, or use already-processed non-literals
+  const left = isLiteral(leftNode)
+    ? visitLiteralWithContext(leftNode, context, fieldName, tableName) as ValueExpression
+    : leftExpr;
 
-  let right: ValueExpression | null = null;
-  if (isLiteral(rightNode)) {
-    right = visitLiteralWithContext(rightNode, context, fieldName, tableName) as ValueExpression;
-  } else {
-    right = visitExpression(rightNode, context) as ValueExpression;
-  }
+  const right = isLiteral(rightNode)
+    ? visitLiteralWithContext(rightNode, context, fieldName, tableName) as ValueExpression
+    : rightExpr;
 
   if (!left || !right) {
     throw new Error(

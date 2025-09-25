@@ -37,8 +37,12 @@ export function visitWhereOperation(
 
   const lambda = lambdaArg as ArrowFunctionExpression;
 
-  // Create WHERE-specific context with current param counter
+  // Create WHERE-specific context that wraps the shared visitor context
   const context = createWhereContext(visitorContext.tableParams, visitorContext.queryParams, visitorContext.autoParamCounter);
+
+  // Important: Replace the context's autoParams and autoParamInfos with the shared ones
+  context.autoParams = visitorContext.autoParams;
+  context.autoParamInfos = visitorContext.autoParamInfos;
 
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {
@@ -48,6 +52,9 @@ export function visitWhereOperation(
       context.tableParams.add(paramName);
     }
   }
+
+  // Set current table if available
+  context.currentTable = visitorContext.currentTable;
 
   // Extract body expression
   let bodyExpr: ASTExpression | null = null;

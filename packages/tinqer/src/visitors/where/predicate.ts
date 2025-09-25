@@ -181,8 +181,11 @@ export function visitValue(node: ASTExpression, context: WhereContext): ValueExp
           valueType: "null",
         };
       }
-      // Auto-parameterize other literals
-      const paramName = createAutoParam(context, lit.value);
+      // Auto-parameterize other literals with field context if available
+      const paramName = createAutoParam(context, lit.value, {
+        fieldName: (context as any)._currentFieldName,
+        tableName: (context as any)._currentTableName,
+      });
       return {
         type: "param",
         param: paramName,
@@ -211,7 +214,10 @@ export function visitValue(node: ASTExpression, context: WhereContext): ValueExp
         const lit = unary.argument as Literal;
         if (typeof lit.value === "number") {
           const value = -lit.value;
-          const paramName = createAutoParam(context, value);
+          const paramName = createAutoParam(context, value, {
+            fieldName: (context as any)._currentFieldName,
+            tableName: (context as any)._currentTableName,
+          });
           return {
             type: "param",
             param: paramName,
