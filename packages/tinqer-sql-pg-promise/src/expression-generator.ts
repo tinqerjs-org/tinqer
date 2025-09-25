@@ -66,6 +66,8 @@ export function generateBooleanExpression(expr: BooleanExpression, context: SqlC
       return generateBooleanMethodExpression(expr, context);
     case "in":
       return generateInExpression(expr as InExpression, context);
+    case "isNull":
+      return generateIsNullExpression(expr as any, context);
     default:
       throw new Error(`Unsupported boolean expression type: ${(expr as any).type}`);
   }
@@ -451,6 +453,14 @@ function generateStringMethodExpression(expr: StringMethodExpression, context: S
     default:
       throw new Error(`Unsupported string method: ${expr.method}`);
   }
+}
+
+/**
+ * Generate SQL for IS NULL / IS NOT NULL expressions
+ */
+function generateIsNullExpression(expr: any, context: SqlContext): string {
+  const value = generateValueExpression(expr.expression, context);
+  return expr.not ? `${value} IS NOT NULL` : `${value} IS NULL`;
 }
 
 /**

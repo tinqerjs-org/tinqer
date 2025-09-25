@@ -538,13 +538,31 @@ function visitBooleanCondition(node: any, context: SelectContext): any {
     }
 
     case "Identifier": {
-      // Direct boolean column
-      return visitProjection(node, context);
+      // Direct boolean column or parameter
+      const expr = visitProjection(node, context);
+      if (expr && expr.type === "column") {
+        // Convert column to IS NOT NULL check
+        return {
+          type: "isNull",
+          expression: expr,
+          not: true,
+        };
+      }
+      return expr;
     }
 
     case "MemberExpression": {
       // Boolean property access
-      return visitProjection(node, context);
+      const expr = visitProjection(node, context);
+      if (expr && expr.type === "column") {
+        // Convert column to IS NOT NULL check
+        return {
+          type: "isNull",
+          expression: expr,
+          not: true,
+        };
+      }
+      return expr;
     }
   }
 
