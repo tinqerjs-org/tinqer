@@ -4,6 +4,7 @@
 
 import type {
   JoinOperation,
+  FromOperation,
   Expression,
   ObjectExpression,
   ColumnExpression,
@@ -185,7 +186,7 @@ export function generateJoin(operation: JoinOperation, context: SqlContext): str
   // Check if inner is just a simple FROM operation
   let joinClause: string;
   if (operation.inner.operationType === "from") {
-    const fromOp = operation.inner as any;
+    const fromOp = operation.inner as FromOperation;
     const tableName = fromOp.table;
     joinClause = `INNER JOIN "${tableName}" AS "${innerAlias}"`;
   } else {

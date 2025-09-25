@@ -11,6 +11,8 @@ import type {
   Expression as ASTExpression,
   Identifier,
 } from "../../parser/ast-types.js";
+import type { OrderByContext } from "./context.js";
+import type { VisitorContext } from "../types.js";
 
 import { createOrderByContext } from "./context.js";
 import { visitKeySelector } from "./key-selector.js";
@@ -57,9 +59,14 @@ export function visitOrderByOperation(
       context.tableParams.add(paramName);
 
       // If we have a JOIN result shape, map the parameter to it
-      if ((visitorContext as any).currentResultShape) {
-        (context as any).currentResultShape = (visitorContext as any).currentResultShape;
-        (context as any).joinResultParam = paramName;
+      const extVisitorContext = visitorContext as VisitorContext & { currentResultShape?: unknown };
+      const extContext = context as OrderByContext & {
+        currentResultShape?: unknown;
+        joinResultParam?: string;
+      };
+      if (extVisitorContext.currentResultShape) {
+        extContext.currentResultShape = extVisitorContext.currentResultShape;
+        extContext.joinResultParam = paramName;
       }
     }
   }

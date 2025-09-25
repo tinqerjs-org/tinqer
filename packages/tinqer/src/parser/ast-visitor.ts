@@ -3,7 +3,7 @@
  * Main entry point for the visitor-based parsing system
  */
 
-import type { QueryOperation } from "../query-tree/operations.js";
+import type { QueryOperation, JoinOperation, ResultShape } from "../query-tree/operations.js";
 import type {
   Expression as ASTExpression,
   CallExpression as ASTCallExpression,
@@ -282,7 +282,7 @@ function visitCallExpression(
           }
 
           // Update context with JOIN result shape for subsequent operations
-          const joinOp = result.operation as any;
+          const joinOp = result.operation as JoinOperation & { resultShape?: ResultShape };
           if (joinOp.resultShape) {
             visitorContext.currentResultShape = joinOp.resultShape;
             // Create a virtual table parameter for the JOIN result

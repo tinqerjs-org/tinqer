@@ -24,7 +24,7 @@ export interface SelectContext {
   // GROUP BY context
   isGroupedSource: boolean;
   groupingParams: Set<string>;
-  groupKeyExpression?: any; // Expression from GROUP BY keySelector
+  groupKeyExpression?: unknown; // Expression from GROUP BY keySelector
 }
 
 /**

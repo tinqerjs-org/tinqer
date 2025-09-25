@@ -71,7 +71,9 @@ export function generateBooleanExpression(expr: BooleanExpression, context: SqlC
     case "isNull":
       return generateIsNullExpression(expr as IsNullExpression, context);
     default:
-      throw new Error(`Unsupported boolean expression type: ${(expr as BooleanExpression & { type: string }).type}`);
+      throw new Error(
+        `Unsupported boolean expression type: ${(expr as BooleanExpression & { type: string }).type}`,
+      );
   }
 }
 
@@ -99,7 +101,9 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
     case "case":
       return generateCaseExpression(expr as CaseExpression, context);
     default:
-      throw new Error(`Unsupported value expression type: ${(expr as ValueExpression & { type: string }).type}`);
+      throw new Error(
+        `Unsupported value expression type: ${(expr as ValueExpression & { type: string }).type}`,
+      );
   }
 }
 
@@ -362,8 +366,10 @@ function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlCo
     // Check if either operand is definitely a string
     const isStringConcat =
       // String constants
-      (expr.left.type === "constant" && typeof (expr.left as ConstantExpression).value === "string") ||
-      (expr.right.type === "constant" && typeof (expr.right as ConstantExpression).value === "string") ||
+      (expr.left.type === "constant" &&
+        typeof (expr.left as ConstantExpression).value === "string") ||
+      (expr.right.type === "constant" &&
+        typeof (expr.right as ConstantExpression).value === "string") ||
       // String method results (toLowerCase, toUpperCase, substring, etc.)
       expr.left.type === "stringMethod" ||
       expr.right.type === "stringMethod" ||

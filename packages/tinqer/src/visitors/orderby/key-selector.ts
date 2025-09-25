@@ -87,14 +87,18 @@ function visitMemberAccess(
       const objectName = (node.object as Identifier).name;
 
       // Check if this is accessing a JOIN result property
-      if ((context as any).joinResultParam === objectName && (context as any).currentResultShape) {
-        const shapeProp = (context as any).currentResultShape.properties.get(propertyName);
+      const extContext = context as OrderByContext & {
+        joinResultParam?: string;
+        currentResultShape?: { properties: Map<string, { type: string; columnName?: string; sourceTable?: number }> }
+      };
+      if (extContext.joinResultParam === objectName && extContext.currentResultShape) {
+        const shapeProp = extContext.currentResultShape.properties.get(propertyName);
         if (shapeProp) {
           if (shapeProp.type === "column") {
             // Direct column from JOIN result
             return {
               type: "column",
-              name: shapeProp.columnName,
+              name: shapeProp.columnName || propertyName,
               table: `$joinSource${shapeProp.sourceTable}`,
             };
           }

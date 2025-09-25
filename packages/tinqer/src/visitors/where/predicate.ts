@@ -86,7 +86,7 @@ export function visitPredicate(
 
     case "ChainExpression": {
       // Optional chaining: u.bio?.includes("text")
-      const chain = node as any; // ChainExpression type
+      const chain = node as { expression?: ASTExpression };
       if (chain.expression) {
         // Unwrap and visit the inner expression
         return visitPredicate(chain.expression, {

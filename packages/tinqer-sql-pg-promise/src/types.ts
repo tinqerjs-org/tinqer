@@ -18,7 +18,7 @@ export interface SqlResult<TParams> {
 export interface SourceReference {
   tableAlias: string; // The SQL table alias (e.g., "t0", "t1")
   columnName: string; // The actual column name in the table
-  expression?: any; // For computed columns (e.g., u.price * 0.9)
+  expression?: unknown; // For computed columns (e.g., u.price * 0.9)
 }
 
 /**
@@ -38,7 +38,7 @@ export interface SqlContext {
   formatParameter: (paramName: string) => string; // Format parameter for SQL dialect
   groupByKey?: Expression; // Store the GROUP BY key selector expression for transforming g.key references
   symbolTable?: SymbolTable; // Maps projected properties to their source columns
-  currentShape?: any; // The current shape of the query result (after JOINs)
+  currentShape?: unknown; // The current shape of the query result (after JOINs)
   currentAlias?: string; // Current table alias for resolving column references
 }
 

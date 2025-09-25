@@ -167,7 +167,7 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
       if (context.groupingParams.has(objectName)) {
         if (propertyName === "key") {
           // g.key refers to the GROUP BY key expression
-          return context.groupKeyExpression || null;
+          return (context.groupKeyExpression as Expression) || null;
         }
         // Other properties on grouping params will be handled by method calls
         return null;

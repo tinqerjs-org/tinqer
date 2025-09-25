@@ -27,6 +27,7 @@ import type {
   JoinOperation,
   AnyOperation,
   AllOperation,
+  Expression,
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 import { generateFrom } from "./generators/from.js";
@@ -158,7 +159,7 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
       fragments.push(distinctKeyword ? `SELECT ${distinctKeyword} *` : "SELECT *");
     } else {
       // Use JOIN result selector as implicit SELECT with specific columns
-      const projectionSql = generateExpression(context.currentShape, context);
+      const projectionSql = generateExpression(context.currentShape as Expression, context);
       const selectClause = `SELECT ${projectionSql}`;
       if (distinctKeyword) {
         fragments.push(selectClause.replace("SELECT", `SELECT ${distinctKeyword}`));
@@ -282,7 +283,7 @@ function collectOperations(operation: QueryOperation): QueryOperation[] {
 
   while (current) {
     operations.push(current);
-    current = (current as any).source;
+    current = (current as QueryOperation & { source?: QueryOperation }).source;
   }
 
   // Reverse to get operations in execution order (from -> where -> select)

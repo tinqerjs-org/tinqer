@@ -30,13 +30,14 @@ export function visitColumnAccess(
 
       // Check if this is accessing a JOIN result property
       if (context.joinResultParam === objectName && context.currentResultShape) {
-        const shapeProp = context.currentResultShape.properties.get(propertyName);
+        const resultShape = context.currentResultShape as { properties: Map<string, { type: string; columnName?: string; sourceTable?: number }> };
+        const shapeProp = resultShape.properties.get(propertyName);
         if (shapeProp) {
           if (shapeProp.type === "column") {
             // Direct column from JOIN result
             return {
               type: "column",
-              name: shapeProp.columnName,
+              name: shapeProp.columnName || propertyName,
               table: `$joinSource${shapeProp.sourceTable}`,
             };
           }

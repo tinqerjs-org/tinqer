@@ -30,7 +30,7 @@ export interface WhereContext {
   currentTable?: string;
 
   // JOIN result shape tracking
-  currentResultShape?: any; // ResultShape from JOIN
+  currentResultShape?: unknown; // ResultShape from JOIN
   joinResultParam?: string; // Parameter name representing JOIN result
 }
 

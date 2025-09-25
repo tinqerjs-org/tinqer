@@ -3,7 +3,11 @@
  * Handles method calls that return boolean values
  */
 
-import type { BooleanExpression, ValueExpression, InExpression } from "../../expressions/expression.js";
+import type {
+  BooleanExpression,
+  ValueExpression,
+  InExpression,
+} from "../../expressions/expression.js";
 import type {
   CallExpression,
   MemberExpression,
@@ -43,10 +47,7 @@ export function visitBooleanMethod(
 
   // Unwrap the object to handle parentheses and optional chaining
   let objectNode = memberCallee.object as ASTExpression;
-  while (
-    objectNode.type === "ParenthesizedExpression" ||
-    objectNode.type === "ChainExpression"
-  ) {
+  while (objectNode.type === "ParenthesizedExpression" || objectNode.type === "ChainExpression") {
     if (objectNode.type === "ParenthesizedExpression") {
       objectNode = (objectNode as ParenthesizedExpression).expression;
     } else if (objectNode.type === "ChainExpression") {

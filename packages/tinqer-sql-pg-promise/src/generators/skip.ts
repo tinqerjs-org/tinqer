@@ -2,7 +2,7 @@
  * SKIP (OFFSET) clause generator
  */
 
-import type { SkipOperation } from "@webpods/tinqer";
+import type { SkipOperation, ValueExpression } from "@webpods/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateValueExpression } from "../expression-generator.js";
 
@@ -14,7 +14,7 @@ export function generateSkip(operation: SkipOperation, context: SqlContext): str
     return `OFFSET ${operation.count}`;
   } else {
     // Handle as expression (ParamRef, ArithmeticExpression, etc.)
-    const expr = generateValueExpression(operation.count as any, context);
+    const expr = generateValueExpression(operation.count as ValueExpression, context);
     return `OFFSET ${expr}`;
   }
 }

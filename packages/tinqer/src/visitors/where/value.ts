@@ -122,7 +122,8 @@ export function visitValue(
           value: lit.value as string | number | boolean | null,
           fieldName: (context as WhereContext & { _currentFieldName?: string })._currentFieldName,
           tableName: (context as WhereContext & { _currentTableName?: string })._currentTableName,
-          sourceTable: (context as WhereContext & { _currentSourceTable?: number })._currentSourceTable,
+          sourceTable: (context as WhereContext & { _currentSourceTable?: number })
+            ._currentSourceTable,
         });
       }
 
@@ -168,9 +169,12 @@ export function visitValue(
           if (context.autoParamInfos) {
             context.autoParamInfos.set(paramName, {
               value: value,
-              fieldName: (context as WhereContext & { _currentFieldName?: string })._currentFieldName,
-              tableName: (context as WhereContext & { _currentTableName?: string })._currentTableName,
-              sourceTable: (context as WhereContext & { _currentSourceTable?: number })._currentSourceTable,
+              fieldName: (context as WhereContext & { _currentFieldName?: string })
+                ._currentFieldName,
+              tableName: (context as WhereContext & { _currentTableName?: string })
+                ._currentTableName,
+              sourceTable: (context as WhereContext & { _currentSourceTable?: number })
+                ._currentSourceTable,
             });
           }
 
@@ -194,7 +198,11 @@ export function visitValue(
 
     case "ConditionalExpression": {
       // Ternary operator: condition ? thenValue : elseValue
-      const conditional = node as { test: ASTExpression; consequent: ASTExpression; alternate: ASTExpression };
+      const conditional = node as {
+        test: ASTExpression;
+        consequent: ASTExpression;
+        alternate: ASTExpression;
+      };
 
       // Parse the condition
       const conditionResult = visitPredicate(conditional.test, {
@@ -280,7 +288,11 @@ export function visitValue(
               _currentFieldName: leftColumn.name,
               _currentTableName: context.currentTable,
               _currentSourceTable: undefined,
-            } as WhereContext & { _currentFieldName?: string; _currentTableName?: string; _currentSourceTable?: number };
+            } as WhereContext & {
+              _currentFieldName?: string;
+              _currentTableName?: string;
+              _currentSourceTable?: number;
+            };
           }
         }
 
