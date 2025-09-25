@@ -159,6 +159,115 @@ export function visitJoinOperation(
   _methodName: string,
   visitorContext: VisitorContext,
 ): { operation: JoinOperation; autoParams: Record<string, unknown> } | null {
+  // Handle 2-argument form: join(inner, predicate)
+  if (ast.arguments && ast.arguments.length === 2) {
+    const firstArg = ast.arguments[0];
+    const predicateArg = ast.arguments[1];
+
+    // Parse inner source
+    const innerSourceResult = firstArg
+      ? visitAstToQueryOperation(
+          firstArg as ASTExpression,
+          visitorContext.tableParams,
+          visitorContext.queryParams,
+        )
+      : null;
+    const innerSource = innerSourceResult?.operation || null;
+
+    if (innerSource && predicateArg && predicateArg.type === "ArrowFunctionExpression") {
+      const predicateArrow = predicateArg as ArrowFunctionExpression;
+      const params = predicateArrow.params;
+
+      // Get the two parameters (outer, inner)
+      const outerParam =
+        params && params[0]
+          ? getParameterName({
+              params: [params[0]],
+              body: predicateArrow.body,
+            } as ArrowFunctionExpression)
+          : null;
+      const innerParam =
+        params && params[1]
+          ? getParameterName({
+              params: [params[1]],
+              body: predicateArrow.body,
+            } as ArrowFunctionExpression)
+          : null;
+
+      if (outerParam && innerParam) {
+        // Create context for predicate evaluation
+        const predicateContext = new Set(visitorContext.tableParams);
+        predicateContext.add(outerParam);
+        predicateContext.add(innerParam);
+
+        // Get predicate body
+        let bodyExpr: ASTExpression | null = null;
+        if (predicateArrow.body.type === "BlockStatement") {
+          bodyExpr = getReturnExpression(predicateArrow.body.body);
+        } else {
+          bodyExpr = predicateArrow.body;
+        }
+
+        if (bodyExpr) {
+          const result = visitExpression(bodyExpr, predicateContext, visitorContext.queryParams);
+
+          if (result && result.expression) {
+            const expr = result.expression;
+
+            // Extract join keys from equality comparison (u.id === ud.userId)
+            if (expr.type === "comparison" && (expr as any).operator === "==") {
+              const comparisonExpr = expr as any;
+              const leftCol = comparisonExpr.left;
+              const rightCol = comparisonExpr.right;
+
+              let outerKey: string | null = null;
+              let innerKey: string | null = null;
+
+              // Determine which side is outer and which is inner based on table reference
+              if (leftCol?.type === "column" && rightCol?.type === "column") {
+                // Check if left column references outer param
+                if (leftCol.table === outerParam || !leftCol.table) {
+                  outerKey = leftCol.name;
+                  innerKey = rightCol.name;
+                } else if (leftCol.table === innerParam) {
+                  innerKey = leftCol.name;
+                  outerKey = rightCol.name;
+                }
+              }
+
+              if (outerKey && innerKey) {
+                const autoParams: Record<string, unknown> = {};
+
+                // Merge auto params from inner source
+                if (innerSourceResult?.autoParams) {
+                  Object.assign(autoParams, innerSourceResult.autoParams);
+                }
+
+                // Merge auto params from predicate
+                if (result.autoParams) {
+                  Object.assign(autoParams, result.autoParams);
+                }
+
+                return {
+                  operation: {
+                    type: "queryOperation",
+                    operationType: "join",
+                    source,
+                    inner: innerSource,
+                    outerKey,
+                    innerKey,
+                  },
+                  autoParams,
+                };
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Handle 4-argument form: join(inner, outerKeySelector, innerKeySelector, resultSelector)
   if (ast.arguments && ast.arguments.length >= 4) {
     // join(inner, outerKeySelector, innerKeySelector, resultSelector)
     const firstArg = ast.arguments[0];

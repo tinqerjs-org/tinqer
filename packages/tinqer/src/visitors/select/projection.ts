@@ -8,7 +8,6 @@ import type {
   ObjectExpression,
   ValueExpression,
   ColumnExpression,
-  ParameterExpression,
   ArithmeticExpression,
   ConcatExpression,
 } from "../../expressions/expression.js";
@@ -22,6 +21,7 @@ import type {
   BinaryExpression,
   CallExpression,
   UnaryExpression,
+  ArrowFunctionExpression,
 } from "../../parser/ast-types.js";
 
 import type { SelectContext } from "./context.js";
@@ -79,6 +79,23 @@ export function visitProjection(node: ASTExpression, context: SelectContext): Ex
       return visitConditionalProjection(node, context);
     }
 
+    case "LogicalExpression": {
+      // Null coalescing operator (??)
+      const logical = node as any;
+      if (logical.operator === "??") {
+        const left = visitProjection(logical.left, context);
+        const right = visitProjection(logical.right, context);
+
+        if (left && right) {
+          return {
+            type: "coalesce",
+            values: [left, right],
+          } as any;
+        }
+      }
+      return null;
+    }
+
     case "ParenthesizedExpression": {
       // Unwrap parentheses
       const paren = node as { expression: ASTExpression };
@@ -132,16 +149,23 @@ function visitObjectProjection(
 /**
  * Visit column projection
  */
-function visitColumnProjection(
-  node: MemberExpression,
-  context: SelectContext,
-): ColumnExpression | ParameterExpression | null {
+function visitColumnProjection(node: MemberExpression, context: SelectContext): Expression | null {
   if (!node.computed && node.property.type === "Identifier") {
     const propertyName = (node.property as Identifier).name;
 
     // Simple member access: x.name
     if (node.object.type === "Identifier") {
       const objectName = (node.object as Identifier).name;
+
+      // Grouping parameter access (g.key, g.count(), etc.)
+      if (context.groupingParams.has(objectName)) {
+        if (propertyName === "key") {
+          // g.key refers to the GROUP BY key expression
+          return context.groupKeyExpression || null;
+        }
+        // Other properties on grouping params will be handled by method calls
+        return null;
+      }
 
       // Table parameter column
       if (context.tableParams.has(objectName)) {
@@ -265,6 +289,54 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
 
   const methodName = (memberCallee.property as Identifier).name;
 
+  // Check if this is a method call on a grouping parameter (e.g., g.count())
+  if (memberCallee.object.type === "Identifier") {
+    const objectName = (memberCallee.object as Identifier).name;
+
+    if (context.groupingParams.has(objectName)) {
+      // Handle aggregate methods on grouping parameter
+      if (methodName === "count") {
+        return {
+          type: "aggregate",
+          function: "count",
+        } as any;
+      } else if (methodName === "sum") {
+        // sum() requires a selector argument
+        if (node.arguments && node.arguments.length > 0) {
+          const arg = node.arguments[0];
+          if (arg && arg.type === "ArrowFunctionExpression") {
+            const lambda = arg as ArrowFunctionExpression;
+            // Parse the selector lambda
+            const selector = parseSelectorLambda(lambda, context);
+            if (selector && selector.type === "column") {
+              return {
+                type: "aggregate",
+                function: "sum",
+                column: (selector as any).name,
+              } as any;
+            }
+          }
+        }
+      } else if (["avg", "min", "max"].includes(methodName)) {
+        // Similar handling for other aggregates
+        if (node.arguments && node.arguments.length > 0) {
+          const arg = node.arguments[0];
+          if (arg && arg.type === "ArrowFunctionExpression") {
+            const lambda = arg as ArrowFunctionExpression;
+            const selector = parseSelectorLambda(lambda, context);
+            if (selector && selector.type === "column") {
+              return {
+                type: "aggregate",
+                function: methodName,
+                column: (selector as any).name,
+              } as any;
+            }
+          }
+        }
+      }
+    }
+  }
+
   // String methods
   if (["toLowerCase", "toUpperCase"].includes(methodName)) {
     const obj = visitProjection(memberCallee.object, context);
@@ -278,6 +350,42 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
   }
 
   return null;
+}
+
+/**
+ * Helper to parse selector lambda in aggregate functions
+ */
+function parseSelectorLambda(
+  lambda: ArrowFunctionExpression,
+  context: SelectContext,
+): Expression | null {
+  // Get the lambda body
+  let bodyExpr: ASTExpression | null = null;
+  if (lambda.body.type === "BlockStatement") {
+    const returnStmt = lambda.body.body.find(
+      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement",
+    );
+    if (returnStmt) {
+      bodyExpr = (returnStmt as { argument?: ASTExpression }).argument || null;
+    }
+  } else {
+    bodyExpr = lambda.body;
+  }
+
+  if (!bodyExpr) return null;
+
+  // Add lambda parameter to table params temporarily
+  const tempContext = { ...context };
+  tempContext.tableParams = new Set(context.tableParams);
+
+  if (lambda.params && lambda.params.length > 0) {
+    const firstParam = lambda.params[0];
+    if (firstParam && firstParam.type === "Identifier") {
+      tempContext.tableParams.add((firstParam as Identifier).name);
+    }
+  }
+
+  return visitProjection(bodyExpr, tempContext);
 }
 
 /**

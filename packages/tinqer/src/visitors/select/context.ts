@@ -20,6 +20,11 @@ export interface SelectContext {
 
   // Current table being queried
   currentTable?: string;
+
+  // GROUP BY context
+  isGroupedSource: boolean;
+  groupingParams: Set<string>;
+  groupKeyExpression?: any; // Expression from GROUP BY keySelector
 }
 
 /**
@@ -37,6 +42,8 @@ export function createSelectContext(
     autoParamCounter: startCounter,
     inProjection: false,
     hasTableParam: false,
+    isGroupedSource: false,
+    groupingParams: new Set(),
   };
 }
 

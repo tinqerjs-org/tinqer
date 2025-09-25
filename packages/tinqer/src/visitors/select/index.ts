@@ -45,13 +45,26 @@ export function visitSelectOperation(
   );
   context.inProjection = true;
 
+  // Check if source is a GROUP BY operation
+  if (source.operationType === "groupBy") {
+    context.isGroupedSource = true;
+    // Store the GROUP BY key expression for reference
+    context.groupKeyExpression = (source as any).keySelector;
+  }
+
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {
     const firstParam = lambda.params[0];
     if (firstParam && firstParam.type === "Identifier") {
       const paramName = (firstParam as Identifier).name;
-      context.tableParams.add(paramName);
-      context.hasTableParam = true;
+
+      if (context.isGroupedSource) {
+        // In grouped context, parameter represents a grouping, not a row
+        context.groupingParams.add(paramName);
+      } else {
+        context.tableParams.add(paramName);
+        context.hasTableParam = true;
+      }
     } else {
       context.hasTableParam = false;
     }

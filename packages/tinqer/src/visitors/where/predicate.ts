@@ -305,6 +305,43 @@ export function visitValue(
       return { value: null, counter: currentCounter };
     }
 
+    case "ParenthesizedExpression": {
+      // Unwrap parentheses and recurse
+      const paren = node as { expression: ASTExpression };
+      return visitValue(paren.expression, { ...context, autoParamCounter: currentCounter });
+    }
+
+    case "LogicalExpression": {
+      const logical = node as ASTLogicalExpression;
+      // Null coalescing operator
+      if (logical.operator === "??") {
+        // Visit left side
+        const leftResult = visitValue(logical.left, {
+          ...context,
+          autoParamCounter: currentCounter,
+        });
+        if (!leftResult.value) return { value: null, counter: currentCounter };
+        currentCounter = leftResult.counter;
+
+        // Visit right side (default value)
+        const rightResult = visitValue(logical.right, {
+          ...context,
+          autoParamCounter: currentCounter,
+        });
+        if (!rightResult.value) return { value: null, counter: currentCounter };
+        currentCounter = rightResult.counter;
+
+        return {
+          value: {
+            type: "coalesce",
+            values: [leftResult.value, rightResult.value],
+          } as any,
+          counter: currentCounter,
+        };
+      }
+      return { value: null, counter: currentCounter };
+    }
+
     case "BinaryExpression": {
       const binary = node as BinaryExpression;
       // Arithmetic expression
@@ -370,6 +407,52 @@ function visitBooleanMethod(
   if (memberCallee.property.type !== "Identifier") return { value: null, counter: currentCounter };
 
   const methodName = (memberCallee.property as Identifier).name;
+
+  // Array includes method (for IN operator)
+  if (methodName === "includes" && memberCallee.object.type === "ArrayExpression") {
+    // This is array.includes(value) which translates to SQL IN
+    const arrayNode = memberCallee.object as any;
+    const arrayValues: ValueExpression[] = [];
+
+    // Parse array elements
+    for (const element of arrayNode.elements) {
+      if (element) {
+        const elementResult = visitValue(element as ASTExpression, {
+          ...context,
+          autoParamCounter: currentCounter,
+        });
+        if (elementResult.value) {
+          arrayValues.push(elementResult.value);
+          currentCounter = elementResult.counter;
+        }
+      }
+    }
+
+    // Parse the argument (the value being checked)
+    if (node.arguments && node.arguments.length > 0) {
+      const valueResult = visitValue(node.arguments[0] as ASTExpression, {
+        ...context,
+        autoParamCounter: currentCounter,
+      });
+
+      if (valueResult.value) {
+        currentCounter = valueResult.counter;
+        return {
+          value: {
+            type: "in",
+            value: valueResult.value,
+            array: {
+              type: "array",
+              values: arrayValues,
+            },
+          } as any,
+          counter: currentCounter,
+        };
+      }
+    }
+
+    return { value: null, counter: currentCounter };
+  }
 
   // String boolean methods
   if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
