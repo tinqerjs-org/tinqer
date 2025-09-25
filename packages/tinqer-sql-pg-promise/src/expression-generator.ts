@@ -625,7 +625,11 @@ function generateObjectExpression(expr: ObjectExpression, context: SqlContext): 
     let sqlValue = generateExpression(value, context);
 
     // If it's a boolean expression in SELECT context, wrap it in a CASE to return boolean value
-    if (isBooleanExpression(value) && value.type !== "booleanColumn" && value.type !== "booleanConstant") {
+    if (
+      isBooleanExpression(value) &&
+      value.type !== "booleanColumn" &&
+      value.type !== "booleanConstant"
+    ) {
       sqlValue = `CASE WHEN ${sqlValue} THEN TRUE ELSE FALSE END`;
     }
 

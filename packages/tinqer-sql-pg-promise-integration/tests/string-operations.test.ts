@@ -158,7 +158,7 @@ describe("PostgreSQL Integration - String Operations", () => {
               userId: u.id,
               userName: u.name,
               departmentId: d.id,
-              departmentName: d.name
+              departmentName: d.name,
             }),
           )
           .where(

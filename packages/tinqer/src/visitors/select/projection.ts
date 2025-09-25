@@ -341,7 +341,8 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
             const lambda = arg as ArrowFunctionExpression;
             // Parse the selector lambda
             const selector = parseSelectorLambda(lambda, context);
-            if (selector && selector.type === "column") {
+            if (selector) {
+              // Accept any value expression, not just columns
               return {
                 type: "aggregate",
                 function: "sum",
@@ -357,7 +358,8 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
           if (arg && arg.type === "ArrowFunctionExpression") {
             const lambda = arg as ArrowFunctionExpression;
             const selector = parseSelectorLambda(lambda, context);
-            if (selector && selector.type === "column") {
+            if (selector) {
+              // Accept any value expression, not just columns
               // Map "average" to "avg" for SQL
               const functionName = methodName === "average" ? "avg" : methodName;
               return {

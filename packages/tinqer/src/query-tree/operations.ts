@@ -332,7 +332,8 @@ export interface LongCountOperation extends QueryOperation {
 export interface SumOperation extends QueryOperation {
   operationType: "sum";
   source: QueryOperation;
-  selector?: string; // Column name only
+  selector?: string; // Column name for backward compatibility
+  selectorExpression?: ValueExpression; // Full expression support
 }
 
 /**
@@ -341,7 +342,8 @@ export interface SumOperation extends QueryOperation {
 export interface AverageOperation extends QueryOperation {
   operationType: "average";
   source: QueryOperation;
-  selector?: string; // Column name only
+  selector?: string; // Column name for backward compatibility
+  selectorExpression?: ValueExpression; // Full expression support
 }
 
 /**
@@ -350,7 +352,8 @@ export interface AverageOperation extends QueryOperation {
 export interface MinOperation extends QueryOperation {
   operationType: "min";
   source: QueryOperation;
-  selector?: string; // Column name only
+  selector?: string; // Column name for backward compatibility
+  selectorExpression?: ValueExpression; // Full expression support
 }
 
 /**
@@ -359,7 +362,8 @@ export interface MinOperation extends QueryOperation {
 export interface MaxOperation extends QueryOperation {
   operationType: "max";
   source: QueryOperation;
-  selector?: string; // Column name only
+  selector?: string; // Column name for backward compatibility
+  selectorExpression?: ValueExpression; // Full expression support
 }
 
 /**

@@ -70,7 +70,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
               userAge: u.age,
               userIsActive: u.is_active,
               departmentId: d.id,
-              departmentName: d.name
+              departmentName: d.name,
             }),
           )
           .where((joined) => joined.userIsActive === true)

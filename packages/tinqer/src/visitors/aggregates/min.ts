@@ -3,7 +3,7 @@
  */
 
 import type { MinOperation, QueryOperation } from "../../query-tree/operations.js";
-import type { ColumnExpression } from "../../expressions/expression.js";
+import type { ColumnExpression, ValueExpression } from "../../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
@@ -47,12 +47,25 @@ export function visitMinOperation(
 
       if (bodyExpr) {
         const result = visitExpression(bodyExpr, localTableParams, localQueryParams);
-        if (result) {
+        if (result && result.expression) {
           const expr = result.expression;
-          if (expr && expr.type === "column") {
+          // Store both selector (for backward compatibility) and full expression
+          if (expr.type === "column") {
             selector = (expr as ColumnExpression).name;
           }
           Object.assign(autoParams, result.autoParams);
+
+          // Return with the expression
+          return {
+            operation: {
+              type: "queryOperation",
+              operationType: "min",
+              source,
+              selector,
+              selectorExpression: expr as ValueExpression,
+            },
+            autoParams,
+          };
         }
       }
     }
