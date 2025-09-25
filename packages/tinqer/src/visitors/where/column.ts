@@ -21,12 +21,15 @@ export function visitColumnAccess(
     return null;
   }
 
-  if (!node.computed && node.property.type === "Identifier") {
-    const propertyName = (node.property as Identifier).name;
+  // After handling ChainExpression, node is definitely MemberExpression
+  const memberNode = node as MemberExpression;
+
+  if (!memberNode.computed && memberNode.property.type === "Identifier") {
+    const propertyName = (memberNode.property as Identifier).name;
 
     // Simple member access: x.name
-    if (node.object.type === "Identifier") {
-      const objectName = (node.object as Identifier).name;
+    if (memberNode.object.type === "Identifier") {
+      const objectName = (memberNode.object as Identifier).name;
 
       // Check if this is accessing a JOIN result property
       if (context.joinResultParam === objectName && context.currentResultShape) {
@@ -55,8 +58,8 @@ export function visitColumnAccess(
     }
 
     // Nested member access: x.address.city
-    if (node.object.type === "MemberExpression") {
-      const innerColumn = visitColumnAccess(node.object as MemberExpression, context);
+    if (memberNode.object.type === "MemberExpression") {
+      const innerColumn = visitColumnAccess(memberNode.object as MemberExpression, context);
       if (innerColumn) {
         return {
           type: "column",
