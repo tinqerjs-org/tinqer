@@ -75,21 +75,21 @@ export function visitWhereOperation(
   }
 
   // Visit predicate expression
-  const predicate = visitPredicate(bodyExpr, context);
+  const predicateResult = visitPredicate(bodyExpr, context);
 
-  if (!predicate) {
+  if (!predicateResult.value) {
     return null;
   }
 
   // Update the global counter with the final value from this visitor
-  visitorContext.autoParamCounter = context.autoParamCounter;
+  visitorContext.autoParamCounter = predicateResult.counter;
 
   return {
     operation: {
       type: "queryOperation",
       operationType: "where",
       source,
-      predicate: predicate as BooleanExpression,
+      predicate: predicateResult.value as BooleanExpression,
     },
     autoParams: Object.fromEntries(context.autoParams),
   };

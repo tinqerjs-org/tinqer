@@ -21,8 +21,7 @@ import type {
   CallExpression,
 } from "../../parser/ast-types.js";
 
-import type { WhereContext } from "./context.js";
-import { createAutoParam } from "./context.js";
+import type { WhereContext, VisitorResult } from "./context.js";
 import { visitComparison } from "./comparison.js";
 import { visitLogical } from "./logical.js";
 
@@ -33,8 +32,10 @@ import { visitLogical } from "./logical.js";
 export function visitPredicate(
   node: ASTExpression,
   context: WhereContext,
-): BooleanExpression | null {
-  if (!node) return null;
+): VisitorResult<BooleanExpression | null> {
+  let currentCounter = context.autoParamCounter;
+
+  if (!node) return { value: null, counter: currentCounter };
 
   switch (node.type) {
     case "BinaryExpression": {
@@ -43,7 +44,7 @@ export function visitPredicate(
       if (["==", "===", "!=", "!==", ">", ">=", "<", "<="].includes(binary.operator)) {
         return visitComparison(binary, context);
       }
-      return null;
+      return { value: null, counter: currentCounter };
     }
 
     case "LogicalExpression": {
@@ -53,15 +54,18 @@ export function visitPredicate(
     case "UnaryExpression": {
       const unary = node as UnaryExpression;
       if (unary.operator === "!") {
-        const inner = visitPredicate(unary.argument, context);
-        if (inner) {
+        const innerResult = visitPredicate(unary.argument, { ...context, autoParamCounter: currentCounter });
+        if (innerResult.value) {
           return {
-            type: "not",
-            expression: inner,
+            value: {
+              type: "not",
+              expression: innerResult.value,
+            },
+            counter: innerResult.counter
           };
         }
       }
-      return null;
+      return { value: null, counter: currentCounter };
     }
 
     case "MemberExpression": {
@@ -69,17 +73,21 @@ export function visitPredicate(
       const column = visitColumnAccess(node as MemberExpression, context);
       if (column) {
         return {
-          type: "booleanColumn",
-          name: column.name,
-          ...(column.table && { table: column.table }),
+          value: {
+            type: "booleanColumn",
+            name: column.name,
+            ...(column.table && { table: column.table }),
+          },
+          counter: currentCounter
         };
       }
-      return null;
+      return { value: null, counter: currentCounter };
     }
 
     case "CallExpression": {
       // Boolean methods like x.name.startsWith("John")
-      return visitBooleanMethod(node as CallExpression, context);
+      const result = visitBooleanMethod(node as CallExpression, { ...context, autoParamCounter: currentCounter });
+      return result;
     }
 
     case "Identifier": {
@@ -88,11 +96,14 @@ export function visitPredicate(
       if (context.tableParams.has(id.name)) {
         // This is a table parameter used as boolean
         return {
-          type: "booleanColumn",
-          name: id.name,
+          value: {
+            type: "booleanColumn",
+            name: id.name,
+          },
+          counter: currentCounter
         };
       }
-      return null;
+      return { value: null, counter: currentCounter };
     }
 
     case "Literal":
@@ -101,11 +112,14 @@ export function visitPredicate(
       const lit = node as Literal;
       if (typeof lit.value === "boolean") {
         return {
-          type: "booleanConstant",
-          value: lit.value,
+          value: {
+            type: "booleanConstant",
+            value: lit.value,
+          },
+          counter: currentCounter
         };
       }
-      return null;
+      return { value: null, counter: currentCounter };
     }
 
     case "ParenthesizedExpression": {
@@ -115,7 +129,7 @@ export function visitPredicate(
     }
 
     default:
-      return null;
+      return { value: null, counter: currentCounter };
   }
 }
 
@@ -158,13 +172,19 @@ export function visitColumnAccess(
 
 /**
  * Visit value expression (for comparison operands)
+ * Returns the value expression and the updated counter
  */
-export function visitValue(node: ASTExpression, context: WhereContext): ValueExpression | null {
+export function visitValue(
+  node: ASTExpression,
+  context: WhereContext
+): VisitorResult<ValueExpression | null> {
+  let currentCounter = context.autoParamCounter;
+
   switch (node.type) {
     case "MemberExpression": {
-      // Column reference
+      // Column reference - no counter change
       const column = visitColumnAccess(node as MemberExpression, context);
-      return column;
+      return { value: column, counter: currentCounter };
     }
 
     case "Literal":
@@ -176,20 +196,35 @@ export function visitValue(node: ASTExpression, context: WhereContext): ValueExp
       // NULL is special - not parameterized
       if (lit.value === null) {
         return {
-          type: "constant",
-          value: null,
-          valueType: "null",
+          value: {
+            type: "constant",
+            value: null,
+            valueType: "null",
+          },
+          counter: currentCounter
         };
       }
       // Auto-parameterize other literals with field context if available
-      const paramName = createAutoParam(context, lit.value, {
-        fieldName: (context as any)._currentFieldName,
-        tableName: (context as any)._currentTableName,
-      });
+      currentCounter++;
+      const paramName = `__p${currentCounter}`;
+      context.autoParams.set(paramName, lit.value);
+
+      // Store enhanced field context if available
+      if (context.autoParamInfos) {
+        context.autoParamInfos.set(paramName, {
+          value: lit.value as string | number | boolean | null,
+          fieldName: (context as any)._currentFieldName,
+          tableName: (context as any)._currentTableName,
+        });
+      }
+
       return {
-        type: "param",
-        param: paramName,
-      } as ParameterExpression;
+        value: {
+          type: "param",
+          param: paramName,
+        } as ParameterExpression,
+        counter: currentCounter
+      };
     }
 
     case "Identifier": {
@@ -197,11 +232,14 @@ export function visitValue(node: ASTExpression, context: WhereContext): ValueExp
       // Query parameter reference
       if (context.queryParams.has(id.name)) {
         return {
-          type: "param",
-          param: id.name,
-        } as ParameterExpression;
+          value: {
+            type: "param",
+            param: id.name,
+          } as ParameterExpression,
+          counter: currentCounter
+        };
       }
-      return null;
+      return { value: null, counter: currentCounter };
     }
 
     case "UnaryExpression": {
@@ -214,53 +252,74 @@ export function visitValue(node: ASTExpression, context: WhereContext): ValueExp
         const lit = unary.argument as Literal;
         if (typeof lit.value === "number") {
           const value = -lit.value;
-          const paramName = createAutoParam(context, value, {
-            fieldName: (context as any)._currentFieldName,
-            tableName: (context as any)._currentTableName,
-          });
+          currentCounter++;
+          const paramName = `__p${currentCounter}`;
+          context.autoParams.set(paramName, value);
+
+          // Store enhanced field context if available
+          if (context.autoParamInfos) {
+            context.autoParamInfos.set(paramName, {
+              value: value,
+              fieldName: (context as any)._currentFieldName,
+              tableName: (context as any)._currentTableName,
+            });
+          }
+
           return {
-            type: "param",
-            param: paramName,
-          } as ParameterExpression;
+            value: {
+              type: "param",
+              param: paramName,
+            } as ParameterExpression,
+            counter: currentCounter
+          };
         }
       }
-      return null;
+      return { value: null, counter: currentCounter };
     }
 
     default:
-      return null;
+      return { value: null, counter: currentCounter };
   }
 }
 
 /**
  * Visit boolean method calls
  */
-function visitBooleanMethod(node: CallExpression, context: WhereContext): BooleanExpression | null {
-  if (node.callee.type !== "MemberExpression") return null;
+function visitBooleanMethod(node: CallExpression, context: WhereContext): VisitorResult<BooleanExpression | null> {
+  let currentCounter = context.autoParamCounter;
+
+  if (node.callee.type !== "MemberExpression") return { value: null, counter: currentCounter };
 
   const memberCallee = node.callee as MemberExpression;
-  if (memberCallee.property.type !== "Identifier") return null;
+  if (memberCallee.property.type !== "Identifier") return { value: null, counter: currentCounter };
 
   const methodName = (memberCallee.property as Identifier).name;
 
   // String boolean methods
   if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
-    const obj = visitValue(memberCallee.object, context);
-    if (!obj) return null;
+    const objResult = visitValue(memberCallee.object, { ...context, autoParamCounter: currentCounter });
+    if (!objResult.value) return { value: null, counter: currentCounter };
+    currentCounter = objResult.counter;
 
     const args: ValueExpression[] = [];
     for (const arg of node.arguments) {
-      const value = visitValue(arg as ASTExpression, context);
-      if (value) args.push(value);
+      const valueResult = visitValue(arg as ASTExpression, { ...context, autoParamCounter: currentCounter });
+      if (valueResult.value) {
+        args.push(valueResult.value);
+        currentCounter = valueResult.counter;
+      }
     }
 
     return {
-      type: "booleanMethod",
-      object: obj,
-      method: methodName as "startsWith" | "endsWith" | "includes" | "contains",
-      arguments: args,
+      value: {
+        type: "booleanMethod",
+        object: objResult.value,
+        method: methodName as "startsWith" | "endsWith" | "includes" | "contains",
+        arguments: args,
+      },
+      counter: currentCounter
     };
   }
 
-  return null;
+  return { value: null, counter: currentCounter };
 }

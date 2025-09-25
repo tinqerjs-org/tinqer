@@ -6,7 +6,7 @@
 import type { LogicalExpression, BooleanExpression } from "../../expressions/expression.js";
 
 import type { LogicalExpression as ASTLogicalExpression } from "../../parser/ast-types.js";
-import type { WhereContext } from "./context.js";
+import type { WhereContext, VisitorResult } from "./context.js";
 import { visitPredicate } from "./predicate.js";
 
 /**
@@ -15,26 +15,36 @@ import { visitPredicate } from "./predicate.js";
 export function visitLogical(
   node: ASTLogicalExpression,
   context: WhereContext,
-): LogicalExpression | null {
+): VisitorResult<LogicalExpression | null> {
+  let currentCounter = context.autoParamCounter;
+
   // Only handle boolean logical operators
   if (node.operator !== "&&" && node.operator !== "||") {
-    return null;
+    return { value: null, counter: currentCounter };
   }
 
   // Visit left and right as predicates
-  const left = visitPredicate(node.left, context);
-  const right = visitPredicate(node.right, context);
+  const leftResult = visitPredicate(node.left, { ...context, autoParamCounter: currentCounter });
+  const left = leftResult.value;
+  currentCounter = leftResult.counter;
 
-  if (!left || !right) return null;
+  const rightResult = visitPredicate(node.right, { ...context, autoParamCounter: currentCounter });
+  const right = rightResult.value;
+  currentCounter = rightResult.counter;
+
+  if (!left || !right) return { value: null, counter: currentCounter };
 
   // Convert to SQL-style operator names
   const operator = node.operator === "&&" ? "and" : "or";
 
   return {
-    type: "logical",
-    operator,
-    left: ensureBoolean(left),
-    right: ensureBoolean(right),
+    value: {
+      type: "logical",
+      operator,
+      left: ensureBoolean(left),
+      right: ensureBoolean(right),
+    },
+    counter: currentCounter
   };
 }
 

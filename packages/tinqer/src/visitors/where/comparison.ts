@@ -6,7 +6,7 @@
 import type { ComparisonExpression, ValueExpression, ColumnExpression } from "../../expressions/expression.js";
 
 import type { BinaryExpression } from "../../parser/ast-types.js";
-import type { WhereContext } from "./context.js";
+import type { WhereContext, VisitorResult } from "./context.js";
 import { visitValue } from "./predicate.js";
 
 /**
@@ -24,10 +24,12 @@ function isLiteral(node: unknown): boolean {
 export function visitComparison(
   node: BinaryExpression,
   context: WhereContext,
-): ComparisonExpression | null {
+): VisitorResult<ComparisonExpression | null> {
+  let currentCounter = context.autoParamCounter;
+
   // Normalize operator (=== to ==, !== to !=)
   const operator = normalizeOperator(node.operator);
-  if (!operator) return null;
+  if (!operator) return { value: null, counter: currentCounter };
 
   // First detect field names by looking at the structure
   let fieldName: string | undefined;
@@ -37,7 +39,9 @@ export function visitComparison(
 
   // Process non-literals first to detect field names and save results
   if (!isLiteral(node.left)) {
-    leftExpr = visitValue(node.left, context);
+    const leftResult = visitValue(node.left, { ...context, autoParamCounter: currentCounter });
+    leftExpr = leftResult.value;
+    currentCounter = leftResult.counter;
     if (leftExpr && leftExpr.type === "column") {
       fieldName = (leftExpr as ColumnExpression).name;
       tableName = context.currentTable;
@@ -45,7 +49,9 @@ export function visitComparison(
   }
 
   if (!isLiteral(node.right)) {
-    rightExpr = visitValue(node.right, context);
+    const rightResult = visitValue(node.right, { ...context, autoParamCounter: currentCounter });
+    rightExpr = rightResult.value;
+    currentCounter = rightResult.counter;
     if (rightExpr && rightExpr.type === "column") {
       fieldName = (rightExpr as ColumnExpression).name;
       tableName = context.currentTable;
@@ -55,21 +61,37 @@ export function visitComparison(
   // Create a temporary context with field info for literal processing
   const enhancedContext = fieldName ? {
     ...context,
+    autoParamCounter: currentCounter,
     _currentFieldName: fieldName,
     _currentTableName: tableName,
-  } : context;
+  } : { ...context, autoParamCounter: currentCounter };
 
   // Visit literals with field context, or reuse already-processed non-literals
-  const left = leftExpr || visitValue(node.left, enhancedContext);
-  const right = rightExpr || visitValue(node.right, enhancedContext);
+  let left = leftExpr;
+  let right = rightExpr;
 
-  if (!left || !right) return null;
+  if (!left) {
+    const leftResult = visitValue(node.left, enhancedContext);
+    left = leftResult.value;
+    currentCounter = leftResult.counter;
+  }
+
+  if (!right) {
+    const rightResult = visitValue(node.right, { ...enhancedContext, autoParamCounter: currentCounter });
+    right = rightResult.value;
+    currentCounter = rightResult.counter;
+  }
+
+  if (!left || !right) return { value: null, counter: currentCounter };
 
   return {
-    type: "comparison",
-    operator,
-    left: left as ValueExpression,
-    right: right as ValueExpression,
+    value: {
+      type: "comparison",
+      operator,
+      left: left as ValueExpression,
+      right: right as ValueExpression,
+    },
+    counter: currentCounter
   };
 }
 

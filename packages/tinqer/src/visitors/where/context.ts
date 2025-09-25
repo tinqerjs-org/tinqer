@@ -3,6 +3,14 @@
  * Manages state for WHERE clause parsing
  */
 
+/**
+ * Result type for visitors that need to return a value and updated counter
+ */
+export type VisitorResult<T> = {
+  value: T;
+  counter: number;
+};
+
 export interface WhereContext {
   // Parameters from table (x in where(x => ...))
   tableParams: Set<string>;
@@ -35,31 +43,5 @@ export function createWhereContext(
   };
 }
 
-/**
- * Generate auto-parameter name for literal values
- */
-export function createAutoParam(
-  context: WhereContext,
-  value: unknown,
-  options: {
-    fieldName?: string;
-    tableName?: string;
-    sourceTable?: number;
-  } = {},
-): string {
-  context.autoParamCounter++;
-  const paramName = `__p${context.autoParamCounter}`;
-  context.autoParams.set(paramName, value);
-
-  // Store enhanced field context if available
-  if (context.autoParamInfos) {
-    context.autoParamInfos.set(paramName, {
-      value: value as string | number | boolean | null,
-      fieldName: options.fieldName,
-      tableName: options.tableName,
-      sourceTable: options.sourceTable,
-    });
-  }
-
-  return paramName;
-}
+// Note: createAutoParam has been removed in favor of immutable counter handling
+// Parameters are now created directly in visitValue with counter returned
