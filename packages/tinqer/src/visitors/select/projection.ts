@@ -429,8 +429,113 @@ function visitUnaryProjection(node: UnaryExpression, context: SelectContext): Ex
 /**
  * Visit conditional (ternary) expression
  */
-function visitConditionalProjection(_node: unknown, _context: SelectContext): Expression | null {
-  // TODO: Implement CASE WHEN for ternary operator
+function visitConditionalProjection(node: any, context: SelectContext): Expression | null {
+  // Ternary operator: condition ? thenExpr : elseExpr
+  // Converts to SQL: CASE WHEN condition THEN thenExpr ELSE elseExpr END
+
+  if (!node.test || !node.consequent || !node.alternate) {
+    return null;
+  }
+
+  // Parse the condition (this should produce a boolean expression)
+  // We need to convert it from AST to our expression format
+  // For now, we'll handle simple comparisons
+  const condition = visitBooleanCondition(node.test, context);
+  if (!condition) {
+    return null;
+  }
+
+  // Parse the then branch
+  const thenExpr = visitProjection(node.consequent, context);
+  if (!thenExpr) {
+    return null;
+  }
+
+  // Parse the else branch
+  const elseExpr = visitProjection(node.alternate, context);
+  if (!elseExpr) {
+    return null;
+  }
+
+  return {
+    type: "case",
+    condition,
+    then: thenExpr,
+    else: elseExpr,
+  } as any;
+}
+
+/**
+ * Helper to convert AST boolean expressions for CASE WHEN
+ */
+function visitBooleanCondition(node: any, context: SelectContext): any {
+  if (!node) return null;
+
+  switch (node.type) {
+    case "BinaryExpression": {
+      // Comparison operators
+      if (["==", "===", "!=", "!==", ">", ">=", "<", "<="].includes(node.operator)) {
+        const left = visitProjection(node.left, context);
+        const right = visitProjection(node.right, context);
+
+        if (left && right) {
+          const op = node.operator === "===" ? "==" :
+                     node.operator === "!==" ? "!=" :
+                     node.operator;
+          return {
+            type: "comparison",
+            operator: op,
+            left,
+            right,
+          };
+        }
+      }
+      break;
+    }
+
+    case "LogicalExpression": {
+      // AND/OR operators
+      if (["&&", "||"].includes(node.operator)) {
+        const left = visitBooleanCondition(node.left, context);
+        const right = visitBooleanCondition(node.right, context);
+
+        if (left && right) {
+          return {
+            type: "logical",
+            operator: node.operator === "&&" ? "and" : "or",
+            left,
+            right,
+          };
+        }
+      }
+      break;
+    }
+
+    case "UnaryExpression": {
+      // NOT operator
+      if (node.operator === "!") {
+        const inner = visitBooleanCondition(node.argument, context);
+        if (inner) {
+          return {
+            type: "not",
+            expression: inner,
+          };
+        }
+      }
+      break;
+    }
+
+    case "Identifier": {
+      // Direct boolean column
+      return visitProjection(node, context);
+    }
+
+    case "MemberExpression": {
+      // Boolean property access
+      return visitProjection(node, context);
+    }
+  }
+
   return null;
 }
 

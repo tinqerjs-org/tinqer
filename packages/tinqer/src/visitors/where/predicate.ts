@@ -311,6 +311,45 @@ export function visitValue(
       return visitValue(paren.expression, { ...context, autoParamCounter: currentCounter });
     }
 
+    case "ConditionalExpression": {
+      // Ternary operator: condition ? thenValue : elseValue
+      const conditional = node as any;
+
+      // Parse the condition
+      const conditionResult = visitPredicate(conditional.test, {
+        ...context,
+        autoParamCounter: currentCounter,
+      });
+      if (!conditionResult.value) return { value: null, counter: currentCounter };
+      currentCounter = conditionResult.counter;
+
+      // Parse the then value
+      const thenResult = visitValue(conditional.consequent, {
+        ...context,
+        autoParamCounter: currentCounter,
+      });
+      if (!thenResult.value) return { value: null, counter: currentCounter };
+      currentCounter = thenResult.counter;
+
+      // Parse the else value
+      const elseResult = visitValue(conditional.alternate, {
+        ...context,
+        autoParamCounter: currentCounter,
+      });
+      if (!elseResult.value) return { value: null, counter: currentCounter };
+      currentCounter = elseResult.counter;
+
+      return {
+        value: {
+          type: "case",
+          condition: conditionResult.value,
+          then: thenResult.value,
+          else: elseResult.value,
+        } as any,
+        counter: currentCounter,
+      };
+    }
+
     case "LogicalExpression": {
       const logical = node as ASTLogicalExpression;
       // Null coalescing operator
@@ -408,10 +447,20 @@ function visitBooleanMethod(
 
   const methodName = (memberCallee.property as Identifier).name;
 
+  // Unwrap the object to handle parentheses and TypeScript casts
+  let objectNode = memberCallee.object as any;
+  while (objectNode.type === "ParenthesizedExpression" || objectNode.type === "TSAsExpression") {
+    if (objectNode.type === "ParenthesizedExpression") {
+      objectNode = objectNode.expression;
+    } else if (objectNode.type === "TSAsExpression") {
+      objectNode = objectNode.expression;
+    }
+  }
+
   // Array includes method (for IN operator)
-  if (methodName === "includes" && memberCallee.object.type === "ArrayExpression") {
+  if (methodName === "includes" && objectNode.type === "ArrayExpression") {
     // This is array.includes(value) which translates to SQL IN
-    const arrayNode = memberCallee.object as any;
+    const arrayNode = objectNode as any;
     const arrayValues: ValueExpression[] = [];
 
     // Parse array elements

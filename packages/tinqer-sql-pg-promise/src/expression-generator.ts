@@ -92,6 +92,8 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
       return generateAggregateExpression(expr as AggregateExpression, context);
     case "coalesce":
       return generateCoalesceExpression(expr as CoalesceExpression, context);
+    case "case":
+      return generateCaseExpression(expr as any, context);
     default:
       throw new Error(`Unsupported value expression type: ${(expr as any).type}`);
   }
@@ -560,6 +562,17 @@ function generateCoalesceExpression(expr: CoalesceExpression, context: SqlContex
  * Generate SQL for conditional expressions (ternary)
  */
 function generateConditionalExpression(expr: ConditionalExpression, context: SqlContext): string {
+  const condition = generateBooleanExpression(expr.condition, context);
+  const thenExpr = generateExpression(expr.then, context);
+  const elseExpr = generateExpression(expr.else, context);
+  // Use SQL CASE expression
+  return `CASE WHEN ${condition} THEN ${thenExpr} ELSE ${elseExpr} END`;
+}
+
+/**
+ * Generate SQL for CASE expressions (from ternary operator)
+ */
+function generateCaseExpression(expr: any, context: SqlContext): string {
   const condition = generateBooleanExpression(expr.condition, context);
   const thenExpr = generateExpression(expr.then, context);
   const elseExpr = generateExpression(expr.else, context);
