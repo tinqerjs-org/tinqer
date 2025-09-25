@@ -510,7 +510,10 @@ function visitConditionalProjection(
 /**
  * Helper to convert AST boolean expressions for CASE WHEN
  */
-function visitBooleanCondition(node: ASTExpression, context: SelectContext): BooleanExpression | null {
+function visitBooleanCondition(
+  node: ASTExpression,
+  context: SelectContext,
+): BooleanExpression | null {
   if (!node) return null;
 
   switch (node.type) {

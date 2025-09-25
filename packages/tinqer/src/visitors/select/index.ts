@@ -3,8 +3,16 @@
  * Orchestrates projection parsing for SELECT clauses
  */
 
-import type { SelectOperation, QueryOperation, GroupByOperation } from "../../query-tree/operations.js";
-import type { ValueExpression, ObjectExpression, Expression } from "../../expressions/expression.js";
+import type {
+  SelectOperation,
+  QueryOperation,
+  GroupByOperation,
+} from "../../query-tree/operations.js";
+import type {
+  ValueExpression,
+  ObjectExpression,
+  Expression,
+} from "../../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,

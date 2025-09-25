@@ -22,6 +22,7 @@ import type {
   AggregateExpression,
   ConditionalExpression,
   CoalesceExpression,
+  CaseExpression,
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 
@@ -582,12 +583,23 @@ function generateConditionalExpression(expr: ConditionalExpression, context: Sql
 /**
  * Generate SQL for CASE expressions (from ternary operator)
  */
-function generateCaseExpression(expr: any, context: SqlContext): string {
-  const condition = generateBooleanExpression(expr.condition, context);
-  const thenExpr = generateExpression(expr.then, context);
-  const elseExpr = generateExpression(expr.else, context);
-  // Use SQL CASE expression
-  return `CASE WHEN ${condition} THEN ${thenExpr} ELSE ${elseExpr} END`;
+function generateCaseExpression(expr: CaseExpression, context: SqlContext): string {
+  // Handle multiple WHEN conditions
+  if (!expr.conditions || expr.conditions.length === 0) {
+    throw new Error("CASE expression must have at least one condition");
+  }
+
+  const whenClauses = expr.conditions
+    .map((cond) => {
+      const when = generateBooleanExpression(cond.when, context);
+      const then = generateExpression(cond.then, context);
+      return `WHEN ${when} THEN ${then}`;
+    })
+    .join(" ");
+
+  const elseClause = expr.else ? ` ELSE ${generateExpression(expr.else, context)}` : "";
+
+  return `CASE ${whenClauses}${elseClause} END`;
 }
 
 /**

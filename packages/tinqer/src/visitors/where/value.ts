@@ -57,14 +57,10 @@ export function visitValue(
       const member = node as MemberExpression;
 
       // First try using the common member access visitor which handles global constants
-      const memberResult = visitMemberAccess(
-        member,
-        context as VisitorContext,
-        (n, ctx) => {
-          const result = visitValue(n as ASTExpression, ctx as WhereContext);
-          return result.value;
-        },
-      );
+      const memberResult = visitMemberAccess(member, context as VisitorContext, (n, ctx) => {
+        const result = visitValue(n as ASTExpression, ctx as WhereContext);
+        return result.value;
+      });
       if (memberResult && (memberResult.type === "param" || memberResult.type === "column")) {
         // Update counter if it's an auto-param (like Number.MAX_SAFE_INTEGER)
         if (memberResult.type === "param" && !memberResult.property) {
