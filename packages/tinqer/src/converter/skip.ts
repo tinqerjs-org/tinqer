@@ -10,7 +10,7 @@ import type {
   Literal,
 } from "../parser/ast-types.js";
 import type { ConversionContext } from "./converter-utils.js";
-import { convertAstToExpression } from "./expressions.js";
+import { convertAstToExpression } from "./expressions-visitor.js";
 import { createAutoParam } from "./converter-utils.js";
 
 export function convertSkipOperation(

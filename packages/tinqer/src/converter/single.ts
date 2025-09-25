@@ -19,7 +19,7 @@ import type {
 } from "../parser/ast-types.js";
 import type { ConversionContext } from "./converter-utils.js";
 import { getParameterName, getReturnExpression, isBooleanExpression } from "./converter-utils.js";
-import { convertAstToExpression } from "./expressions.js";
+import { convertAstToExpression } from "./expressions-visitor.js";
 
 export function convertSingleOperation(
   ast: ASTCallExpression,
