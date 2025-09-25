@@ -24,7 +24,7 @@ export function visitAnyOperation(
   visitorContext: VisitorContext,
 ): { operation: AnyOperation; autoParams: Record<string, unknown> } | null {
   let predicate: BooleanExpression | undefined;
-  const autoParams: Record<string, unknown> = {};
+  let autoParams: Record<string, unknown> = {};
 
   if (ast.arguments && ast.arguments.length > 0) {
     const lambdaAst = ast.arguments[0];
@@ -50,7 +50,19 @@ export function visitAnyOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(bodyExpr, localTableParams, localQueryParams);
+        // Convert autoParams to the format expected by visitExpression
+        const existingAutoParams = new Map<string, { value: unknown }>();
+        for (const [key, value] of visitorContext.autoParams) {
+          existingAutoParams.set(key, { value });
+        }
+
+        const result = visitExpression(
+          bodyExpr,
+          localTableParams,
+          localQueryParams,
+          visitorContext.autoParamCounter,
+          existingAutoParams,
+        );
         if (result) {
           const expr = result.expression;
           if (expr) {
@@ -65,7 +77,9 @@ export function visitAnyOperation(
               } as BooleanColumnExpression;
             }
           }
-          Object.assign(autoParams, result.autoParams);
+          // Use result's autoParams which contains both old and new params
+          autoParams = result.autoParams;
+          visitorContext.autoParamCounter = result.counter;
         }
       }
     }

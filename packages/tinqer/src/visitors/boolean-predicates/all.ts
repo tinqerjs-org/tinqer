@@ -29,7 +29,6 @@ export function visitAllOperation(
   }
 
   const lambdaAst = ast.arguments[0];
-  const autoParams: Record<string, unknown> = {};
 
   if (lambdaAst && lambdaAst.type === "ArrowFunctionExpression") {
     const arrowFunc = lambdaAst as ArrowFunctionExpression;
@@ -53,7 +52,19 @@ export function visitAllOperation(
     }
 
     if (bodyExpr) {
-      const result = visitExpression(bodyExpr, localTableParams, localQueryParams);
+      // Convert autoParams to the format expected by visitExpression
+      const existingAutoParams = new Map<string, { value: unknown }>();
+      for (const [key, value] of visitorContext.autoParams) {
+        existingAutoParams.set(key, { value });
+      }
+
+      const result = visitExpression(
+        bodyExpr,
+        localTableParams,
+        localQueryParams,
+        visitorContext.autoParamCounter,
+        existingAutoParams,
+      );
       if (result) {
         const expr = result.expression;
         if (expr) {
@@ -71,7 +82,8 @@ export function visitAllOperation(
             return null;
           }
 
-          Object.assign(autoParams, result.autoParams);
+          // Don't use Object.assign - just return all the autoParams from result
+          visitorContext.autoParamCounter = result.counter;
 
           return {
             operation: {
@@ -80,7 +92,7 @@ export function visitAllOperation(
               source,
               predicate,
             },
-            autoParams,
+            autoParams: result.autoParams,
           };
         }
       }

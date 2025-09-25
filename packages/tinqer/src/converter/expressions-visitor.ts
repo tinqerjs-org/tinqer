@@ -25,7 +25,7 @@ function toVisitorContext(context: ConversionContext): VisitorContext {
     queryParams: context.queryParams,
     groupingParams: context.groupingParams,
     autoParams,
-    autoParamCounter: 0, // Start from 0 so first param is __p1
+    autoParamCounter: context.autoParamCounter, // Preserve the counter!
     joinParams: context.joinParams,
     joinResultParam: context.joinResultParam,
     currentResultShape: context.currentResultShape,

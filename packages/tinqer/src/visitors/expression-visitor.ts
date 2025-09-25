@@ -15,13 +15,15 @@ export function visitExpression(
   ast: ASTExpression,
   tableParams: Set<string>,
   queryParams: Set<string>,
-): { expression: Expression | null; autoParams: Record<string, unknown> } {
+  startCounter: number = 0,
+  existingAutoParams?: Map<string, { value: unknown }>,
+): { expression: Expression | null; autoParams: Record<string, unknown>; counter: number } {
   // Create a conversion context
   const context: ConversionContext = {
     tableParams,
     queryParams,
-    autoParams: new Map(),
-    autoParamCounter: 0,
+    autoParams: existingAutoParams || new Map(),
+    autoParamCounter: startCounter,
     groupingParams: new Set(),
     tableAliases: new Map(),
   };
@@ -35,5 +37,5 @@ export function visitExpression(
     autoParams[name] = info.value;
   }
 
-  return { expression, autoParams };
+  return { expression, autoParams, counter: context.autoParamCounter };
 }
