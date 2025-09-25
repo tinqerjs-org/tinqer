@@ -20,6 +20,7 @@ import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
   Expression as ASTExpression,
+  Identifier,
 } from "../../parser/ast-types.js";
 import type { VisitorContext } from "../types.js";
 import { getParameterName, getReturnExpression } from "../visitor-utils.js";
@@ -90,18 +91,6 @@ function buildShapeNode(
       // Check if this is a $param marker from JOIN context
       if (colExpr.table && colExpr.table.startsWith("$param")) {
         const paramIndex = parseInt(colExpr.table.substring(6), 10);
-
-        // Check if this is a direct reference to the entire parameter
-        // (when colExpr.name matches the parameter name)
-        if (
-          (paramIndex === 0 && colExpr.name === outerParam) ||
-          (paramIndex === 1 && colExpr.name === innerParam)
-        ) {
-          return {
-            type: "reference",
-            sourceTable: paramIndex,
-          } as ReferenceShapeNode;
-        }
 
         // Otherwise it's a column from that table
         return {
@@ -388,18 +377,12 @@ export function visitJoinOperation(
       // These will be needed to map properties back to their source tables
       const params = resultArrow.params;
       outerParam =
-        params && params[0]
-          ? getParameterName({
-              params: [params[0]],
-              body: resultArrow.body,
-            } as ArrowFunctionExpression)
+        params && params[0] && params[0].type === "Identifier"
+          ? (params[0] as Identifier).name
           : null;
       innerParam =
-        params && params[1]
-          ? getParameterName({
-              params: [params[1]],
-              body: resultArrow.body,
-            } as ArrowFunctionExpression)
+        params && params[1] && params[1].type === "Identifier"
+          ? (params[1] as Identifier).name
           : null;
 
       // Create a special context that tracks which parameter maps to which table
@@ -434,14 +417,16 @@ export function visitJoinOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(
+        // Use a custom visitor that tracks JOIN parameters
+        const result = visitJoinResultSelector(
           bodyExpr,
-          resultContext.tableParams,
-          resultContext.queryParams,
+          resultContext,
+          visitorContext.autoParamCounter,
         );
         if (result) {
           resultSelector = result.expression || undefined;
           Object.assign(autoParams, result.autoParams);
+          visitorContext.autoParamCounter = result.counter;
         }
       }
     }
@@ -472,4 +457,132 @@ export function visitJoinOperation(
     }
   }
   return null;
+}
+
+/**
+ * Visit JOIN result selector with proper parameter tracking
+ */
+function visitJoinResultSelector(
+  node: ASTExpression,
+  context: JoinContext,
+  startCounter: number,
+): { expression: Expression | null; autoParams: Record<string, unknown>; counter: number } | null {
+  let currentCounter = startCounter;
+  const autoParams: Record<string, unknown> = {};
+
+  // Unwrap parenthesized expressions
+  let expr = node;
+  while (expr.type === "ParenthesizedExpression") {
+    expr = (expr as any).expression;
+  }
+
+  // Handle object expressions
+  if (expr.type === "ObjectExpression") {
+    const properties: Record<string, Expression> = {};
+
+    for (const prop of (expr as any).properties) {
+      if (prop.type === "Property" && prop.key.type === "Identifier") {
+        const key = prop.key.name;
+        const valueExpr = visitJoinExpression(prop.value, context, currentCounter);
+
+        if (valueExpr && valueExpr.value) {
+          properties[key] = valueExpr.value;
+          currentCounter = valueExpr.counter;
+          Object.assign(autoParams, valueExpr.autoParams);
+        }
+      }
+    }
+
+    return {
+      expression: {
+        type: "object",
+        properties,
+      },
+      autoParams,
+      counter: currentCounter,
+    };
+  }
+
+  // For non-object expressions, use the regular visitor
+  const result = visitJoinExpression(expr, context, currentCounter);
+  if (result) {
+    return {
+      expression: result.value,
+      autoParams: result.autoParams,
+      counter: result.counter,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Visit expressions in JOIN context with parameter tracking
+ */
+function visitJoinExpression(
+  node: ASTExpression,
+  context: JoinContext,
+  startCounter: number,
+): { value: Expression | null; autoParams: Record<string, unknown>; counter: number } {
+  let currentCounter = startCounter;
+  const autoParams: Record<string, unknown> = {};
+
+  switch (node.type) {
+    case "MemberExpression": {
+      const member = node as any;
+
+      if (member.object.type === "Identifier" && member.property.type === "Identifier") {
+        const objName = member.object.name;
+        const propName = member.property.name;
+
+        // Check if this is a JOIN parameter
+        if (context.joinParams?.has(objName)) {
+          const tableIndex = context.joinParams.get(objName);
+          return {
+            value: {
+              type: "column",
+              name: propName,
+              table: `$param${tableIndex}`,  // Mark with table index
+            },
+            autoParams,
+            counter: currentCounter,
+          };
+        }
+
+        // Regular table parameter
+        if (context.tableParams.has(objName)) {
+          return {
+            value: {
+              type: "column",
+              name: propName,
+              table: objName,
+            },
+            autoParams,
+            counter: currentCounter,
+          };
+        }
+      }
+      break;
+    }
+
+    case "Literal": {
+      const lit = node as any;
+      currentCounter++;
+      const paramName = `__p${currentCounter}`;
+      autoParams[paramName] = lit.value;
+
+      return {
+        value: {
+          type: "param",
+          param: paramName,
+        },
+        autoParams,
+        counter: currentCounter,
+      };
+    }
+
+    // Add more cases as needed
+  }
+
+  return { value: null, autoParams, counter: currentCounter };
 }

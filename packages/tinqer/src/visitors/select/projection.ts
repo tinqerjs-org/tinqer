@@ -479,9 +479,8 @@ function visitBooleanCondition(node: any, context: SelectContext): any {
         const right = visitProjection(node.right, context);
 
         if (left && right) {
-          const op = node.operator === "===" ? "==" :
-                     node.operator === "!==" ? "!=" :
-                     node.operator;
+          const op =
+            node.operator === "===" ? "==" : node.operator === "!==" ? "!=" : node.operator;
           return {
             type: "comparison",
             operator: op,
