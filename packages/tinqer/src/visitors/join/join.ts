@@ -174,11 +174,12 @@ export function visitJoinOperation(
         tableParams: new Set(visitorContext.tableParams),
         queryParams: new Set(visitorContext.queryParams),
       };
-      if (paramName && previousResultShape) {
-        outerContext.currentResultShape = previousResultShape;
-        outerContext.joinResultParam = paramName;
-      } else if (paramName) {
+      if (paramName) {
         outerContext.tableParams.add(paramName);
+        if (previousResultShape) {
+          outerContext.currentResultShape = previousResultShape;
+          outerContext.joinResultParam = paramName;
+        }
       }
 
       // Handle both Expression body and BlockStatement body

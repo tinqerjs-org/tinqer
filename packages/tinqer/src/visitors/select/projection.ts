@@ -185,13 +185,24 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
       }
     }
 
-    // Nested member access: x.address.city
+    // Nested member access: x.address.city or g.key.category
     if (node.object.type === "MemberExpression") {
-      const innerColumn = visitColumnProjection(node.object as MemberExpression, context);
-      if (innerColumn && innerColumn.type === "column") {
+      const innerExpr = visitColumnProjection(node.object as MemberExpression, context);
+
+      // If inner expression is an object (like g.key returning a composite key)
+      if (innerExpr && innerExpr.type === "object") {
+        const objExpr = innerExpr as ObjectExpression;
+        // Extract the specific property from the object
+        if (objExpr.properties[propertyName]) {
+          return objExpr.properties[propertyName];
+        }
+      }
+
+      // Regular nested column access
+      if (innerExpr && innerExpr.type === "column") {
         return {
           type: "column",
-          name: `${innerColumn.name}.${propertyName}`,
+          name: `${(innerExpr as ColumnExpression).name}.${propertyName}`,
         };
       }
     }
@@ -317,7 +328,7 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
             }
           }
         }
-      } else if (["avg", "min", "max"].includes(methodName)) {
+      } else if (["avg", "average", "min", "max"].includes(methodName)) {
         // Similar handling for other aggregates
         if (node.arguments && node.arguments.length > 0) {
           const arg = node.arguments[0];
@@ -325,9 +336,11 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
             const lambda = arg as ArrowFunctionExpression;
             const selector = parseSelectorLambda(lambda, context);
             if (selector && selector.type === "column") {
+              // Map "average" to "avg" for SQL
+              const functionName = methodName === "average" ? "avg" : methodName;
               return {
                 type: "aggregate",
-                function: methodName,
+                function: functionName,
                 expression: selector,
               } as any;
             }
