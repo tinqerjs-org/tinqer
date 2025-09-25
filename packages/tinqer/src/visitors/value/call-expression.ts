@@ -69,12 +69,12 @@ export function visitCall(
 
   const methodName = (memberCallee.property as Identifier).name;
 
-  // Handle array.includes() -> IN expression
-  if (methodName === "includes") {
+  // Handle array.includes() -> IN expression (only for arrays/params)
+  if (methodName === "includes" && (obj.type === "array" || obj.type === "param")) {
     return handleIncludesMethod(obj, node.arguments, context, visitExpression);
   }
 
-  // String/boolean methods
+  // String/boolean methods (including string.includes)
   if (isValueExpression(obj)) {
     return handleValueMethods(
       obj as ValueExpression,

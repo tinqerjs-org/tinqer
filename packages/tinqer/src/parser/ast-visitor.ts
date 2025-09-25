@@ -185,7 +185,9 @@ function visitCallExpression(
     const memberExpr = ast.callee as ASTMemberExpression;
     const source = visitQueryChain(memberExpr.object, visitorContext);
 
-    if (!source) return null;
+    if (!source) {
+      return null;
+    }
 
     // Visit specific operation based on method name
     switch (methodName) {

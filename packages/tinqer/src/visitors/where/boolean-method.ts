@@ -56,27 +56,63 @@ export function visitBooleanMethod(
   }
 
   // Array includes method (for IN operator)
-  if (methodName === "includes" && objectNode.type === "ArrayExpression") {
-    // This is array.includes(value) which translates to SQL IN
-    const arrayNode = objectNode as ArrayExpression;
-    const arrayValues: ValueExpression[] = [];
+  if (methodName === "includes") {
+    // Check if this is an array literal
+    if (objectNode.type === "ArrayExpression") {
+      // This is array.includes(value) which translates to SQL IN
+      const arrayNode = objectNode as ArrayExpression;
+      const arrayValues: ValueExpression[] = [];
 
-    // Parse array elements
-    for (const element of arrayNode.elements) {
-      if (element) {
-        const elementResult = visitValue(element as ASTExpression, {
+      // Parse array elements
+      for (const element of arrayNode.elements) {
+        if (element) {
+          const elementResult = visitValue(element as ASTExpression, {
+            ...context,
+            autoParamCounter: currentCounter,
+          });
+          if (elementResult.value) {
+            arrayValues.push(elementResult.value);
+            currentCounter = elementResult.counter;
+          }
+        }
+      }
+
+      // Parse the argument (the value being checked)
+      if (node.arguments && node.arguments.length > 0) {
+        const valueResult = visitValue(node.arguments[0] as ASTExpression, {
           ...context,
           autoParamCounter: currentCounter,
         });
-        if (elementResult.value) {
-          arrayValues.push(elementResult.value);
-          currentCounter = elementResult.counter;
+
+        if (valueResult.value) {
+          currentCounter = valueResult.counter;
+          return {
+            value: {
+              type: "in",
+              value: valueResult.value,
+              list: {
+                type: "array",
+                elements: arrayValues,
+              },
+            } as InExpression,
+            counter: currentCounter,
+          };
         }
       }
+      return { value: null, counter: currentCounter };
     }
 
-    // Parse the argument (the value being checked)
-    if (node.arguments && node.arguments.length > 0) {
+    // Check if this might be a parameter array (e.g., params.targetIds.includes(u.id))
+    // We need to check if the object is a parameter expression
+    const objResult = visitValue(memberCallee.object, {
+      ...context,
+      autoParamCounter: currentCounter,
+    });
+
+    if (objResult.value && node.arguments && node.arguments.length > 0) {
+      currentCounter = objResult.counter;
+
+      // Parse the argument (the value being checked)
       const valueResult = visitValue(node.arguments[0] as ASTExpression, {
         ...context,
         autoParamCounter: currentCounter,
@@ -84,21 +120,20 @@ export function visitBooleanMethod(
 
       if (valueResult.value) {
         currentCounter = valueResult.counter;
-        return {
-          value: {
-            type: "in",
-            value: valueResult.value,
-            list: {
-              type: "array",
-              elements: arrayValues,
-            },
-          } as InExpression,
-          counter: currentCounter,
-        };
+
+        // If the object is a parameter, treat this as an IN operation
+        if (objResult.value.type === "param") {
+          return {
+            value: {
+              type: "in",
+              value: valueResult.value,
+              list: objResult.value, // The parameter is the array
+            } as InExpression,
+            counter: currentCounter,
+          };
+        }
       }
     }
-
-    return { value: null, counter: currentCounter };
   }
 
   // String boolean methods
