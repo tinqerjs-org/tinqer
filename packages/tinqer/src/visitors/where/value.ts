@@ -24,6 +24,7 @@ import type { WhereContext, VisitorResult } from "./context.js";
 import { visitColumnAccess } from "./column.js";
 import { visitPredicate } from "./predicate.js";
 import { visitBooleanMethod } from "./boolean-method.js";
+import { visitMemberAccess } from "../common/member-access.js";
 
 /**
  * Visit value expression (for comparison operands)
@@ -38,6 +39,24 @@ export function visitValue(
   switch (node.type) {
     case "MemberExpression": {
       const member = node as MemberExpression;
+
+      // First try using the common member access visitor which handles global constants
+      const memberResult = visitMemberAccess(
+        member,
+        context as any, // WhereContext extends VisitorContext
+        (n, ctx) => {
+          const result = visitValue(n as ASTExpression, ctx as WhereContext);
+          return result.value;
+        }
+      );
+      if (memberResult && (memberResult.type === "param" || memberResult.type === "column")) {
+        // Update counter if it's an auto-param (like Number.MAX_SAFE_INTEGER)
+        if (memberResult.type === "param" && !memberResult.property) {
+          // This is likely an auto-param, counter was already incremented internally
+          currentCounter = context.autoParamCounter;
+        }
+        return { value: memberResult as ValueExpression, counter: currentCounter };
+      }
 
       // Check if it's a query parameter member access (e.g., p.minAge)
       if (member.object.type === "Identifier") {
