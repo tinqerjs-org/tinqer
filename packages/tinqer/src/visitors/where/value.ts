@@ -10,6 +10,8 @@ import type {
   ConcatExpression,
   ColumnExpression,
   CoalesceExpression,
+  CaseExpression,
+  InExpression,
 } from "../../expressions/expression.js";
 
 import type {
@@ -118,9 +120,9 @@ export function visitValue(
       if (context.autoParamInfos) {
         context.autoParamInfos.set(paramName, {
           value: lit.value as string | number | boolean | null,
-          fieldName: (context as any)._currentFieldName,
-          tableName: (context as any)._currentTableName,
-          sourceTable: (context as any)._currentSourceTable,
+          fieldName: (context as WhereContext & { _currentFieldName?: string })._currentFieldName,
+          tableName: (context as WhereContext & { _currentTableName?: string })._currentTableName,
+          sourceTable: (context as WhereContext & { _currentSourceTable?: number })._currentSourceTable,
         });
       }
 
@@ -166,9 +168,9 @@ export function visitValue(
           if (context.autoParamInfos) {
             context.autoParamInfos.set(paramName, {
               value: value,
-              fieldName: (context as any)._currentFieldName,
-              tableName: (context as any)._currentTableName,
-              sourceTable: (context as any)._currentSourceTable,
+              fieldName: (context as WhereContext & { _currentFieldName?: string })._currentFieldName,
+              tableName: (context as WhereContext & { _currentTableName?: string })._currentTableName,
+              sourceTable: (context as WhereContext & { _currentSourceTable?: number })._currentSourceTable,
             });
           }
 
@@ -192,7 +194,7 @@ export function visitValue(
 
     case "ConditionalExpression": {
       // Ternary operator: condition ? thenValue : elseValue
-      const conditional = node as any;
+      const conditional = node as { test: ASTExpression; consequent: ASTExpression; alternate: ASTExpression };
 
       // Parse the condition
       const conditionResult = visitPredicate(conditional.test, {
@@ -221,10 +223,14 @@ export function visitValue(
       return {
         value: {
           type: "case",
-          condition: conditionResult.value,
-          then: thenResult.value,
+          conditions: [
+            {
+              when: conditionResult.value,
+              then: thenResult.value,
+            },
+          ],
           else: elseResult.value,
-        } as any,
+        } as CaseExpression,
         counter: currentCounter,
       };
     }
@@ -265,20 +271,18 @@ export function visitValue(
       // Arithmetic expression
       if (["+", "-", "*", "/", "%"].includes(binary.operator)) {
         // First check if left side is a column to get field context
-        let fieldContext: any = {};
+        let enhancedContext = { ...context, autoParamCounter: currentCounter };
         if (binary.left.type === "MemberExpression") {
           const leftColumn = visitColumnAccess(binary.left as MemberExpression, context);
           if (leftColumn) {
-            fieldContext = {
+            enhancedContext = {
+              ...enhancedContext,
               _currentFieldName: leftColumn.name,
               _currentTableName: context.currentTable,
               _currentSourceTable: undefined,
-            };
+            } as WhereContext & { _currentFieldName?: string; _currentTableName?: string; _currentSourceTable?: number };
           }
         }
-
-        // Create context with field info for literal processing
-        const enhancedContext = { ...context, ...fieldContext, autoParamCounter: currentCounter };
 
         // Recursively visit left and right with enhanced context
         const leftResult = visitValue(binary.left, enhancedContext);
@@ -333,7 +337,7 @@ export function visitValue(
         autoParamCounter: currentCounter,
       });
       // If it returns a boolean expression with type "in", extract just the value part
-      if (result.value && (result.value as any).type === "in") {
+      if (result.value && (result.value as InExpression).type === "in") {
         // Return null since IN is a boolean expression, not a value expression
         // The caller (visitPredicate) should handle this case
         return { value: null, counter: result.counter };

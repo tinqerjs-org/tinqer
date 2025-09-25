@@ -3,12 +3,15 @@
  * Handles method calls that return boolean values
  */
 
-import type { BooleanExpression, ValueExpression } from "../../expressions/expression.js";
+import type { BooleanExpression, ValueExpression, InExpression } from "../../expressions/expression.js";
 import type {
   CallExpression,
   MemberExpression,
   Identifier,
   Expression as ASTExpression,
+  ParenthesizedExpression,
+  ChainExpression,
+  ArrayExpression,
 } from "../../parser/ast-types.js";
 import type { WhereContext, VisitorResult } from "./context.js";
 import { visitValue } from "./value.js";
@@ -25,7 +28,7 @@ export function visitBooleanMethod(
   // Handle optional chaining in callee
   let calleeNode = node.callee;
   if (calleeNode.type === "ChainExpression") {
-    const chain = calleeNode as any;
+    const chain = calleeNode as { expression?: ASTExpression };
     if (chain.expression) {
       calleeNode = chain.expression;
     }
@@ -38,26 +41,23 @@ export function visitBooleanMethod(
 
   const methodName = (memberCallee.property as Identifier).name;
 
-  // Unwrap the object to handle parentheses, TypeScript casts, and optional chaining
-  let objectNode = memberCallee.object as any;
+  // Unwrap the object to handle parentheses and optional chaining
+  let objectNode = memberCallee.object as ASTExpression;
   while (
     objectNode.type === "ParenthesizedExpression" ||
-    objectNode.type === "TSAsExpression" ||
     objectNode.type === "ChainExpression"
   ) {
     if (objectNode.type === "ParenthesizedExpression") {
-      objectNode = objectNode.expression;
-    } else if (objectNode.type === "TSAsExpression") {
-      objectNode = objectNode.expression;
+      objectNode = (objectNode as ParenthesizedExpression).expression;
     } else if (objectNode.type === "ChainExpression") {
-      objectNode = objectNode.expression;
+      objectNode = (objectNode as ChainExpression).expression;
     }
   }
 
   // Array includes method (for IN operator)
   if (methodName === "includes" && objectNode.type === "ArrayExpression") {
     // This is array.includes(value) which translates to SQL IN
-    const arrayNode = objectNode as any;
+    const arrayNode = objectNode as ArrayExpression;
     const arrayValues: ValueExpression[] = [];
 
     // Parse array elements
@@ -91,7 +91,7 @@ export function visitBooleanMethod(
               type: "array",
               elements: arrayValues,
             },
-          } as any,
+          } as InExpression,
           counter: currentCounter,
         };
       }

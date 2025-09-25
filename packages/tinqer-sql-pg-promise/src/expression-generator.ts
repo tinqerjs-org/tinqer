@@ -9,6 +9,7 @@ import type {
   ComparisonExpression,
   LogicalExpression,
   InExpression,
+  IsNullExpression,
   ColumnExpression,
   ConstantExpression,
   ParameterExpression,
@@ -45,7 +46,7 @@ export function generateExpression(expr: Expression, context: SqlContext): strin
   if (isArrayExpression(expr)) {
     throw new Error("Array expressions not yet supported");
   }
-  throw new Error(`Unknown expression type: ${(expr as any).type}`);
+  throw new Error(`Unknown expression type: ${(expr as Expression & { type: string }).type}`);
 }
 
 /**
@@ -68,9 +69,9 @@ export function generateBooleanExpression(expr: BooleanExpression, context: SqlC
     case "in":
       return generateInExpression(expr as InExpression, context);
     case "isNull":
-      return generateIsNullExpression(expr as any, context);
+      return generateIsNullExpression(expr as IsNullExpression, context);
     default:
-      throw new Error(`Unsupported boolean expression type: ${(expr as any).type}`);
+      throw new Error(`Unsupported boolean expression type: ${(expr as BooleanExpression & { type: string }).type}`);
   }
 }
 
@@ -96,9 +97,9 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
     case "coalesce":
       return generateCoalesceExpression(expr as CoalesceExpression, context);
     case "case":
-      return generateCaseExpression(expr as any, context);
+      return generateCaseExpression(expr as CaseExpression, context);
     default:
-      throw new Error(`Unsupported value expression type: ${(expr as any).type}`);
+      throw new Error(`Unsupported value expression type: ${(expr as ValueExpression & { type: string }).type}`);
   }
 }
 
@@ -133,13 +134,17 @@ function generateComparisonExpression(expr: ComparisonExpression, context: SqlCo
 /**
  * Generate expression for use in comparisons - handles both value and boolean expressions
  */
-function generateExpressionForComparison(expr: any, context: SqlContext): string {
+function generateExpressionForComparison(expr: Expression, context: SqlContext): string {
   // Check if it's a boolean expression
   if (isBooleanExpression(expr)) {
     return generateBooleanExpression(expr, context);
   }
-  // Otherwise treat as value expression
-  return generateValueExpression(expr, context);
+  // Check if it's a value expression
+  if (isValueExpression(expr)) {
+    return generateValueExpression(expr, context);
+  }
+  // Handle other expression types
+  return generateExpression(expr, context);
 }
 
 /**
@@ -357,8 +362,8 @@ function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlCo
     // Check if either operand is definitely a string
     const isStringConcat =
       // String constants
-      (expr.left.type === "constant" && typeof (expr.left as any).value === "string") ||
-      (expr.right.type === "constant" && typeof (expr.right as any).value === "string") ||
+      (expr.left.type === "constant" && typeof (expr.left as ConstantExpression).value === "string") ||
+      (expr.right.type === "constant" && typeof (expr.right as ConstantExpression).value === "string") ||
       // String method results (toLowerCase, toUpperCase, substring, etc.)
       expr.left.type === "stringMethod" ||
       expr.right.type === "stringMethod" ||
@@ -366,8 +371,8 @@ function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlCo
       isLikelyStringExpression(expr.left) ||
       isLikelyStringExpression(expr.right) ||
       // Check for string-related parameter names (heuristic)
-      (expr.left.type === "param" && isLikelyStringParam(expr.left as any)) ||
-      (expr.right.type === "param" && isLikelyStringParam(expr.right as any));
+      (expr.left.type === "param" && isLikelyStringParam(expr.left as ParameterExpression)) ||
+      (expr.right.type === "param" && isLikelyStringParam(expr.right as ParameterExpression));
 
     if (isStringConcat) {
       return `${left} || ${right}`;
@@ -418,7 +423,7 @@ function isLikelyStringExpression(expr: Expression): boolean {
         return /text|name|title|description|message|email|url|path|label/i.test(col.name);
       }
       if (e.type === "constant") {
-        return typeof (e as any).value === "string";
+        return typeof (e as ConstantExpression).value === "string";
       }
       if (e.type === "stringMethod") {
         return true;
@@ -459,9 +464,9 @@ function generateStringMethodExpression(expr: StringMethodExpression, context: S
 /**
  * Generate SQL for IS NULL / IS NOT NULL expressions
  */
-function generateIsNullExpression(expr: any, context: SqlContext): string {
+function generateIsNullExpression(expr: IsNullExpression, context: SqlContext): string {
   const value = generateValueExpression(expr.expression, context);
-  return expr.not ? `${value} IS NOT NULL` : `${value} IS NULL`;
+  return expr.negated ? `${value} IS NOT NULL` : `${value} IS NULL`;
 }
 
 /**
@@ -626,7 +631,7 @@ function isBooleanExpression(expr: Expression): expr is BooleanExpression {
     "booleanConstant",
     "booleanMethod",
     "exists",
-  ].includes((expr as any).type);
+  ].includes((expr as Expression & { type: string }).type);
 }
 
 function isValueExpression(expr: Expression): expr is ValueExpression {
@@ -640,17 +645,17 @@ function isValueExpression(expr: Expression): expr is ValueExpression {
     "case",
     "aggregate",
     "coalesce",
-  ].includes((expr as any).type);
+  ].includes((expr as Expression & { type: string }).type);
 }
 
 function isObjectExpression(expr: Expression): expr is ObjectExpression {
-  return (expr as any).type === "object";
+  return (expr as Expression & { type: string }).type === "object";
 }
 
 function isArrayExpression(expr: Expression): expr is ArrayExpression {
-  return (expr as any).type === "array";
+  return (expr as Expression & { type: string }).type === "array";
 }
 
 function isConditionalExpression(expr: Expression): expr is ConditionalExpression {
-  return (expr as any).type === "conditional";
+  return (expr as Expression & { type: string }).type === "conditional";
 }
