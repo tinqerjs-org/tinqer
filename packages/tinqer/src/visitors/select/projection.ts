@@ -89,7 +89,7 @@ export function visitProjection(node: ASTExpression, context: SelectContext): Ex
         if (left && right) {
           return {
             type: "coalesce",
-            values: [left, right],
+            expressions: [left, right],
           } as any;
         }
       }
@@ -312,7 +312,7 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
               return {
                 type: "aggregate",
                 function: "sum",
-                column: (selector as any).name,
+                expression: selector,
               } as any;
             }
           }
@@ -328,7 +328,7 @@ function visitMethodProjection(node: CallExpression, context: SelectContext): Ex
               return {
                 type: "aggregate",
                 function: methodName,
-                column: (selector as any).name,
+                expression: selector,
               } as any;
             }
           }

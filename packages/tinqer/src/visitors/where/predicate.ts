@@ -334,7 +334,7 @@ export function visitValue(
         return {
           value: {
             type: "coalesce",
-            values: [leftResult.value, rightResult.value],
+            expressions: [leftResult.value, rightResult.value],
           } as any,
           counter: currentCounter,
         };
@@ -441,9 +441,9 @@ function visitBooleanMethod(
           value: {
             type: "in",
             value: valueResult.value,
-            array: {
+            list: {
               type: "array",
-              values: arrayValues,
+              elements: arrayValues,
             },
           } as any,
           counter: currentCounter,
