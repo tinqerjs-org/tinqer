@@ -9,6 +9,7 @@ import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
   Expression as ASTExpression,
+  Identifier,
 } from "../../parser/ast-types.js";
 
 import { visitProjection } from "./projection.js";
@@ -42,9 +43,14 @@ export function visitSelectOperation(
 
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {
-    const paramName = lambda.params[0].name;
-    context.tableParams.add(paramName);
-    context.hasTableParam = true;
+    const firstParam = lambda.params[0];
+    if (firstParam && firstParam.type === "Identifier") {
+      const paramName = (firstParam as Identifier).name;
+      context.tableParams.add(paramName);
+      context.hasTableParam = true;
+    } else {
+      context.hasTableParam = false;
+    }
   } else {
     context.hasTableParam = false;
   }

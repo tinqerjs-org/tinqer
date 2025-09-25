@@ -20,7 +20,7 @@ import type {
 export function getParameterName(arrowFunc: ArrowFunctionExpression): string | null {
   if (arrowFunc.params && arrowFunc.params.length > 0) {
     const param = arrowFunc.params[0];
-    if (param.type === "Identifier") {
+    if (param && param.type === "Identifier") {
       return (param as Identifier).name;
     }
   }

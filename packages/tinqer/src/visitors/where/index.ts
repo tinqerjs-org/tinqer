@@ -9,6 +9,7 @@ import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
   Expression as ASTExpression,
+  Identifier,
 } from "../../parser/ast-types.js";
 
 import { visitPredicate } from "./predicate.js";
@@ -41,8 +42,11 @@ export function visitWhereOperation(
 
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {
-    const paramName = lambda.params[0].name;
-    context.tableParams.add(paramName);
+    const firstParam = lambda.params[0];
+    if (firstParam && firstParam.type === "Identifier") {
+      const paramName = (firstParam as Identifier).name;
+      context.tableParams.add(paramName);
+    }
   }
 
   // Extract body expression
