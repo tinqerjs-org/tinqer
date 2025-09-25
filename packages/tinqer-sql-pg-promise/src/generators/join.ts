@@ -171,6 +171,10 @@ export function generateJoin(operation: JoinOperation, context: SqlContext): str
   const outerAlias = context.tableAliases.values().next().value || "t0";
   const innerAlias = `t${context.aliasCounter++}`;
 
+  // Add the inner table alias to the context so it can be resolved later
+  // Store it with a key that indicates it's the second table (index 1)
+  context.tableAliases.set(`join_${context.aliasCounter - 1}`, innerAlias);
+
   // Build symbol table from result shape (preferred) or result selector (fallback)
   if (operation.resultShape) {
     buildSymbolTableFromShape(operation.resultShape, outerAlias, innerAlias, context);

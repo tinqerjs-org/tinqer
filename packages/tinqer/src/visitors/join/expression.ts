@@ -60,6 +60,22 @@ export function visitJoinExpression(
       break;
     }
 
+    case "Identifier": {
+      const ident = node as { name: string };
+      const identName = ident.name;
+
+      // Check if this is a JOIN parameter (u or d in the result selector)
+      if (context.joinParams?.has(identName)) {
+        // This is an attempt to reference an entire table in the result selector
+        // This is not supported - users must explicitly select columns
+        throw new Error(
+          `Cannot return entire table reference '${identName}' in JOIN result selector. ` +
+            `You must explicitly select specific columns (e.g., { userId: ${identName}.id, userName: ${identName}.name })`,
+        );
+      }
+      break;
+    }
+
     case "Literal": {
       const lit = node as Literal;
       currentCounter++;

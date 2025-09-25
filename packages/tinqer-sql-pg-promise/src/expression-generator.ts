@@ -620,10 +620,12 @@ function generateObjectExpression(expr: ObjectExpression, context: SqlContext): 
   if (!expr.properties) {
     throw new Error("Object expression must have properties");
   }
+
   const parts = Object.entries(expr.properties).map(([key, value]) => {
     const sqlValue = generateExpression(value, context);
     return `${sqlValue} AS "${key}"`;
   });
+
   return parts.join(", ");
 }
 

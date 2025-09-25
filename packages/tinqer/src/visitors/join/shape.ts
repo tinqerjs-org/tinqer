@@ -63,6 +63,13 @@ export function buildShapeNode(
       } as ObjectShapeNode;
     }
 
+    case "param": {
+      // Parameter expressions should not appear in JOIN result selectors
+      // The visitor should have thrown an error before we get here
+      // But if somehow we get here, we should not process it
+      break;
+    }
+
     case "column": {
       const colExpr = expr as ColumnExpression;
 
