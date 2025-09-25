@@ -199,8 +199,20 @@ export function generateJoin(operation: JoinOperation, context: SqlContext): str
     joinClause = `INNER JOIN (${innerSql}) AS "${innerAlias}"`;
   }
 
-  // Build ON clause
-  const onClause = `ON "${outerAlias}"."${operation.outerKey}" = "${innerAlias}"."${operation.innerKey}"`;
+  // Build ON clause - resolve keys through symbol table if available
+  let resolvedOuterKey = operation.outerKey;
+  let resolvedOuterAlias = outerAlias;
+
+  // Check if outerKey needs resolution through symbol table
+  if (context.symbolTable) {
+    const sourceRef = context.symbolTable.entries.get(operation.outerKey);
+    if (sourceRef) {
+      resolvedOuterKey = sourceRef.columnName;
+      resolvedOuterAlias = sourceRef.tableAlias;
+    }
+  }
+
+  const onClause = `ON "${resolvedOuterAlias}"."${resolvedOuterKey}" = "${innerAlias}"."${operation.innerKey}"`;
 
   return `${joinClause} ${onClause}`;
 }

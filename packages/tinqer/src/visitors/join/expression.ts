@@ -30,6 +30,28 @@ export function visitJoinExpression(
         const objName = member.object.name;
         const propName = member.property.name;
 
+        // Check if this is accessing a property from a previous JOIN's result
+        if (context.joinResultParam === objName && context.currentResultShape) {
+          // Look up the property in the result shape
+          const resultShape = context.currentResultShape as {
+            properties: Map<string, { type: string; columnName?: string; sourceTable?: number }>;
+          };
+          const shapeProp = resultShape.properties.get(propName);
+
+          if (shapeProp && shapeProp.type === "column") {
+            // Return the actual column reference from the result shape
+            return {
+              value: {
+                type: "column",
+                name: shapeProp.columnName || propName,
+                table: `$param${shapeProp.sourceTable}`, // Use the original source table
+              },
+              autoParams,
+              counter: currentCounter,
+            };
+          }
+        }
+
         // Check if this is a JOIN parameter
         if (context.joinParams?.has(objName)) {
           const tableIndex = context.joinParams.get(objName);
