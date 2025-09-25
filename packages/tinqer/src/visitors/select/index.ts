@@ -4,7 +4,7 @@
  */
 
 import type { SelectOperation, QueryOperation } from "../../query-tree/operations.js";
-import type { Expression } from "../../expressions/expression.js";
+import type { ValueExpression, ObjectExpression } from "../../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
@@ -85,7 +85,7 @@ export function visitSelectOperation(
       type: "queryOperation",
       operationType: "select",
       source,
-      selector: selector as Expression,
+      selector: selector as (ValueExpression | ObjectExpression),
     },
     autoParams: Object.fromEntries(context.autoParams),
   };

@@ -20,6 +20,11 @@ import type {
   ArrowFunctionExpression,
   Identifier,
   Expression as ASTExpression,
+  Literal,
+  NumericLiteral,
+  StringLiteral,
+  BooleanLiteral,
+  NullLiteral,
 } from "../../parser/ast-types.js";
 
 import type { VisitorContext } from "../types.js";
@@ -217,7 +222,7 @@ function normalizeAggregateFunction(methodName: string): AggregateExpression["fu
 /**
  * Check if node is a literal
  */
-function isLiteralNode(node: unknown): boolean {
+function isLiteralNode(node: unknown): node is (Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral) {
   if (!node) return false;
   const type = (node as { type?: string }).type;
   return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(type || "");

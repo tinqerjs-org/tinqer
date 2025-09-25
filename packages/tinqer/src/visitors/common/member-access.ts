@@ -13,7 +13,6 @@ import type {
   MemberExpression as ASTMemberExpression,
   Identifier,
   NumericLiteral,
-  Literal,
 } from "../../parser/ast-types.js";
 
 import type { VisitorContext } from "../types.js";

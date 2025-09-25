@@ -16,7 +16,7 @@ export function visitGroupByOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
+  _methodName: string
 ): { operation: GroupByOperation; autoParams: Record<string, unknown> } | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const keySelectorAst = ast.arguments[0];

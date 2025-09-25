@@ -6,11 +6,11 @@ import type { ReverseOperation, QueryOperation } from "../../query-tree/operatio
 import type { CallExpression as ASTCallExpression } from "../../parser/ast-types.js";
 
 export function visitReverseOperation(
-  ast: ASTCallExpression,
+  _ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
-  methodName: string
+  _tableParams: Set<string>,
+  _queryParams: Set<string>,
+  _methodName: string
 ): { operation: ReverseOperation; autoParams: Record<string, unknown> } | null {
   return {
     operation: {

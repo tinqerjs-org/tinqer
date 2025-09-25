@@ -340,8 +340,8 @@ function visitUnaryProjection(
  * Visit conditional (ternary) expression
  */
 function visitConditionalProjection(
-  node: unknown,
-  context: SelectContext
+  _node: unknown,
+  _context: SelectContext
 ): Expression | null {
   // TODO: Implement CASE WHEN for ternary operator
   return null;

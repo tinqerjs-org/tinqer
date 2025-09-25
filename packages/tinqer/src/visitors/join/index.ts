@@ -153,7 +153,7 @@ export function visitJoinOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
+  _methodName: string
 ): { operation: JoinOperation; autoParams: Record<string, unknown> } | null {
   if (ast.arguments && ast.arguments.length >= 4) {
     // join(inner, outerKeySelector, innerKeySelector, resultSelector)

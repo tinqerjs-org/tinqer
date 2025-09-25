@@ -5,8 +5,6 @@
 
 import type {
   Expression,
-  BooleanExpression,
-  ValueExpression,
 } from "../expressions/expression.js";
 
 /**

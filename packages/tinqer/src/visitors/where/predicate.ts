@@ -5,8 +5,6 @@
 
 import type {
   BooleanExpression,
-  ComparisonExpression,
-  LogicalExpression,
   ColumnExpression,
   ValueExpression,
   ParameterExpression,

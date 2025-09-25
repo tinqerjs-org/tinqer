@@ -10,6 +10,12 @@ import type {
 
 import type {
   BinaryExpression as ASTBinaryExpression,
+  Expression as ASTExpression,
+  Literal,
+  NumericLiteral,
+  StringLiteral,
+  BooleanLiteral,
+  NullLiteral,
 } from "../../parser/ast-types.js";
 
 import type { VisitorContext } from "../types.js";
@@ -28,18 +34,20 @@ export function visitComparison(
 
   // Convert left side
   let left: ValueExpression | null = null;
-  if (isLiteral(node.left)) {
-    left = visitLiteral(node.left, context) as ValueExpression;
+  const leftNode = node.left as ASTExpression;
+  if (isLiteral(leftNode)) {
+    left = visitLiteral(leftNode, context) as ValueExpression;
   } else {
-    left = visitExpression(node.left, context) as ValueExpression;
+    left = visitExpression(leftNode, context) as ValueExpression;
   }
 
   // Convert right side
   let right: ValueExpression | null = null;
-  if (isLiteral(node.right)) {
-    right = visitLiteral(node.right, context) as ValueExpression;
+  const rightNode = node.right as ASTExpression;
+  if (isLiteral(rightNode)) {
+    right = visitLiteral(rightNode, context) as ValueExpression;
   } else {
-    right = visitExpression(node.right, context) as ValueExpression;
+    right = visitExpression(rightNode, context) as ValueExpression;
   }
 
   if (!left || !right) {
@@ -84,7 +92,7 @@ function normalizeComparisonOperator(op: string): ComparisonExpression["operator
 /**
  * Check if node is a literal type
  */
-function isLiteral(node: unknown): boolean {
+function isLiteral(node: unknown): node is (Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral) {
   if (!node) return false;
   const type = (node as { type?: string }).type;
   return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(type || "");

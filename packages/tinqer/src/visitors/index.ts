@@ -6,9 +6,8 @@
 import type {
   Expression,
   BooleanExpression,
+  BooleanColumnExpression,
   ValueExpression,
-  ObjectExpression,
-  ArrayExpression,
   ArithmeticExpression,
   ConcatExpression,
   ConditionalExpression,
@@ -37,8 +36,8 @@ import type {
   NullLiteral,
 } from "../parser/ast-types.js";
 
-import type { VisitorContext, BooleanContext, ValueContext } from "./types.js";
-import { createAutoParam, toBooleanContext, toValueContext } from "./types.js";
+import type { VisitorContext } from "./types.js";
+import { createAutoParam } from "./types.js";
 
 // Common visitors
 import { visitIdentifier } from "./common/identifier.js";
@@ -152,7 +151,7 @@ function visitBinaryExpression(
 
   // Comparison operators
   if (["==", "===", "!=", "!==", ">", ">=", "<", "<="].includes(operator)) {
-    return visitComparison(node, context, visitExpression);
+    return visitComparison(node, context, (n, ctx) => visitExpression(n as ASTExpression, ctx));
   }
 
   // Arithmetic/concatenation operators
@@ -237,14 +236,11 @@ function visitUnaryExpression(
     let finalExpr = expr;
     if (expr?.type === "column") {
       const col = expr as ColumnExpression;
-      const boolCol: Record<string, unknown> = {
+      const boolCol: BooleanColumnExpression = {
         type: "booleanColumn",
         name: col.name,
-      };
-      // Only add table if it exists
-      if (col.table) {
-        boolCol.table = col.table;
-      }
+        ...(col.table ? { table: col.table } : {})
+      } as BooleanColumnExpression;
       finalExpr = boolCol;
     }
 
@@ -347,15 +343,12 @@ function visitConditional(
   } else if (condition.type === "column") {
     // Convert column to booleanColumn
     const col = condition as ColumnExpression;
-    const boolCol: Record<string, unknown> = {
+    const boolCol: BooleanColumnExpression = {
       type: "booleanColumn",
       name: col.name,
-    };
-    // Only add table if it exists
-    if (col.table) {
-      boolCol.table = col.table;
-    }
-    booleanCondition = boolCol as BooleanExpression;
+      ...(col.table ? { table: col.table } : {})
+    } as BooleanColumnExpression;
+    booleanCondition = boolCol;
   } else {
     return null;
   }

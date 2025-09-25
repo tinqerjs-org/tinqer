@@ -17,7 +17,7 @@ export function visitCountOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
+  _methodName: string
 ): { operation: CountOperation; autoParams: Record<string, unknown> } | null {
   let predicate: BooleanExpression | undefined;
   const autoParams: Record<string, unknown> = {};

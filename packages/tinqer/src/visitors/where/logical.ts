@@ -6,7 +6,6 @@
 import type {
   LogicalExpression,
   BooleanExpression,
-  ColumnExpression,
 } from "../../expressions/expression.js";
 
 import type { LogicalExpression as ASTLogicalExpression } from "../../parser/ast-types.js";
@@ -43,17 +42,9 @@ export function visitLogical(
 }
 
 /**
- * Ensure expression is boolean (convert column to booleanColumn if needed)
+ * Ensure expression is boolean (already validated as BooleanExpression)
  */
 function ensureBoolean(expr: BooleanExpression): BooleanExpression {
-  // If it's a plain column, wrap it as booleanColumn
-  if (expr.type === "column") {
-    const col = expr as unknown as ColumnExpression;
-    return {
-      type: "booleanColumn",
-      name: col.name,
-      ...(col.table && { table: col.table }),
-    };
-  }
+  // Expression is already a BooleanExpression, no conversion needed
   return expr;
 }

@@ -10,7 +10,6 @@ import type {
   Literal,
   MemberExpression,
   Identifier,
-  Expression as ASTExpression,
 } from "../../parser/ast-types.js";
 
 /**
@@ -19,9 +18,9 @@ import type {
 export function visitSkipOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
+  _tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
+  _methodName: string
 ): { operation: SkipOperation; autoParams: Record<string, unknown> } | null {
   // SKIP expects a numeric argument: skip(10) or skip(p.offset)
   if (!ast.arguments || ast.arguments.length === 0) {

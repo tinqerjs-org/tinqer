@@ -18,9 +18,9 @@ import type {
 export function visitTakeOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
+  _tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
+  _methodName: string
 ): { operation: TakeOperation; autoParams: Record<string, unknown> } | null {
   // TAKE expects a numeric argument: take(10) or take(p.limit)
   if (!ast.arguments || ast.arguments.length === 0) {

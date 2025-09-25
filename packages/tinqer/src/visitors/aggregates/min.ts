@@ -17,7 +17,7 @@ export function visitMinOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
+  _methodName: string
 ): { operation: MinOperation; autoParams: Record<string, unknown> } | null {
   let selector: string | undefined;
   const autoParams: Record<string, unknown> = {};
