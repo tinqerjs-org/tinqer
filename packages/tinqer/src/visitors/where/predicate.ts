@@ -32,7 +32,7 @@ import { visitLogical } from "./logical.js";
  */
 export function visitPredicate(
   node: ASTExpression,
-  context: WhereContext
+  context: WhereContext,
 ): BooleanExpression | null {
   if (!node) return null;
 
@@ -124,7 +124,7 @@ export function visitPredicate(
  */
 export function visitColumnAccess(
   node: MemberExpression,
-  context: WhereContext
+  context: WhereContext,
 ): ColumnExpression | null {
   if (!node.computed && node.property.type === "Identifier") {
     const propertyName = (node.property as Identifier).name;
@@ -159,10 +159,7 @@ export function visitColumnAccess(
 /**
  * Visit value expression (for comparison operands)
  */
-export function visitValue(
-  node: ASTExpression,
-  context: WhereContext
-): ValueExpression | null {
+export function visitValue(node: ASTExpression, context: WhereContext): ValueExpression | null {
   switch (node.type) {
     case "MemberExpression": {
       // Column reference
@@ -207,7 +204,10 @@ export function visitValue(
     case "UnaryExpression": {
       const unary = node as UnaryExpression;
       // Negative number
-      if (unary.operator === "-" && (unary.argument.type === "NumericLiteral" || unary.argument.type === "Literal")) {
+      if (
+        unary.operator === "-" &&
+        (unary.argument.type === "NumericLiteral" || unary.argument.type === "Literal")
+      ) {
         const lit = unary.argument as Literal;
         if (typeof lit.value === "number") {
           const value = -lit.value;
@@ -229,10 +229,7 @@ export function visitValue(
 /**
  * Visit boolean method calls
  */
-function visitBooleanMethod(
-  node: CallExpression,
-  context: WhereContext
-): BooleanExpression | null {
+function visitBooleanMethod(node: CallExpression, context: WhereContext): BooleanExpression | null {
   if (node.callee.type !== "MemberExpression") return null;
 
   const memberCallee = node.callee as MemberExpression;

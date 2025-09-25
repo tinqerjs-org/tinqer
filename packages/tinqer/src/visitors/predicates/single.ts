@@ -25,8 +25,11 @@ export function visitSingleOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
-): { operation: SingleOperation | SingleOrDefaultOperation; autoParams: Record<string, unknown> } | null {
+  methodName: string,
+): {
+  operation: SingleOperation | SingleOrDefaultOperation;
+  autoParams: Record<string, unknown>;
+} | null {
   let predicate: BooleanExpression | undefined;
   const autoParams: Record<string, unknown> = {};
 
@@ -83,6 +86,6 @@ export function visitSingleOperation(
   };
   return {
     operation,
-    autoParams
+    autoParams,
   };
 }

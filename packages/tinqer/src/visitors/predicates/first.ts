@@ -25,8 +25,11 @@ export function visitFirstOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
-): { operation: FirstOperation | FirstOrDefaultOperation; autoParams: Record<string, unknown> } | null {
+  methodName: string,
+): {
+  operation: FirstOperation | FirstOrDefaultOperation;
+  autoParams: Record<string, unknown>;
+} | null {
   let predicate: BooleanExpression | undefined;
   const autoParams: Record<string, unknown> = {};
 
@@ -82,6 +85,6 @@ export function visitFirstOperation(
       source,
       predicate,
     },
-    autoParams
+    autoParams,
   };
 }

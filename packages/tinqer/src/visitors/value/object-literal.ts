@@ -29,7 +29,7 @@ import type {
 export function visitObject(
   node: ASTObjectExpression,
   context: VisitorContext,
-  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null
+  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null,
 ): ObjectExpression | null {
   const properties: Record<string, Expression> = {};
 
@@ -61,7 +61,7 @@ export function visitObject(
 function handleSpreadElement(
   prop: unknown,
   context: VisitorContext,
-  properties: Record<string, Expression>
+  properties: Record<string, Expression>,
 ): void {
   const spreadProp = prop as {
     type: string;
@@ -78,8 +78,8 @@ function handleSpreadElement(
     } else {
       throw new Error(
         `Spread operator used without shape information. ` +
-        `This typically occurs when spreading a parameter '${spreadName}' that isn't from a JOIN result. ` +
-        `Spread is only supported for JOIN result parameters with known shapes.`
+          `This typically occurs when spreading a parameter '${spreadName}' that isn't from a JOIN result. ` +
+          `Spread is only supported for JOIN result parameters with known shapes.`,
       );
     }
   }
@@ -91,7 +91,7 @@ function handleSpreadElement(
 function flattenShape(
   shape: ObjectShapeNode,
   properties: Record<string, Expression>,
-  prefix: string = ""
+  prefix: string = "",
 ): void {
   for (const [propName, shapeProp] of shape.properties) {
     const fullName = prefix ? `${prefix}.${propName}` : propName;

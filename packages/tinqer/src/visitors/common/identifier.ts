@@ -16,10 +16,7 @@ import type { VisitorContext } from "../types.js";
  * Convert an identifier to an expression
  * Determines if it's a table param, query param, or error
  */
-export function visitIdentifier(
-  node: Identifier,
-  context: VisitorContext
-): Expression | null {
+export function visitIdentifier(node: Identifier, context: VisitorContext): Expression | null {
   const name = node.name;
 
   // Check if it's a table parameter (e.g., 'x' in x => x.name)
@@ -51,6 +48,6 @@ export function visitIdentifier(
 
   // Unknown identifier - this is an error
   throw new Error(
-    `Unknown identifier '${name}'. Variables must be passed via params object or referenced as table parameters.`
+    `Unknown identifier '${name}'. Variables must be passed via params object or referenced as table parameters.`,
   );
 }

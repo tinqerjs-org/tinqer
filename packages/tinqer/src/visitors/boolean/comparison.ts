@@ -3,10 +3,7 @@
  * Produces boolean expressions from value comparisons
  */
 
-import type {
-  ComparisonExpression,
-  ValueExpression,
-} from "../../expressions/expression.js";
+import type { ComparisonExpression, ValueExpression } from "../../expressions/expression.js";
 
 import type {
   BinaryExpression as ASTBinaryExpression,
@@ -27,7 +24,7 @@ import { visitLiteral } from "../common/literal.js";
 export function visitComparison(
   node: ASTBinaryExpression,
   context: VisitorContext,
-  visitExpression: (node: unknown, ctx: VisitorContext) => unknown
+  visitExpression: (node: unknown, ctx: VisitorContext) => unknown,
 ): ComparisonExpression | null {
   const operator = normalizeComparisonOperator(node.operator);
   if (!operator) return null;
@@ -53,7 +50,7 @@ export function visitComparison(
   if (!left || !right) {
     throw new Error(
       `Failed to convert comparison expression with operator '${operator}'. ` +
-      `Left: ${left ? "converted" : "failed"}, Right: ${right ? "converted" : "failed"}`
+        `Left: ${left ? "converted" : "failed"}, Right: ${right ? "converted" : "failed"}`,
     );
   }
 
@@ -92,8 +89,12 @@ function normalizeComparisonOperator(op: string): ComparisonExpression["operator
 /**
  * Check if node is a literal type
  */
-function isLiteral(node: unknown): node is (Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral) {
+function isLiteral(
+  node: unknown,
+): node is Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral {
   if (!node) return false;
   const type = (node as { type?: string }).type;
-  return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(type || "");
+  return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(
+    type || "",
+  );
 }

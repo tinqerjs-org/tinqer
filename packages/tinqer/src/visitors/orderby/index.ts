@@ -28,7 +28,7 @@ export function visitOrderByOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
+  methodName: string,
 ): { operation: OrderByOperation; autoParams: Record<string, unknown> } | null {
   // ORDER BY expects a lambda: orderBy(x => x.name)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -59,7 +59,7 @@ export function visitOrderByOperation(
   if (lambda.body.type === "BlockStatement") {
     // Look for return statement
     const returnStmt = lambda.body.body.find(
-      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement"
+      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement",
     );
     if (returnStmt) {
       bodyExpr = (returnStmt as { argument?: ASTExpression }).argument || null;
@@ -80,9 +80,10 @@ export function visitOrderByOperation(
   }
 
   // For simple columns, use string name; for expressions, use full expression
-  const selector = keySelector.type === "column"
-    ? (keySelector as ColumnExpression).name
-    : (keySelector as ValueExpression);
+  const selector =
+    keySelector.type === "column"
+      ? (keySelector as ColumnExpression).name
+      : (keySelector as ValueExpression);
 
   return {
     operation: {
@@ -105,7 +106,7 @@ export function visitThenByOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
+  methodName: string,
 ): { operation: ThenByOperation; autoParams: Record<string, unknown> } | null {
   // THEN BY expects a lambda: thenBy(x => x.age)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -136,7 +137,7 @@ export function visitThenByOperation(
   if (lambda.body.type === "BlockStatement") {
     // Look for return statement
     const returnStmt = lambda.body.body.find(
-      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement"
+      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement",
     );
     if (returnStmt) {
       bodyExpr = (returnStmt as { argument?: ASTExpression }).argument || null;
@@ -157,9 +158,10 @@ export function visitThenByOperation(
   }
 
   // For simple columns, use string name; for expressions, use full expression
-  const selector = keySelector.type === "column"
-    ? (keySelector as ColumnExpression).name
-    : (keySelector as ValueExpression);
+  const selector =
+    keySelector.type === "column"
+      ? (keySelector as ColumnExpression).name
+      : (keySelector as ValueExpression);
 
   return {
     operation: {

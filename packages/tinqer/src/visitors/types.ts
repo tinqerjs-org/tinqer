@@ -13,14 +13,9 @@ import type {
   ArrayExpression,
 } from "../expressions/expression.js";
 
-import type {
-  ASTNode,
-  Expression as ASTExpression,
-} from "../parser/ast-types.js";
+import type { ASTNode, Expression as ASTExpression } from "../parser/ast-types.js";
 
-import type {
-  ObjectShapeNode,
-} from "../query-tree/operations.js";
+import type { ObjectShapeNode } from "../query-tree/operations.js";
 
 // ==================== Visitor Type Definitions ====================
 
@@ -30,7 +25,7 @@ import type {
  */
 export type Visitor<TNode = ASTNode, TContext = VisitorContext, TResult = Expression | null> = (
   node: TNode,
-  context: TContext
+  context: TContext,
 ) => TResult;
 
 /**
@@ -189,10 +184,7 @@ export function toArrayContext(context: VisitorContext): ArrayContext {
 /**
  * Create an auto-parameterized parameter
  */
-export function createAutoParam(
-  context: VisitorContext,
-  value: unknown
-): string {
+export function createAutoParam(context: VisitorContext, value: unknown): string {
   // Generate simple sequential parameter names to match existing tests
   // Format: __p1, __p2, __p3, etc.
   context.autoParamCounter++;

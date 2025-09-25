@@ -50,9 +50,7 @@ export interface VisitorParseResult {
 /**
  * Convert AST to QueryOperation using visitor pattern
  */
-export function convertAstToQueryOperationWithParams(
-  ast: ASTExpression
-): {
+export function convertAstToQueryOperationWithParams(ast: ASTExpression): {
   operation: QueryOperation | null;
   autoParams: Record<string, unknown>;
   autoParamInfos?: Record<string, unknown>;
@@ -107,7 +105,7 @@ function visitQueryChain(
   ast: ASTExpression,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  autoParams: Record<string, unknown>
+  autoParams: Record<string, unknown>,
 ): QueryOperation | null {
   // If it's an arrow function, visit its body
   if (ast.type === "ArrowFunctionExpression") {
@@ -118,7 +116,7 @@ function visitQueryChain(
     if (body.type === "BlockStatement") {
       // Look for return statement
       const returnStmt = body.body.find(
-        (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement"
+        (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement",
       );
       if (returnStmt) {
         const returnExpr = (returnStmt as { argument?: ASTExpression }).argument;
@@ -147,7 +145,7 @@ function visitCallExpression(
   ast: ASTCallExpression,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  autoParams: Record<string, unknown>
+  autoParams: Record<string, unknown>,
 ): QueryOperation | null {
   const methodName = getMethodName(ast);
   if (!methodName) return null;

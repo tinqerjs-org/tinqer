@@ -10,7 +10,7 @@ export function visitToArrayOperation(
   source: QueryOperation,
   _tableParams: Set<string>,
   _queryParams: Set<string>,
-  _methodName: string
+  _methodName: string,
 ): { operation: ToArrayOperation; autoParams: Record<string, unknown> } | null {
   return {
     operation: {
@@ -18,6 +18,6 @@ export function visitToArrayOperation(
       operationType: "toArray",
       source,
     },
-    autoParams: {}
+    autoParams: {},
   };
 }

@@ -37,13 +37,13 @@ import { isValueExpression, getParameterName, getReturnExpression } from "../uti
 export function visitCall(
   node: ASTCallExpression,
   context: VisitorContext,
-  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null
+  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null,
 ): Expression | null {
   // Must be a method call
   if (node.callee.type !== "MemberExpression") {
     throw new Error(
       `Unsupported call expression: ${node.callee.type}. ` +
-      `Method calls are only supported for specific string and boolean methods.`
+        `Method calls are only supported for specific string and boolean methods.`,
     );
   }
 
@@ -81,7 +81,7 @@ export function visitCall(
       methodName,
       node.arguments,
       context,
-      visitExpression
+      visitExpression,
     );
   }
 
@@ -95,7 +95,7 @@ function handleAggregateMethod(
   methodName: string,
   args: unknown[],
   context: VisitorContext,
-  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null
+  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null,
 ): AggregateExpression | null {
   const aggregateFunc = normalizeAggregateFunction(methodName);
   if (!aggregateFunc) return null;
@@ -113,9 +113,10 @@ function handleAggregateMethod(
       }
 
       // Get body expression
-      const bodyExpr = arrowFunc.body.type === "BlockStatement"
-        ? getReturnExpression(arrowFunc.body.body)
-        : arrowFunc.body;
+      const bodyExpr =
+        arrowFunc.body.type === "BlockStatement"
+          ? getReturnExpression(arrowFunc.body.body)
+          : arrowFunc.body;
 
       if (bodyExpr) {
         const expr = visitExpression(bodyExpr as ASTExpression, context);
@@ -144,7 +145,7 @@ function handleIncludesMethod(
   obj: Expression,
   args: unknown[],
   context: VisitorContext,
-  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null
+  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null,
 ): InExpression | null {
   const isArrayLike = obj.type === "array" || obj.type === "param";
 
@@ -170,7 +171,7 @@ function handleValueMethods(
   methodName: string,
   args: unknown[],
   context: VisitorContext,
-  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null
+  visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null,
 ): BooleanMethodExpression | StringMethodExpression | null {
   // Boolean methods
   if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
@@ -209,21 +210,31 @@ function handleValueMethods(
 function normalizeAggregateFunction(methodName: string): AggregateExpression["function"] | null {
   const lower = methodName.toLowerCase();
   switch (lower) {
-    case "count": return "count";
-    case "sum": return "sum";
+    case "count":
+      return "count";
+    case "sum":
+      return "sum";
     case "avg":
-    case "average": return "avg";
-    case "min": return "min";
-    case "max": return "max";
-    default: return null;
+    case "average":
+      return "avg";
+    case "min":
+      return "min";
+    case "max":
+      return "max";
+    default:
+      return null;
   }
 }
 
 /**
  * Check if node is a literal
  */
-function isLiteralNode(node: unknown): node is (Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral) {
+function isLiteralNode(
+  node: unknown,
+): node is Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral {
   if (!node) return false;
   const type = (node as { type?: string }).type;
-  return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(type || "");
+  return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(
+    type || "",
+  );
 }

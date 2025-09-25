@@ -2,11 +2,7 @@
  * Utility functions for visitor implementations
  */
 
-import type {
-  Expression,
-  BooleanExpression,
-  ValueExpression,
-} from "../expressions/expression.js";
+import type { Expression, BooleanExpression, ValueExpression } from "../expressions/expression.js";
 import type {
   ArrowFunctionExpression,
   Statement,
@@ -56,7 +52,7 @@ export function isBooleanExpression(expr: Expression): expr is BooleanExpression
     "booleanColumn",
     "exists",
     "isNull",
-    "isNotNull"
+    "isNotNull",
   ];
 
   return booleanTypes.includes(expr.type);
@@ -77,7 +73,7 @@ export function isValueExpression(expr: Expression): expr is ValueExpression {
     "conditional",
     "object",
     "array",
-    "call"
+    "call",
   ];
 
   return valueTypes.includes(expr.type);

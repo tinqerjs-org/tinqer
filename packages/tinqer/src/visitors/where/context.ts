@@ -23,7 +23,7 @@ export interface WhereContext {
  */
 export function createWhereContext(
   tableParams: Set<string>,
-  queryParams: Set<string>
+  queryParams: Set<string>,
 ): WhereContext {
   return {
     tableParams: new Set(tableParams),
@@ -36,10 +36,7 @@ export function createWhereContext(
 /**
  * Generate auto-parameter name for literal values
  */
-export function createAutoParam(
-  context: WhereContext,
-  value: unknown
-): string {
+export function createAutoParam(context: WhereContext, value: unknown): string {
   context.autoParamCounter++;
   const paramName = `__p${context.autoParamCounter}`;
   context.autoParams.set(paramName, value);

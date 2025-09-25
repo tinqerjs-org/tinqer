@@ -20,7 +20,7 @@ export function visitSkipOperation(
   source: QueryOperation,
   _tableParams: Set<string>,
   queryParams: Set<string>,
-  _methodName: string
+  _methodName: string,
 ): { operation: SkipOperation; autoParams: Record<string, unknown> } | null {
   // SKIP expects a numeric argument: skip(10) or skip(p.offset)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -34,9 +34,10 @@ export function visitSkipOperation(
 
   // Handle numeric literal
   if (arg.type === "NumericLiteral" || arg.type === "Literal") {
-    const value = arg.type === "NumericLiteral"
-      ? (arg as NumericLiteral).value
-      : (arg as Literal).value as number;
+    const value =
+      arg.type === "NumericLiteral"
+        ? (arg as NumericLiteral).value
+        : ((arg as Literal).value as number);
 
     // Auto-parameterize the offset value
     const paramName = `__p${Object.keys(autoParams).length + 1}`;

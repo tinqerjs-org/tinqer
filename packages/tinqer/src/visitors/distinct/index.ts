@@ -15,7 +15,7 @@ export function visitDistinctOperation(
   source: QueryOperation,
   _tableParams: Set<string>,
   _queryParams: Set<string>,
-  _methodName: string
+  _methodName: string,
 ): { operation: DistinctOperation; autoParams: Record<string, unknown> } | null {
   // DISTINCT has no arguments, just marks the query for distinct results
   return {

@@ -21,7 +21,7 @@ import { isValueExpression, isBooleanExpression } from "../utils.js";
 export function visitLogical(
   node: ASTLogicalExpression,
   context: VisitorContext,
-  visitExpression: (node: unknown, ctx: VisitorContext) => unknown
+  visitExpression: (node: unknown, ctx: VisitorContext) => unknown,
 ): LogicalExpression | CoalesceExpression | null {
   const left = visitExpression(node.left, context);
   const right = visitExpression(node.right, context);
@@ -29,7 +29,7 @@ export function visitLogical(
   if (!left || !right) {
     throw new Error(
       `Failed to convert logical expression with operator '${node.operator}'. ` +
-      `Left: ${left ? "converted" : "failed"}, Right: ${right ? "converted" : "failed"}`
+        `Left: ${left ? "converted" : "failed"}, Right: ${right ? "converted" : "failed"}`,
     );
   }
 

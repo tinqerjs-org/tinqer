@@ -13,7 +13,7 @@ export function visitContainsOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  _methodName: string
+  _methodName: string,
 ): { operation: ContainsOperation; autoParams: Record<string, unknown> } | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const valueArg = ast.arguments[0];
@@ -28,7 +28,7 @@ export function visitContainsOperation(
             source,
             value: result.expression as ValueExpression,
           },
-          autoParams: result.autoParams || {}
+          autoParams: result.autoParams || {},
         };
       }
     }

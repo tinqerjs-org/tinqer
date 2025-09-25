@@ -45,7 +45,11 @@ export function parseQuery<TParams, TResult>(
     }
 
     const firstStatement = programNode.body[0];
-    if (!firstStatement || firstStatement.type !== "ExpressionStatement" || !firstStatement.expression) {
+    if (
+      !firstStatement ||
+      firstStatement.type !== "ExpressionStatement" ||
+      !firstStatement.expression
+    ) {
       return null;
     }
 
@@ -61,7 +65,7 @@ export function parseQuery<TParams, TResult>(
     return {
       operation: result.operation,
       autoParams: result.autoParams as Record<string, string | number | boolean | null>,
-      autoParamInfos: result.autoParamInfos
+      autoParamInfos: result.autoParamInfos,
     };
   } catch (error) {
     console.error("Failed to parse query:", error);

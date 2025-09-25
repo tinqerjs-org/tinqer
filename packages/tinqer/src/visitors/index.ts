@@ -54,16 +54,18 @@ import { visitArray } from "./value/array-literal.js";
 import { visitCall } from "./value/call-expression.js";
 
 // Utils
-import { isBooleanExpression, isValueExpression, isLikelyStringColumn, isLikelyStringParam } from "./utils.js";
+import {
+  isBooleanExpression,
+  isValueExpression,
+  isLikelyStringColumn,
+  isLikelyStringParam,
+} from "./utils.js";
 
 /**
  * Main visitor dispatcher
  * Routes to appropriate visitor based on node type and context
  */
-export function visitExpression(
-  node: ASTExpression,
-  context: VisitorContext
-): Expression | null {
+export function visitExpression(node: ASTExpression, context: VisitorContext): Expression | null {
   if (!node) return null;
 
   switch (node.type) {
@@ -71,10 +73,8 @@ export function visitExpression(
       return visitIdentifier(node as Identifier, context);
 
     case "MemberExpression":
-      return visitMemberAccess(
-        node as ASTMemberExpression,
-        context,
-        (n, ctx) => visitExpression(n as ASTExpression, ctx)
+      return visitMemberAccess(node as ASTMemberExpression, context, (n, ctx) =>
+        visitExpression(n as ASTExpression, ctx),
       );
 
     case "Literal":
@@ -84,41 +84,33 @@ export function visitExpression(
     case "NullLiteral":
       return visitLiteral(
         node as Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
-        context
+        context,
       );
 
     case "BinaryExpression":
       return visitBinaryExpression(node as ASTBinaryExpression, context);
 
     case "LogicalExpression":
-      return visitLogical(
-        node as ASTLogicalExpression,
-        context,
-        (n, ctx) => visitExpression(n as ASTExpression, ctx)
+      return visitLogical(node as ASTLogicalExpression, context, (n, ctx) =>
+        visitExpression(n as ASTExpression, ctx),
       );
 
     case "UnaryExpression":
       return visitUnaryExpression(node as ASTUnaryExpression, context);
 
     case "CallExpression":
-      return visitCall(
-        node as ASTCallExpression,
-        context,
-        (n, ctx) => visitExpression(n as ASTExpression, ctx)
+      return visitCall(node as ASTCallExpression, context, (n, ctx) =>
+        visitExpression(n as ASTExpression, ctx),
       );
 
     case "ObjectExpression":
-      return visitObject(
-        node as ASTObjectExpression,
-        context,
-        (n, ctx) => visitExpression(n as ASTExpression, ctx)
+      return visitObject(node as ASTObjectExpression, context, (n, ctx) =>
+        visitExpression(n as ASTExpression, ctx),
       );
 
     case "ArrayExpression":
-      return visitArray(
-        node as ASTArrayExpression,
-        context,
-        (n, ctx) => visitExpression(n as ASTExpression, ctx)
+      return visitArray(node as ASTArrayExpression, context, (n, ctx) =>
+        visitExpression(n as ASTExpression, ctx),
       );
 
     case "ArrowFunctionExpression":
@@ -145,7 +137,7 @@ export function visitExpression(
  */
 function visitBinaryExpression(
   node: ASTBinaryExpression,
-  context: VisitorContext
+  context: VisitorContext,
 ): Expression | null {
   const operator = node.operator;
 
@@ -167,7 +159,7 @@ function visitBinaryExpression(
  */
 function visitArithmeticOrConcat(
   node: ASTBinaryExpression,
-  context: VisitorContext
+  context: VisitorContext,
 ): ArithmeticExpression | ConcatExpression | null {
   // Convert operands
   const left = isLiteralNode(node.left)
@@ -186,15 +178,17 @@ function visitArithmeticOrConcat(
   if (node.operator === "+") {
     // Validate no table-less expressions in SELECT
     if (context.inSelectProjection && context.hasTableParam === false) {
-      const leftIsNonTable = left.type === "constant" ||
+      const leftIsNonTable =
+        left.type === "constant" ||
         (left.type === "param" && !context.tableParams.has((left as { param: string }).param));
-      const rightIsNonTable = right.type === "constant" ||
+      const rightIsNonTable =
+        right.type === "constant" ||
         (right.type === "param" && !context.tableParams.has((right as { param: string }).param));
 
       if (leftIsNonTable && rightIsNonTable) {
         throw new Error(
           "Expressions without table context are not allowed in SELECT projections. " +
-          "Use a table parameter (e.g., select(i => ...) instead of select(() => ...))."
+            "Use a table parameter (e.g., select(i => ...) instead of select(() => ...)).",
         );
       }
     }
@@ -226,7 +220,7 @@ function visitArithmeticOrConcat(
  */
 function visitUnaryExpression(
   node: ASTUnaryExpression,
-  context: VisitorContext
+  context: VisitorContext,
 ): Expression | null {
   // Logical NOT
   if (node.operator === "!") {
@@ -239,7 +233,7 @@ function visitUnaryExpression(
       const boolCol: BooleanColumnExpression = {
         type: "booleanColumn",
         name: col.name,
-        ...(col.table ? { table: col.table } : {})
+        ...(col.table ? { table: col.table } : {}),
       } as BooleanColumnExpression;
       finalExpr = boolCol;
     }
@@ -292,10 +286,7 @@ function visitUnaryExpression(
 /**
  * Visit lambda expression
  */
-function visitLambda(
-  node: ArrowFunctionExpression,
-  context: VisitorContext
-): Expression | null {
+function visitLambda(node: ArrowFunctionExpression, context: VisitorContext): Expression | null {
   const params = node.params.map((p: Identifier) => ({ name: p.name }));
 
   // Get body expression
@@ -303,7 +294,7 @@ function visitLambda(
   if (node.body.type === "BlockStatement") {
     // Look for return statement
     const returnStmt = node.body.body.find(
-      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement"
+      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement",
     );
     if (returnStmt) {
       bodyExpr = (returnStmt as { argument?: ASTExpression }).argument || null;
@@ -328,7 +319,7 @@ function visitLambda(
  */
 function visitConditional(
   node: ASTConditionalExpression,
-  context: VisitorContext
+  context: VisitorContext,
 ): ConditionalExpression | null {
   const condition = visitExpression(node.test, context);
   const thenExpr = visitExpression(node.consequent, context);
@@ -346,7 +337,7 @@ function visitConditional(
     const boolCol: BooleanColumnExpression = {
       type: "booleanColumn",
       name: col.name,
-      ...(col.table ? { table: col.table } : {})
+      ...(col.table ? { table: col.table } : {}),
     } as BooleanColumnExpression;
     booleanCondition = boolCol;
   } else {
@@ -366,7 +357,9 @@ function visitConditional(
 function isLiteralNode(node: unknown): boolean {
   if (!node) return false;
   const type = (node as { type?: string }).type;
-  return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(type || "");
+  return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(
+    type || "",
+  );
 }
 
 function isStringExpression(expr: ValueExpression): boolean {

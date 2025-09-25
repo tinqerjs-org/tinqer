@@ -23,7 +23,7 @@ export function visitSelectOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
   tableParams: Set<string>,
-  queryParams: Set<string>
+  queryParams: Set<string>,
 ): { operation: SelectOperation; autoParams: Record<string, unknown> } | null {
   // SELECT expects a lambda: select(x => x.name) or select(x => ({ id: x.id, name: x.name }))
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -60,7 +60,7 @@ export function visitSelectOperation(
   if (lambda.body.type === "BlockStatement") {
     // Look for return statement
     const returnStmt = lambda.body.body.find(
-      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement"
+      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement",
     );
     if (returnStmt) {
       bodyExpr = (returnStmt as { argument?: ASTExpression }).argument || null;
@@ -85,7 +85,7 @@ export function visitSelectOperation(
       type: "queryOperation",
       operationType: "select",
       source,
-      selector: selector as (ValueExpression | ObjectExpression),
+      selector: selector as ValueExpression | ObjectExpression,
     },
     autoParams: Object.fromEntries(context.autoParams),
   };

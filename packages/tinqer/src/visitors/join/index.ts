@@ -11,7 +11,11 @@ import type {
   ObjectShapeNode,
   ReferenceShapeNode,
 } from "../../query-tree/operations.js";
-import type { ColumnExpression, Expression, ObjectExpression } from "../../expressions/expression.js";
+import type {
+  ColumnExpression,
+  Expression,
+  ObjectExpression,
+} from "../../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
@@ -153,12 +157,14 @@ export function visitJoinOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  _methodName: string
+  _methodName: string,
 ): { operation: JoinOperation; autoParams: Record<string, unknown> } | null {
   if (ast.arguments && ast.arguments.length >= 4) {
     // join(inner, outerKeySelector, innerKeySelector, resultSelector)
     const firstArg = ast.arguments[0];
-    const innerSourceResult = firstArg ? visitAstToQueryOperation(firstArg as ASTExpression, tableParams, queryParams) : null;
+    const innerSourceResult = firstArg
+      ? visitAstToQueryOperation(firstArg as ASTExpression, tableParams, queryParams)
+      : null;
     const innerSource = innerSourceResult?.operation || null;
     const outerKeySelectorAst = ast.arguments[1];
     const innerKeySelectorAst = ast.arguments[2];
@@ -183,7 +189,7 @@ export function visitJoinOperation(
       // Create a context with the result shape if we're chaining JOINs
       const outerContext: JoinContext = {
         tableParams: new Set(tableParams),
-        queryParams: new Set(queryParams)
+        queryParams: new Set(queryParams),
       };
       if (paramName && previousResultShape) {
         outerContext.currentResultShape = previousResultShape;
@@ -202,7 +208,11 @@ export function visitJoinOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(bodyExpr, outerContext.tableParams, outerContext.queryParams);
+        const result = visitExpression(
+          bodyExpr,
+          outerContext.tableParams,
+          outerContext.queryParams,
+        );
         if (result) {
           const expr = result.expression;
           Object.assign(autoParams, result.autoParams);
@@ -225,7 +235,7 @@ export function visitJoinOperation(
       const paramName = getParameterName(innerArrow);
       const innerContext: JoinContext = {
         tableParams: new Set(tableParams),
-        queryParams: new Set(queryParams)
+        queryParams: new Set(queryParams),
       };
       if (paramName) {
         innerContext.tableParams.add(paramName);
@@ -241,7 +251,11 @@ export function visitJoinOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(bodyExpr, innerContext.tableParams, innerContext.queryParams);
+        const result = visitExpression(
+          bodyExpr,
+          innerContext.tableParams,
+          innerContext.queryParams,
+        );
         if (result) {
           const expr = result.expression;
           Object.assign(autoParams, result.autoParams);
@@ -307,7 +321,11 @@ export function visitJoinOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(bodyExpr, resultContext.tableParams, resultContext.queryParams);
+        const result = visitExpression(
+          bodyExpr,
+          resultContext.tableParams,
+          resultContext.queryParams,
+        );
         if (result) {
           resultSelector = result.expression || undefined;
           Object.assign(autoParams, result.autoParams);
@@ -336,7 +354,7 @@ export function visitJoinOperation(
           resultSelector, // Include the result selector
           resultShape, // Include the result shape
         },
-        autoParams
+        autoParams,
       };
     }
   }

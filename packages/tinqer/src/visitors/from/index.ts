@@ -10,9 +10,7 @@ import type { CallExpression as ASTCallExpression } from "../../parser/ast-types
  * Visit FROM operation
  * Extracts table name and optional schema
  */
-export function visitFromOperation(
-  ast: ASTCallExpression
-): FromOperation | null {
+export function visitFromOperation(ast: ASTCallExpression): FromOperation | null {
   // FROM expects at least 2 arguments: from(db, tableName) or from(db, tableName, schema)
   if (!ast.arguments || ast.arguments.length < 2) {
     return null;

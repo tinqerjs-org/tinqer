@@ -3,10 +3,7 @@
  * Handles AND (&&) and OR (||) logical operators
  */
 
-import type {
-  LogicalExpression,
-  BooleanExpression,
-} from "../../expressions/expression.js";
+import type { LogicalExpression, BooleanExpression } from "../../expressions/expression.js";
 
 import type { LogicalExpression as ASTLogicalExpression } from "../../parser/ast-types.js";
 import type { WhereContext } from "./context.js";
@@ -17,7 +14,7 @@ import { visitPredicate } from "./predicate.js";
  */
 export function visitLogical(
   node: ASTLogicalExpression,
-  context: WhereContext
+  context: WhereContext,
 ): LogicalExpression | null {
   // Only handle boolean logical operators
   if (node.operator !== "&&" && node.operator !== "||") {

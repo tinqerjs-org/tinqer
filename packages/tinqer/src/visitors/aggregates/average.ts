@@ -17,7 +17,7 @@ export function visitAverageOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  _methodName: string
+  _methodName: string,
 ): { operation: AverageOperation; autoParams: Record<string, unknown> } | null {
   let selector: string | undefined;
   const autoParams: Record<string, unknown> = {};
@@ -65,6 +65,6 @@ export function visitAverageOperation(
       source,
       selector,
     },
-    autoParams
+    autoParams,
   };
 }

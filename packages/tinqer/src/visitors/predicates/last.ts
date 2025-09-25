@@ -25,8 +25,11 @@ export function visitLastOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  methodName: string
-): { operation: LastOperation | LastOrDefaultOperation; autoParams: Record<string, unknown> } | null {
+  methodName: string,
+): {
+  operation: LastOperation | LastOrDefaultOperation;
+  autoParams: Record<string, unknown>;
+} | null {
   let predicate: BooleanExpression | undefined;
   const autoParams: Record<string, unknown> = {};
 
@@ -83,6 +86,6 @@ export function visitLastOperation(
   };
   return {
     operation,
-    autoParams
+    autoParams,
   };
 }

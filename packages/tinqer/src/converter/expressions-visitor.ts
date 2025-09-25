@@ -58,7 +58,7 @@ function fromVisitorContext(visitorCtx: VisitorContext, originalCtx: ConversionC
  */
 export function convertAstToExpression(
   ast: ASTExpression,
-  context: ConversionContext
+  context: ConversionContext,
 ): Expression | null {
   // Convert to visitor context
   const visitorCtx = toVisitorContext(context);

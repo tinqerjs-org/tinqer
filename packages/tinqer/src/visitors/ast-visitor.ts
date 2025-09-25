@@ -13,7 +13,7 @@ import { convertAstToQueryOperationWithParams } from "../parser/ast-visitor.js";
 export function visitAstToQueryOperation(
   ast: ASTExpression,
   _tableParams: Set<string>,
-  _queryParams: Set<string>
+  _queryParams: Set<string>,
 ): { operation: QueryOperation | null; autoParams: Record<string, unknown> } | null {
   // Use the main parser to convert the AST
   const result = convertAstToQueryOperationWithParams(ast);
@@ -24,6 +24,6 @@ export function visitAstToQueryOperation(
 
   return {
     operation: result.operation,
-    autoParams: result.autoParams || {}
+    autoParams: result.autoParams || {},
   };
 }

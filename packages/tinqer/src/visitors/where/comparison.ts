@@ -3,10 +3,7 @@
  * Handles comparison expressions (==, !=, >, >=, <, <=)
  */
 
-import type {
-  ComparisonExpression,
-  ValueExpression,
-} from "../../expressions/expression.js";
+import type { ComparisonExpression, ValueExpression } from "../../expressions/expression.js";
 
 import type { BinaryExpression } from "../../parser/ast-types.js";
 import type { WhereContext } from "./context.js";
@@ -17,7 +14,7 @@ import { visitValue } from "./predicate.js";
  */
 export function visitComparison(
   node: BinaryExpression,
-  context: WhereContext
+  context: WhereContext,
 ): ComparisonExpression | null {
   // Normalize operator (=== to ==, !== to !=)
   const operator = normalizeOperator(node.operator);

@@ -31,10 +31,7 @@ import { createAutoParam } from "./context.js";
  * Visit a projection expression in SELECT context
  * Returns Expression (ValueExpression or ObjectExpression)
  */
-export function visitProjection(
-  node: ASTExpression,
-  context: SelectContext
-): Expression | null {
+export function visitProjection(node: ASTExpression, context: SelectContext): Expression | null {
   if (!node) return null;
 
   switch (node.type) {
@@ -98,7 +95,7 @@ export function visitProjection(
  */
 function visitObjectProjection(
   node: ASTObjectExpression,
-  context: SelectContext
+  context: SelectContext,
 ): ObjectExpression | null {
   const properties: Record<string, Expression> = {};
 
@@ -137,7 +134,7 @@ function visitObjectProjection(
  */
 function visitColumnProjection(
   node: MemberExpression,
-  context: SelectContext
+  context: SelectContext,
 ): ColumnExpression | ParameterExpression | null {
   if (!node.computed && node.property.type === "Identifier") {
     const propertyName = (node.property as Identifier).name;
@@ -182,10 +179,7 @@ function visitColumnProjection(
 /**
  * Visit identifier projection
  */
-function visitIdentifierProjection(
-  node: Identifier,
-  context: SelectContext
-): Expression | null {
+function visitIdentifierProjection(node: Identifier, context: SelectContext): Expression | null {
   const name = node.name;
 
   // Table parameter (entire row)
@@ -210,10 +204,7 @@ function visitIdentifierProjection(
 /**
  * Visit literal projection
  */
-function visitLiteralProjection(
-  node: Literal,
-  context: SelectContext
-): ValueExpression {
+function visitLiteralProjection(node: Literal, context: SelectContext): ValueExpression {
   // NULL is special - not parameterized
   if (node.value === null) {
     return {
@@ -234,10 +225,7 @@ function visitLiteralProjection(
 /**
  * Visit binary expression in projection
  */
-function visitBinaryProjection(
-  node: BinaryExpression,
-  context: SelectContext
-): Expression | null {
+function visitBinaryProjection(node: BinaryExpression, context: SelectContext): Expression | null {
   // Arithmetic operators
   if (["+", "-", "*", "/", "%"].includes(node.operator)) {
     const left = visitProjection(node.left, context);
@@ -269,10 +257,7 @@ function visitBinaryProjection(
 /**
  * Visit method call in projection
  */
-function visitMethodProjection(
-  node: CallExpression,
-  context: SelectContext
-): Expression | null {
+function visitMethodProjection(node: CallExpression, context: SelectContext): Expression | null {
   if (node.callee.type !== "MemberExpression") return null;
 
   const memberCallee = node.callee as MemberExpression;
@@ -298,10 +283,7 @@ function visitMethodProjection(
 /**
  * Visit unary expression in projection
  */
-function visitUnaryProjection(
-  node: UnaryExpression,
-  context: SelectContext
-): Expression | null {
+function visitUnaryProjection(node: UnaryExpression, context: SelectContext): Expression | null {
   // Unary minus
   if (node.operator === "-") {
     if (node.argument.type === "NumericLiteral" || node.argument.type === "Literal") {
@@ -339,10 +321,7 @@ function visitUnaryProjection(
 /**
  * Visit conditional (ternary) expression
  */
-function visitConditionalProjection(
-  _node: unknown,
-  _context: SelectContext
-): Expression | null {
+function visitConditionalProjection(_node: unknown, _context: SelectContext): Expression | null {
   // TODO: Implement CASE WHEN for ternary operator
   return null;
 }

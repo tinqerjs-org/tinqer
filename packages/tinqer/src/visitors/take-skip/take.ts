@@ -20,7 +20,7 @@ export function visitTakeOperation(
   source: QueryOperation,
   _tableParams: Set<string>,
   queryParams: Set<string>,
-  _methodName: string
+  _methodName: string,
 ): { operation: TakeOperation; autoParams: Record<string, unknown> } | null {
   // TAKE expects a numeric argument: take(10) or take(p.limit)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -34,9 +34,10 @@ export function visitTakeOperation(
 
   // Handle numeric literal
   if (arg.type === "NumericLiteral" || arg.type === "Literal") {
-    const value = arg.type === "NumericLiteral"
-      ? (arg as NumericLiteral).value
-      : (arg as Literal).value as number;
+    const value =
+      arg.type === "NumericLiteral"
+        ? (arg as NumericLiteral).value
+        : ((arg as Literal).value as number);
 
     // Auto-parameterize the limit value
     const paramName = `__p${Object.keys(autoParams).length + 1}`;

@@ -27,7 +27,7 @@ export interface SelectContext {
  */
 export function createSelectContext(
   tableParams: Set<string>,
-  queryParams: Set<string>
+  queryParams: Set<string>,
 ): SelectContext {
   return {
     tableParams: new Set(tableParams),
@@ -42,10 +42,7 @@ export function createSelectContext(
 /**
  * Generate auto-parameter name for literal values
  */
-export function createAutoParam(
-  context: SelectContext,
-  value: unknown
-): string {
+export function createAutoParam(context: SelectContext, value: unknown): string {
   context.autoParamCounter++;
   const paramName = `__p${context.autoParamCounter}`;
   context.autoParams.set(paramName, value);

@@ -14,7 +14,7 @@ import type { ConversionContext } from "../converter/converter-utils.js";
 export function visitExpression(
   ast: ASTExpression,
   tableParams: Set<string>,
-  queryParams: Set<string>
+  queryParams: Set<string>,
 ): { expression: Expression | null; autoParams: Record<string, unknown> } {
   // Create a conversion context
   const context: ConversionContext = {

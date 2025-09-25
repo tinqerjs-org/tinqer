@@ -30,7 +30,7 @@ import { createAutoParam } from "./context.js";
  */
 export function visitKeySelector(
   node: ASTExpression,
-  context: OrderByContext
+  context: OrderByContext,
 ): ValueExpression | null {
   if (!node) return null;
 
@@ -77,7 +77,7 @@ export function visitKeySelector(
  */
 function visitMemberAccess(
   node: MemberExpression,
-  context: OrderByContext
+  context: OrderByContext,
 ): ColumnExpression | ParameterExpression | null {
   if (!node.computed && node.property.type === "Identifier") {
     const propertyName = (node.property as Identifier).name;
@@ -122,10 +122,7 @@ function visitMemberAccess(
 /**
  * Visit identifier
  */
-function visitIdentifier(
-  node: Identifier,
-  context: OrderByContext
-): ValueExpression | null {
+function visitIdentifier(node: Identifier, context: OrderByContext): ValueExpression | null {
   const name = node.name;
 
   // Table parameter (entire row - unusual for ORDER BY)
@@ -150,10 +147,7 @@ function visitIdentifier(
 /**
  * Visit literal value
  */
-function visitLiteral(
-  node: Literal,
-  context: OrderByContext
-): ValueExpression {
+function visitLiteral(node: Literal, context: OrderByContext): ValueExpression {
   // NULL is special - not parameterized
   if (node.value === null) {
     return {
@@ -176,7 +170,7 @@ function visitLiteral(
  */
 function visitBinaryExpression(
   node: BinaryExpression,
-  context: OrderByContext
+  context: OrderByContext,
 ): ValueExpression | null {
   // Only handle arithmetic operators for ORDER BY
   if (!["+", "-", "*", "/", "%"].includes(node.operator)) {
@@ -209,10 +203,7 @@ function visitBinaryExpression(
 /**
  * Visit method call (e.g., x.name.toLowerCase())
  */
-function visitMethodCall(
-  node: CallExpression,
-  context: OrderByContext
-): ValueExpression | null {
+function visitMethodCall(node: CallExpression, context: OrderByContext): ValueExpression | null {
   if (node.callee.type !== "MemberExpression") return null;
 
   const memberCallee = node.callee as MemberExpression;
@@ -240,7 +231,7 @@ function visitMethodCall(
  */
 function visitUnaryExpression(
   node: UnaryExpression,
-  context: OrderByContext
+  context: OrderByContext,
 ): ValueExpression | null {
   // Unary minus for negative sorting
   if (node.operator === "-") {

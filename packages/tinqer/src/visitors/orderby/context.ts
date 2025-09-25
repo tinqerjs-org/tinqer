@@ -23,7 +23,7 @@ export interface OrderByContext {
  */
 export function createOrderByContext(
   tableParams: Set<string>,
-  queryParams: Set<string>
+  queryParams: Set<string>,
 ): OrderByContext {
   return {
     tableParams: new Set(tableParams),
@@ -36,10 +36,7 @@ export function createOrderByContext(
 /**
  * Generate auto-parameter name for literal values
  */
-export function createAutoParam(
-  context: OrderByContext,
-  value: unknown
-): string {
+export function createAutoParam(context: OrderByContext, value: unknown): string {
   context.autoParamCounter++;
   const paramName = `__p${context.autoParamCounter}`;
   context.autoParams.set(paramName, value);

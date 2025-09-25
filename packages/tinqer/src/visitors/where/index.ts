@@ -23,7 +23,7 @@ export function visitWhereOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
   tableParams: Set<string>,
-  queryParams: Set<string>
+  queryParams: Set<string>,
 ): { operation: WhereOperation; autoParams: Record<string, unknown> } | null {
   // WHERE expects a lambda: where(x => x.age > 18)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -54,7 +54,7 @@ export function visitWhereOperation(
   if (lambda.body.type === "BlockStatement") {
     // Look for return statement
     const returnStmt = lambda.body.body.find(
-      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement"
+      (stmt: unknown) => (stmt as { type?: string }).type === "ReturnStatement",
     );
     if (returnStmt) {
       bodyExpr = (returnStmt as { argument?: ASTExpression }).argument || null;

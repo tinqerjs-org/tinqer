@@ -10,7 +10,7 @@ export function visitReverseOperation(
   source: QueryOperation,
   _tableParams: Set<string>,
   _queryParams: Set<string>,
-  _methodName: string
+  _methodName: string,
 ): { operation: ReverseOperation; autoParams: Record<string, unknown> } | null {
   return {
     operation: {
@@ -18,6 +18,6 @@ export function visitReverseOperation(
       operationType: "reverse",
       source,
     },
-    autoParams: {}
+    autoParams: {},
   };
 }

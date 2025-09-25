@@ -21,7 +21,7 @@ export function visitAllOperation(
   source: QueryOperation,
   tableParams: Set<string>,
   queryParams: Set<string>,
-  _methodName: string
+  _methodName: string,
 ): { operation: AllOperation; autoParams: Record<string, unknown> } | null {
   // all() requires a predicate
   if (!ast.arguments || ast.arguments.length !== 1) {
@@ -80,7 +80,7 @@ export function visitAllOperation(
               source,
               predicate,
             },
-            autoParams
+            autoParams,
           };
         }
       }

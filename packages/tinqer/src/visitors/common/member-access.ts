@@ -27,7 +27,7 @@ import { createAutoParam } from "../types.js";
 export function visitMemberAccess(
   node: ASTMemberExpression,
   context: VisitorContext,
-  visitExpression: (n: unknown, ctx: VisitorContext) => Expression | null
+  visitExpression: (n: unknown, ctx: VisitorContext) => Expression | null,
 ): Expression | null {
   // Handle array indexing (e.g., params.roles[0])
   if (node.computed && node.object.type === "Identifier") {
@@ -207,14 +207,21 @@ function extractNumericIndex(property: unknown): number | null {
  */
 function getNumberConstant(name: string): number | undefined {
   switch (name) {
-    case "MAX_SAFE_INTEGER": return Number.MAX_SAFE_INTEGER;
-    case "MIN_SAFE_INTEGER": return Number.MIN_SAFE_INTEGER;
-    case "MAX_VALUE": return Number.MAX_VALUE;
-    case "MIN_VALUE": return Number.MIN_VALUE;
-    case "POSITIVE_INFINITY": return Number.POSITIVE_INFINITY;
-    case "NEGATIVE_INFINITY": return Number.NEGATIVE_INFINITY;
-    case "NaN": return Number.NaN;
-    default: return undefined;
+    case "MAX_SAFE_INTEGER":
+      return Number.MAX_SAFE_INTEGER;
+    case "MIN_SAFE_INTEGER":
+      return Number.MIN_SAFE_INTEGER;
+    case "MAX_VALUE":
+      return Number.MAX_VALUE;
+    case "MIN_VALUE":
+      return Number.MIN_VALUE;
+    case "POSITIVE_INFINITY":
+      return Number.POSITIVE_INFINITY;
+    case "NEGATIVE_INFINITY":
+      return Number.NEGATIVE_INFINITY;
+    case "NaN":
+      return Number.NaN;
+    default:
+      return undefined;
   }
 }
-

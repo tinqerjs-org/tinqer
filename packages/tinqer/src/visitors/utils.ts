@@ -3,9 +3,7 @@
  * Type guards and helper functions
  */
 
-import type {
-  Expression,
-} from "../expressions/expression.js";
+import type { Expression } from "../expressions/expression.js";
 
 /**
  * Type guard for boolean expressions
@@ -104,7 +102,11 @@ export function getReturnExpression(body: unknown[]): unknown | null {
   if (!Array.isArray(body)) return null;
 
   for (const stmt of body) {
-    if (stmt && typeof stmt === "object" && (stmt as { type?: string }).type === "ReturnStatement") {
+    if (
+      stmt &&
+      typeof stmt === "object" &&
+      (stmt as { type?: string }).type === "ReturnStatement"
+    ) {
       return (stmt as { argument?: unknown }).argument || null;
     }
   }

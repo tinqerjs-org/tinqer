@@ -3,10 +3,7 @@
  * Handles auto-parameterization of literal values
  */
 
-import type {
-  ConstantExpression,
-  ParameterExpression,
-} from "../../expressions/expression.js";
+import type { ConstantExpression, ParameterExpression } from "../../expressions/expression.js";
 
 import type {
   Literal,
@@ -25,7 +22,7 @@ import { createAutoParam } from "../types.js";
  */
 export function visitLiteral(
   node: Literal | NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral,
-  context: VisitorContext
+  context: VisitorContext,
 ): ParameterExpression | ConstantExpression {
   // Extract value based on literal type
   let value: string | number | boolean | null;
