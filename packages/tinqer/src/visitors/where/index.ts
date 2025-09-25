@@ -12,6 +12,7 @@ import type {
   Identifier,
 } from "../../parser/ast-types.js";
 
+import type { VisitorContext } from "../types.js";
 import { visitPredicate } from "./predicate.js";
 import { createWhereContext } from "./context.js";
 
@@ -22,8 +23,7 @@ import { createWhereContext } from "./context.js";
 export function visitWhereOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
+  visitorContext: VisitorContext,
 ): { operation: WhereOperation; autoParams: Record<string, unknown> } | null {
   // WHERE expects a lambda: where(x => x.age > 18)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -37,8 +37,8 @@ export function visitWhereOperation(
 
   const lambda = lambdaArg as ArrowFunctionExpression;
 
-  // Create WHERE-specific context
-  const context = createWhereContext(tableParams, queryParams);
+  // Create WHERE-specific context with current param counter
+  const context = createWhereContext(visitorContext.tableParams, visitorContext.queryParams, visitorContext.autoParamCounter);
 
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {
@@ -73,6 +73,9 @@ export function visitWhereOperation(
   if (!predicate) {
     return null;
   }
+
+  // Update the global counter with the final value from this visitor
+  visitorContext.autoParamCounter = context.autoParamCounter;
 
   return {
     operation: {

@@ -11,12 +11,13 @@ import type {
   ArrowFunctionExpression,
   Identifier,
 } from "./ast-types.js";
+import type { VisitorContext } from "../visitors/types.js";
 
 // Import operation visitors
 import { visitFromOperation } from "../visitors/from/index.js";
 import { visitWhereOperation } from "../visitors/where/index.js";
 import { visitSelectOperation } from "../visitors/select/index.js";
-import { visitOrderByOperation } from "../visitors/orderby/index.js";
+import { visitOrderByOperation, visitThenByOperation } from "../visitors/orderby/index.js";
 import { visitTakeOperation } from "../visitors/take-skip/take.js";
 import { visitSkipOperation } from "../visitors/take-skip/skip.js";
 import { visitDistinctOperation } from "../visitors/distinct/index.js";
@@ -47,26 +48,42 @@ export interface VisitorParseResult {
   ast: ASTExpression;
 }
 
+
 /**
  * Convert AST to QueryOperation using visitor pattern
  */
 export function convertAstToQueryOperationWithParams(ast: ASTExpression): {
   operation: QueryOperation | null;
   autoParams: Record<string, unknown>;
-  autoParamInfos?: Record<string, unknown>;
+  autoParamInfos?: Record<string, { value: unknown; fieldName?: string; tableName?: string; sourceTable?: number }>;
 } {
   // Extract parameter info from the lambda
   const { tableParams, queryParams } = extractParameters(ast);
 
-  // Track all auto-params across visitors
-  const allAutoParams: Record<string, unknown> = {};
+  // Create shared visitor context
+  const visitorContext: VisitorContext = {
+    tableParams: new Set(tableParams),
+    queryParams: new Set(queryParams),
+    autoParams: new Map(),
+    autoParamCounter: 0,
+    autoParamInfos: new Map(), // Initialize enhanced field context tracking
+  };
 
   // Visit the query chain
-  const operation = visitQueryChain(ast, tableParams, queryParams, allAutoParams);
+  const operation = visitQueryChain(ast, visitorContext);
+
+  // Extract auto-params for return
+  const allAutoParams: Record<string, unknown> = Object.fromEntries(visitorContext.autoParams);
+
+  // Extract enhanced parameter info if available
+  const autoParamInfos = visitorContext.autoParamInfos
+    ? Object.fromEntries(visitorContext.autoParamInfos)
+    : undefined;
 
   return {
     operation,
     autoParams: allAutoParams,
+    autoParamInfos,
   };
 }
 
@@ -103,9 +120,7 @@ function extractParameters(ast: ASTExpression): {
  */
 function visitQueryChain(
   ast: ASTExpression,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
-  autoParams: Record<string, unknown>,
+  visitorContext: VisitorContext,
 ): QueryOperation | null {
   // If it's an arrow function, visit its body
   if (ast.type === "ArrowFunctionExpression") {
@@ -121,18 +136,18 @@ function visitQueryChain(
       if (returnStmt) {
         const returnExpr = (returnStmt as { argument?: ASTExpression }).argument;
         if (returnExpr) {
-          return visitQueryChain(returnExpr, tableParams, queryParams, autoParams);
+          return visitQueryChain(returnExpr, visitorContext);
         }
       }
     } else {
       // Expression body
-      return visitQueryChain(body, tableParams, queryParams, autoParams);
+      return visitQueryChain(body, visitorContext);
     }
   }
 
   // Handle call expressions (method calls)
   if (ast.type === "CallExpression") {
-    return visitCallExpression(ast as ASTCallExpression, tableParams, queryParams, autoParams);
+    return visitCallExpression(ast as ASTCallExpression, visitorContext);
   }
 
   return null;
@@ -143,9 +158,7 @@ function visitQueryChain(
  */
 function visitCallExpression(
   ast: ASTCallExpression,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
-  autoParams: Record<string, unknown>,
+  visitorContext: VisitorContext,
 ): QueryOperation | null {
   const methodName = getMethodName(ast);
   if (!methodName) return null;
@@ -153,6 +166,10 @@ function visitCallExpression(
   // Handle FROM (root operation)
   if (methodName === "from") {
     const operation = visitFromOperation(ast);
+    // Set current table in context for field tracking
+    if (operation) {
+      visitorContext.currentTable = operation.table;
+    }
     // FROM doesn't have auto-params
     return operation;
   }
@@ -160,16 +177,19 @@ function visitCallExpression(
   // For chained operations, first process the source
   if (ast.callee.type === "MemberExpression") {
     const memberExpr = ast.callee as ASTMemberExpression;
-    const source = visitQueryChain(memberExpr.object, tableParams, queryParams, autoParams);
+    const source = visitQueryChain(memberExpr.object, visitorContext);
 
     if (!source) return null;
 
     // Visit specific operation based on method name
     switch (methodName) {
       case "where": {
-        const result = visitWhereOperation(ast, source, tableParams, queryParams);
+        const result = visitWhereOperation(ast, source, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
@@ -177,9 +197,12 @@ function visitCallExpression(
 
       case "select":
       case "selectMany": {
-        const result = visitSelectOperation(ast, source, tableParams, queryParams);
+        const result = visitSelectOperation(ast, source, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
@@ -187,72 +210,106 @@ function visitCallExpression(
 
       case "orderBy":
       case "orderByDescending": {
-        const result = visitOrderByOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitOrderByOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
+          return result.operation;
+        }
+        return null;
+      }
+
+      case "thenBy":
+      case "thenByDescending": {
+        const result = visitThenByOperation(ast, source, methodName, visitorContext);
+        if (result) {
+          // Merge auto-params back into context
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "take": {
-        const result = visitTakeOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitTakeOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "skip": {
-        const result = visitSkipOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitSkipOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "distinct": {
-        const result = visitDistinctOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitDistinctOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // No auto-params for distinct
           return result.operation;
         }
         return null;
       }
 
       case "join": {
-        const result = visitJoinOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitJoinOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "groupBy": {
-        const result = visitGroupByOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitGroupByOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "count": {
-        const result = visitCountOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitCountOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "sum": {
-        const result = visitSumOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitSumOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
@@ -260,27 +317,36 @@ function visitCallExpression(
 
       case "average":
       case "avg": {
-        const result = visitAverageOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitAverageOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "min": {
-        const result = visitMinOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitMinOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "max": {
-        const result = visitMaxOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitMaxOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
@@ -288,9 +354,12 @@ function visitCallExpression(
 
       case "first":
       case "firstOrDefault": {
-        const result = visitFirstOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitFirstOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
@@ -298,9 +367,12 @@ function visitCallExpression(
 
       case "single":
       case "singleOrDefault": {
-        const result = visitSingleOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitSingleOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
@@ -308,45 +380,57 @@ function visitCallExpression(
 
       case "last":
       case "lastOrDefault": {
-        const result = visitLastOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitLastOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "any": {
-        const result = visitAnyOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitAnyOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "all": {
-        const result = visitAllOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitAllOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context if any
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "contains": {
-        const result = visitContainsOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitContainsOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // Merge auto-params back into context
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
           return result.operation;
         }
         return null;
       }
 
       case "reverse": {
-        const result = visitReverseOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitReverseOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // No auto-params for reverse
           return result.operation;
         }
         return null;
@@ -354,9 +438,9 @@ function visitCallExpression(
 
       case "toArray":
       case "toList": {
-        const result = visitToArrayOperation(ast, source, tableParams, queryParams, methodName);
+        const result = visitToArrayOperation(ast, source, methodName, visitorContext);
         if (result) {
-          Object.assign(autoParams, result.autoParams);
+          // No auto-params for toArray
           return result.operation;
         }
         return null;

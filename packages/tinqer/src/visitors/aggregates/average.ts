@@ -9,15 +9,15 @@ import type {
   ArrowFunctionExpression,
   Expression as ASTExpression,
 } from "../../parser/ast-types.js";
+import type { VisitorContext } from "../types.js";
 import { getParameterName, getReturnExpression } from "../visitor-utils.js";
 import { visitExpression } from "../expression-visitor.js";
 
 export function visitAverageOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
   _methodName: string,
+  visitorContext: VisitorContext,
 ): { operation: AverageOperation; autoParams: Record<string, unknown> } | null {
   let selector: string | undefined;
   const autoParams: Record<string, unknown> = {};
@@ -29,8 +29,8 @@ export function visitAverageOperation(
       const paramName = getParameterName(arrowFunc);
 
       // Create a new context for this visitor
-      const localTableParams = new Set(tableParams);
-      const localQueryParams = new Set(queryParams);
+      const localTableParams = new Set(visitorContext.tableParams);
+      const localQueryParams = new Set(visitorContext.queryParams);
 
       if (paramName) {
         localTableParams.add(paramName);

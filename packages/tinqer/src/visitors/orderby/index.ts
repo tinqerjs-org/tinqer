@@ -26,9 +26,8 @@ import { visitKeySelector } from "./key-selector.js";
 export function visitOrderByOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
   methodName: string,
+  visitorContext: { tableParams: Set<string>; queryParams: Set<string>; autoParams: Map<string, unknown>; autoParamCounter: number },
 ): { operation: OrderByOperation; autoParams: Record<string, unknown> } | null {
   // ORDER BY expects a lambda: orderBy(x => x.name)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -42,8 +41,8 @@ export function visitOrderByOperation(
 
   const lambda = lambdaArg as ArrowFunctionExpression;
 
-  // Create ORDER BY context
-  const context = createOrderByContext(tableParams, queryParams);
+  // Create ORDER BY context with current param counter
+  const context = createOrderByContext(visitorContext.tableParams, visitorContext.queryParams, visitorContext.autoParamCounter);
 
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {
@@ -84,6 +83,9 @@ export function visitOrderByOperation(
     keySelector.type === "column"
       ? (keySelector as ColumnExpression).name
       : (keySelector as ValueExpression);
+
+  // Update the global counter
+  visitorContext.autoParamCounter = context.autoParamCounter;
 
   return {
     operation: {
@@ -104,9 +106,8 @@ export function visitOrderByOperation(
 export function visitThenByOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
   methodName: string,
+  visitorContext: { tableParams: Set<string>; queryParams: Set<string>; autoParams: Map<string, unknown>; autoParamCounter: number },
 ): { operation: ThenByOperation; autoParams: Record<string, unknown> } | null {
   // THEN BY expects a lambda: thenBy(x => x.age)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -120,8 +121,8 @@ export function visitThenByOperation(
 
   const lambda = lambdaArg as ArrowFunctionExpression;
 
-  // Create ORDER BY context (same as orderBy)
-  const context = createOrderByContext(tableParams, queryParams);
+  // Create ORDER BY context with current param counter (same as orderBy)
+  const context = createOrderByContext(visitorContext.tableParams, visitorContext.queryParams, visitorContext.autoParamCounter);
 
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {
@@ -162,6 +163,9 @@ export function visitThenByOperation(
     keySelector.type === "column"
       ? (keySelector as ColumnExpression).name
       : (keySelector as ValueExpression);
+
+  // Update the global counter
+  visitorContext.autoParamCounter = context.autoParamCounter;
 
   return {
     operation: {

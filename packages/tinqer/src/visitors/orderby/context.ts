@@ -24,12 +24,13 @@ export interface OrderByContext {
 export function createOrderByContext(
   tableParams: Set<string>,
   queryParams: Set<string>,
+  startCounter: number = 0,
 ): OrderByContext {
   return {
     tableParams: new Set(tableParams),
     queryParams: new Set(queryParams),
     autoParams: new Map(),
-    autoParamCounter: 0,
+    autoParamCounter: startCounter,
   };
 }
 

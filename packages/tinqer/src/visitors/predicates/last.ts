@@ -17,15 +17,15 @@ import type {
   ArrowFunctionExpression,
   Expression as ASTExpression,
 } from "../../parser/ast-types.js";
+import type { VisitorContext } from "../types.js";
 import { getParameterName, getReturnExpression, isBooleanExpression } from "../visitor-utils.js";
 import { visitExpression } from "../expression-visitor.js";
 
 export function visitLastOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
   methodName: string,
+  visitorContext: VisitorContext,
 ): {
   operation: LastOperation | LastOrDefaultOperation;
   autoParams: Record<string, unknown>;
@@ -40,8 +40,8 @@ export function visitLastOperation(
       const paramName = getParameterName(arrowFunc);
 
       // Create a new context for this visitor
-      const localTableParams = new Set(tableParams);
-      const localQueryParams = new Set(queryParams);
+      const localTableParams = new Set(visitorContext.tableParams);
+      const localQueryParams = new Set(visitorContext.queryParams);
 
       if (paramName) {
         localTableParams.add(paramName);

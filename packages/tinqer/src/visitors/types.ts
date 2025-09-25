@@ -40,6 +40,16 @@ export type ExpressionVisitor = Visitor<ASTExpression, VisitorContext, Expressio
 // ==================== Context Definitions ====================
 
 /**
+ * Enhanced auto-parameter information with field context
+ */
+export interface AutoParamInfo {
+  value: string | number | boolean | null;
+  fieldName?: string; // e.g., "age", "name", "LIMIT", "OFFSET"
+  tableName?: string; // e.g., "users", "orders"
+  sourceTable?: number; // For JOINs: 0 = outer, 1 = inner
+}
+
+/**
  * Base visitor context with common information
  */
 export interface VisitorContext {
@@ -51,6 +61,7 @@ export interface VisitorContext {
   // Auto-parameterization
   autoParams: Map<string, unknown>; // Generated parameter names -> values
   autoParamCounter: number; // Counter for generating unique param names
+  autoParamInfos?: Map<string, AutoParamInfo>; // Enhanced field context information
 
   // JOIN context
   joinParams?: Map<string, number>; // JOIN parameter -> table index mapping
@@ -184,12 +195,31 @@ export function toArrayContext(context: VisitorContext): ArrayContext {
 /**
  * Create an auto-parameterized parameter
  */
-export function createAutoParam(context: VisitorContext, value: unknown): string {
+export function createAutoParam(
+  context: VisitorContext,
+  value: unknown,
+  options: {
+    fieldName?: string;
+    tableName?: string;
+    sourceTable?: number;
+  } = {},
+): string {
   // Generate simple sequential parameter names to match existing tests
   // Format: __p1, __p2, __p3, etc.
   context.autoParamCounter++;
   const paramName = `__p${context.autoParamCounter}`;
 
   context.autoParams.set(paramName, value);
+
+  // Store enhanced field context if available
+  if (context.autoParamInfos) {
+    context.autoParamInfos.set(paramName, {
+      value: value as string | number | boolean | null,
+      fieldName: options.fieldName,
+      tableName: options.tableName,
+      sourceTable: options.sourceTable,
+    });
+  }
+
   return paramName;
 }

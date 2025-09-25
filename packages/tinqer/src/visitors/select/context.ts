@@ -28,12 +28,13 @@ export interface SelectContext {
 export function createSelectContext(
   tableParams: Set<string>,
   queryParams: Set<string>,
+  startCounter: number = 0,
 ): SelectContext {
   return {
     tableParams: new Set(tableParams),
     queryParams: new Set(queryParams),
     autoParams: new Map(),
-    autoParamCounter: 0,
+    autoParamCounter: startCounter,
     inProjection: false,
     hasTableParam: false,
   };

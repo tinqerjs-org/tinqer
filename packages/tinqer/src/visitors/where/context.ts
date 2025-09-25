@@ -24,12 +24,13 @@ export interface WhereContext {
 export function createWhereContext(
   tableParams: Set<string>,
   queryParams: Set<string>,
+  startCounter: number = 0,
 ): WhereContext {
   return {
     tableParams: new Set(tableParams),
     queryParams: new Set(queryParams),
     autoParams: new Map(),
-    autoParamCounter: 0,
+    autoParamCounter: startCounter,
   };
 }
 

@@ -5,6 +5,7 @@
 
 import type { DistinctOperation, QueryOperation } from "../../query-tree/operations.js";
 import type { CallExpression as ASTCallExpression } from "../../parser/ast-types.js";
+import type { VisitorContext } from "../types.js";
 
 /**
  * Visit DISTINCT operation
@@ -13,9 +14,8 @@ import type { CallExpression as ASTCallExpression } from "../../parser/ast-types
 export function visitDistinctOperation(
   _ast: ASTCallExpression,
   source: QueryOperation,
-  _tableParams: Set<string>,
-  _queryParams: Set<string>,
   _methodName: string,
+  _visitorContext: VisitorContext,
 ): { operation: DistinctOperation; autoParams: Record<string, unknown> } | null {
   // DISTINCT has no arguments, just marks the query for distinct results
   return {

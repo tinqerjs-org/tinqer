@@ -21,6 +21,7 @@ import type {
   ArrowFunctionExpression,
   Expression as ASTExpression,
 } from "../../parser/ast-types.js";
+import type { VisitorContext } from "../types.js";
 import { getParameterName, getReturnExpression } from "../visitor-utils.js";
 import { visitExpression } from "../expression-visitor.js";
 import { visitAstToQueryOperation } from "../ast-visitor.js";
@@ -155,15 +156,14 @@ function buildShapeNode(
 export function visitJoinOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
   _methodName: string,
+  visitorContext: VisitorContext,
 ): { operation: JoinOperation; autoParams: Record<string, unknown> } | null {
   if (ast.arguments && ast.arguments.length >= 4) {
     // join(inner, outerKeySelector, innerKeySelector, resultSelector)
     const firstArg = ast.arguments[0];
     const innerSourceResult = firstArg
-      ? visitAstToQueryOperation(firstArg as ASTExpression, tableParams, queryParams)
+      ? visitAstToQueryOperation(firstArg as ASTExpression, visitorContext.tableParams, visitorContext.queryParams)
       : null;
     const innerSource = innerSourceResult?.operation || null;
     const outerKeySelectorAst = ast.arguments[1];
@@ -188,8 +188,8 @@ export function visitJoinOperation(
 
       // Create a context with the result shape if we're chaining JOINs
       const outerContext: JoinContext = {
-        tableParams: new Set(tableParams),
-        queryParams: new Set(queryParams),
+        tableParams: new Set(visitorContext.tableParams),
+        queryParams: new Set(visitorContext.queryParams),
       };
       if (paramName && previousResultShape) {
         outerContext.currentResultShape = previousResultShape;
@@ -234,8 +234,8 @@ export function visitJoinOperation(
       const innerArrow = innerKeySelectorAst as ArrowFunctionExpression;
       const paramName = getParameterName(innerArrow);
       const innerContext: JoinContext = {
-        tableParams: new Set(tableParams),
-        queryParams: new Set(queryParams),
+        tableParams: new Set(visitorContext.tableParams),
+        queryParams: new Set(visitorContext.queryParams),
       };
       if (paramName) {
         innerContext.tableParams.add(paramName);
@@ -291,8 +291,8 @@ export function visitJoinOperation(
 
       // Create a special context that tracks which parameter maps to which table
       const resultContext: JoinContext = {
-        tableParams: new Set(tableParams),
-        queryParams: new Set(queryParams),
+        tableParams: new Set(visitorContext.tableParams),
+        queryParams: new Set(visitorContext.queryParams),
         joinParams: new Map<string, number>(), // parameter name -> table index (0 for outer, 1 for inner)
       };
 

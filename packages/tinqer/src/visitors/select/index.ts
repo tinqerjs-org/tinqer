@@ -14,6 +14,7 @@ import type {
 
 import { visitProjection } from "./projection.js";
 import { createSelectContext } from "./context.js";
+import { VisitorContext } from "../types.js";
 
 /**
  * Visit SELECT operation
@@ -22,8 +23,7 @@ import { createSelectContext } from "./context.js";
 export function visitSelectOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
+  visitorContext: VisitorContext,
 ): { operation: SelectOperation; autoParams: Record<string, unknown> } | null {
   // SELECT expects a lambda: select(x => x.name) or select(x => ({ id: x.id, name: x.name }))
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -37,8 +37,8 @@ export function visitSelectOperation(
 
   const lambda = lambdaArg as ArrowFunctionExpression;
 
-  // Create SELECT-specific context
-  const context = createSelectContext(tableParams, queryParams);
+  // Create SELECT-specific context with current param counter
+  const context = createSelectContext(visitorContext.tableParams, visitorContext.queryParams, visitorContext.autoParamCounter);
   context.inProjection = true;
 
   // Add lambda parameter to context
@@ -79,6 +79,9 @@ export function visitSelectOperation(
   if (!selector) {
     return null;
   }
+
+  // Update the global counter with the final value from this visitor
+  visitorContext.autoParamCounter = context.autoParamCounter;
 
   return {
     operation: {

@@ -11,6 +11,8 @@ import type {
   MemberExpression,
   Identifier,
 } from "../../parser/ast-types.js";
+import type { VisitorContext } from "../types.js";
+import { createAutoParam } from "../types.js";
 
 /**
  * Visit SKIP operation
@@ -18,9 +20,8 @@ import type {
 export function visitSkipOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  _tableParams: Set<string>,
-  queryParams: Set<string>,
   _methodName: string,
+  visitorContext: VisitorContext,
 ): { operation: SkipOperation; autoParams: Record<string, unknown> } | null {
   // SKIP expects a numeric argument: skip(10) or skip(p.offset)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -39,8 +40,10 @@ export function visitSkipOperation(
         ? (arg as NumericLiteral).value
         : ((arg as Literal).value as number);
 
-    // Auto-parameterize the offset value
-    const paramName = `__p${Object.keys(autoParams).length + 1}`;
+    // Auto-parameterize the offset value with field context
+    const paramName = createAutoParam(visitorContext, value, {
+      fieldName: "OFFSET",
+    });
     autoParams[paramName] = value;
 
     return {
@@ -62,7 +65,7 @@ export function visitSkipOperation(
       const propertyName = (memberExpr.property as Identifier).name;
 
       // Check if it's a query parameter
-      if (queryParams.has(objectName)) {
+      if (visitorContext.queryParams.has(objectName)) {
         return {
           operation: {
             type: "queryOperation",
@@ -81,7 +84,7 @@ export function visitSkipOperation(
     const name = (arg as Identifier).name;
 
     // Check if it's a query parameter
-    if (queryParams.has(name)) {
+    if (visitorContext.queryParams.has(name)) {
       return {
         operation: {
           type: "queryOperation",

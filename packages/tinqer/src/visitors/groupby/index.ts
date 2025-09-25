@@ -8,15 +8,15 @@ import type {
   ArrowFunctionExpression,
   Expression as ASTExpression,
 } from "../../parser/ast-types.js";
+import type { VisitorContext } from "../types.js";
 import { getParameterName, getReturnExpression } from "../visitor-utils.js";
 import { visitExpression } from "../expression-visitor.js";
 
 export function visitGroupByOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
-  tableParams: Set<string>,
-  queryParams: Set<string>,
   _methodName: string,
+  visitorContext: VisitorContext,
 ): { operation: GroupByOperation; autoParams: Record<string, unknown> } | null {
   if (ast.arguments && ast.arguments.length > 0) {
     const keySelectorAst = ast.arguments[0];
@@ -26,8 +26,8 @@ export function visitGroupByOperation(
       const paramName = getParameterName(arrowFunc);
 
       // Create a new context for this visitor
-      const localTableParams = new Set(tableParams);
-      const localQueryParams = new Set(queryParams);
+      const localTableParams = new Set(visitorContext.tableParams);
+      const localQueryParams = new Set(visitorContext.queryParams);
 
       if (paramName) {
         localTableParams.add(paramName);
