@@ -16,6 +16,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 **ONLY make changes AFTER the user explicitly approves.** When you identify issues or potential improvements, explain them clearly and wait for the user's decision. Do NOT assume what the user wants or make "helpful" changes without permission.
 
+### ANSWER QUESTIONS AND STOP
+
+**CRITICAL RULE**: If the user asks you a question - whether as part of a larger text or just the question itself - you MUST:
+
+1. **Answer ONLY that question**
+2. **STOP your response completely**
+3. **DO NOT continue with any other tasks or implementation**
+4. **DO NOT proceed with previous tasks**
+5. **Wait for the user's next instruction**
+
+This applies to ANY question, even if it seems like part of a larger task or discussion.
+
 ### FINISH DISCUSSIONS BEFORE WRITING CODE
 
 **IMPORTANT**: When the user asks a question or you're in the middle of a discussion, DO NOT jump to writing code. Always:
