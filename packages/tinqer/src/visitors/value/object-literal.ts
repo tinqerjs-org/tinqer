@@ -44,7 +44,9 @@ export function visitObject(
     const key = extractPropertyKey(prop);
     if (key) {
       const value = visitExpression(prop.value, context);
-      if (!value) return null;
+      if (!value) {
+        continue; // Skip null values instead of returning null for entire object
+      }
       properties[key] = value;
     }
   }

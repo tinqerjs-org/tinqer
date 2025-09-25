@@ -66,7 +66,7 @@ export function visitProjection(node: ASTExpression, context: SelectContext): Ex
     }
 
     case "BinaryExpression": {
-      // Arithmetic or concatenation
+      // Arithmetic, concatenation, or comparison
       return visitBinaryProjection(node as BinaryExpression, context);
     }
 
@@ -267,6 +267,22 @@ function visitLiteralProjection(node: Literal, context: SelectContext): ValueExp
  * Visit binary expression in projection
  */
 function visitBinaryProjection(node: BinaryExpression, context: SelectContext): Expression | null {
+  // Comparison operators - return as boolean expressions
+  if (["==", "===", "!=", "!==", ">", ">=", "<", "<="].includes(node.operator)) {
+    const left = visitProjection(node.left, context);
+    const right = visitProjection(node.right, context);
+
+    if (!left || !right) return null;
+
+    const op = node.operator === "===" ? "==" : node.operator === "!==" ? "!=" : node.operator;
+    return {
+      type: "comparison",
+      operator: op as "==" | "!=" | ">" | ">=" | "<" | "<=",
+      left: left as ValueExpression,
+      right: right as ValueExpression,
+    } as ComparisonExpression;
+  }
+
   // Arithmetic operators
   if (["+", "-", "*", "/", "%"].includes(node.operator)) {
     const left = visitProjection(node.left, context);
