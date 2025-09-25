@@ -55,14 +55,17 @@ export function visitPredicate(
     case "UnaryExpression": {
       const unary = node as UnaryExpression;
       if (unary.operator === "!") {
-        const innerResult = visitPredicate(unary.argument, { ...context, autoParamCounter: currentCounter });
+        const innerResult = visitPredicate(unary.argument, {
+          ...context,
+          autoParamCounter: currentCounter,
+        });
         if (innerResult.value) {
           return {
             value: {
               type: "not",
               expression: innerResult.value,
             },
-            counter: innerResult.counter
+            counter: innerResult.counter,
           };
         }
       }
@@ -79,7 +82,7 @@ export function visitPredicate(
             name: column.name,
             ...(column.table && { table: column.table }),
           },
-          counter: currentCounter
+          counter: currentCounter,
         };
       }
       return { value: null, counter: currentCounter };
@@ -87,7 +90,10 @@ export function visitPredicate(
 
     case "CallExpression": {
       // Boolean methods like x.name.startsWith("John")
-      const result = visitBooleanMethod(node as CallExpression, { ...context, autoParamCounter: currentCounter });
+      const result = visitBooleanMethod(node as CallExpression, {
+        ...context,
+        autoParamCounter: currentCounter,
+      });
       return result;
     }
 
@@ -101,7 +107,7 @@ export function visitPredicate(
             type: "booleanColumn",
             name: id.name,
           },
-          counter: currentCounter
+          counter: currentCounter,
         };
       }
       return { value: null, counter: currentCounter };
@@ -117,7 +123,7 @@ export function visitPredicate(
             type: "booleanConstant",
             value: lit.value,
           },
-          counter: currentCounter
+          counter: currentCounter,
         };
       }
       return { value: null, counter: currentCounter };
@@ -177,7 +183,7 @@ export function visitColumnAccess(
  */
 export function visitValue(
   node: ASTExpression,
-  context: WhereContext
+  context: WhereContext,
 ): VisitorResult<ValueExpression | null> {
   let currentCounter = context.autoParamCounter;
 
@@ -197,7 +203,7 @@ export function visitValue(
               param: objectName,
               property: propertyName,
             } as ParameterExpression,
-            counter: currentCounter
+            counter: currentCounter,
           };
         }
       }
@@ -221,7 +227,7 @@ export function visitValue(
             value: null,
             valueType: "null",
           },
-          counter: currentCounter
+          counter: currentCounter,
         };
       }
       // Auto-parameterize other literals with field context if available
@@ -244,7 +250,7 @@ export function visitValue(
           type: "param",
           param: paramName,
         } as ParameterExpression,
-        counter: currentCounter
+        counter: currentCounter,
       };
     }
 
@@ -257,7 +263,7 @@ export function visitValue(
             type: "param",
             param: id.name,
           } as ParameterExpression,
-          counter: currentCounter
+          counter: currentCounter,
         };
       }
       return { value: null, counter: currentCounter };
@@ -292,7 +298,7 @@ export function visitValue(
               type: "param",
               param: paramName,
             } as ParameterExpression,
-            counter: currentCounter
+            counter: currentCounter,
           };
         }
       }
@@ -324,7 +330,10 @@ export function visitValue(
         if (!leftResult.value) return { value: null, counter: currentCounter };
         currentCounter = leftResult.counter;
 
-        const rightResult = visitValue(binary.right, { ...enhancedContext, autoParamCounter: currentCounter });
+        const rightResult = visitValue(binary.right, {
+          ...enhancedContext,
+          autoParamCounter: currentCounter,
+        });
         if (!rightResult.value) return { value: null, counter: currentCounter };
         currentCounter = rightResult.counter;
 
@@ -335,7 +344,7 @@ export function visitValue(
             left: leftResult.value,
             right: rightResult.value,
           } as ArithmeticExpression,
-          counter: currentCounter
+          counter: currentCounter,
         };
       }
       return { value: null, counter: currentCounter };
@@ -349,7 +358,10 @@ export function visitValue(
 /**
  * Visit boolean method calls
  */
-function visitBooleanMethod(node: CallExpression, context: WhereContext): VisitorResult<BooleanExpression | null> {
+function visitBooleanMethod(
+  node: CallExpression,
+  context: WhereContext,
+): VisitorResult<BooleanExpression | null> {
   let currentCounter = context.autoParamCounter;
 
   if (node.callee.type !== "MemberExpression") return { value: null, counter: currentCounter };
@@ -361,13 +373,19 @@ function visitBooleanMethod(node: CallExpression, context: WhereContext): Visito
 
   // String boolean methods
   if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
-    const objResult = visitValue(memberCallee.object, { ...context, autoParamCounter: currentCounter });
+    const objResult = visitValue(memberCallee.object, {
+      ...context,
+      autoParamCounter: currentCounter,
+    });
     if (!objResult.value) return { value: null, counter: currentCounter };
     currentCounter = objResult.counter;
 
     const args: ValueExpression[] = [];
     for (const arg of node.arguments) {
-      const valueResult = visitValue(arg as ASTExpression, { ...context, autoParamCounter: currentCounter });
+      const valueResult = visitValue(arg as ASTExpression, {
+        ...context,
+        autoParamCounter: currentCounter,
+      });
       if (valueResult.value) {
         args.push(valueResult.value);
         currentCounter = valueResult.counter;
@@ -381,7 +399,7 @@ function visitBooleanMethod(node: CallExpression, context: WhereContext): Visito
         method: methodName as "startsWith" | "endsWith" | "includes" | "contains",
         arguments: args,
       },
-      counter: currentCounter
+      counter: currentCounter,
     };
   }
 

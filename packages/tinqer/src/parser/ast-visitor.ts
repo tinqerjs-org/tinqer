@@ -48,14 +48,16 @@ export interface VisitorParseResult {
   ast: ASTExpression;
 }
 
-
 /**
  * Convert AST to QueryOperation using visitor pattern
  */
 export function convertAstToQueryOperationWithParams(ast: ASTExpression): {
   operation: QueryOperation | null;
   autoParams: Record<string, unknown>;
-  autoParamInfos?: Record<string, { value: unknown; fieldName?: string; tableName?: string; sourceTable?: number }>;
+  autoParamInfos?: Record<
+    string,
+    { value: unknown; fieldName?: string; tableName?: string; sourceTable?: number }
+  >;
 } {
   // Extract parameter info from the lambda
   const { tableParams, queryParams } = extractParameters(ast);

@@ -3,7 +3,11 @@
  * Handles comparison expressions (==, !=, >, >=, <, <=)
  */
 
-import type { ComparisonExpression, ValueExpression, ColumnExpression } from "../../expressions/expression.js";
+import type {
+  ComparisonExpression,
+  ValueExpression,
+  ColumnExpression,
+} from "../../expressions/expression.js";
 
 import type { BinaryExpression } from "../../parser/ast-types.js";
 import type { WhereContext, VisitorResult } from "./context.js";
@@ -15,7 +19,9 @@ import { visitValue } from "./predicate.js";
 function isLiteral(node: unknown): boolean {
   if (!node) return false;
   const type = (node as { type?: string }).type;
-  return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(type || "");
+  return ["Literal", "NumericLiteral", "StringLiteral", "BooleanLiteral", "NullLiteral"].includes(
+    type || "",
+  );
 }
 
 /**
@@ -40,7 +46,9 @@ export function visitComparison(
   let rightExpr: ValueExpression | null = null;
 
   // Helper to extract field context from expressions (only for direct columns)
-  const extractFieldFromExpression = (expr: ValueExpression): { fieldName?: string; tableName?: string } => {
+  const extractFieldFromExpression = (
+    expr: ValueExpression,
+  ): { fieldName?: string; tableName?: string } => {
     if (expr.type === "column") {
       return {
         fieldName: (expr as ColumnExpression).name,
@@ -80,18 +88,20 @@ export function visitComparison(
 
   if (!left) {
     // Left is a literal - use field context from right side if it's a column
-    const leftContext = rightFieldName ? {
-      ...context,
-      autoParamCounter: currentCounter,
-      _currentFieldName: rightFieldName,
-      _currentTableName: rightTableName,
-      _currentSourceTable: undefined,
-    } : {
-      ...context,
-      autoParamCounter: currentCounter,
-      _currentTableName: context.currentTable, // Keep table context even without field
-      _currentSourceTable: undefined,
-    };
+    const leftContext = rightFieldName
+      ? {
+          ...context,
+          autoParamCounter: currentCounter,
+          _currentFieldName: rightFieldName,
+          _currentTableName: rightTableName,
+          _currentSourceTable: undefined,
+        }
+      : {
+          ...context,
+          autoParamCounter: currentCounter,
+          _currentTableName: context.currentTable, // Keep table context even without field
+          _currentSourceTable: undefined,
+        };
 
     const leftResult = visitValue(node.left, leftContext);
     left = leftResult.value;
@@ -100,18 +110,20 @@ export function visitComparison(
 
   if (!right) {
     // Right is a literal - use field context from left side if it's a column
-    const rightContext = leftFieldName ? {
-      ...context,
-      autoParamCounter: currentCounter,
-      _currentFieldName: leftFieldName,
-      _currentTableName: leftTableName,
-      _currentSourceTable: undefined,
-    } : {
-      ...context,
-      autoParamCounter: currentCounter,
-      _currentTableName: context.currentTable, // Keep table context even without field
-      _currentSourceTable: undefined,
-    };
+    const rightContext = leftFieldName
+      ? {
+          ...context,
+          autoParamCounter: currentCounter,
+          _currentFieldName: leftFieldName,
+          _currentTableName: leftTableName,
+          _currentSourceTable: undefined,
+        }
+      : {
+          ...context,
+          autoParamCounter: currentCounter,
+          _currentTableName: context.currentTable, // Keep table context even without field
+          _currentSourceTable: undefined,
+        };
 
     const rightResult = visitValue(node.right, rightContext);
     right = rightResult.value;
@@ -127,7 +139,7 @@ export function visitComparison(
       left: left as ValueExpression,
       right: right as ValueExpression,
     },
-    counter: currentCounter
+    counter: currentCounter,
   };
 }
 

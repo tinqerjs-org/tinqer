@@ -21,7 +21,10 @@ export interface WhereContext {
   // Auto-generated parameters for literals
   autoParams: Map<string, unknown>;
   autoParamCounter: number;
-  autoParamInfos?: Map<string, { value: unknown; fieldName?: string; tableName?: string; sourceTable?: number }>;
+  autoParamInfos?: Map<
+    string,
+    { value: unknown; fieldName?: string; tableName?: string; sourceTable?: number }
+  >;
 
   // Current table being queried
   currentTable?: string;

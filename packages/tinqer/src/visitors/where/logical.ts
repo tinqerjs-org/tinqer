@@ -44,7 +44,7 @@ export function visitLogical(
       left: ensureBoolean(left),
       right: ensureBoolean(right),
     },
-    counter: currentCounter
+    counter: currentCounter,
   };
 }
 

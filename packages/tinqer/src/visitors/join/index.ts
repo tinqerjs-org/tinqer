@@ -163,7 +163,11 @@ export function visitJoinOperation(
     // join(inner, outerKeySelector, innerKeySelector, resultSelector)
     const firstArg = ast.arguments[0];
     const innerSourceResult = firstArg
-      ? visitAstToQueryOperation(firstArg as ASTExpression, visitorContext.tableParams, visitorContext.queryParams)
+      ? visitAstToQueryOperation(
+          firstArg as ASTExpression,
+          visitorContext.tableParams,
+          visitorContext.queryParams,
+        )
       : null;
     const innerSource = innerSourceResult?.operation || null;
     const outerKeySelectorAst = ast.arguments[1];

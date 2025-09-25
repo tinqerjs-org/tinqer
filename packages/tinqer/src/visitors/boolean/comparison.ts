@@ -3,7 +3,11 @@
  * Produces boolean expressions from value comparisons
  */
 
-import type { ComparisonExpression, ValueExpression, ColumnExpression } from "../../expressions/expression.js";
+import type {
+  ComparisonExpression,
+  ValueExpression,
+  ColumnExpression,
+} from "../../expressions/expression.js";
 
 import type {
   BinaryExpression as ASTBinaryExpression,
@@ -59,11 +63,11 @@ export function visitComparison(
 
   // Now process literals with field context, or use already-processed non-literals
   const left = isLiteral(leftNode)
-    ? visitLiteralWithContext(leftNode, context, fieldName, tableName) as ValueExpression
+    ? (visitLiteralWithContext(leftNode, context, fieldName, tableName) as ValueExpression)
     : leftExpr;
 
   const right = isLiteral(rightNode)
-    ? visitLiteralWithContext(rightNode, context, fieldName, tableName) as ValueExpression
+    ? (visitLiteralWithContext(rightNode, context, fieldName, tableName) as ValueExpression)
     : rightExpr;
 
   if (!left || !right) {

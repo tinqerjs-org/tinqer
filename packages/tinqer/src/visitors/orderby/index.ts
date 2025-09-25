@@ -27,7 +27,12 @@ export function visitOrderByOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
   methodName: string,
-  visitorContext: { tableParams: Set<string>; queryParams: Set<string>; autoParams: Map<string, unknown>; autoParamCounter: number },
+  visitorContext: {
+    tableParams: Set<string>;
+    queryParams: Set<string>;
+    autoParams: Map<string, unknown>;
+    autoParamCounter: number;
+  },
 ): { operation: OrderByOperation; autoParams: Record<string, unknown> } | null {
   // ORDER BY expects a lambda: orderBy(x => x.name)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -42,7 +47,11 @@ export function visitOrderByOperation(
   const lambda = lambdaArg as ArrowFunctionExpression;
 
   // Create ORDER BY context with current param counter
-  const context = createOrderByContext(visitorContext.tableParams, visitorContext.queryParams, visitorContext.autoParamCounter);
+  const context = createOrderByContext(
+    visitorContext.tableParams,
+    visitorContext.queryParams,
+    visitorContext.autoParamCounter,
+  );
 
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {
@@ -107,7 +116,12 @@ export function visitThenByOperation(
   ast: ASTCallExpression,
   source: QueryOperation,
   methodName: string,
-  visitorContext: { tableParams: Set<string>; queryParams: Set<string>; autoParams: Map<string, unknown>; autoParamCounter: number },
+  visitorContext: {
+    tableParams: Set<string>;
+    queryParams: Set<string>;
+    autoParams: Map<string, unknown>;
+    autoParamCounter: number;
+  },
 ): { operation: ThenByOperation; autoParams: Record<string, unknown> } | null {
   // THEN BY expects a lambda: thenBy(x => x.age)
   if (!ast.arguments || ast.arguments.length === 0) {
@@ -122,7 +136,11 @@ export function visitThenByOperation(
   const lambda = lambdaArg as ArrowFunctionExpression;
 
   // Create ORDER BY context with current param counter (same as orderBy)
-  const context = createOrderByContext(visitorContext.tableParams, visitorContext.queryParams, visitorContext.autoParamCounter);
+  const context = createOrderByContext(
+    visitorContext.tableParams,
+    visitorContext.queryParams,
+    visitorContext.autoParamCounter,
+  );
 
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {

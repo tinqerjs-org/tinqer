@@ -185,9 +185,10 @@ function visitValueExpression(
 
     case "NumericLiteral":
     case "Literal": {
-      const value = node.type === "NumericLiteral"
-        ? (node as NumericLiteral).value
-        : ((node as Literal).value as number);
+      const value =
+        node.type === "NumericLiteral"
+          ? (node as NumericLiteral).value
+          : ((node as Literal).value as number);
 
       // Auto-parameterize with OFFSET context
       const paramName = createAutoParam(context, value, {
@@ -228,7 +229,10 @@ function visitValueExpression(
     case "UnaryExpression": {
       const unary = node as { operator: string; argument: Expression };
       // Handle negative numbers
-      if (unary.operator === "-" && (unary.argument.type === "NumericLiteral" || unary.argument.type === "Literal")) {
+      if (
+        unary.operator === "-" &&
+        (unary.argument.type === "NumericLiteral" || unary.argument.type === "Literal")
+      ) {
         const lit = unary.argument as Literal;
         if (typeof lit.value === "number") {
           const value = -lit.value;

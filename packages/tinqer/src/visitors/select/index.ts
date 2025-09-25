@@ -38,7 +38,11 @@ export function visitSelectOperation(
   const lambda = lambdaArg as ArrowFunctionExpression;
 
   // Create SELECT-specific context with current param counter
-  const context = createSelectContext(visitorContext.tableParams, visitorContext.queryParams, visitorContext.autoParamCounter);
+  const context = createSelectContext(
+    visitorContext.tableParams,
+    visitorContext.queryParams,
+    visitorContext.autoParamCounter,
+  );
   context.inProjection = true;
 
   // Add lambda parameter to context

@@ -18,7 +18,11 @@ export function visitContainsOperation(
   if (ast.arguments && ast.arguments.length > 0) {
     const valueArg = ast.arguments[0];
     if (valueArg) {
-      const result = visitExpression(valueArg, visitorContext.tableParams, visitorContext.queryParams);
+      const result = visitExpression(
+        valueArg,
+        visitorContext.tableParams,
+        visitorContext.queryParams,
+      );
 
       if (result?.expression && isValueExpression(result.expression)) {
         return {
