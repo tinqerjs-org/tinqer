@@ -14,6 +14,7 @@ export interface TestDatabaseSchema {
     email: string;
     age: number | null;
     department_id: number | null;
+    manager_id: number | null;
     is_active: boolean;
     created_at: Date;
   };
