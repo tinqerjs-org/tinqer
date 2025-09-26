@@ -3,19 +3,15 @@
  */
 
 import type { AnyOperation, QueryOperation } from "../../query-tree/operations.js";
-import type {
-  BooleanExpression,
-  ColumnExpression,
-  BooleanColumnExpression,
-} from "../../expressions/expression.js";
+import type { BooleanExpression } from "../../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
   Expression as ASTExpression,
 } from "../../parser/ast-types.js";
 import type { VisitorContext } from "../types.js";
-import { getParameterName, getReturnExpression, isBooleanExpression } from "../visitor-utils.js";
-import { visitExpression } from "../expression-visitor.js";
+import { getParameterName, getReturnExpression } from "../visitor-utils.js";
+import { visitPredicate } from "../shared/predicate-visitor.js";
 
 export function visitAnyOperation(
   ast: ASTCallExpression,
@@ -50,37 +46,18 @@ export function visitAnyOperation(
       }
 
       if (bodyExpr) {
-        // Convert autoParams to the format expected by visitExpression
-        const existingAutoParams = new Map<string, { value: unknown }>();
-        for (const [key, value] of visitorContext.autoParams) {
-          existingAutoParams.set(key, { value });
-        }
-
-        const result = visitExpression(
+        const result = visitPredicate(
           bodyExpr,
           localTableParams,
           localQueryParams,
+          visitorContext.autoParams,
           visitorContext.autoParamCounter,
-          existingAutoParams,
         );
-        if (result) {
-          const expr = result.expression;
-          if (expr) {
-            if (isBooleanExpression(expr)) {
-              predicate = expr as BooleanExpression;
-            } else if (expr.type === "column") {
-              // If we get a column expression in a predicate context,
-              // treat it as a boolean column
-              predicate = {
-                type: "booleanColumn",
-                name: (expr as ColumnExpression).name,
-              } as BooleanColumnExpression;
-            }
-          }
-          // Use result's autoParams which contains both old and new params
-          autoParams = result.autoParams;
-          visitorContext.autoParamCounter = result.counter;
-        }
+
+        predicate = result.predicate;
+        // Note: visitPredicate handles column to booleanColumn conversion internally
+        autoParams = result.autoParams;
+        visitorContext.autoParamCounter = result.counter;
       }
     }
   }

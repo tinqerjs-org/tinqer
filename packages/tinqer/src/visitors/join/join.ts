@@ -25,7 +25,7 @@ import type {
 import type { VisitorContext } from "../types.js";
 import type { JoinContext } from "./context.js";
 import { getParameterName, getReturnExpression } from "../visitor-utils.js";
-import { visitExpression } from "../expression-visitor.js";
+import { visitGenericExpression } from "../shared/generic-visitor.js";
 import { visitAstToQueryOperation } from "../ast-visitor.js";
 import { visitJoinResultSelector } from "./result-selector.js";
 import { buildResultShape } from "./shape.js";
@@ -103,10 +103,11 @@ export function visitJoinOperation(
         }
 
         if (bodyExpr) {
-          const result = visitExpression(
+          const result = visitGenericExpression(
             bodyExpr,
             predicateContext,
             visitorContext.queryParams,
+            visitorContext.autoParams,
             visitorContext.autoParamCounter,
           );
 
@@ -246,10 +247,11 @@ export function visitJoinOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(
+        const result = visitGenericExpression(
           bodyExpr,
           outerContext.tableParams,
           outerContext.queryParams,
+          visitorContext.autoParams,
           visitorContext.autoParamCounter,
         );
         if (result) {
@@ -297,10 +299,11 @@ export function visitJoinOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(
+        const result = visitGenericExpression(
           bodyExpr,
           innerContext.tableParams,
           innerContext.queryParams,
+          visitorContext.autoParams,
           visitorContext.autoParamCounter,
         );
         if (result) {

@@ -3,11 +3,9 @@
  */
 
 import type { ContainsOperation, QueryOperation } from "../../query-tree/operations.js";
-import type { ValueExpression } from "../../expressions/expression.js";
 import type { CallExpression as ASTCallExpression } from "../../parser/ast-types.js";
 import type { VisitorContext } from "../types.js";
-import { isValueExpression } from "../visitor-utils.js";
-import { visitExpression } from "../expression-visitor.js";
+import { visitValue } from "../shared/value-visitor.js";
 
 export function visitContainsOperation(
   ast: ASTCallExpression,
@@ -18,19 +16,22 @@ export function visitContainsOperation(
   if (ast.arguments && ast.arguments.length > 0) {
     const valueArg = ast.arguments[0];
     if (valueArg) {
-      const result = visitExpression(
+      const result = visitValue(
         valueArg,
         visitorContext.tableParams,
         visitorContext.queryParams,
+        visitorContext.autoParams,
+        visitorContext.autoParamCounter,
       );
 
-      if (result?.expression && isValueExpression(result.expression)) {
+      if (result.value) {
+        visitorContext.autoParamCounter = result.counter;
         return {
           operation: {
             type: "queryOperation",
             operationType: "contains",
             source,
-            value: result.expression as ValueExpression,
+            value: result.value,
           },
           autoParams: result.autoParams || {},
         };

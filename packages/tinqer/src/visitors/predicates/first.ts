@@ -7,18 +7,14 @@ import type {
   FirstOrDefaultOperation,
   QueryOperation,
 } from "../../query-tree/operations.js";
-import type {
-  BooleanExpression,
-  ColumnExpression,
-  BooleanColumnExpression,
-} from "../../expressions/expression.js";
+import type { BooleanExpression } from "../../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
   Expression as ASTExpression,
 } from "../../parser/ast-types.js";
-import { getParameterName, getReturnExpression, isBooleanExpression } from "../visitor-utils.js";
-import { visitExpression } from "../expression-visitor.js";
+import { getParameterName, getReturnExpression } from "../visitor-utils.js";
+import { visitPredicate } from "../shared/predicate-visitor.js";
 import type { VisitorContext } from "../types.js";
 
 export function visitFirstOperation(
@@ -57,23 +53,16 @@ export function visitFirstOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(bodyExpr, localTableParams, localQueryParams);
-        if (result) {
-          const expr = result.expression;
-          if (expr) {
-            if (isBooleanExpression(expr)) {
-              predicate = expr as BooleanExpression;
-            } else if (expr.type === "column") {
-              // If we get a column expression in a predicate context,
-              // treat it as a boolean column
-              predicate = {
-                type: "booleanColumn",
-                name: (expr as ColumnExpression).name,
-              } as BooleanColumnExpression;
-            }
-          }
-          Object.assign(autoParams, result.autoParams);
-        }
+        const result = visitPredicate(
+          bodyExpr,
+          localTableParams,
+          localQueryParams,
+          visitorContext.autoParams,
+          visitorContext.autoParamCounter,
+        );
+        predicate = result.predicate;
+        Object.assign(autoParams, result.autoParams);
+        visitorContext.autoParamCounter = result.counter;
       }
     }
   }
