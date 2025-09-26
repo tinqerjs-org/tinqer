@@ -42,7 +42,7 @@ import { convertAnyOperation } from "./any.js";
 import { convertAllOperation } from "./all.js";
 
 // Export the expression converter for use by operation converters
-export { convertAstToExpression } from "./expressions.js";
+export { convertAstToExpression } from "./expressions-visitor.js";
 
 import type { ParseResult } from "../parser/parse-query.js";
 

@@ -31,7 +31,7 @@ import type {
 import type { SqlContext } from "./types.js";
 import { generateFrom } from "./generators/from.js";
 import { generateSelect } from "./generators/select.js";
-import { generateBooleanExpression, generateExpression } from "./expression-generator.js";
+import { generateBooleanExpression } from "./expression-generator.js";
 import { generateOrderBy } from "./generators/orderby.js";
 import { generateThenBy } from "./generators/thenby.js";
 import { generateTake } from "./generators/take.js";
@@ -139,33 +139,13 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     } else {
       fragments.push(selectClause);
     }
-  } else if (hasJoinWithResultSelector && context.currentShape) {
-    // Check if the result selector contains references (entire table rows)
-    // This happens when we have { orderItem: oi, order: o } where oi and o are table parameters
-    let hasReferences = false;
-    if (context.symbolTable) {
-      for (const [_, sourceRef] of context.symbolTable.entries) {
-        if (sourceRef.columnName === "*") {
-          hasReferences = true;
-          break;
-        }
-      }
-    }
-
-    if (hasReferences) {
-      // When we have references to entire tables, use SELECT *
-      // The actual column mapping will be handled by the client
-      fragments.push(distinctKeyword ? `SELECT ${distinctKeyword} *` : "SELECT *");
-    } else {
-      // Use JOIN result selector as implicit SELECT with specific columns
-      const projectionSql = generateExpression(context.currentShape, context);
-      const selectClause = `SELECT ${projectionSql}`;
-      if (distinctKeyword) {
-        fragments.push(selectClause.replace("SELECT", `SELECT ${distinctKeyword}`));
-      } else {
-        fragments.push(selectClause);
-      }
-    }
+  } else if (hasJoinWithResultSelector) {
+    // JOINs with result selectors ALWAYS require explicit SELECT projection
+    throw new Error(
+      "JOIN with result selector requires explicit SELECT projection. " +
+        "Add .select() to specify which columns to return. " +
+        "Example: .select((joined) => ({ userName: joined.u.name, deptName: joined.d.name }))",
+    );
   } else {
     // Default SELECT *
     fragments.push(distinctKeyword ? `SELECT ${distinctKeyword} *` : "SELECT *");
@@ -282,7 +262,7 @@ function collectOperations(operation: QueryOperation): QueryOperation[] {
 
   while (current) {
     operations.push(current);
-    current = (current as any).source;
+    current = (current as QueryOperation & { source?: QueryOperation }).source;
   }
 
   // Reverse to get operations in execution order (from -> where -> select)

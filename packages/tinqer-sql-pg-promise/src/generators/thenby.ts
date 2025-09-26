@@ -14,8 +14,37 @@ export function generateThenBy(operation: ThenByOperation, context: SqlContext):
   let orderByExpr: string;
 
   if (typeof operation.keySelector === "string") {
-    // Simple column name
-    orderByExpr = `"${operation.keySelector}"`;
+    // Simple column name - check if it maps to a source column
+
+    // Check if it's a path like "u.age"
+    if (operation.keySelector.includes(".") && context.symbolTable) {
+      const parts = operation.keySelector.split(".");
+      if (parts.length === 2) {
+        const tableRef = context.symbolTable.entries.get(parts[0]!);
+        if (tableRef && tableRef.columnName === "*") {
+          orderByExpr = `"${tableRef.tableAlias}"."${parts[1]}"`;
+        } else {
+          // Try full path
+          const pathRef = context.symbolTable.entries.get(operation.keySelector);
+          if (pathRef) {
+            orderByExpr = `"${pathRef.tableAlias}"."${pathRef.columnName}"`;
+          } else {
+            orderByExpr = `"${operation.keySelector}"`;
+          }
+        }
+      } else {
+        orderByExpr = `"${operation.keySelector}"`;
+      }
+    } else if (context.symbolTable) {
+      const sourceRef = context.symbolTable.entries.get(operation.keySelector);
+      if (sourceRef) {
+        orderByExpr = `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;
+      } else {
+        orderByExpr = `"${operation.keySelector}"`;
+      }
+    } else {
+      orderByExpr = `"${operation.keySelector}"`;
+    }
   } else {
     // Complex expression
     orderByExpr = generateValueExpression(operation.keySelector, context);

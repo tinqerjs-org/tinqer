@@ -7,7 +7,7 @@ import type { ValueExpression } from "../expressions/expression.js";
 import type { CallExpression as ASTCallExpression } from "../parser/ast-types.js";
 import type { ConversionContext } from "./converter-utils.js";
 import { isValueExpression } from "./converter-utils.js";
-import { convertAstToExpression } from "./expressions.js";
+import { convertAstToExpression } from "./expressions-visitor.js";
 
 export function convertContainsOperation(
   ast: ASTCallExpression,

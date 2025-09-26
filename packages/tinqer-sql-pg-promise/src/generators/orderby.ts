@@ -14,7 +14,27 @@ export function generateOrderBy(operation: OrderByOperation, context: SqlContext
 
   if (typeof operation.keySelector === "string") {
     // Simple column name - check if it maps to a source column
-    if (context.symbolTable) {
+
+    // Check if it's a path like "o.amount"
+    if (operation.keySelector.includes(".") && context.symbolTable) {
+      const parts = operation.keySelector.split(".");
+      if (parts.length === 2) {
+        const tableRef = context.symbolTable.entries.get(parts[0]!);
+        if (tableRef && tableRef.columnName === "*") {
+          orderByExpr = `"${tableRef.tableAlias}"."${parts[1]}"`;
+        } else {
+          // Try full path
+          const pathRef = context.symbolTable.entries.get(operation.keySelector);
+          if (pathRef) {
+            orderByExpr = `"${pathRef.tableAlias}"."${pathRef.columnName}"`;
+          } else {
+            orderByExpr = `"${operation.keySelector}"`;
+          }
+        }
+      } else {
+        orderByExpr = `"${operation.keySelector}"`;
+      }
+    } else if (context.symbolTable) {
       const sourceRef = context.symbolTable.entries.get(operation.keySelector);
       if (sourceRef) {
         orderByExpr = `"${sourceRef.tableAlias}"."${sourceRef.columnName}"`;

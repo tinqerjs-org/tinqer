@@ -247,12 +247,12 @@ describe("Advanced GROUP BY SQL Generation", () => {
               from<Customer>("customers"),
               (o) => o.customerId,
               (c) => c.id,
-              (o, c) => ({ customerId: c.id, customerName: c.name, amount: o.amount }),
+              (o, c) => ({ o, c }),
             )
-            .groupBy((x) => x.customerId)
+            .groupBy((joined) => joined.c.id)
             .select((g) => ({
               customerId: g.key,
-              totalSpent: g.sum((x) => x.amount),
+              totalSpent: g.sum((joined) => joined.o.amount),
               orderCount: g.count(),
             })),
         {},

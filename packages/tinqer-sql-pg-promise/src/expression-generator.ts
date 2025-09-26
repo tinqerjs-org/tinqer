@@ -9,6 +9,7 @@ import type {
   ComparisonExpression,
   LogicalExpression,
   InExpression,
+  IsNullExpression,
   ColumnExpression,
   ConstantExpression,
   ParameterExpression,
@@ -22,6 +23,8 @@ import type {
   AggregateExpression,
   ConditionalExpression,
   CoalesceExpression,
+  CaseExpression,
+  ReferenceExpression,
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 
@@ -44,7 +47,11 @@ export function generateExpression(expr: Expression, context: SqlContext): strin
   if (isArrayExpression(expr)) {
     throw new Error("Array expressions not yet supported");
   }
-  throw new Error(`Unknown expression type: ${(expr as any).type}`);
+  // Check for reference type directly since it might not be in a union yet
+  if ((expr as { type: string }).type === "reference") {
+    return generateReferenceExpression(expr as unknown as ReferenceExpression, context);
+  }
+  throw new Error(`Unknown expression type: ${(expr as Expression & { type: string }).type}`);
 }
 
 /**
@@ -66,8 +73,12 @@ export function generateBooleanExpression(expr: BooleanExpression, context: SqlC
       return generateBooleanMethodExpression(expr, context);
     case "in":
       return generateInExpression(expr as InExpression, context);
+    case "isNull":
+      return generateIsNullExpression(expr as IsNullExpression, context);
     default:
-      throw new Error(`Unsupported boolean expression type: ${(expr as any).type}`);
+      throw new Error(
+        `Unsupported boolean expression type: ${(expr as BooleanExpression & { type: string }).type}`,
+      );
   }
 }
 
@@ -92,8 +103,14 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
       return generateAggregateExpression(expr as AggregateExpression, context);
     case "coalesce":
       return generateCoalesceExpression(expr as CoalesceExpression, context);
+    case "case":
+      return generateCaseExpression(expr as CaseExpression, context);
+    case "reference":
+      return generateReferenceExpression(expr as ReferenceExpression, context);
     default:
-      throw new Error(`Unsupported value expression type: ${(expr as any).type}`);
+      throw new Error(
+        `Unsupported value expression type: ${(expr as ValueExpression & { type: string }).type}`,
+      );
   }
 }
 
@@ -128,13 +145,17 @@ function generateComparisonExpression(expr: ComparisonExpression, context: SqlCo
 /**
  * Generate expression for use in comparisons - handles both value and boolean expressions
  */
-function generateExpressionForComparison(expr: any, context: SqlContext): string {
+function generateExpressionForComparison(expr: Expression, context: SqlContext): string {
   // Check if it's a boolean expression
   if (isBooleanExpression(expr)) {
     return generateBooleanExpression(expr, context);
   }
-  // Otherwise treat as value expression
-  return generateValueExpression(expr, context);
+  // Check if it's a value expression
+  if (isValueExpression(expr)) {
+    return generateValueExpression(expr, context);
+  }
+  // Handle other expression types
+  return generateExpression(expr, context);
 }
 
 /**
@@ -198,6 +219,48 @@ function generateNotExpression(expr: NotExpression, context: SqlContext): string
 }
 
 /**
+ * Generate SQL for reference expressions (entire table/object references)
+ */
+function generateReferenceExpression(expr: ReferenceExpression, context: SqlContext): string {
+  // A reference expression like { u, d } needs special handling
+  // In SELECT context, we'd want to expand all columns from the referenced table
+
+  // Handle new source-based references
+  if (expr.source) {
+    const aliases = Array.from(context.tableAliases.values());
+
+    switch (expr.source.type) {
+      case "joinParam": {
+        // Map parameter references to table aliases
+        if (expr.source.paramIndex < aliases.length) {
+          // Return all columns from this table (will be expanded in SELECT generation)
+          return `"${aliases[expr.source.paramIndex]}".*`;
+        }
+        return `"t${expr.source.paramIndex}".*`;
+      }
+
+      case "table": {
+        // Explicit table alias
+        return `"${expr.source.alias}".*`;
+      }
+
+      default:
+        // Should not happen, but handle gracefully
+        return `"t0".*`;
+    }
+  }
+
+  // Handle regular table references
+  if (expr.table) {
+    const alias = context.tableAliases.get(expr.table) || expr.table;
+    return `"${alias}".*`;
+  }
+
+  // Fallback
+  return `"t0".*`;
+}
+
+/**
  * Generate SQL for column references
  */
 function generateColumnExpression(expr: ColumnExpression, context: SqlContext): string {
@@ -234,30 +297,34 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
     }
   }
 
-  // Check if this is a special marker from JOIN processing
-  if (expr.table && expr.table.startsWith("$")) {
-    // Handle $param0, $param1 (direct parameter references)
-    if (expr.table.startsWith("$param")) {
-      const paramIndex = parseInt(expr.table.substring(6), 10);
-      const aliases = Array.from(context.tableAliases.values());
-      const tableAlias = aliases[paramIndex] || `t${paramIndex}`;
-      return `"${tableAlias}"."${expr.name}"`;
-    }
+  // Handle ColumnSource for proper table alias resolution
+  if (expr.source) {
+    const aliases = Array.from(context.tableAliases.values());
+    let tableAlias: string;
 
-    // Handle $joinSource0, $joinSource1 (nested JOIN property access)
-    if (expr.table.startsWith("$joinSource")) {
-      const sourceIndex = parseInt(expr.table.substring(11), 10);
-      const aliases = Array.from(context.tableAliases.values());
-      const tableAlias = aliases[sourceIndex] || `t${sourceIndex}`;
-      return `"${tableAlias}"."${expr.name}"`;
-    }
+    switch (expr.source.type) {
+      case "joinParam":
+        // Direct parameter references
+        tableAlias = aliases[expr.source.paramIndex] || `t${expr.source.paramIndex}`;
+        return `"${tableAlias}"."${expr.name}"`;
 
-    // Handle $spread0, $spread1 (spread operator from JOIN result)
-    if (expr.table.startsWith("$spread")) {
-      const sourceIndex = parseInt(expr.table.substring(7), 10);
-      const aliases = Array.from(context.tableAliases.values());
-      const tableAlias = aliases[sourceIndex] || `t${sourceIndex}`;
-      return `"${tableAlias}"."${expr.name}"`;
+      case "joinResult":
+        // Nested JOIN property access
+        tableAlias = aliases[expr.source.tableIndex] || `t${expr.source.tableIndex}`;
+        return `"${tableAlias}"."${expr.name}"`;
+
+      case "spread":
+        // Spread operator source
+        tableAlias = aliases[expr.source.sourceIndex] || `t${expr.source.sourceIndex}`;
+        return `"${tableAlias}"."${expr.name}"`;
+
+      case "table":
+        // Explicit table alias
+        return `"${expr.source.alias}"."${expr.name}"`;
+
+      case "direct":
+        // Direct table access (no qualifier needed)
+        return `"${expr.name}"`;
     }
   }
 
@@ -294,9 +361,44 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
 
   // Regular column handling
   if (expr.table) {
+    // Check if the table is a reference from JOIN result shape
+    // When we have joined.c.id, it becomes column with table="c" and name="id"
+    // We need to check if "c" is actually a reference in the symbol table
+    if (context.symbolTable) {
+      const tableRef = context.symbolTable.entries.get(expr.table);
+      if (tableRef && tableRef.columnName === "*") {
+        // This is a reference node - use the mapped table alias
+        return `"${tableRef.tableAlias}"."${expr.name}"`;
+      }
+    }
+
+    // Check if the table contains a dot (like "o.amount" from bad parsing)
+    // This happens when ORDER BY expression isn't properly parsed
+    if (expr.table.includes(".")) {
+      // This is a mis-parsed expression, try to resolve it through symbol table
+      const parts = expr.table.split(".");
+      if (parts.length === 2 && context.symbolTable) {
+        const tableRef = context.symbolTable.entries.get(parts[0]!);
+        if (tableRef && tableRef.columnName === "*") {
+          // Use the resolved table alias and the field name
+          return `"${tableRef.tableAlias}"."${parts[1]}"`;
+        }
+      }
+      // If we can't resolve it, return as-is (will likely fail)
+      return `"${expr.table}"`;
+    }
+
     const alias = context.tableAliases.get(expr.table) || expr.table;
     return `"${alias}"."${expr.name}"`;
   }
+
+  // No table specified - only use t0 if we have multiple tables (JOIN scenario)
+  // This handles cases like WHERE u.id > 100 before JOIN
+  if (context.tableAliases.size > 1) {
+    const firstAlias = context.tableAliases.values().next().value;
+    return `"${firstAlias}"."${expr.name}"`;
+  }
+
   return `"${expr.name}"`;
 }
 
@@ -352,8 +454,10 @@ function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlCo
     // Check if either operand is definitely a string
     const isStringConcat =
       // String constants
-      (expr.left.type === "constant" && typeof (expr.left as any).value === "string") ||
-      (expr.right.type === "constant" && typeof (expr.right as any).value === "string") ||
+      (expr.left.type === "constant" &&
+        typeof (expr.left as ConstantExpression).value === "string") ||
+      (expr.right.type === "constant" &&
+        typeof (expr.right as ConstantExpression).value === "string") ||
       // String method results (toLowerCase, toUpperCase, substring, etc.)
       expr.left.type === "stringMethod" ||
       expr.right.type === "stringMethod" ||
@@ -361,8 +465,8 @@ function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlCo
       isLikelyStringExpression(expr.left) ||
       isLikelyStringExpression(expr.right) ||
       // Check for string-related parameter names (heuristic)
-      (expr.left.type === "param" && isLikelyStringParam(expr.left as any)) ||
-      (expr.right.type === "param" && isLikelyStringParam(expr.right as any));
+      (expr.left.type === "param" && isLikelyStringParam(expr.left as ParameterExpression)) ||
+      (expr.right.type === "param" && isLikelyStringParam(expr.right as ParameterExpression));
 
     if (isStringConcat) {
       return `${left} || ${right}`;
@@ -413,7 +517,7 @@ function isLikelyStringExpression(expr: Expression): boolean {
         return /text|name|title|description|message|email|url|path|label/i.test(col.name);
       }
       if (e.type === "constant") {
-        return typeof (e as any).value === "string";
+        return typeof (e as ConstantExpression).value === "string";
       }
       if (e.type === "stringMethod") {
         return true;
@@ -449,6 +553,14 @@ function generateStringMethodExpression(expr: StringMethodExpression, context: S
     default:
       throw new Error(`Unsupported string method: ${expr.method}`);
   }
+}
+
+/**
+ * Generate SQL for IS NULL / IS NOT NULL expressions
+ */
+function generateIsNullExpression(expr: IsNullExpression, context: SqlContext): string {
+  const value = generateValueExpression(expr.expression, context);
+  return expr.negated ? `${value} IS NOT NULL` : `${value} IS NULL`;
 }
 
 /**
@@ -568,16 +680,50 @@ function generateConditionalExpression(expr: ConditionalExpression, context: Sql
 }
 
 /**
+ * Generate SQL for CASE expressions (from ternary operator)
+ */
+function generateCaseExpression(expr: CaseExpression, context: SqlContext): string {
+  // Handle multiple WHEN conditions
+  if (!expr.conditions || expr.conditions.length === 0) {
+    throw new Error("CASE expression must have at least one condition");
+  }
+
+  const whenClauses = expr.conditions
+    .map((cond) => {
+      const when = generateBooleanExpression(cond.when, context);
+      const then = generateExpression(cond.then, context);
+      return `WHEN ${when} THEN ${then}`;
+    })
+    .join(" ");
+
+  const elseClause = expr.else ? ` ELSE ${generateExpression(expr.else, context)}` : "";
+
+  return `CASE ${whenClauses}${elseClause} END`;
+}
+
+/**
  * Generate SQL for object expressions (used in SELECT)
  */
 function generateObjectExpression(expr: ObjectExpression, context: SqlContext): string {
   if (!expr.properties) {
     throw new Error("Object expression must have properties");
   }
+
   const parts = Object.entries(expr.properties).map(([key, value]) => {
-    const sqlValue = generateExpression(value, context);
+    let sqlValue = generateExpression(value, context);
+
+    // If it's a boolean expression in SELECT context, wrap it in a CASE to return boolean value
+    if (
+      isBooleanExpression(value) &&
+      value.type !== "booleanColumn" &&
+      value.type !== "booleanConstant"
+    ) {
+      sqlValue = `CASE WHEN ${sqlValue} THEN TRUE ELSE FALSE END`;
+    }
+
     return `${sqlValue} AS "${key}"`;
   });
+
   return parts.join(", ");
 }
 
@@ -591,7 +737,7 @@ function isBooleanExpression(expr: Expression): expr is BooleanExpression {
     "booleanConstant",
     "booleanMethod",
     "exists",
-  ].includes((expr as any).type);
+  ].includes((expr as Expression & { type: string }).type);
 }
 
 function isValueExpression(expr: Expression): expr is ValueExpression {
@@ -605,17 +751,17 @@ function isValueExpression(expr: Expression): expr is ValueExpression {
     "case",
     "aggregate",
     "coalesce",
-  ].includes((expr as any).type);
+  ].includes((expr as Expression & { type: string }).type);
 }
 
 function isObjectExpression(expr: Expression): expr is ObjectExpression {
-  return (expr as any).type === "object";
+  return (expr as Expression & { type: string }).type === "object";
 }
 
 function isArrayExpression(expr: Expression): expr is ArrayExpression {
-  return (expr as any).type === "array";
+  return (expr as Expression & { type: string }).type === "array";
 }
 
 function isConditionalExpression(expr: Expression): expr is ConditionalExpression {
-  return (expr as any).type === "conditional";
+  return (expr as Expression & { type: string }).type === "conditional";
 }

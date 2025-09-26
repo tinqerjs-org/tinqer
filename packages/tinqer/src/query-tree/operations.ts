@@ -53,7 +53,7 @@ export interface WhereOperation extends QueryOperation {
 export interface SelectOperation extends QueryOperation {
   operationType: "select";
   source: QueryOperation;
-  selector: ValueExpression | ObjectExpression;
+  selector: ValueExpression | ObjectExpression | null; // null means SELECT *
 }
 
 /**
@@ -159,7 +159,7 @@ export interface DistinctOperation extends QueryOperation {
 export interface TakeOperation extends QueryOperation {
   operationType: "take";
   source: QueryOperation;
-  count: number | ParamRef;
+  count: number | ParamRef | import("../expressions/expression.js").ValueExpression;
 }
 
 /**
@@ -168,7 +168,7 @@ export interface TakeOperation extends QueryOperation {
 export interface SkipOperation extends QueryOperation {
   operationType: "skip";
   source: QueryOperation;
-  count: number | ParamRef;
+  count: number | ParamRef | import("../expressions/expression.js").ValueExpression;
 }
 
 /**
@@ -332,7 +332,8 @@ export interface LongCountOperation extends QueryOperation {
 export interface SumOperation extends QueryOperation {
   operationType: "sum";
   source: QueryOperation;
-  selector?: string; // Column name only
+  selector?: string; // Column name for backward compatibility
+  selectorExpression?: ValueExpression; // Full expression support
 }
 
 /**
@@ -341,7 +342,8 @@ export interface SumOperation extends QueryOperation {
 export interface AverageOperation extends QueryOperation {
   operationType: "average";
   source: QueryOperation;
-  selector?: string; // Column name only
+  selector?: string; // Column name for backward compatibility
+  selectorExpression?: ValueExpression; // Full expression support
 }
 
 /**
@@ -350,7 +352,8 @@ export interface AverageOperation extends QueryOperation {
 export interface MinOperation extends QueryOperation {
   operationType: "min";
   source: QueryOperation;
-  selector?: string; // Column name only
+  selector?: string; // Column name for backward compatibility
+  selectorExpression?: ValueExpression; // Full expression support
 }
 
 /**
@@ -359,7 +362,8 @@ export interface MinOperation extends QueryOperation {
 export interface MaxOperation extends QueryOperation {
   operationType: "max";
   source: QueryOperation;
-  selector?: string; // Column name only
+  selector?: string; // Column name for backward compatibility
+  selectorExpression?: ValueExpression; // Full expression support
 }
 
 /**

@@ -259,13 +259,14 @@ describe("WHERE SQL Generation", () => {
               from(db, "departments"),
               (u) => u.deptId,
               (d) => d.id,
-              (u, d) => ({ user: u.name, dept: d.name }),
-            ),
+              (u, d) => ({ u, d }),
+            )
+            .select((joined) => ({ user: joined.u.name, dept: joined.d.name })),
         {},
       );
 
       expect(result.sql).to.equal(
-        'SELECT "t0"."name" AS "user", "t1"."name" AS "dept" FROM "users" AS "t0" INNER JOIN "departments" AS "t1" ON "t0"."deptId" = "t1"."id" WHERE "id" > $(__p1) AND "name" != $(__p2)',
+        'SELECT "t0"."name" AS "user", "t1"."name" AS "dept" FROM "users" AS "t0" INNER JOIN "departments" AS "t1" ON "t0"."deptId" = "t1"."id" WHERE "t0"."id" > $(__p1) AND "t0"."name" != $(__p2)',
       );
       expect(result.params).to.deep.equal({ __p1: 100, __p2: "" });
     });
