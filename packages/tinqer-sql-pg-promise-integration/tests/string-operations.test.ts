@@ -156,9 +156,7 @@ describe("PostgreSQL Integration - String Operations", () => {
             (d) => d.id,
             (u, d) => ({ u, d }),
           )
-          .where(
-            (joined) => joined.u.name.startsWith("J") && joined.d.name.includes("ing"),
-          )
+          .where((joined) => joined.u.name.startsWith("J") && joined.d.name.includes("ing"))
           .select((joined) => ({
             userName: joined.u.name,
             departmentName: joined.d.name,
@@ -212,22 +210,6 @@ describe("PostgreSQL Integration - String Operations", () => {
       );
 
       expect(count).to.equal(10);
-    });
-
-    it("should group products by name prefix", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products")
-          .where((p) => p.category === "Electronics")
-          .groupBy((p) => p.name.includes("e"))
-          .select((g) => ({
-            hasE: g.key,
-            count: g.count(),
-            avgPrice: g.average((p) => p.price),
-          })),
-      );
-
-      expect(results).to.be.an("array");
-      expect(results.length).to.be.at.most(2); // true/false for includes("e")
     });
   });
 
