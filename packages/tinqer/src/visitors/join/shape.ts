@@ -25,12 +25,13 @@ export function buildResultShape(
   expr: Expression | undefined,
   outerParam: string | null,
   innerParam: string | null,
+  previousShape?: ResultShape,
 ): ResultShape | undefined {
   if (!expr || expr.type !== "object") {
     return undefined;
   }
 
-  const rootNode = buildShapeNode(expr, outerParam, innerParam);
+  const rootNode = buildShapeNode(expr, outerParam, innerParam, previousShape);
 
   // The root node should be an object shape
   if (rootNode && rootNode.type === "object") {
@@ -56,6 +57,7 @@ export function buildShapeNode(
   expr: Expression,
   outerParam: string | null,
   innerParam: string | null,
+  previousShape?: ResultShape,
 ): ShapeNode | undefined {
   switch (expr.type) {
     case "object": {
@@ -63,9 +65,17 @@ export function buildShapeNode(
       const properties = new Map<string, ShapeNode>();
 
       for (const [propName, propExpr] of Object.entries(objExpr.properties)) {
-        const node = buildShapeNode(propExpr, outerParam, innerParam);
-        if (node) {
-          properties.set(propName, node);
+        // Check if this is a spread marker
+        if (propName === "...spread" && previousShape) {
+          // Copy all properties from the previous shape
+          for (const [prevPropName, prevNode] of previousShape.properties) {
+            properties.set(prevPropName, prevNode);
+          }
+        } else {
+          const node = buildShapeNode(propExpr, outerParam, innerParam, previousShape);
+          if (node) {
+            properties.set(propName, node);
+          }
         }
       }
 

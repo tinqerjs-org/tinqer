@@ -415,7 +415,12 @@ export function visitJoinOperation(
 
     if (innerSource && outerKey && innerKey) {
       // Build the result shape from the result selector
-      const resultShape = buildResultShape(resultSelector, outerParam, innerParam);
+      const resultShape = buildResultShape(
+        resultSelector,
+        outerParam,
+        innerParam,
+        previousResultShape,
+      );
 
       // Merge auto params from inner source if present
       if (innerSourceResult?.autoParams) {
