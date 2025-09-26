@@ -264,15 +264,17 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       const joinResults = await executeSimple(db, () =>
-        from(dbContext, "users").join(
-          from(dbContext, "departments"),
-          (u) => u.department_id,
-          (d) => d.id,
-          (u, d) => ({
-            userName: u.name,
-            deptName: d.name,
-          }),
-        ),
+        from(dbContext, "users")
+          .join(
+            from(dbContext, "departments"),
+            (u) => u.department_id,
+            (d) => d.id,
+            (u, d) => ({ u, d }),
+          )
+          .select((joined) => ({
+            userName: joined.u.name,
+            deptName: joined.d.name,
+          })),
       );
 
       // User with NULL department_id should not appear in results

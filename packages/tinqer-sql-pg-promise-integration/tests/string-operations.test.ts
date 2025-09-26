@@ -154,19 +154,14 @@ describe("PostgreSQL Integration - String Operations", () => {
             from(dbContext, "departments"),
             (u) => u.department_id,
             (d) => d.id,
-            (u, d) => ({
-              userId: u.id,
-              userName: u.name,
-              departmentId: d.id,
-              departmentName: d.name,
-            }),
+            (u, d) => ({ u, d }),
           )
           .where(
-            (joined) => joined.userName.startsWith("J") && joined.departmentName.includes("ing"),
+            (joined) => joined.u.name.startsWith("J") && joined.d.name.includes("ing"),
           )
           .select((joined) => ({
-            userName: joined.userName,
-            departmentName: joined.departmentName,
+            userName: joined.u.name,
+            departmentName: joined.d.name,
           })),
       );
 

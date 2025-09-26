@@ -18,18 +18,20 @@ describe("PostgreSQL Integration - JOINs", () => {
   describe("INNER JOIN", () => {
     it("should join users with departments", async () => {
       const results = await executeSimple(db, () =>
-        from(dbContext, "users").join(
-          from(dbContext, "departments"),
-          (u) => u.department_id,
-          (d) => d.id,
-          (u, d) => ({
-            userId: u.id,
-            userName: u.name,
-            userEmail: u.email,
-            departmentId: d.id,
-            departmentName: d.name,
-          }),
-        ),
+        from(dbContext, "users")
+          .join(
+            from(dbContext, "departments"),
+            (u) => u.department_id,
+            (d) => d.id,
+            (u, d) => ({ u, d }),
+          )
+          .select((joined) => ({
+            userId: joined.u.id,
+            userName: joined.u.name,
+            userEmail: joined.u.email,
+            departmentId: joined.d.id,
+            departmentName: joined.d.name,
+          })),
       );
 
       expect(results).to.be.an("array");
@@ -45,17 +47,19 @@ describe("PostgreSQL Integration - JOINs", () => {
 
     it("should join orders with users", async () => {
       const results = await executeSimple(db, () =>
-        from(dbContext, "orders").join(
-          from(dbContext, "users"),
-          (o) => o.user_id,
-          (u) => u.id,
-          (o, u) => ({
-            orderId: o.id,
-            orderTotal: o.total_amount,
-            customerName: u.name,
-            customerEmail: u.email,
-          }),
-        ),
+        from(dbContext, "orders")
+          .join(
+            from(dbContext, "users"),
+            (o) => o.user_id,
+            (u) => u.id,
+            (o, u) => ({ o, u }),
+          )
+          .select((joined) => ({
+            orderId: joined.o.id,
+            orderTotal: joined.o.total_amount,
+            customerName: joined.u.name,
+            customerEmail: joined.u.email,
+          })),
       );
 
       expect(results).to.be.an("array");
@@ -75,19 +79,13 @@ describe("PostgreSQL Integration - JOINs", () => {
             from(dbContext, "users"),
             (o) => o.user_id,
             (u) => u.id,
-            (o, u) => ({
-              order_id: o.id,
-              order_status: o.status,
-              order_total: o.total_amount,
-              user_name: u.name,
-              user_id: u.id,
-            }),
+            (o, u) => ({ o, u }),
           )
-          .where((joined) => joined.order_status === "completed")
+          .where((joined) => joined.o.status === "completed")
           .select((joined) => ({
-            orderId: joined.order_id,
-            customerName: joined.user_name,
-            total: joined.order_total,
+            orderId: joined.o.id,
+            customerName: joined.u.name,
+            total: joined.o.total_amount,
           })),
       );
 
@@ -107,18 +105,13 @@ describe("PostgreSQL Integration - JOINs", () => {
             from(dbContext, "users"),
             (o) => o.user_id,
             (u) => u.id,
-            (o, u) => ({
-              order_id: o.id,
-              order_total: o.total_amount,
-              user_name: u.name,
-              user_id: u.id,
-            }),
+            (o, u) => ({ o, u }),
           )
-          .groupBy((joined) => joined.user_name)
+          .groupBy((joined) => joined.u.name)
           .select((g) => ({
             customerName: g.key,
             orderCount: g.count(),
-            totalSpent: g.sum((joined) => joined.order_total),
+            totalSpent: g.sum((item) => item.o.total_amount),
           })),
       );
 
@@ -142,37 +135,21 @@ describe("PostgreSQL Integration - JOINs", () => {
             from(dbContext, "orders"),
             (oi) => oi.order_id,
             (o) => o.id,
-            (oi, o) => ({
-              orderItemId: oi.id,
-              productId: oi.product_id,
-              quantity: oi.quantity,
-              unitPrice: oi.unit_price,
-              orderId: o.id,
-              orderStatus: o.status,
-              orderUserId: o.user_id,
-            }),
+            (oi, o) => ({ oi, o }),
           )
           .join(
             from(dbContext, "products"),
-            (joined) => joined.productId,
+            (joined) => joined.oi.product_id,
             (p) => p.id,
-            (joined, p) => ({
-              orderItemId: joined.orderItemId,
-              orderId: joined.orderId,
-              orderStatus: joined.orderStatus,
-              quantity: joined.quantity,
-              unitPrice: joined.unitPrice,
-              productId: p.id,
-              productName: p.name,
-            }),
+            (joined, p) => ({ ...joined, p }),
           )
-          .where((joined) => joined.orderStatus === "completed")
-          .select((joined) => ({
-            orderId: joined.orderId,
-            productName: joined.productName,
-            quantity: joined.quantity,
-            unitPrice: joined.unitPrice,
-            totalPrice: joined.quantity * joined.unitPrice,
+          .where((result) => result.o.status === "completed")
+          .select((result) => ({
+            orderId: result.o.id,
+            productName: result.p.name,
+            quantity: result.oi.quantity,
+            unitPrice: result.oi.unit_price,
+            totalPrice: result.oi.quantity * result.oi.unit_price,
           })),
       );
 
@@ -195,31 +172,20 @@ describe("PostgreSQL Integration - JOINs", () => {
             from(dbContext, "departments"),
             (u) => u.department_id,
             (d) => d.id,
-            (u, d) => ({
-              userId: u.id,
-              userName: u.name,
-              departmentId: d.id,
-              departmentName: d.name,
-            }),
+            (u, d) => ({ u, d }),
           )
           .join(
             from(dbContext, "orders"),
-            (joined) => joined.userId,
+            (joined) => joined.u.id,
             (o) => o.user_id,
-            (joined, o) => ({
-              userId: joined.userId,
-              userName: joined.userName,
-              departmentName: joined.departmentName,
-              orderId: o.id,
-              orderTotal: o.total_amount,
-            }),
+            (joined, o) => ({ ...joined, o }),
           )
-          .groupBy((joined) => ({ userName: joined.userName, deptName: joined.departmentName }))
+          .groupBy((result) => ({ userName: result.u.name, deptName: result.d.name }))
           .select((g) => ({
             userName: g.key.userName,
             departmentName: g.key.deptName,
             orderCount: g.count(),
-            totalRevenue: g.sum((joined) => joined.orderTotal),
+            totalRevenue: g.sum((item) => item.o.total_amount),
           })),
       );
 
@@ -292,23 +258,16 @@ describe("PostgreSQL Integration - JOINs", () => {
             from(dbContext, "orders"),
             (u) => u.id,
             (o) => o.user_id,
-            (u, o) => ({
-              userId: u.id,
-              userName: u.name,
-              userEmail: u.email,
-              orderId: o.id,
-              orderAmount: o.total_amount,
-              orderStatus: o.status,
-            }),
+            (u, o) => ({ u, o }),
           )
-          .where((joined) => joined.orderAmount > 500)
+          .where((joined) => joined.o.total_amount > 500)
           .select((joined) => ({
-            customerId: joined.userId,
-            customerName: joined.userName,
-            customerEmail: joined.userEmail,
-            orderId: joined.orderId,
-            orderAmount: joined.orderAmount,
-            orderStatus: joined.orderStatus,
+            customerId: joined.u.id,
+            customerName: joined.u.name,
+            customerEmail: joined.u.email,
+            orderId: joined.o.id,
+            orderAmount: joined.o.total_amount,
+            orderStatus: joined.o.status,
           }))
           .orderByDescending((r) => r.orderAmount),
       );

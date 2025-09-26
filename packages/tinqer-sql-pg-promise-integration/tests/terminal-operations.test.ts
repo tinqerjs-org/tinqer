@@ -64,21 +64,14 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
             from(dbContext, "departments"),
             (u) => u.department_id,
             (d) => d.id,
-            (u, d) => ({
-              userId: u.id,
-              userName: u.name,
-              userAge: u.age,
-              userIsActive: u.is_active,
-              departmentId: d.id,
-              departmentName: d.name,
-            }),
+            (u, d) => ({ u, d }),
           )
-          .where((joined) => joined.userIsActive === true)
-          .orderBy((joined) => joined.userAge!)
+          .where((joined) => joined.u.is_active === true)
+          .orderBy((joined) => joined.u.age!)
           .select((joined) => ({
-            userName: joined.userName,
-            departmentName: joined.departmentName,
-            age: joined.userAge,
+            userName: joined.u.name,
+            departmentName: joined.d.name,
+            age: joined.u.age,
           }))
           .first(),
       );
