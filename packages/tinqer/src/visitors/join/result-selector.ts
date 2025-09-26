@@ -36,7 +36,13 @@ function validateJoinResultProperty(
 
   if (expr.type === "Identifier") {
     const identName = (expr as Identifier).name;
-    // Must be a JOIN parameter (u, d, o, etc.)
+
+    // Check if this is the previous JOIN result parameter
+    if (context.joinResultParam === identName) {
+      return; // Valid - it's the previous JOIN result
+    }
+
+    // Otherwise must be a JOIN parameter (u, d, o, etc.)
     if (!context.joinParams?.has(identName)) {
       throw new Error(
         `Invalid value for property '${propertyName}' in JOIN result selector. ` +

@@ -365,19 +365,40 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
     // When we have joined.c.id, it becomes column with table="c" and name="id"
     // We need to check if "c" is actually a reference in the symbol table
     if (context.symbolTable) {
-      console.log(`Looking up "${expr.table}" in symbol table`, context.symbolTable.entries);
       const tableRef = context.symbolTable.entries.get(expr.table);
-      console.log(`Found:`, tableRef);
       if (tableRef && tableRef.columnName === "*") {
         // This is a reference node - use the mapped table alias
-        console.log(`Using alias ${tableRef.tableAlias} for column ${expr.name}`);
         return `"${tableRef.tableAlias}"."${expr.name}"`;
       }
+    }
+
+    // Check if the table contains a dot (like "o.amount" from bad parsing)
+    // This happens when ORDER BY expression isn't properly parsed
+    if (expr.table.includes(".")) {
+      // This is a mis-parsed expression, try to resolve it through symbol table
+      const parts = expr.table.split(".");
+      if (parts.length === 2 && context.symbolTable) {
+        const tableRef = context.symbolTable.entries.get(parts[0]!);
+        if (tableRef && tableRef.columnName === "*") {
+          // Use the resolved table alias and the field name
+          return `"${tableRef.tableAlias}"."${parts[1]}"`;
+        }
+      }
+      // If we can't resolve it, return as-is (will likely fail)
+      return `"${expr.table}"`;
     }
 
     const alias = context.tableAliases.get(expr.table) || expr.table;
     return `"${alias}"."${expr.name}"`;
   }
+
+  // No table specified - only use t0 if we have multiple tables (JOIN scenario)
+  // This handles cases like WHERE u.id > 100 before JOIN
+  if (context.tableAliases.size > 1) {
+    const firstAlias = context.tableAliases.values().next().value;
+    return `"${firstAlias}"."${expr.name}"`;
+  }
+
   return `"${expr.name}"`;
 }
 
