@@ -14,6 +14,7 @@ import type {
   Expression,
   ObjectExpression,
   ColumnExpression,
+  ReferenceExpression,
 } from "../../expressions/expression.js";
 
 /**
@@ -84,9 +85,19 @@ export function buildShapeNode(
 
     case "reference": {
       // Handle table references (e.g., { u, d } in JOIN result selector)
-      const refExpr = expr as { type: "reference"; table: string };
+      const refExpr = expr as ReferenceExpression;
 
-      // Check if this is a $param marker from JOIN context
+      // Check if this has a ColumnSource
+      if (refExpr.source) {
+        if (refExpr.source.type === "joinParam") {
+          return {
+            type: "reference",
+            sourceTable: refExpr.source.paramIndex,
+          } as ReferenceShapeNode;
+        }
+      }
+
+      // Fallback: Check if this uses the old table field with $param marker
       if (refExpr.table && refExpr.table.startsWith("$param")) {
         const paramIndex = parseInt(refExpr.table.substring(6), 10);
         return {
@@ -116,8 +127,18 @@ export function buildShapeNode(
     case "column": {
       const colExpr = expr as ColumnExpression;
 
-      // Check if this is a $param marker from JOIN context
-      // This is the primary way we identify source tables in JOIN result selectors
+      // Check if this has a ColumnSource
+      if (colExpr.source) {
+        if (colExpr.source.type === "joinParam") {
+          return {
+            type: "column",
+            sourceTable: colExpr.source.paramIndex,
+            columnName: colExpr.name,
+          } as ColumnShapeNode;
+        }
+      }
+
+      // Fallback: Check if this uses the old table field with $param marker
       if (colExpr.table && colExpr.table.startsWith("$param")) {
         const paramIndex = parseInt(colExpr.table.substring(6), 10);
 

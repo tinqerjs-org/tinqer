@@ -319,7 +319,7 @@ describe("Join SQL Generation", () => {
             .select((joined) => ({
               userName: joined.u.name,
               amount: joined.o.amount,
-              userId: joined.u.id
+              userId: joined.u.id,
             }))
             .orderBy((x) => x.amount)
             .take(20),

@@ -10,7 +10,12 @@ import type {
   Literal,
 } from "../../parser/ast-types.js";
 import type { JoinContext } from "./context.js";
-import type { ShapeNode, ReferenceShapeNode, ColumnShapeNode, ObjectShapeNode } from "../../query-tree/operations.js";
+import type {
+  ShapeNode,
+  ReferenceShapeNode,
+  ColumnShapeNode,
+  ObjectShapeNode,
+} from "../../query-tree/operations.js";
 
 /**
  * Visit expressions in JOIN context with parameter tracking

@@ -3,7 +3,14 @@
  * Handles JOIN operations with various forms
  */
 
-import type { JoinOperation, QueryOperation } from "../../query-tree/operations.js";
+import type {
+  JoinOperation,
+  QueryOperation,
+  ShapeNode,
+  ReferenceShapeNode,
+  ColumnShapeNode,
+  ObjectShapeNode,
+} from "../../query-tree/operations.js";
 import type {
   ColumnExpression,
   Expression,
@@ -334,7 +341,7 @@ export function visitJoinOperation(
       const resultContext: JoinContext = {
         tableParams: new Set(visitorContext.tableParams),
         queryParams: new Set(visitorContext.queryParams),
-        joinParams: new Map<string, number>(), // parameter name -> table index (0 for outer, 1 for inner)
+        joinParams: new Map<string, number>(), // parameter name -> table index (0 for outer, 1+ for inner)
       };
 
       // If we're chaining JOINs and the outer param comes from a previous JOIN result,
@@ -344,12 +351,42 @@ export function visitJoinOperation(
         resultContext.joinResultParam = outerParam;
       }
 
+      // For chained JOINs, we need to determine the correct table index for the inner param
+      let innerTableIndex = 1;
+      if (previousResultShape) {
+        // Count the number of tables already in the result shape
+        // This tells us what index the new inner table should have
+        let maxTableIndex = 0;
+        for (const [, node] of previousResultShape.properties) {
+          const findMaxIndex = (n: ShapeNode): number => {
+            if (n.type === "reference" || n.type === "column") {
+              return (n as ReferenceShapeNode | ColumnShapeNode).sourceTable || 0;
+            } else if (n.type === "object") {
+              const objNode = n as ObjectShapeNode;
+              let max = 0;
+              for (const [, child] of objNode.properties) {
+                max = Math.max(max, findMaxIndex(child));
+              }
+              return max;
+            }
+            return 0;
+          };
+          maxTableIndex = Math.max(maxTableIndex, findMaxIndex(node));
+        }
+        innerTableIndex = maxTableIndex + 1;
+      }
+
       if (outerParam) {
-        resultContext.joinParams?.set(outerParam, 0);
+        // Note: outerParam doesn't get a single index for chained JOINs
+        // It represents the entire previous JOIN result, not a single table
+        // We don't add it to joinParams for chained JOINs, it's handled differently
+        if (!previousResultShape) {
+          resultContext.joinParams?.set(outerParam, 0);
+        }
         resultContext.tableParams.add(outerParam); // Also add to tableParams for validation
       }
       if (innerParam) {
-        resultContext.joinParams?.set(innerParam, 1);
+        resultContext.joinParams?.set(innerParam, innerTableIndex);
         resultContext.tableParams.add(innerParam); // Also add to tableParams for validation
       }
 

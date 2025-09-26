@@ -219,7 +219,7 @@ describe("String Operations SQL Generation", () => {
             )
             .select((joined) => ({
               userName: joined.u.name,
-              productName: joined.p.name
+              productName: joined.p.name,
             })),
         {},
       );

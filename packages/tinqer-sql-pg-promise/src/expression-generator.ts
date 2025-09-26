@@ -365,9 +365,12 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
     // When we have joined.c.id, it becomes column with table="c" and name="id"
     // We need to check if "c" is actually a reference in the symbol table
     if (context.symbolTable) {
+      console.log(`Looking up "${expr.table}" in symbol table`, context.symbolTable.entries);
       const tableRef = context.symbolTable.entries.get(expr.table);
+      console.log(`Found:`, tableRef);
       if (tableRef && tableRef.columnName === "*") {
         // This is a reference node - use the mapped table alias
+        console.log(`Using alias ${tableRef.tableAlias} for column ${expr.name}`);
         return `"${tableRef.tableAlias}"."${expr.name}"`;
       }
     }
