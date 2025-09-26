@@ -207,11 +207,14 @@ npm run test:grep -- "JOIN"
 **CRITICAL GIT SAFETY RULES**:
 
 1. **NEVER use `git push --force` or `git push -f`** - Force pushing destroys history
-2. **ALL git push commands require EXPLICIT user authorization**
-3. **Use revert commits instead of force push** - To undo changes, create revert commits
-4. **If you need to overwrite remote**, explain consequences and get explicit confirmation
+2. **NEVER use `git push origin --delete`** - Never delete remote branches
+3. **NEVER perform ANY destructive operations on remote repositories**
+4. **ONLY allowed remote operation is standard `git push` or `git push -u origin branch-name`**
+5. **ALL git push commands require EXPLICIT user authorization**
+6. **Use revert commits instead of force push** - To undo changes, create revert commits
+7. **If you need to overwrite remote**, explain consequences and get explicit confirmation
 
-**IMPORTANT**: NEVER commit, push, revert, or perform ANY git operations without explicit user permission.
+**IMPORTANT**: NEVER commit, push, revert, or perform ANY git operations without explicit user permission. You are ONLY allowed to delete LOCAL branches with `git branch -D`, NEVER remote branches.
 
 **NEW BRANCH REQUIREMENT**: ALL changes must be made on a new feature branch, never directly on main.
 
@@ -221,6 +224,7 @@ When the user asks you to commit and push:
 2. Run `./scripts/lint-all.sh` to ensure code passes linting
 3. Follow the git commit guidelines in the main Claude system prompt
 4. Get explicit user confirmation before any `git push`
+5. Use only standard push commands - no force flags, no delete operations
 
 ## Core Architecture
 
