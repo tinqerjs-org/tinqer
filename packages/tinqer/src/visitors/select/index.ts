@@ -53,6 +53,13 @@ export function visitSelectOperation(
   );
   context.inProjection = true;
 
+  // Pass JOIN context if available
+  if (visitorContext.joinResultParam) {
+    context.joinResultParam = visitorContext.joinResultParam;
+    context.currentResultShape = visitorContext.currentResultShape;
+    context.joinParams = visitorContext.joinParams;
+  }
+
   // Check if source is a GROUP BY operation
   if (source.operationType === "groupBy") {
     context.isGroupedSource = true;

@@ -188,7 +188,7 @@ describe("PostgreSQL Integration - JOINs", () => {
       });
     });
 
-    it.skip("should join users with departments and count orders - LIMITATION: pass-through properties in chained JOINs", async () => {
+    it("should join users with departments and count orders - LIMITATION: pass-through properties in chained JOINs", async () => {
       const results = await executeSimple(db, () =>
         from(dbContext, "users")
           .join(

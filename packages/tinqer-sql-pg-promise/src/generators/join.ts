@@ -44,6 +44,42 @@ function buildSymbolTableFromShape(
 }
 
 /**
+ * Build symbol table for chained JOINs, preserving table references
+ */
+function buildSymbolTableFromShapeForChain(
+  resultShape: ResultShape | undefined,
+  existingAliases: string[],
+  newInnerAlias: string,
+  context: SqlContext,
+): void {
+  if (!resultShape) {
+    return;
+  }
+
+  // Initialize symbol table if not exists
+  if (!context.symbolTable) {
+    context.symbolTable = {
+      entries: new Map<string, SourceReference>(),
+    };
+  }
+
+  // For chained JOINs, we need to map sourceTable indices correctly:
+  // - sourceTable indices in the shape refer to the tables at the time the shape was created
+  // - We need to preserve those original table references
+
+  for (const [propName, shapeNode] of resultShape.properties) {
+    processShapeNodeForChain(
+      propName,
+      shapeNode,
+      existingAliases,
+      newInnerAlias,
+      context.symbolTable,
+      "",
+    );
+  }
+}
+
+/**
  * Recursively process shape nodes to build symbol table entries
  */
 function processShapeNode(
@@ -87,6 +123,69 @@ function processShapeNode(
       symbolTable.entries.set(fullPath, {
         tableAlias,
         columnName: "*", // Special marker for "all columns from this table"
+      });
+      break;
+    }
+  }
+}
+
+/**
+ * Process shape nodes for chained JOINs, preserving original table references
+ */
+function processShapeNodeForChain(
+  propName: string,
+  node: ShapeNode,
+  existingAliases: string[],
+  newInnerAlias: string,
+  symbolTable: SymbolTable,
+  parentPath: string,
+): void {
+  const fullPath = parentPath ? `${parentPath}.${propName}` : propName;
+
+  switch (node.type) {
+    case "column": {
+      const colNode = node as ColumnShapeNode;
+      // For chained JOINs, sourceTable refers to the original table indices
+      // If sourceTable < existingAliases.length, use the existing alias
+      // Otherwise, it's the new inner table
+      const tableAlias =
+        colNode.sourceTable < existingAliases.length
+          ? existingAliases[colNode.sourceTable]!
+          : newInnerAlias;
+
+      symbolTable.entries.set(fullPath, {
+        tableAlias,
+        columnName: colNode.columnName,
+      });
+      break;
+    }
+
+    case "object": {
+      // Nested object - recurse
+      const objNode = node as ObjectShapeNode;
+      for (const [nestedProp, nestedNode] of objNode.properties) {
+        processShapeNodeForChain(
+          nestedProp,
+          nestedNode,
+          existingAliases,
+          newInnerAlias,
+          symbolTable,
+          fullPath,
+        );
+      }
+      break;
+    }
+
+    case "reference": {
+      const refNode = node as ReferenceShapeNode;
+      const tableAlias =
+        refNode.sourceTable < existingAliases.length
+          ? existingAliases[refNode.sourceTable]!
+          : newInnerAlias;
+
+      symbolTable.entries.set(fullPath, {
+        tableAlias,
+        columnName: "*",
       });
       break;
     }
@@ -167,8 +266,9 @@ function processExpression(
  * Generate JOIN clause
  */
 export function generateJoin(operation: JoinOperation, context: SqlContext): string {
-  // Get table aliases
-  const outerAlias = context.tableAliases.values().next().value || "t0";
+  // Get table aliases - for chained JOINs, we need all existing aliases
+  const allAliases = Array.from(context.tableAliases.values());
+  const outerAlias = allAliases[0] || "t0";
   const innerAlias = `t${context.aliasCounter++}`;
 
   // Add the inner table alias to the context so it can be resolved later
@@ -177,7 +277,14 @@ export function generateJoin(operation: JoinOperation, context: SqlContext): str
 
   // Build symbol table from result shape (preferred) or result selector (fallback)
   if (operation.resultShape) {
-    buildSymbolTableFromShape(operation.resultShape, outerAlias, innerAlias, context);
+    // For chained JOINs, pass all existing aliases so we can map sourceTable indices correctly
+    if (allAliases.length > 1) {
+      // This is a chained JOIN - use the special handler
+      buildSymbolTableFromShapeForChain(operation.resultShape, allAliases, innerAlias, context);
+    } else {
+      // First JOIN - use the regular handler
+      buildSymbolTableFromShape(operation.resultShape, outerAlias, innerAlias, context);
+    }
   } else if (operation.resultSelector) {
     buildSymbolTable(operation.resultSelector, outerAlias, innerAlias, context);
   }

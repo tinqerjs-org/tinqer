@@ -104,6 +104,14 @@ export interface AggregateExpression {
 }
 
 /**
+ * Reference to an entire table/object (for JOIN result selectors)
+ */
+export interface ReferenceExpression {
+  type: "reference";
+  table: string; // Table or parameter name
+}
+
+/**
  * Union type for all value-producing expressions
  */
 export type ValueExpression =
@@ -116,7 +124,8 @@ export type ValueExpression =
   | CaseExpression
   | CoalesceExpression
   | CastExpression
-  | AggregateExpression;
+  | AggregateExpression
+  | ReferenceExpression;
 
 // ==================== Boolean Expressions ====================
 

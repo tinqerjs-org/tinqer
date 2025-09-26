@@ -82,6 +82,37 @@ export function buildShapeNode(
       break;
     }
 
+    case "reference": {
+      // Handle table references (e.g., { u, d } in JOIN result selector)
+      const refExpr = expr as { type: "reference"; table: string };
+
+      // Check if this is a $param marker from JOIN context
+      if (refExpr.table && refExpr.table.startsWith("$param")) {
+        const paramIndex = parseInt(refExpr.table.substring(6), 10);
+        return {
+          type: "reference",
+          sourceTable: paramIndex,
+        } as ReferenceShapeNode;
+      }
+
+      // Fallback: Check parameter names
+      if (outerParam && refExpr.table === outerParam) {
+        return {
+          type: "reference",
+          sourceTable: 0,
+        } as ReferenceShapeNode;
+      }
+
+      if (innerParam && refExpr.table === innerParam) {
+        return {
+          type: "reference",
+          sourceTable: 1,
+        } as ReferenceShapeNode;
+      }
+
+      return undefined;
+    }
+
     case "column": {
       const colExpr = expr as ColumnExpression;
 

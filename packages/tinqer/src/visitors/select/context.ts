@@ -3,6 +3,8 @@
  * Manages state for SELECT projection parsing
  */
 
+import type { ObjectShapeNode } from "../../query-tree/operations.js";
+
 export interface SelectContext {
   // Parameters from table (x in select(x => ...))
   tableParams: Set<string>;
@@ -25,6 +27,11 @@ export interface SelectContext {
   isGroupedSource: boolean;
   groupingParams: Set<string>;
   groupKeyExpression?: unknown; // Expression from GROUP BY keySelector
+
+  // JOIN context
+  joinResultParam?: string; // JOIN result parameter name
+  currentResultShape?: ObjectShapeNode; // Shape of JOIN result
+  joinParams?: Map<string, number>; // JOIN parameter -> table index mapping
 }
 
 /**

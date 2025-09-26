@@ -39,6 +39,7 @@ export type {
   CoalesceExpression,
   CastExpression,
   AggregateExpression,
+  ReferenceExpression,
 
   // Boolean expressions
   ComparisonExpression,

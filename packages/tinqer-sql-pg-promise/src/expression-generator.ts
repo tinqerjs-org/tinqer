@@ -24,6 +24,7 @@ import type {
   ConditionalExpression,
   CoalesceExpression,
   CaseExpression,
+  ReferenceExpression,
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 
@@ -45,6 +46,10 @@ export function generateExpression(expr: Expression, context: SqlContext): strin
   }
   if (isArrayExpression(expr)) {
     throw new Error("Array expressions not yet supported");
+  }
+  // Check for reference type directly since it might not be in a union yet
+  if ((expr as { type: string }).type === "reference") {
+    return generateReferenceExpression(expr as unknown as ReferenceExpression, context);
   }
   throw new Error(`Unknown expression type: ${(expr as Expression & { type: string }).type}`);
 }
@@ -100,6 +105,8 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
       return generateCoalesceExpression(expr as CoalesceExpression, context);
     case "case":
       return generateCaseExpression(expr as CaseExpression, context);
+    case "reference":
+      return generateReferenceExpression(expr as ReferenceExpression, context);
     default:
       throw new Error(
         `Unsupported value expression type: ${(expr as ValueExpression & { type: string }).type}`,
@@ -209,6 +216,29 @@ function generateNotExpression(expr: NotExpression, context: SqlContext): string
     return `NOT ${operand}`;
   }
   return `NOT (${operand})`;
+}
+
+/**
+ * Generate SQL for reference expressions (entire table/object references)
+ */
+function generateReferenceExpression(expr: ReferenceExpression, context: SqlContext): string {
+  // A reference expression like { u, d } needs special handling
+  // In SELECT context, we'd want to expand all columns from the referenced table
+  // For now, return a placeholder that indicates this is a reference
+
+  // Map parameter references like $param0, $param1 to table aliases
+  if (expr.table.startsWith("$param")) {
+    const paramIndex = parseInt(expr.table.substring(6), 10);
+    const aliases = Array.from(context.tableAliases.values());
+    if (paramIndex < aliases.length) {
+      // Return all columns from this table (will be expanded in SELECT generation)
+      return `"${aliases[paramIndex]}".*`;
+    }
+  }
+
+  // For non-param references, look up the alias
+  const alias = context.tableAliases.get(expr.table) || expr.table;
+  return `"${alias}".*`;
 }
 
 /**

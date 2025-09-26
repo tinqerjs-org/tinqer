@@ -163,6 +163,43 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
     if (node.object.type === "Identifier") {
       const objectName = (node.object as Identifier).name;
 
+      // Check if this is accessing JOIN result shape (e.g., result.joined or joined.u)
+      if (context.tableParams.has(objectName) && context.currentResultShape) {
+        // Look up the property in the result shape
+        const shapeProp = context.currentResultShape.properties.get(propertyName);
+
+        if (shapeProp) {
+          if (shapeProp.type === "reference") {
+            // It's a table reference - return a reference expression
+            const refShape = shapeProp as { type: "reference"; sourceTable: number };
+            return {
+              type: "reference",
+              table: `$param${refShape.sourceTable}`,
+            };
+          } else if (shapeProp.type === "column") {
+            // It's a column from the JOIN result
+            const colShape = shapeProp as {
+              type: "column";
+              sourceTable: number;
+              columnName: string;
+            };
+            return {
+              type: "column",
+              name: colShape.columnName,
+              table: `$param${colShape.sourceTable}`,
+            };
+          } else if (shapeProp.type === "object") {
+            // It's a nested object from the JOIN result
+            // We need to return this as a placeholder that will be resolved further
+            // when accessing properties on it
+            return {
+              type: "column",
+              name: propertyName, // Keep the property name for now
+            };
+          }
+        }
+      }
+
       // Grouping parameter access (g.key, g.count(), etc.)
       if (context.groupingParams.has(objectName)) {
         if (propertyName === "key") {
@@ -191,9 +228,67 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
       }
     }
 
-    // Nested member access: x.address.city or g.key.category
+    // Nested member access: x.address.city or g.key.category or joined.u.name
     if (node.object.type === "MemberExpression") {
-      const innerExpr = visitColumnProjection(node.object as MemberExpression, context);
+      const innerMember = node.object as MemberExpression;
+
+      // Special case for JOIN result shape: joined.u.name or result.joined.user.name
+      // We need to handle deeper nesting
+      if (
+        innerMember.object.type === "Identifier" &&
+        innerMember.property.type === "Identifier" &&
+        !innerMember.computed
+      ) {
+        const outerName = (innerMember.object as Identifier).name;
+        const middleName = (innerMember.property as Identifier).name;
+
+        // Check if this is accessing JOIN result shape
+        if (context.tableParams.has(outerName) && context.currentResultShape) {
+          // Look up the middle property in the result shape
+          const shapeProp = context.currentResultShape.properties.get(middleName);
+
+          if (shapeProp && shapeProp.type === "reference") {
+            // It's a table reference - return column with table marker
+            const refShape = shapeProp as { type: "reference"; sourceTable: number };
+            return {
+              type: "column",
+              name: propertyName,
+              table: `$param${refShape.sourceTable}`,
+            };
+          } else if (shapeProp && shapeProp.type === "object") {
+            // It's a nested object - look deeper
+            const nestedShape = shapeProp as { type: "object"; properties: Map<string, any> };
+            const deepProp = nestedShape.properties.get(propertyName);
+
+            if (deepProp && deepProp.type === "reference") {
+              // Found a table reference at the deeper level
+              const refShape = deepProp as { type: "reference"; sourceTable: number };
+              // We're accessing a property on this reference, so return just the table marker
+              // The actual column name will be added by the outer expression
+              return {
+                type: "reference",
+                table: `$param${refShape.sourceTable}`,
+              };
+            }
+          }
+        }
+      } else if (innerMember.object.type === "MemberExpression") {
+        // Even deeper nesting: result.joined.user accessing .name
+        // First resolve the inner member expression
+        const innerResult = visitColumnProjection(innerMember, context);
+
+        if (innerResult && innerResult.type === "reference") {
+          // We got a reference back, now access the property on it
+          const refExpr = innerResult as { type: "reference"; table: string };
+          return {
+            type: "column",
+            name: propertyName,
+            table: refExpr.table,
+          };
+        }
+      }
+
+      const innerExpr = visitColumnProjection(innerMember, context);
 
       // If inner expression is an object (like g.key returning a composite key)
       if (innerExpr && innerExpr.type === "object") {
@@ -202,6 +297,16 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
         if (objExpr.properties[propertyName]) {
           return objExpr.properties[propertyName];
         }
+      }
+
+      // If inner expression is a reference, convert to column access
+      if (innerExpr && innerExpr.type === "reference") {
+        const refExpr = innerExpr as { type: "reference"; table: string };
+        return {
+          type: "column",
+          name: propertyName,
+          table: refExpr.table,
+        };
       }
 
       // Regular nested column access

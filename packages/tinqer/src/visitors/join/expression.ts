@@ -38,17 +38,29 @@ export function visitJoinExpression(
           };
           const shapeProp = resultShape.properties.get(propName);
 
-          if (shapeProp && shapeProp.type === "column") {
-            // Return the actual column reference from the result shape
-            return {
-              value: {
-                type: "column",
-                name: shapeProp.columnName || propName,
-                table: `$param${shapeProp.sourceTable}`, // Use the original source table
-              },
-              autoParams,
-              counter: currentCounter,
-            };
+          if (shapeProp) {
+            if (shapeProp.type === "column") {
+              // Return the actual column reference from the result shape
+              return {
+                value: {
+                  type: "column",
+                  name: shapeProp.columnName || propName,
+                  table: `$param${shapeProp.sourceTable}`, // Use the original source table
+                },
+                autoParams,
+                counter: currentCounter,
+              };
+            } else if (shapeProp.type === "reference") {
+              // It's a table reference - return it as a reference
+              return {
+                value: {
+                  type: "reference",
+                  table: `$param${shapeProp.sourceTable}`,
+                },
+                autoParams,
+                counter: currentCounter,
+              };
+            }
           }
         }
 
@@ -86,14 +98,58 @@ export function visitJoinExpression(
       const ident = node as { name: string };
       const identName = ident.name;
 
-      // Check if this is a JOIN parameter (u or d in the result selector)
+      // FIRST check if this is the previous JOIN result parameter
+      if (identName === context.joinResultParam && context.currentResultShape) {
+        // This is the entire result from the previous JOIN
+        // We need to preserve its structure
+        // Convert the shape to an object expression that preserves the structure
+        const convertShapeToExpression = (shape: any): Expression => {
+          if (shape.type === "reference") {
+            return {
+              type: "reference",
+              table: `$param${shape.sourceTable}`,
+            };
+          } else if (shape.type === "column") {
+            return {
+              type: "column",
+              name: shape.columnName,
+              table: `$param${shape.sourceTable}`,
+            };
+          } else if (shape.type === "object") {
+            const objExpr: Expression = {
+              type: "object",
+              properties: {},
+            };
+            for (const [key, node] of shape.properties) {
+              objExpr.properties[key] = convertShapeToExpression(node);
+            }
+            return objExpr;
+          }
+          // Default fallback
+          return { type: "constant", value: null, valueType: "null" };
+        };
+
+        const shapeAsObject = convertShapeToExpression(context.currentResultShape);
+
+        return {
+          value: shapeAsObject,
+          autoParams,
+          counter: currentCounter,
+        };
+      }
+
+      // Otherwise check if this is a JOIN parameter (u or d in the result selector)
       if (context.joinParams?.has(identName)) {
-        // This is an attempt to reference an entire table in the result selector
-        // This is not supported - users must explicitly select columns
-        throw new Error(
-          `Cannot return entire table reference '${identName}' in JOIN result selector. ` +
-            `You must explicitly select specific columns (e.g., { userId: ${identName}.id, userName: ${identName}.name })`,
-        );
+        // Return a reference to the entire table
+        const tableIndex = context.joinParams.get(identName);
+        return {
+          value: {
+            type: "reference",
+            table: `$param${tableIndex}`,
+          },
+          autoParams,
+          counter: currentCounter,
+        };
       }
       break;
     }
