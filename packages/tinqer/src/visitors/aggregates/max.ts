@@ -11,7 +11,7 @@ import type {
 } from "../../parser/ast-types.js";
 import type { VisitorContext } from "../types.js";
 import { getParameterName, getReturnExpression } from "../visitor-utils.js";
-import { visitExpression } from "../expression-visitor.js";
+import { visitValue } from "../shared/value-visitor.js";
 
 export function visitMaxOperation(
   ast: ASTCallExpression,
@@ -46,14 +46,22 @@ export function visitMaxOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(bodyExpr, localTableParams, localQueryParams);
-        if (result && result.expression) {
-          const expr = result.expression;
+        const result = visitValue(
+          bodyExpr,
+          localTableParams,
+          localQueryParams,
+          visitorContext.autoParams,
+          visitorContext.autoParamCounter,
+        );
+
+        if (result.value) {
+          const expr = result.value;
           // Store both selector (for backward compatibility) and full expression
           if (expr.type === "column") {
             selector = (expr as ColumnExpression).name;
           }
           Object.assign(autoParams, result.autoParams);
+          visitorContext.autoParamCounter = result.counter;
 
           // Return with the expression
           return {

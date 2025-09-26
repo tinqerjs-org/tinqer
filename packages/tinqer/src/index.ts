@@ -128,8 +128,3 @@ export type {
 export { parseQuery } from "./parser/parse-query.js";
 export type { ParseResult } from "./parser/parse-query.js";
 export { parseJavaScript } from "./parser/oxc-parser.js";
-export {
-  convertAstToExpression,
-  convertAstToQueryOperation,
-  type ConversionContext,
-} from "./converter/ast-converter.js";

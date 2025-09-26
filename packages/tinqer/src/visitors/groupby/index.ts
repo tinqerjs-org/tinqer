@@ -10,7 +10,7 @@ import type {
 } from "../../parser/ast-types.js";
 import type { VisitorContext } from "../types.js";
 import { getParameterName, getReturnExpression } from "../visitor-utils.js";
-import { visitExpression } from "../expression-visitor.js";
+import { visitGenericExpression } from "../shared/generic-visitor.js";
 
 export function visitGroupByOperation(
   ast: ASTCallExpression,
@@ -43,14 +43,21 @@ export function visitGroupByOperation(
       }
 
       if (bodyExpr) {
-        const result = visitExpression(bodyExpr, localTableParams, localQueryParams);
+        const result = visitGenericExpression(
+          bodyExpr,
+          localTableParams,
+          localQueryParams,
+          visitorContext.autoParams,
+          visitorContext.autoParamCounter,
+        );
 
         // Support any expression as key selector, including:
         // - Simple columns: u => u.name
         // - Object literals (composite keys): u => ({ name: u.name, dept: u.dept })
         // - Method calls: p => p.name.includes("e")
         // - Nested property access: joined => joined.user.name
-        if (result?.expression) {
+        if (result.expression) {
+          visitorContext.autoParamCounter = result.counter;
           return {
             operation: {
               type: "queryOperation",

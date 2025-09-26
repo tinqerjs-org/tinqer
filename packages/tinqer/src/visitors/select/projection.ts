@@ -259,7 +259,10 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
             };
           } else if (shapeProp && shapeProp.type === "object") {
             // It's a nested object - look deeper
-            const nestedShape = shapeProp as { type: "object"; properties: Map<string, { type: string; sourceTable?: number }> };
+            const nestedShape = shapeProp as {
+              type: "object";
+              properties: Map<string, { type: string; sourceTable?: number }>;
+            };
             const deepProp = nestedShape.properties.get(propertyName);
 
             if (deepProp && deepProp.type === "reference") {
