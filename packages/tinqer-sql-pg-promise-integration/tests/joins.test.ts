@@ -200,6 +200,78 @@ describe("PostgreSQL Integration - JOINs", () => {
     });
   });
 
+  describe("Self JOIN", () => {
+    it("should join employees with their managers", async () => {
+      const results = await executeSimple(db, () =>
+        from(dbContext, "users")
+          .join(
+            from(dbContext, "users"),
+            (e) => e.manager_id,
+            (m) => m.id,
+            (e, m) => ({ employee: e, manager: m }),
+          )
+          .select((joined) => ({
+            employeeName: joined.employee.name,
+            employeeEmail: joined.employee.email,
+            managerName: joined.manager.name,
+            managerEmail: joined.manager.email,
+          }))
+          .orderBy((r) => r.managerName)
+          .thenBy((r) => r.employeeName),
+      );
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
+
+      // Verify we have employee-manager relationships
+      results.forEach((r) => {
+        expect(r).to.have.property("employeeName");
+        expect(r).to.have.property("employeeEmail");
+        expect(r).to.have.property("managerName");
+        expect(r).to.have.property("managerEmail");
+      });
+
+      // Check specific expected relationships
+      const bobsManager = results.find((r) => r.employeeName === "Bob Johnson");
+      expect(bobsManager?.managerName).to.equal("John Doe");
+
+      const alicesManager = results.find((r) => r.employeeName === "Alice Brown");
+      expect(alicesManager?.managerName).to.equal("Jane Smith");
+    });
+
+    it("should find employees in the same department as their manager", async () => {
+      const results = await executeSimple(db, () =>
+        from(dbContext, "users")
+          .join(
+            from(dbContext, "users"),
+            (e) => e.manager_id,
+            (m) => m.id,
+            (e, m) => ({ employee: e, manager: m }),
+          )
+          .where((joined) => joined.employee.department_id === joined.manager.department_id)
+          .select((joined) => ({
+            employeeName: joined.employee.name,
+            managerName: joined.manager.name,
+            departmentId: joined.employee.department_id,
+          })),
+      );
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
+
+      // All employees should be in the same department as their manager
+      results.forEach((r) => {
+        expect(r).to.have.property("departmentId");
+      });
+
+      // Check that Bob Johnson is in the same department as John Doe (both in Engineering)
+      const bobResult = results.find((r) => r.employeeName === "Bob Johnson");
+      expect(bobResult).to.exist;
+      expect(bobResult?.managerName).to.equal("John Doe");
+      expect(bobResult?.departmentId).to.equal(1); // Engineering department
+    });
+  });
+
   describe("Complex JOIN scenarios", () => {
     it("should find customers with high-value orders", async () => {
       const results = await executeSimple(db, () =>
