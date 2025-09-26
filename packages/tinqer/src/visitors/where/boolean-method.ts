@@ -55,6 +55,9 @@ export function visitBooleanMethod(
     }
   }
 
+  // Track if we've already visited the object for includes
+  let visitedObjForIncludes: { value: ValueExpression | null; counter: number } | undefined;
+
   // Array includes method (for IN operator)
   if (methodName === "includes") {
     // Check if this is an array literal
@@ -108,10 +111,15 @@ export function visitBooleanMethod(
       ...context,
       autoParamCounter: currentCounter,
     });
+    visitedObjForIncludes = objResult; // Store for potential reuse below
+    currentCounter = objResult.counter;
 
-    if (objResult.value && node.arguments && node.arguments.length > 0) {
-      currentCounter = objResult.counter;
-
+    if (
+      objResult.value &&
+      objResult.value.type === "param" &&
+      node.arguments &&
+      node.arguments.length > 0
+    ) {
       // Parse the argument (the value being checked)
       const valueResult = visitValue(node.arguments[0] as ASTExpression, {
         ...context,
@@ -121,29 +129,37 @@ export function visitBooleanMethod(
       if (valueResult.value) {
         currentCounter = valueResult.counter;
 
-        // If the object is a parameter, treat this as an IN operation
-        if (objResult.value.type === "param") {
-          return {
-            value: {
-              type: "in",
-              value: valueResult.value,
-              list: objResult.value, // The parameter is the array
-            } as InExpression,
-            counter: currentCounter,
-          };
-        }
+        // Treat this as an IN operation with parameter array
+        return {
+          value: {
+            type: "in",
+            value: valueResult.value,
+            list: objResult.value, // The parameter is the array
+          } as InExpression,
+          counter: currentCounter,
+        };
       }
     }
+    // Fall through to string includes handling below
   }
 
   // String boolean methods
   if (["startsWith", "endsWith", "includes", "contains"].includes(methodName)) {
-    const objResult = visitValue(memberCallee.object, {
-      ...context,
-      autoParamCounter: currentCounter,
-    });
+    // For includes, reuse the object we already visited if available
+    const objResult =
+      methodName === "includes" && visitedObjForIncludes
+        ? visitedObjForIncludes
+        : visitValue(memberCallee.object, {
+            ...context,
+            autoParamCounter: currentCounter,
+          });
+
     if (!objResult.value) return { value: null, counter: currentCounter };
-    currentCounter = objResult.counter;
+
+    // Only update counter if we actually visited (not reusing)
+    if (!(methodName === "includes" && visitedObjForIncludes)) {
+      currentCounter = objResult.counter;
+    }
 
     const args: ValueExpression[] = [];
     for (const arg of node.arguments) {

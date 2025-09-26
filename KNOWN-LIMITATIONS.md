@@ -20,19 +20,19 @@ from(dbContext, "order_items")
     (oi) => oi.order_id,
     (o) => o.id,
     (oi, o) => ({
-      productId: oi.product_id,  // Renamed column
+      productId: oi.product_id, // Renamed column
       orderId: o.id,
-    })
+    }),
   )
   .join(
     from(dbContext, "products"),
-    (joined) => joined.productId,  // ✅ Works - resolves to t0.product_id
+    (joined) => joined.productId, // ✅ Works - resolves to t0.product_id
     (p) => p.id,
     (joined, p) => ({
-      orderId: joined.orderId,     // Direct reference
+      orderId: joined.orderId, // Direct reference
       productName: p.name,
-    })
-  )
+    }),
+  );
 ```
 
 ### Still Problematic Pattern
@@ -47,8 +47,8 @@ from(dbContext, "users")
     (u, d) => ({
       userId: u.id,
       userName: u.name,
-      departmentName: d.name,  // From departments table
-    })
+      departmentName: d.name, // From departments table
+    }),
   )
   .join(
     from(dbContext, "orders"),
@@ -56,10 +56,10 @@ from(dbContext, "users")
     (o) => o.user_id,
     (joined, o) => ({
       userName: joined.userName,
-      departmentName: joined.departmentName,  // ❌ May not resolve correctly
+      departmentName: joined.departmentName, // ❌ May not resolve correctly
       orderTotal: o.total_amount,
-    })
-  )
+    }),
+  );
 ```
 
 ### The Problem
