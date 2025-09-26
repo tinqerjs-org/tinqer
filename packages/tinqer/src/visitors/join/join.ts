@@ -261,8 +261,8 @@ export function visitJoinOperation(
             outerKey = colExpr.name;
 
             // Track which source table this key comes from
-            if (colExpr.table && colExpr.table.startsWith("$joinSource")) {
-              outerKeySource = parseInt(colExpr.table.substring(11), 10);
+            if (colExpr.source && colExpr.source.type === "joinResult") {
+              outerKeySource = colExpr.source.tableIndex;
             }
           }
         }

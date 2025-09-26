@@ -10,6 +10,7 @@ import type {
   ObjectExpression as ASTObjectExpression,
   MemberExpression,
   Identifier,
+  Property,
 } from "../../parser/ast-types.js";
 import type { JoinContext } from "./context.js";
 import { visitJoinExpression } from "./expression.js";
@@ -92,7 +93,8 @@ export function visitJoinResultSelector(
 
     // The properties array can contain both Property and SpreadElement
     // even though the type says Property[]
-    for (const prop of objExpr.properties as any[]) {
+    type PropertyOrSpread = Property | { type: "SpreadElement"; argument: ASTExpression };
+    for (const prop of objExpr.properties as PropertyOrSpread[]) {
       if (prop.type === "SpreadElement") {
         // Handle spread operator: ...joined
         const spreadArg = prop.argument;

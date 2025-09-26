@@ -215,8 +215,12 @@ describe("String Operations SQL Generation", () => {
               from<Product>("products").where((p) => p.name.includes("Book")),
               (u) => u.id,
               (p) => p.id,
-              (u, p) => ({ userName: u.name, productName: p.name }),
-            ),
+              (u, p) => ({ u, p }),
+            )
+            .select((joined) => ({
+              userName: joined.u.name,
+              productName: joined.p.name
+            })),
         {},
       );
 

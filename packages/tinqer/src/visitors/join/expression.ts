@@ -10,6 +10,7 @@ import type {
   Literal,
 } from "../../parser/ast-types.js";
 import type { JoinContext } from "./context.js";
+import type { ShapeNode, ReferenceShapeNode, ColumnShapeNode, ObjectShapeNode } from "../../query-tree/operations.js";
 
 /**
  * Visit expressions in JOIN context with parameter tracking
@@ -45,7 +46,7 @@ export function visitJoinExpression(
                 value: {
                   type: "column",
                   name: shapeProp.columnName || propName,
-                  table: `$param${shapeProp.sourceTable}`, // Use the original source table
+                  source: { type: "joinParam", paramIndex: shapeProp.sourceTable || 0 },
                 },
                 autoParams,
                 counter: currentCounter,
@@ -55,7 +56,7 @@ export function visitJoinExpression(
               return {
                 value: {
                   type: "reference",
-                  table: `$param${shapeProp.sourceTable}`,
+                  source: { type: "joinParam", paramIndex: shapeProp.sourceTable || 0 },
                 },
                 autoParams,
                 counter: currentCounter,
@@ -71,7 +72,7 @@ export function visitJoinExpression(
             value: {
               type: "column",
               name: propName,
-              table: `$param${tableIndex}`, // Mark with table index
+              source: { type: "joinParam", paramIndex: tableIndex || 0 },
             },
             autoParams,
             counter: currentCounter,
@@ -103,33 +104,44 @@ export function visitJoinExpression(
         // This is the entire result from the previous JOIN
         // We need to preserve its structure
         // Convert the shape to an object expression that preserves the structure
-        const convertShapeToExpression = (shape: any): Expression => {
+        const convertShapeToExpression = (shape: ShapeNode): Expression => {
           if (shape.type === "reference") {
+            const refShape = shape as ReferenceShapeNode;
             return {
               type: "reference",
-              table: `$param${shape.sourceTable}`,
+              source: { type: "joinParam", paramIndex: refShape.sourceTable || 0 },
             };
           } else if (shape.type === "column") {
+            const colShape = shape as ColumnShapeNode;
             return {
               type: "column",
-              name: shape.columnName,
-              table: `$param${shape.sourceTable}`,
+              name: colShape.columnName,
+              source: { type: "joinParam", paramIndex: colShape.sourceTable || 0 },
             };
           } else if (shape.type === "object") {
+            const objShape = shape as ObjectShapeNode;
             const objExpr: Expression = {
               type: "object",
               properties: {},
             };
-            for (const [key, node] of shape.properties) {
+            for (const [key, node] of objShape.properties) {
               objExpr.properties[key] = convertShapeToExpression(node);
             }
             return objExpr;
           }
-          // Default fallback
+          // Default fallback for array or unknown types
           return { type: "constant", value: null, valueType: "null" };
         };
 
-        const shapeAsObject = convertShapeToExpression(context.currentResultShape);
+        // Convert the ResultShape to an object expression
+        const resultShape: Expression = {
+          type: "object",
+          properties: {},
+        };
+        for (const [key, node] of context.currentResultShape.properties) {
+          resultShape.properties[key] = convertShapeToExpression(node);
+        }
+        const shapeAsObject = resultShape;
 
         return {
           value: shapeAsObject,
@@ -145,7 +157,7 @@ export function visitJoinExpression(
         return {
           value: {
             type: "reference",
-            table: `$param${tableIndex}`,
+            source: { type: "joinParam", paramIndex: tableIndex || 0 },
           },
           autoParams,
           counter: currentCounter,

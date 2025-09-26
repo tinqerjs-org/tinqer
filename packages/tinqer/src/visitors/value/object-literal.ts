@@ -104,7 +104,7 @@ function flattenShape(
       properties[fullName] = {
         type: "column",
         name: colNode.columnName,
-        table: `$spread${colNode.sourceTable}`,
+        source: { type: "spread", sourceIndex: colNode.sourceTable || 0 },
       } as ColumnExpression;
     } else if (shapeProp.type === "object") {
       // Nested object - recursively flatten
@@ -115,7 +115,7 @@ function flattenShape(
       properties[fullName] = {
         type: "column",
         name: fullName,
-        table: `$spread${refNode.sourceTable}`,
+        source: { type: "spread", sourceIndex: refNode.sourceTable || 0 },
       } as ColumnExpression;
     }
   }

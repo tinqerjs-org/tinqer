@@ -259,8 +259,9 @@ describe("WHERE SQL Generation", () => {
               from(db, "departments"),
               (u) => u.deptId,
               (d) => d.id,
-              (u, d) => ({ user: u.name, dept: d.name }),
-            ),
+              (u, d) => ({ u, d }),
+            )
+            .select((joined) => ({ user: joined.u.name, dept: joined.d.name })),
         {},
       );
 

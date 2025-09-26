@@ -16,6 +16,7 @@ import type {
   LogicalExpression,
   NotExpression,
   IsNullExpression,
+  ReferenceExpression,
 } from "../../expressions/expression.js";
 
 import type {
@@ -174,7 +175,7 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
             const refShape = shapeProp as { type: "reference"; sourceTable: number };
             return {
               type: "reference",
-              table: `$param${refShape.sourceTable}`,
+              source: { type: "joinParam", paramIndex: refShape.sourceTable },
             };
           } else if (shapeProp.type === "column") {
             // It's a column from the JOIN result
@@ -186,7 +187,7 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
             return {
               type: "column",
               name: colShape.columnName,
-              table: `$param${colShape.sourceTable}`,
+              source: { type: "joinParam", paramIndex: colShape.sourceTable },
             };
           } else if (shapeProp.type === "object") {
             // It's a nested object from the JOIN result
@@ -195,6 +196,7 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
             return {
               type: "column",
               name: propertyName, // Keep the property name for now
+              table: objectName, // Mark that this is from the joined result
             };
           }
         }
@@ -253,7 +255,7 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
             return {
               type: "column",
               name: propertyName,
-              table: `$param${refShape.sourceTable}`,
+              source: { type: "joinParam", paramIndex: refShape.sourceTable },
             };
           } else if (shapeProp && shapeProp.type === "object") {
             // It's a nested object - look deeper
@@ -267,7 +269,7 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
               // The actual column name will be added by the outer expression
               return {
                 type: "reference",
-                table: `$param${refShape.sourceTable}`,
+                source: { type: "joinParam", paramIndex: refShape.sourceTable },
               };
             }
           }
@@ -279,11 +281,11 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
 
         if (innerResult && innerResult.type === "reference") {
           // We got a reference back, now access the property on it
-          const refExpr = innerResult as { type: "reference"; table: string };
+          const refExpr = innerResult as ReferenceExpression;
           return {
             type: "column",
             name: propertyName,
-            table: refExpr.table,
+            source: refExpr.source, // Use the same source as the reference
           };
         }
       }
@@ -301,19 +303,29 @@ function visitColumnProjection(node: MemberExpression, context: SelectContext): 
 
       // If inner expression is a reference, convert to column access
       if (innerExpr && innerExpr.type === "reference") {
-        const refExpr = innerExpr as { type: "reference"; table: string };
+        const refExpr = innerExpr as ReferenceExpression;
         return {
           type: "column",
           name: propertyName,
-          table: refExpr.table,
+          source: refExpr.source, // Use the same source as the reference
         };
       }
 
       // Regular nested column access
       if (innerExpr && innerExpr.type === "column") {
+        const innerCol = innerExpr as ColumnExpression;
+        // If the inner column has a table, use it
+        if (innerCol.table) {
+          return {
+            type: "column",
+            name: propertyName,
+            table: innerCol.name, // The inner column's name becomes the table reference
+          };
+        }
+        // Otherwise concatenate for nested property access
         return {
           type: "column",
-          name: `${(innerExpr as ColumnExpression).name}.${propertyName}`,
+          name: `${innerCol.name}.${propertyName}`,
         };
       }
     }

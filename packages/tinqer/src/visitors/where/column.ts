@@ -43,7 +43,7 @@ export function visitColumnAccess(
             return {
               type: "column",
               name: shapeProp.columnName || propertyName,
-              table: `$joinSource${shapeProp.sourceTable}`,
+              source: { type: "joinResult", tableIndex: shapeProp.sourceTable || 0 },
             };
           }
         }

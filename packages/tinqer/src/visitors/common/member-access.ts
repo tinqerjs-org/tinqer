@@ -83,7 +83,7 @@ export function visitMemberAccess(
               return {
                 type: "column",
                 name: nestedProp.columnName,
-                table: `$joinSource${nestedProp.sourceTable}`,
+                source: { type: "joinResult", tableIndex: nestedProp.sourceTable || 0 },
               } as ColumnExpression;
             }
           } else if (shapeProp.type === "reference") {
@@ -91,7 +91,7 @@ export function visitMemberAccess(
             return {
               type: "column",
               name: propertyName,
-              table: `$joinSource${shapeProp.sourceTable}`,
+              source: { type: "joinResult", tableIndex: shapeProp.sourceTable || 0 },
             } as ColumnExpression;
           }
         }
@@ -139,7 +139,7 @@ export function visitMemberAccess(
           return {
             type: "column",
             name: shapeProp.columnName,
-            table: `$joinSource${shapeProp.sourceTable}`,
+            source: { type: "joinResult", tableIndex: shapeProp.sourceTable || 0 },
           } as ColumnExpression;
         }
       }
@@ -152,7 +152,7 @@ export function visitMemberAccess(
         return {
           type: "column",
           name: propertyName,
-          table: `$param${context.joinParams.get(objectName)}`,
+          source: { type: "joinParam", paramIndex: context.joinParams.get(objectName) || 0 },
         } as ColumnExpression;
       }
       // Regular table parameter

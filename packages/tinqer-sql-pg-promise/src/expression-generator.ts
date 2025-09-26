@@ -224,21 +224,40 @@ function generateNotExpression(expr: NotExpression, context: SqlContext): string
 function generateReferenceExpression(expr: ReferenceExpression, context: SqlContext): string {
   // A reference expression like { u, d } needs special handling
   // In SELECT context, we'd want to expand all columns from the referenced table
-  // For now, return a placeholder that indicates this is a reference
 
-  // Map parameter references like $param0, $param1 to table aliases
-  if (expr.table.startsWith("$param")) {
-    const paramIndex = parseInt(expr.table.substring(6), 10);
+  // Handle new source-based references
+  if (expr.source) {
     const aliases = Array.from(context.tableAliases.values());
-    if (paramIndex < aliases.length) {
-      // Return all columns from this table (will be expanded in SELECT generation)
-      return `"${aliases[paramIndex]}".*`;
+
+    switch (expr.source.type) {
+      case "joinParam": {
+        // Map parameter references to table aliases
+        if (expr.source.paramIndex < aliases.length) {
+          // Return all columns from this table (will be expanded in SELECT generation)
+          return `"${aliases[expr.source.paramIndex]}".*`;
+        }
+        return `"t${expr.source.paramIndex}".*`;
+      }
+
+      case "table": {
+        // Explicit table alias
+        return `"${expr.source.alias}".*`;
+      }
+
+      default:
+        // Should not happen, but handle gracefully
+        return `"t0".*`;
     }
   }
 
-  // For non-param references, look up the alias
-  const alias = context.tableAliases.get(expr.table) || expr.table;
-  return `"${alias}".*`;
+  // Handle regular table references
+  if (expr.table) {
+    const alias = context.tableAliases.get(expr.table) || expr.table;
+    return `"${alias}".*`;
+  }
+
+  // Fallback
+  return `"t0".*`;
 }
 
 /**
@@ -278,30 +297,34 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
     }
   }
 
-  // Check if this is a special marker from JOIN processing
-  if (expr.table && expr.table.startsWith("$")) {
-    // Handle $param0, $param1 (direct parameter references)
-    if (expr.table.startsWith("$param")) {
-      const paramIndex = parseInt(expr.table.substring(6), 10);
-      const aliases = Array.from(context.tableAliases.values());
-      const tableAlias = aliases[paramIndex] || `t${paramIndex}`;
-      return `"${tableAlias}"."${expr.name}"`;
-    }
+  // Handle ColumnSource for proper table alias resolution
+  if (expr.source) {
+    const aliases = Array.from(context.tableAliases.values());
+    let tableAlias: string;
 
-    // Handle $joinSource0, $joinSource1 (nested JOIN property access)
-    if (expr.table.startsWith("$joinSource")) {
-      const sourceIndex = parseInt(expr.table.substring(11), 10);
-      const aliases = Array.from(context.tableAliases.values());
-      const tableAlias = aliases[sourceIndex] || `t${sourceIndex}`;
-      return `"${tableAlias}"."${expr.name}"`;
-    }
+    switch (expr.source.type) {
+      case "joinParam":
+        // Direct parameter references
+        tableAlias = aliases[expr.source.paramIndex] || `t${expr.source.paramIndex}`;
+        return `"${tableAlias}"."${expr.name}"`;
 
-    // Handle $spread0, $spread1 (spread operator from JOIN result)
-    if (expr.table.startsWith("$spread")) {
-      const sourceIndex = parseInt(expr.table.substring(7), 10);
-      const aliases = Array.from(context.tableAliases.values());
-      const tableAlias = aliases[sourceIndex] || `t${sourceIndex}`;
-      return `"${tableAlias}"."${expr.name}"`;
+      case "joinResult":
+        // Nested JOIN property access
+        tableAlias = aliases[expr.source.tableIndex] || `t${expr.source.tableIndex}`;
+        return `"${tableAlias}"."${expr.name}"`;
+
+      case "spread":
+        // Spread operator source
+        tableAlias = aliases[expr.source.sourceIndex] || `t${expr.source.sourceIndex}`;
+        return `"${tableAlias}"."${expr.name}"`;
+
+      case "table":
+        // Explicit table alias
+        return `"${expr.source.alias}"."${expr.name}"`;
+
+      case "direct":
+        // Direct table access (no qualifier needed)
+        return `"${expr.name}"`;
     }
   }
 
@@ -338,6 +361,17 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
 
   // Regular column handling
   if (expr.table) {
+    // Check if the table is a reference from JOIN result shape
+    // When we have joined.c.id, it becomes column with table="c" and name="id"
+    // We need to check if "c" is actually a reference in the symbol table
+    if (context.symbolTable) {
+      const tableRef = context.symbolTable.entries.get(expr.table);
+      if (tableRef && tableRef.columnName === "*") {
+        // This is a reference node - use the mapped table alias
+        return `"${tableRef.tableAlias}"."${expr.name}"`;
+      }
+    }
+
     const alias = context.tableAliases.get(expr.table) || expr.table;
     return `"${alias}"."${expr.name}"`;
   }

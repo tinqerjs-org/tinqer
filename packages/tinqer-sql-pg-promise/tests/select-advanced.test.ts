@@ -117,17 +117,12 @@ describe("Advanced SELECT Projection SQL Generation", () => {
               from<Department>("departments"),
               (u) => u.departmentId,
               (d) => d.id,
-              (u, d) => ({
-                userId: u.id,
-                userName: u.firstName + " " + u.lastName,
-                deptName: d.name,
-                salary: u.salary,
-              }),
+              (u, d) => ({ u, d }),
             )
-            .groupBy((x) => x.deptName)
+            .groupBy((joined) => joined.d.name)
             .select((g) => ({
               department: g.key,
-              avgSalary: g.avg((x) => x.salary),
+              avgSalary: g.avg((joined) => joined.u.salary),
               headcount: g.count(),
             })),
         {},

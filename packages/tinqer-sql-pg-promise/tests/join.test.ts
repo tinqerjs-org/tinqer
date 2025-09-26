@@ -47,12 +47,14 @@ describe("Join SQL Generation", () => {
     it("should generate INNER JOIN with proper syntax", () => {
       const result = query(
         () =>
-          from<User>("users").join(
-            from<Department>("departments"),
-            (u) => u.departmentId,
-            (d) => d.id,
-            (u, d) => ({ userName: u.name, deptName: d.name }),
-          ),
+          from<User>("users")
+            .join(
+              from<Department>("departments"),
+              (u) => u.departmentId,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .select((joined) => ({ userName: joined.u.name, deptName: joined.d.name })),
         {},
       );
 
@@ -70,13 +72,14 @@ describe("Join SQL Generation", () => {
               from<Order>("orders"),
               (u) => u.id,
               (o) => o.userId,
-              (u, o) => ({ user: u.name, total: o.amount }),
-            ),
+              (u, o) => ({ u, o }),
+            )
+            .select((joined) => ({ user: joined.u.name, total: joined.o.amount })),
         {},
       );
 
       expect(result.sql).to.equal(
-        'SELECT "t0"."name" AS "user", "t1"."amount" AS "total" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" WHERE "id" > $(__p1)',
+        'SELECT "t0"."name" AS "user", "t1"."amount" AS "total" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" WHERE "t0"."id" > $(__p1)',
       );
       expect(result.params).to.deep.equal({ __p1: 100 });
     });
@@ -84,12 +87,14 @@ describe("Join SQL Generation", () => {
     it("should handle JOIN with complex inner query", () => {
       const result = query(
         () =>
-          from<User>("users").join(
-            from<Order>("orders").where((o) => o.amount > 1000),
-            (u) => u.id,
-            (o) => o.userId,
-            (u, o) => ({ userName: u.name, orderAmount: o.amount }),
-          ),
+          from<User>("users")
+            .join(
+              from<Order>("orders").where((o) => o.amount > 1000),
+              (u) => u.id,
+              (o) => o.userId,
+              (u, o) => ({ u, o }),
+            )
+            .select((joined) => ({ userName: joined.u.name, orderAmount: joined.o.amount })),
         {},
       );
 
@@ -107,12 +112,12 @@ describe("Join SQL Generation", () => {
               from<Order>("orders"),
               (u) => u.id,
               (o) => o.userId,
-              (u, o) => ({ userId: u.id, userName: u.name, orderAmount: o.amount }),
+              (u, o) => ({ u, o }),
             )
-            .groupBy((x) => x.userId)
+            .groupBy((joined) => joined.u.id)
             .select((g) => ({
               userId: g.key,
-              totalAmount: g.sum((x) => x.orderAmount),
+              totalAmount: g.sum((joined) => joined.o.amount),
             })),
         {},
       );
@@ -130,8 +135,9 @@ describe("Join SQL Generation", () => {
               from<Department>("departments"),
               (u) => u.departmentId,
               (d) => d.id,
-              (_u, d) => ({ deptName: d.name }),
+              (_u, d) => ({ u: _u, d }),
             )
+            .select((joined) => ({ deptName: joined.d.name }))
             .distinct(),
         {},
       );
@@ -149,9 +155,10 @@ describe("Join SQL Generation", () => {
               from<Order>("orders"),
               (u) => u.id,
               (o) => o.userId,
-              (u, o) => ({ userName: u.name, amount: o.amount }),
+              (u, o) => ({ u, o }),
             )
-            .orderBy((x) => x.amount)
+            .orderBy((joined) => joined.o.amount)
+            .select((joined) => ({ userName: joined.u.name, amount: joined.o.amount }))
             .take(10),
         {},
       );
@@ -172,18 +179,19 @@ describe("Join SQL Generation", () => {
               from<Department>("departments"),
               (u) => u.departmentId,
               (d) => d.id,
-              (u, d) => ({ userId: u.id, userName: u.name, deptId: d.id, deptName: d.name }),
+              (u, d) => ({ u, d }),
             )
             .join(
               from<Location>("locations"),
-              (ud) => ud.deptId,
+              (joined) => joined.d.id,
               (l) => l.id,
-              (ud, l) => ({
-                userName: ud.userName,
-                deptName: ud.deptName,
-                city: l.city,
-              }),
-            ),
+              (joined, l) => ({ ...joined, l }),
+            )
+            .select((result) => ({
+              userName: result.u.name,
+              deptName: result.d.name,
+              city: result.l.city,
+            })),
         {},
       );
 
@@ -199,30 +207,26 @@ describe("Join SQL Generation", () => {
               from<User>("users"),
               (o) => o.userId,
               (u) => u.id,
-              (o, u) => ({ orderId: o.id, userId: u.id, userName: u.name, productId: o.productId }),
+              (o, u) => ({ o, u }),
             )
             .join(
               from<Product>("products"),
-              (ou) => ou.productId, // Fixed: removed || 0, JOINs must use simple column access
+              (joined) => joined.o.productId,
               (p) => p.id,
-              (ou, p) => ({
-                orderId: ou.orderId,
-                userName: ou.userName,
-                productName: p.name,
-                categoryId: p.categoryId,
-              }),
+              (joined, p) => ({ ...joined, p }),
             )
             .join(
               from<Category>("categories"),
-              (oup) => oup.categoryId,
+              (joined) => joined.p.categoryId,
               (c) => c.id,
-              (oup, c) => ({
-                orderId: oup.orderId,
-                userName: oup.userName,
-                productName: oup.productName,
-                categoryName: c.name,
-              }),
-            ),
+              (joined, c) => ({ ...joined, c }),
+            )
+            .select((result) => ({
+              orderId: result.o.id,
+              userName: result.u.name,
+              productName: result.p.name,
+              categoryName: result.c.name,
+            })),
         {},
       );
 
@@ -237,12 +241,14 @@ describe("Join SQL Generation", () => {
     it("should handle self JOIN for hierarchical data", () => {
       const result = query(
         () =>
-          from<User>("users").join(
-            from<User>("users").where((m) => m.managerId != null),
-            (e) => e.managerId, // Fixed: removed || 0, JOINs must use simple column access
-            (m) => m.id,
-            (e, m) => ({ employeeName: e.name, managerName: m.name }),
-          ),
+          from<User>("users")
+            .join(
+              from<User>("users").where((m) => m.managerId != null),
+              (e) => e.managerId,
+              (m) => m.id,
+              (e, m) => ({ e, m }),
+            )
+            .select((joined) => ({ employeeName: joined.e.name, managerName: joined.m.name })),
         {},
       );
 
@@ -261,14 +267,14 @@ describe("Join SQL Generation", () => {
               from<Order>("orders"),
               (u) => u.id,
               (o) => o.userId,
-              (u, o) => ({ userId: u.id, userName: u.name, amount: o.amount }),
+              (u, o) => ({ u, o }),
             )
-            .groupBy((x) => x.userId)
+            .groupBy((joined) => joined.u.id)
             .select((g) => ({
               userId: g.key,
-              avgOrderAmount: g.avg((x) => x.amount),
-              maxOrderAmount: g.max((x) => x.amount),
-              minOrderAmount: g.min((x) => x.amount),
+              avgOrderAmount: g.avg((joined) => joined.o.amount),
+              maxOrderAmount: g.max((joined) => joined.o.amount),
+              minOrderAmount: g.min((joined) => joined.o.amount),
             })),
         {},
       );
@@ -286,9 +292,10 @@ describe("Join SQL Generation", () => {
               from<Order>("orders"),
               (u) => u.id,
               (o) => o.userId,
-              (u, o) => ({ userName: u.name, amount: o.amount }),
+              (u, o) => ({ u, o }),
             )
-            .where((x) => x.amount > 100 && x.amount < 1000),
+            .where((joined) => joined.o.amount > 100 && joined.o.amount < 1000)
+            .select((joined) => ({ userName: joined.u.name, amount: joined.o.amount })),
         {},
       );
 
@@ -306,9 +313,14 @@ describe("Join SQL Generation", () => {
               from<Order>("orders").where((o) => o.status == "completed"),
               (u) => u.id,
               (o) => o.userId,
-              (u, o) => ({ userName: u.name, amount: o.amount, userId: u.id }),
+              (u, o) => ({ u, o }),
             )
-            .where((x) => x.amount > 500)
+            .where((joined) => joined.o.amount > 500)
+            .select((joined) => ({
+              userName: joined.u.name,
+              amount: joined.o.amount,
+              userId: joined.u.id
+            }))
             .orderBy((x) => x.amount)
             .take(20),
         {},
@@ -331,8 +343,9 @@ describe("Join SQL Generation", () => {
               from<Department>("departments"),
               (u) => u.departmentId,
               (d) => d.id,
-              (u, d) => ({ userName: u.name, deptName: d.name }),
+              (u, d) => ({ u, d }),
             )
+            .select((joined) => ({ userName: joined.u.name, deptName: joined.d.name }))
             .orderBy((x) => x.userName)
             .skip(p.page * p.pageSize)
             .take(p.pageSize),

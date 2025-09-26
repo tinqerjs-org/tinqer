@@ -153,8 +153,9 @@ describe("Terminal Operations", () => {
               from<Order>("orders"),
               (u) => u.id,
               (o) => o.userId,
-              (u, o) => ({ userName: u.name, orderAmount: o.amount }),
+              (u, o) => ({ u, o }),
             )
+            .select((joined) => ({ userName: joined.u.name, orderAmount: joined.o.amount }))
             .single(),
         {},
       );

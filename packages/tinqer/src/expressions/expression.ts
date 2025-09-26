@@ -8,12 +8,23 @@
 // ==================== Value Expressions ====================
 
 /**
+ * Column source - where a column comes from
+ */
+export type ColumnSource =
+  | { type: "direct" } // Direct table access (no qualifier needed)
+  | { type: "table"; alias: string } // Explicit table alias
+  | { type: "joinParam"; paramIndex: number } // JOIN parameter (0=outer, 1=inner)
+  | { type: "joinResult"; tableIndex: number } // From previous JOIN result
+  | { type: "spread"; sourceIndex: number }; // Spread operator source
+
+/**
  * Column reference - references a table column
  */
 export interface ColumnExpression {
   type: "column";
   name: string;
-  table?: string; // Optional table alias for joins
+  source?: ColumnSource; // Where this column comes from (for JOINs)
+  table?: string; // Table name for regular references (not JOINs)
 }
 
 /**
@@ -108,7 +119,8 @@ export interface AggregateExpression {
  */
 export interface ReferenceExpression {
   type: "reference";
-  table: string; // Table or parameter name
+  source?: ColumnSource; // Where this reference comes from (for JOINs)
+  table?: string; // Table name for regular references (not JOINs)
 }
 
 /**
