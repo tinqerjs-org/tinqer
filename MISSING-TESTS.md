@@ -5,12 +5,14 @@ This document outlines integration tests that should be added to the Tinqer test
 ## High Priority Tests (Security & Correctness)
 
 ### 1. SQL Injection Prevention Tests
+
 **File:** `packages/tinqer-sql-pg-promise/tests/sql-injection-prevention.test.ts`
 
 Critical tests to ensure all user input is properly parameterized:
+
 - String literals containing SQL keywords (DROP TABLE, UNION SELECT, OR 1=1)
 - Special characters and escape sequences (single quotes, backslashes, newlines)
-- Comment injection attempts (--, /* */, #)
+- Comment injection attempts (--, /\* \*/, #)
 - Numeric injection attempts
 - Unicode and encoding attacks
 - Boolean-based blind injection patterns
@@ -19,9 +21,11 @@ Critical tests to ensure all user input is properly parameterized:
 - Hexadecimal and encoded injection
 
 ### 2. Date/Time Operations Tests
+
 **File:** Add to existing test files or create `date-time-operations.test.ts`
 
 Currently missing entirely:
+
 - Date equality and inequality comparisons
 - Date range queries with AND/OR
 - Date with time components (millisecond precision)
@@ -34,9 +38,11 @@ Currently missing entirely:
 - Complex date queries with nested conditions
 
 ### 3. Advanced Boolean Operations Tests
+
 **File:** Add to existing `where.test.ts` and `where-complex.test.ts`
 
 Expand coverage for:
+
 - Direct boolean column usage without comparison (`x => x.isActive`)
 - Negated boolean columns (`x => !x.isDeleted`)
 - Complex boolean logic with multiple columns
@@ -53,9 +59,11 @@ Expand coverage for:
 ## Medium Priority Tests (Functionality)
 
 ### 4. Hierarchical/Self-Referential Data Tests
+
 **File:** Create `hierarchical-data.test.ts`
 
 For tree-structured data:
+
 - Finding root nodes (parentId IS NULL)
 - Finding children of specific parent
 - Finding leaf nodes
@@ -68,9 +76,11 @@ For tree-structured data:
 - Performance-oriented hierarchical queries
 
 ### 5. Advanced Pagination Patterns Tests
+
 **File:** Add to existing `skip.test.ts` and `take.test.ts`
 
 Beyond basic SKIP/TAKE:
+
 - Cursor-based pagination (ID cursor, composite cursor)
 - Keyset pagination (single and multi-column)
 - Pagination with aggregates and GROUP BY
@@ -82,9 +92,11 @@ Beyond basic SKIP/TAKE:
 - Performance-optimized patterns (avoiding large offsets)
 
 ### 6. Search Pattern Tests
+
 **File:** Add to existing `string-operations.test.ts`
 
 Complex search scenarios:
+
 - Case-insensitive search (toLowerCase/toUpperCase)
 - Multi-field search with OR
 - Fuzzy search patterns
@@ -97,10 +109,12 @@ Complex search scenarios:
 - Search performance patterns
 
 ### 7. Advanced NULL Handling Tests
+
 **File:** Add to existing `null-handling.test.ts` and `null-coalescing-simple.test.ts`
 
 Complex NULL scenarios:
-- NULL in arithmetic operations (+, -, *, /)
+
+- NULL in arithmetic operations (+, -, \*, /)
 - NULL in string concatenation
 - Three-valued logic (NULL AND/OR/NOT)
 - COALESCE with multiple values
@@ -113,9 +127,11 @@ Complex NULL scenarios:
 - NULL-safe equality patterns
 
 ### 8. Numeric Edge Cases Extended Tests
+
 **File:** Add to existing `edge-cases.test.ts` and `edge-cases-advanced.test.ts`
 
 Numeric boundaries and precision:
+
 - JavaScript numeric limits (MAX_SAFE_INTEGER, MIN_SAFE_INTEGER)
 - Zero and negative zero
 - Floating point precision issues
@@ -129,7 +145,9 @@ Numeric boundaries and precision:
 ## Lower Priority Tests
 
 ### 9. Complex Aggregate Tests
+
 Add to existing `aggregates.test.ts`:
+
 - Nested aggregate patterns
 - Conditional aggregates
 - Multiple aggregates in single query
@@ -139,7 +157,9 @@ Add to existing `aggregates.test.ts`:
 - Percentile calculations
 
 ### 10. Performance Pattern Tests
+
 Create `performance-patterns.test.ts`:
+
 - Index-friendly query patterns
 - Query optimization patterns
 - Efficient JOIN patterns
@@ -147,14 +167,18 @@ Create `performance-patterns.test.ts`:
 - Covering index patterns
 
 ### 11. Error Handling Tests
+
 Create `error-handling.test.ts`:
+
 - Invalid column names
 - Invalid table names
 - Type mismatches
 - Constraint violation patterns
 
 ### 12. Advanced JOIN Tests
+
 Add to existing `join.test.ts`:
+
 - Multiple JOINs (3+ tables)
 - Self-joins
 - Complex ON conditions
@@ -181,6 +205,7 @@ Add to existing `join.test.ts`:
 ## Existing Test Files to Expand
 
 These existing test files should be expanded with the tests listed above:
+
 - `where.test.ts` - Boolean operations
 - `where-complex.test.ts` - Complex boolean logic
 - `string-operations.test.ts` - Search patterns

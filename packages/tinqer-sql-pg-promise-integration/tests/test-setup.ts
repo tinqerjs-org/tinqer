@@ -10,6 +10,11 @@ export async function setupTestDatabase(db: IDatabase<any>) {
     DROP TABLE IF EXISTS order_items CASCADE;
     DROP TABLE IF EXISTS orders CASCADE;
     DROP TABLE IF EXISTS products CASCADE;
+    DROP TABLE IF EXISTS comments CASCADE;
+    DROP TABLE IF EXISTS categories CASCADE;
+    DROP TABLE IF EXISTS events CASCADE;
+    DROP TABLE IF EXISTS articles CASCADE;
+    DROP TABLE IF EXISTS accounts CASCADE;
     DROP TABLE IF EXISTS users CASCADE;
     DROP TABLE IF EXISTS departments CASCADE;
   `);
@@ -158,5 +163,130 @@ export async function setupTestDatabase(db: IDatabase<any>) {
     (9, 3, 1, 79.99),
     (10, 9, 1, 199.99),
     (10, 10, 1, 89.99);
+  `);
+
+  // Create events table for date/time testing
+  await db.none(`
+    CREATE TABLE events (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(200) NOT NULL,
+      start_date TIMESTAMP NOT NULL,
+      end_date TIMESTAMP,
+      location VARCHAR(200),
+      is_recurring BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP
+    );
+  `);
+
+  // Insert sample events
+  await db.none(`
+    INSERT INTO events (title, start_date, end_date, location, is_recurring, updated_at) VALUES
+    ('Team Meeting', '2024-01-15 09:00:00', '2024-01-15 10:00:00', 'Conference Room A', true, '2024-01-14 15:00:00'),
+    ('Product Launch', '2024-02-01 14:00:00', '2024-02-01 16:00:00', 'Main Hall', false, NULL),
+    ('Training Session', '2024-01-20 10:00:00', '2024-01-20 17:00:00', 'Training Room', false, '2024-01-19 12:00:00'),
+    ('Client Call', '2024-01-18 15:30:00', '2024-01-18 16:30:00', NULL, false, NULL),
+    ('Sprint Review', '2024-01-26 14:00:00', '2024-01-26 15:00:00', 'Zoom', true, '2024-01-25 09:00:00');
+  `);
+
+  // Create categories table for hierarchical testing
+  await db.none(`
+    CREATE TABLE categories (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      parent_id INTEGER,
+      level INTEGER NOT NULL,
+      path VARCHAR(500) NOT NULL,
+      is_leaf BOOLEAN DEFAULT false,
+      sort_order INTEGER DEFAULT 0,
+      FOREIGN KEY (parent_id) REFERENCES categories(id)
+    );
+  `);
+
+  // Insert hierarchical categories
+  await db.none(`
+    INSERT INTO categories (name, parent_id, level, path, is_leaf, sort_order) VALUES
+    ('Electronics', NULL, 0, '/electronics', false, 1),
+    ('Computers', 1, 1, '/electronics/computers', false, 1),
+    ('Laptops', 2, 2, '/electronics/computers/laptops', true, 1),
+    ('Desktops', 2, 2, '/electronics/computers/desktops', true, 2),
+    ('Phones', 1, 1, '/electronics/phones', false, 2),
+    ('Smartphones', 5, 2, '/electronics/phones/smartphones', true, 1),
+    ('Furniture', NULL, 0, '/furniture', false, 2),
+    ('Office', 7, 1, '/furniture/office', false, 1),
+    ('Chairs', 8, 2, '/furniture/office/chairs', true, 1),
+    ('Desks', 8, 2, '/furniture/office/desks', true, 2);
+  `);
+
+  // Create comments table for nested structures
+  await db.none(`
+    CREATE TABLE comments (
+      id SERIAL PRIMARY KEY,
+      content TEXT NOT NULL,
+      parent_comment_id INTEGER,
+      user_id INTEGER NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      depth INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (parent_comment_id) REFERENCES comments(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+  `);
+
+  // Insert nested comments
+  await db.none(`
+    INSERT INTO comments (content, parent_comment_id, user_id, depth) VALUES
+    ('Great product!', NULL, 1, 0),
+    ('I agree!', 1, 2, 1),
+    ('Thanks for the feedback', 1, 3, 1),
+    ('You are welcome', 3, 1, 2),
+    ('Another top-level comment', NULL, 4, 0),
+    ('Reply to second comment', 5, 5, 1);
+  `);
+
+  // Create accounts table for numeric testing
+  await db.none(`
+    CREATE TABLE accounts (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      balance DECIMAL(15, 2) NOT NULL,
+      credit_limit DECIMAL(15, 2) NOT NULL,
+      interest_rate DECIMAL(5, 4) NOT NULL,
+      last_transaction_date DATE,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+  `);
+
+  // Insert accounts with various numeric values
+  await db.none(`
+    INSERT INTO accounts (user_id, balance, credit_limit, interest_rate, last_transaction_date) VALUES
+    (1, 10000.50, 50000.00, 0.0325, '2024-01-20'),
+    (2, -500.25, 10000.00, 0.1899, '2024-01-19'),
+    (3, 0.00, 5000.00, 0.0000, NULL),
+    (4, 999999999.99, 9999999.99, 0.0001, '2024-01-18'),
+    (5, -9999.99, 15000.00, 0.2499, '2024-01-17');
+  `);
+
+  // Create articles table for search testing
+  await db.none(`
+    CREATE TABLE articles (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(200) NOT NULL,
+      content TEXT NOT NULL,
+      author VARCHAR(100) NOT NULL,
+      tags VARCHAR(500),
+      published_at TIMESTAMP NOT NULL,
+      views INTEGER DEFAULT 0,
+      is_featured BOOLEAN DEFAULT false
+    );
+  `);
+
+  // Insert articles for search patterns
+  await db.none(`
+    INSERT INTO articles (title, content, author, tags, published_at, views, is_featured) VALUES
+    ('Introduction to SQL', 'SQL is a powerful language for database queries...', 'John Doe', 'sql,database,tutorial', '2024-01-10 10:00:00', 1500, true),
+    ('Advanced JavaScript Patterns', 'JavaScript patterns help write better code...', 'Jane Smith', 'javascript,programming,patterns', '2024-01-12 14:00:00', 2500, false),
+    ('Database Optimization Tips', 'Optimizing database performance is crucial...', 'Bob Johnson', 'database,performance,optimization', '2024-01-14 09:00:00', 1200, true),
+    ('Web Security Best Practices', 'Security should be a top priority...', 'Alice Brown', 'security,web,best-practices', '2024-01-16 11:00:00', 3000, false),
+    ('React Hooks Explained', 'React hooks revolutionized functional components...', 'Charlie Wilson', 'react,javascript,hooks', '2024-01-18 15:00:00', 1800, false);
   `);
 }
