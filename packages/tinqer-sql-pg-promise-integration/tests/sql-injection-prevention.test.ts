@@ -7,7 +7,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
+import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -20,8 +20,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
   describe("String literals with SQL keywords", () => {
     it("should safely handle DROP TABLE in string literals", async () => {
       const maliciousName = "'; DROP TABLE users; --";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == maliciousName),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
+        { maliciousName },
       );
 
       // Should return empty array, not drop the table
@@ -35,8 +37,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should safely handle UNION SELECT in string literals", async () => {
       const maliciousEmail = "' UNION SELECT * FROM users --";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.email == maliciousEmail),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.email == params.maliciousEmail),
+        { maliciousEmail },
       );
 
       expect(results).to.be.an("array");
@@ -45,8 +49,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should safely handle OR 1=1 in string literals", async () => {
       const maliciousName = "admin' OR '1'='1";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == maliciousName),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
+        { maliciousName },
       );
 
       expect(results).to.be.an("array");
@@ -55,8 +61,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should safely handle UPDATE commands in strings", async () => {
       const maliciousEmail = "test@test.com'; UPDATE users SET is_active=false; --";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.email == maliciousEmail),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.email == params.maliciousEmail),
+        { maliciousEmail },
       );
 
       expect(results).to.have.length(0);
@@ -70,8 +78,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should safely handle DELETE commands in strings", async () => {
       const maliciousName = "test'; DELETE FROM orders; --";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == maliciousName),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
+        { maliciousName },
       );
 
       expect(results).to.have.length(0);
@@ -85,8 +95,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
   describe("Special characters and escape sequences", () => {
     it("should handle single quotes in names", async () => {
       const nameWithQuote = "O'Brien";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == nameWithQuote),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.nameWithQuote),
+        { nameWithQuote },
       );
 
       expect(results).to.be.an("array");
@@ -95,8 +107,11 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle backslashes in strings", async () => {
       const pathWithBackslash = "C:\\Users\\Admin";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products").where((p) => p.description == pathWithBackslash),
+      const results = await execute(
+        db,
+        (params) =>
+          from(dbContext, "products").where((p) => p.description == params.pathWithBackslash),
+        { pathWithBackslash },
       );
 
       expect(results).to.be.an("array");
@@ -105,8 +120,11 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle newlines and special characters", async () => {
       const textWithSpecials = "Line 1\nLine 2\r\nLine 3\t\tTabbed";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products").where((p) => p.description == textWithSpecials),
+      const results = await execute(
+        db,
+        (params) =>
+          from(dbContext, "products").where((p) => p.description == params.textWithSpecials),
+        { textWithSpecials },
       );
 
       expect(results).to.be.an("array");
@@ -117,8 +135,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
   describe("Comment injection attempts", () => {
     it("should handle SQL line comments (--)", async () => {
       const maliciousName = "admin'--";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == maliciousName),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
+        { maliciousName },
       );
 
       expect(results).to.have.length(0);
@@ -126,8 +146,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle SQL block comments (/* */)", async () => {
       const maliciousName = "admin'/*comment*/OR/**/1=1";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == maliciousName),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
+        { maliciousName },
       );
 
       expect(results).to.have.length(0);
@@ -135,8 +157,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle hash comments (#)", async () => {
       const maliciousEmail = "admin@test.com'#";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.email == maliciousEmail),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.email == params.maliciousEmail),
+        { maliciousEmail },
       );
 
       expect(results).to.have.length(0);
@@ -146,8 +170,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
   describe("Numeric injection attempts", () => {
     it("should parameterize numeric values", async () => {
       const age = 25;
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.age == age),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.age == params.age),
+        { age },
       );
 
       // Should only return users with exact age match
@@ -158,10 +184,13 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle numeric strings that look like SQL", async () => {
       const maliciousId = 1; // Even though it's numeric, it's parameterized
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .where((u) => u.id == maliciousId)
-          .select((u) => ({ id: u.id, name: u.name })),
+      const results = await execute(
+        db,
+        (params) =>
+          from(dbContext, "users")
+            .where((u) => u.id == params.maliciousId)
+            .select((u) => ({ id: u.id, name: u.name })),
+        { maliciousId },
       );
 
       expect(results).to.have.length(1);
@@ -172,8 +201,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle negative numbers safely", async () => {
       const negativeBalance = -500.25;
-      const results = await executeSimple(db, () =>
-        from(dbContext, "accounts").where((a) => a.balance == negativeBalance),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "accounts").where((a) => a.balance == params.negativeBalance),
+        { negativeBalance },
       );
 
       // Should match exact balance
@@ -186,8 +217,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
   describe("Boolean-based blind injection patterns", () => {
     it("should safely handle boolean logic injection attempts", async () => {
       const maliciousEmail = "test@test.com' AND 1=1--";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.email == maliciousEmail),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.email == params.maliciousEmail),
+        { maliciousEmail },
       );
 
       expect(results).to.have.length(0);
@@ -195,8 +228,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle CASE WHEN injection attempts", async () => {
       const maliciousName = "'; CASE WHEN 1=1 THEN 'a' ELSE 'b' END--";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == maliciousName),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
+        { maliciousName },
       );
 
       expect(results).to.have.length(0);
@@ -209,7 +244,11 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
         "admin'; INSERT INTO users (name, email) VALUES ('hacker', 'hack@test.com'); --";
       const userCountBefore = await executeSimple(db, () => from(dbContext, "users"));
 
-      await executeSimple(db, () => from(dbContext, "users").where((u) => u.name == maliciousName));
+      await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
+        { maliciousName },
+      );
 
       const userCountAfter = await executeSimple(db, () => from(dbContext, "users"));
       expect(userCountAfter.length).to.equal(userCountBefore.length);
@@ -217,8 +256,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle multiple semicolons", async () => {
       const maliciousName = "test;;;DROP TABLE products;;;--";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == maliciousName),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
+        { maliciousName },
       );
 
       expect(results).to.have.length(0);
@@ -232,8 +273,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
   describe("NULL byte injection", () => {
     it("should handle NULL byte characters", async () => {
       const maliciousName = "admin\0' OR '1'='1";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == maliciousName),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
+        { maliciousName },
       );
 
       expect(results).to.have.length(0);
@@ -244,10 +287,13 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
     it("should handle injection attempts in ORDER BY context", async () => {
       // Even though we can't directly inject into orderBy, verify parameterization in WHERE
       const maliciousCategory = "Electronics; DROP TABLE users--";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products")
-          .where((p) => p.category == maliciousCategory)
-          .orderBy((p) => p.name),
+      const results = await execute(
+        db,
+        (params) =>
+          from(dbContext, "products")
+            .where((p) => p.category == params.maliciousCategory)
+            .orderBy((p) => p.name),
+        { maliciousCategory },
       );
 
       expect(results).to.have.length(0);
@@ -259,13 +305,16 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle injection attempts in SELECT projections", async () => {
       const testName = "John Doe";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .where((u) => u.name == testName)
-          .select((u) => ({
-            userName: u.name,
-            userEmail: u.email,
-          })),
+      const results = await execute(
+        db,
+        (params) =>
+          from(dbContext, "users")
+            .where((u) => u.name == params.testName)
+            .select((u) => ({
+              userName: u.name,
+              userEmail: u.email,
+            })),
+        { testName },
       );
 
       expect(results).to.have.length(1);
@@ -276,14 +325,17 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle injection attempts in GROUP BY context", async () => {
       const maliciousCategory = "admin' OR '1'='1";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products")
-          .where((p) => p.category == maliciousCategory)
-          .groupBy((p) => p.category)
-          .select((g) => ({
-            category: g.key,
-            count: g.count(),
-          })),
+      const results = await execute(
+        db,
+        (params) =>
+          from(dbContext, "products")
+            .where((p) => p.category == params.maliciousCategory)
+            .groupBy((p) => p.category)
+            .select((g) => ({
+              category: g.key,
+              count: g.count(),
+            })),
+        { maliciousCategory },
       );
 
       expect(results).to.have.length(0);
@@ -293,8 +345,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
   describe("Parameterized queries with special values", () => {
     it("should handle extremely long strings", async () => {
       const longString = "a".repeat(10000);
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == longString),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.longString),
+        { longString },
       );
 
       expect(results).to.have.length(0);
@@ -302,8 +356,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle Unicode and emoji characters", async () => {
       const unicodeString = "用户名😀'; DROP TABLE users; --😈";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == unicodeString),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.unicodeString),
+        { unicodeString },
       );
 
       expect(results).to.have.length(0);
@@ -315,8 +371,10 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
     it("should handle hexadecimal encoded strings", async () => {
       const hexString = "0x44524f502054414245204755657273";
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name == hexString),
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.hexString),
+        { hexString },
       );
 
       expect(results).to.have.length(0);
@@ -329,10 +387,16 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const name2 = "'; DROP TABLE users; --";
       const age = 30;
 
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where(
-          (u) => (u.name == name1 || u.name == name2) && u.age != null && u.age > age,
-        ),
+      const results = await execute(
+        db,
+        (params) =>
+          from(dbContext, "users").where(
+            (u) =>
+              (u.name == params.name1 || u.name == params.name2) &&
+              u.age != null &&
+              u.age > params.age,
+          ),
+        { name1, name2, age },
       );
 
       expect(results).to.have.length(0);
@@ -347,10 +411,15 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const email2 = "admin@test.com' --";
       const isActive = true;
 
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where(
-          (u) => u.is_active == isActive && (u.email == email1 || u.email == email2),
-        ),
+      const results = await execute(
+        db,
+        (params) =>
+          from(dbContext, "users").where(
+            (u) =>
+              u.is_active == params.isActive &&
+              (u.email == params.email1 || u.email == params.email2),
+          ),
+        { email1, email2, isActive },
       );
 
       expect(results).to.have.length(0);
