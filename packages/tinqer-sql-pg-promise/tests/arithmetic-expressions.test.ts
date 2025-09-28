@@ -45,9 +45,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle arithmetic comparisons in WHERE", () => {
       const result = query(() => from<Product>("products").where((p) => p.price - p.cost > 50), {});
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE ("price" - "cost") > $(__p1)',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "products" WHERE ("price" - "cost") > $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 50 });
     });
 
@@ -58,7 +56,7 @@ describe("Arithmetic Expression SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "financial" AS "t0" WHERE ("revenue" / "employees") > $(__p1)',
+        'SELECT * FROM "financial" WHERE ("revenue" / "employees") > $(__p1)',
       );
       expect(result.params).to.deep.equal({ __p1: 100000 });
     });
@@ -73,7 +71,7 @@ describe("Arithmetic Expression SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE (("price" * $(__p1)) > $(__p2) AND ("cost" * "quantity") < $(__p3))',
+        'SELECT * FROM "products" WHERE (("price" * $(__p1)) > $(__p2) AND ("cost" * "quantity") < $(__p3))',
       );
       expect(result.params).to.deep.equal({
         __p1: 0.9,
@@ -136,7 +134,7 @@ describe("Arithmetic Expression SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "financial" AS "t0" WHERE "revenue" > $(__p1)');
+      expect(result.sql).to.equal('SELECT * FROM "financial" WHERE "revenue" > $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 1000000000 });
     });
 

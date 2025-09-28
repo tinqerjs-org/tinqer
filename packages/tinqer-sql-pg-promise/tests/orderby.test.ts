@@ -11,13 +11,13 @@ describe("ORDER BY SQL Generation", () => {
   it("should generate ORDER BY with simple column", () => {
     const result = query(() => from(db, "users").orderBy((x) => x.name), {});
 
-    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" ORDER BY "name" ASC');
+    expect(result.sql).to.equal('SELECT * FROM "users" ORDER BY "name" ASC');
   });
 
   it("should generate ORDER BY DESC", () => {
     const result = query(() => from(db, "posts").orderByDescending((x) => x.createdAt), {});
 
-    expect(result.sql).to.equal('SELECT * FROM "posts" AS "t0" ORDER BY "createdAt" DESC');
+    expect(result.sql).to.equal('SELECT * FROM "posts" ORDER BY "createdAt" DESC');
   });
 
   it("should generate ORDER BY with THEN BY", () => {
@@ -29,9 +29,7 @@ describe("ORDER BY SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal(
-      'SELECT * FROM "products" AS "t0" ORDER BY "category" ASC, "name" ASC',
-    );
+    expect(result.sql).to.equal('SELECT * FROM "products" ORDER BY "category" ASC, "name" ASC');
   });
 
   it("should generate mixed ORDER BY and THEN BY DESC", () => {
@@ -45,7 +43,7 @@ describe("ORDER BY SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "products" AS "t0" ORDER BY "category" ASC, "rating" DESC, "price" ASC',
+      'SELECT * FROM "products" ORDER BY "category" ASC, "rating" DESC, "price" ASC',
     );
   });
 });

@@ -18,25 +18,25 @@ describe("Terminal Operations", () => {
   describe("FIRST operations", () => {
     it("should generate SQL for first()", () => {
       const result = query(() => from<User>("users").first(), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" LIMIT 1');
+      expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for first() with predicate", () => {
       const result = query(() => from<User>("users").first((u) => u.age > 18), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "age" > $(__p1) LIMIT 1');
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" > $(__p1) LIMIT 1');
       expect(result.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should generate SQL for firstOrDefault()", () => {
       const result = query(() => from<User>("users").firstOrDefault(), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" LIMIT 1');
+      expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for firstOrDefault() with predicate", () => {
       const result = query(() => from<User>("users").firstOrDefault((u) => u.isActive), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "isActive" LIMIT 1');
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "isActive" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
@@ -49,7 +49,7 @@ describe("Terminal Operations", () => {
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" > $(__p1) AND "isActive" LIMIT 1',
+        'SELECT * FROM "users" WHERE "age" > $(__p1) AND "isActive" LIMIT 1',
       );
       expect(result.params).to.deep.equal({ __p1: 18 });
     });
@@ -58,25 +58,25 @@ describe("Terminal Operations", () => {
   describe("SINGLE operations", () => {
     it("should generate SQL for single()", () => {
       const result = query(() => from<User>("users").single(), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" LIMIT 2');
+      expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 2');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for single() with predicate", () => {
       const result = query(() => from<User>("users").single((u) => u.id == 1), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "id" = $(__p1) LIMIT 2');
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "id" = $(__p1) LIMIT 2');
       expect(result.params).to.deep.equal({ __p1: 1 });
     });
 
     it("should generate SQL for singleOrDefault()", () => {
       const result = query(() => from<User>("users").singleOrDefault(), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" LIMIT 2');
+      expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 2');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for singleOrDefault() with predicate", () => {
       const result = query(() => from<User>("users").singleOrDefault((u) => u.name == "John"), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "name" = $(__p1) LIMIT 2');
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" = $(__p1) LIMIT 2');
       expect(result.params).to.deep.equal({ __p1: "John" });
     });
   });
@@ -85,7 +85,7 @@ describe("Terminal Operations", () => {
     it("should generate SQL for last() without ORDER BY", () => {
       const result = query(() => from<User>("users").last(), {});
       // Without ORDER BY, we add a default ORDER BY 1 DESC
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" ORDER BY 1 DESC LIMIT 1');
+      expect(result.sql).to.equal('SELECT * FROM "users" ORDER BY 1 DESC LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
@@ -98,28 +98,26 @@ describe("Terminal Operations", () => {
         {},
       );
       // With existing ORDER BY, last() reverses the direction
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" ORDER BY "id" DESC LIMIT 1');
+      expect(result.sql).to.equal('SELECT * FROM "users" ORDER BY "id" DESC LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for last() with predicate", () => {
       const result = query(() => from<User>("users").last((u) => u.isActive), {});
-      expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "isActive" ORDER BY 1 DESC LIMIT 1',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "isActive" ORDER BY 1 DESC LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for lastOrDefault()", () => {
       const result = query(() => from<User>("users").lastOrDefault(), {});
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" ORDER BY 1 DESC LIMIT 1');
+      expect(result.sql).to.equal('SELECT * FROM "users" ORDER BY 1 DESC LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for lastOrDefault() with predicate", () => {
       const result = query(() => from<User>("users").lastOrDefault((u) => u.age < 30), {});
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" < $(__p1) ORDER BY 1 DESC LIMIT 1',
+        'SELECT * FROM "users" WHERE "age" < $(__p1) ORDER BY 1 DESC LIMIT 1',
       );
       expect(result.params).to.deep.equal({ __p1: 30 });
     });
@@ -135,7 +133,7 @@ describe("Terminal Operations", () => {
         {},
       );
       // Note: name AS name is generated for object projections
-      expect(result.sql).to.equal('SELECT "name" AS "name" FROM "users" AS "t0" LIMIT 1');
+      expect(result.sql).to.equal('SELECT "name" AS "name" FROM "users" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
@@ -174,7 +172,7 @@ describe("Terminal Operations", () => {
             .first(),
         {},
       );
-      expect(result.sql).to.equal('SELECT DISTINCT "name" AS "name" FROM "users" AS "t0" LIMIT 1');
+      expect(result.sql).to.equal('SELECT DISTINCT "name" AS "name" FROM "users" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
@@ -187,7 +185,7 @@ describe("Terminal Operations", () => {
         {},
       );
       // last() reverses ORDER BY direction
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" ORDER BY "name" DESC LIMIT 1');
+      expect(result.sql).to.equal('SELECT * FROM "users" ORDER BY "name" DESC LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
   });

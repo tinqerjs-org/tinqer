@@ -26,9 +26,7 @@ describe("String Operations SQL Generation", () => {
     it("should generate SQL for startsWith", () => {
       const result = query(() => from<User>("users").where((u) => u.name.startsWith("John")), {});
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "name" LIKE $(__p1) || \'%\'',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" LIKE $(__p1) || \'%\'');
       expect(result.params).to.deep.equal({ __p1: "John" });
     });
 
@@ -38,9 +36,7 @@ describe("String Operations SQL Generation", () => {
         { prefix: "admin@" },
       );
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "email" LIKE $(prefix) || \'%\'',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "email" LIKE $(prefix) || \'%\'');
       expect(result.params).to.deep.equal({ prefix: "admin@" });
     });
 
@@ -63,9 +59,7 @@ describe("String Operations SQL Generation", () => {
     it("should generate SQL for endsWith", () => {
       const result = query(() => from<User>("users").where((u) => u.email.endsWith(".com")), {});
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "email" LIKE \'%\' || $(__p1)',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "email" LIKE \'%\' || $(__p1)');
       expect(result.params).to.deep.equal({ __p1: ".com" });
     });
 
@@ -75,9 +69,7 @@ describe("String Operations SQL Generation", () => {
         { suffix: "son" },
       );
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "name" LIKE \'%\' || $(suffix)',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" LIKE \'%\' || $(suffix)');
       expect(result.params).to.deep.equal({ suffix: "son" });
     });
 
@@ -101,7 +93,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE "description" LIKE \'%\' || $(__p1) || \'%\'',
+        "SELECT * FROM \"products\" WHERE \"description\" LIKE '%' || $(__p1) || '%'",
       );
       expect(result.params).to.deep.equal({ __p1: "premium" });
     });
@@ -114,7 +106,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE "name" LIKE \'%\' || $(keyword) || \'%\'',
+        "SELECT * FROM \"products\" WHERE \"name\" LIKE '%' || $(keyword) || '%'",
       );
       expect(result.params).to.deep.equal({ keyword: "laptop" });
     });
@@ -148,7 +140,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE "name" LIKE $(__p1) || '%'`,
+        `SELECT "id" AS "id", "name" AS "name" FROM "users" WHERE "name" LIKE $(__p1) || '%'`,
       );
       expect(result.params).to.deep.equal({ __p1: "A" });
     });
@@ -164,7 +156,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT * FROM "products" AS "t0" WHERE "sku" LIKE $(__p1) || '%' ORDER BY "name" ASC LIMIT $(__p2)`,
+        `SELECT * FROM "products" WHERE "sku" LIKE $(__p1) || '%' ORDER BY "name" ASC LIMIT $(__p2)`,
       );
       expect(result.params).to.deep.equal({ __p1: "ELEC", __p2: 10 });
     });
@@ -180,7 +172,7 @@ describe("String Operations SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        `SELECT "name" AS "name", COUNT(*) AS "count" FROM "products" AS "t0" WHERE "name" LIKE '%' || $(__p1) || '%' GROUP BY "name"`,
+        `SELECT "name" AS "name", COUNT(*) AS "count" FROM "products" WHERE "name" LIKE '%' || $(__p1) || '%' GROUP BY "name"`,
       );
       expect(result.params).to.deep.equal({ __p1: "Phone" });
     });
@@ -202,7 +194,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle empty string checks", () => {
       const result = query(() => from<User>("users").where((u) => u.bio == ""), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "bio" = $(__p1)');
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "bio" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: "" });
     });
 
@@ -248,7 +240,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle nullable string comparisons", () => {
       const result = query(() => from<User>("users").where((u) => u.bio == null), {});
 
-      expect(result.sql).to.equal(`SELECT * FROM "users" AS "t0" WHERE "bio" IS NULL`);
+      expect(result.sql).to.equal(`SELECT * FROM "users" WHERE "bio" IS NULL`);
       expect(result.params).to.deep.equal({});
     });
 

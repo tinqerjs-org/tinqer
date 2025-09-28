@@ -25,9 +25,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
         { users: [] },
       );
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE LOWER("name") = LOWER($(__p1))',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE LOWER("name") = LOWER($(__p1))');
       expect(result.params).to.deep.equal({ __p1: "John", users: [] });
     });
 
@@ -38,9 +36,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
         { users: [] },
       );
 
-      expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE LOWER("name") = LOWER("email")',
-      );
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE LOWER("name") = LOWER("email")');
       expect(result.params).to.deep.equal({ users: [] });
     });
 
@@ -52,7 +48,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE LOWER("name") = LOWER($(searchName))',
+        'SELECT * FROM "users" WHERE LOWER("name") = LOWER($(searchName))',
       );
       expect(result.params).to.deep.equal({ users: [], searchName: "Alice" });
     });
@@ -67,7 +63,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE LOWER("name") LIKE LOWER($(__p1)) || \'%\'',
+        'SELECT * FROM "users" WHERE LOWER("name") LIKE LOWER($(__p1)) || \'%\'',
       );
       expect(result.params).to.deep.equal({ __p1: "J", users: [] });
     });
@@ -80,7 +76,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE LOWER("email") LIKE LOWER($(__p1)) || \'%\'',
+        'SELECT * FROM "users" WHERE LOWER("email") LIKE LOWER($(__p1)) || \'%\'',
       );
       expect(result.params).to.deep.equal({ __p1: "admin@", users: [] });
     });
@@ -95,7 +91,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE LOWER("email") LIKE \'%\' || LOWER($(__p1))',
+        'SELECT * FROM "users" WHERE LOWER("email") LIKE \'%\' || LOWER($(__p1))',
       );
       expect(result.params).to.deep.equal({ __p1: ".com", users: [] });
     });
@@ -110,7 +106,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE LOWER("bio") LIKE \'%\' || LOWER($(__p1)) || \'%\'',
+        "SELECT * FROM \"users\" WHERE LOWER(\"bio\") LIKE '%' || LOWER($(__p1)) || '%'",
       );
       expect(result.params).to.deep.equal({ __p1: "developer", users: [] });
     });
@@ -123,7 +119,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE LOWER("bio") LIKE \'%\' || LOWER($(__p1)) || \'%\'',
+        "SELECT * FROM \"users\" WHERE LOWER(\"bio\") LIKE '%' || LOWER($(__p1)) || '%'",
       );
       expect(result.params).to.deep.equal({ __p1: "engineer", users: [] });
     });
@@ -138,7 +134,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE (LOWER("name") = LOWER($(__p1)) AND "age" > $(__p2))',
+        'SELECT * FROM "users" WHERE (LOWER("name") = LOWER($(__p1)) AND "age" > $(__p2))',
       );
       expect(result.params).to.deep.equal({ __p1: "John", __p2: 18, users: [] });
     });
@@ -153,7 +149,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE (LOWER("name") LIKE LOWER($(__p1)) || \'%\' OR LOWER("name") LIKE LOWER($(__p2)) || \'%\')',
+        'SELECT * FROM "users" WHERE (LOWER("name") LIKE LOWER($(__p1)) || \'%\' OR LOWER("name") LIKE LOWER($(__p2)) || \'%\')',
       );
       expect(result.params).to.deep.equal({ __p1: "A", __p2: "B", users: [] });
     });
@@ -168,7 +164,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE (LOWER("email") LIKE \'%\' || LOWER($(__p1)) || \'%\' AND "email" LIKE \'%\' || $(__p2))',
+        "SELECT * FROM \"users\" WHERE (LOWER(\"email\") LIKE '%' || LOWER($(__p1)) || '%' AND \"email\" LIKE '%' || $(__p2))",
       );
       expect(result.params).to.deep.equal({ __p1: "admin", __p2: ".com", users: [] });
     });
@@ -187,7 +183,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "id" AS "id", "name" AS "name", "role" AS "role" FROM "users" AS "t0" WHERE LOWER("role") = LOWER($(__p1))',
+        'SELECT "id" AS "id", "name" AS "name", "role" AS "role" FROM "users" WHERE LOWER("role") = LOWER($(__p1))',
       );
       expect(result.params).to.deep.equal({ __p1: "ADMIN", users: [] });
     });
@@ -202,7 +198,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE LOWER("bio") LIKE \'%\' || LOWER($(__p1)) || \'%\' ORDER BY "name" ASC',
+        'SELECT * FROM "users" WHERE LOWER("bio") LIKE \'%\' || LOWER($(__p1)) || \'%\' ORDER BY "name" ASC',
       );
       expect(result.params).to.deep.equal({ __p1: "software", users: [] });
     });
@@ -217,7 +213,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE NOT (LOWER("role") = LOWER($(__p1)))',
+        'SELECT * FROM "users" WHERE NOT (LOWER("role") = LOWER($(__p1)))',
       );
       expect(result.params).to.deep.equal({ __p1: "admin", users: [] });
     });
@@ -233,7 +229,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE NOT ((LOWER("name") LIKE LOWER($(__p1)) || \'%\' OR LOWER("email") LIKE \'%\' || LOWER($(__p2))))',
+        'SELECT * FROM "users" WHERE NOT ((LOWER("name") LIKE LOWER($(__p1)) || \'%\' OR LOWER("email") LIKE \'%\' || LOWER($(__p2))))',
       );
       expect(result.params).to.deep.equal({ __p1: "test", __p2: ".test", users: [] });
     });

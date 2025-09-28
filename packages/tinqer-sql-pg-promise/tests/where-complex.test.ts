@@ -101,7 +101,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE ("price" >= $(__p1) AND "price" <= $(__p2))',
+        'SELECT * FROM "products" WHERE ("price" >= $(__p1) AND "price" <= $(__p2))',
       );
       expect(result.params).to.deep.equal({ __p1: 50, __p2: 200 });
     });
@@ -129,7 +129,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE ("stock" > $(__p1) AND "stock" < $(__p2))',
+        'SELECT * FROM "products" WHERE ("stock" > $(__p1) AND "stock" < $(__p2))',
       );
       expect(result.params).to.deep.equal({ __p1: 10, __p2: 100 });
     });
@@ -146,7 +146,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE (("role" = $(__p1) OR "role" = $(__p2)) OR "role" = $(__p3))',
+        'SELECT * FROM "users" WHERE (("role" = $(__p1) OR "role" = $(__p2)) OR "role" = $(__p3))',
       );
       expect(result.params).to.deep.equal({
         __p1: "admin",
@@ -165,7 +165,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE (("role" != $(__p1) AND "role" != $(__p2)) AND "role" != $(__p3))',
+        'SELECT * FROM "users" WHERE (("role" != $(__p1) AND "role" != $(__p2)) AND "role" != $(__p3))',
       );
       expect(result.params).to.deep.equal({
         __p1: "guest",
@@ -290,7 +290,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "isActive" AND "role" != $(__p2)',
+        'SELECT * FROM "users" WHERE "age" >= $(__p1) AND "isActive" AND "role" != $(__p2)',
       );
       expect(result.params).to.deep.equal({ __p1: 18, __p2: "guest" });
     });
@@ -420,7 +420,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
     it("should handle false boolean literals correctly", () => {
       const result = query(() => from<User>("users").where((u) => u.isActive == false), {});
 
-      expect(result.sql).to.equal(`SELECT * FROM "users" AS "t0" WHERE "isActive" = $(__p1)`);
+      expect(result.sql).to.equal(`SELECT * FROM "users" WHERE "isActive" = $(__p1)`);
       expect(result.params).to.deep.equal({ __p1: false });
     });
   });

@@ -99,7 +99,7 @@ describe("Join SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "orderAmount" FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" AS "t0" WHERE "amount" > $(__p1)) AS "t1" ON "t0"."id" = "t1"."userId"',
+        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "orderAmount" FROM "users" AS "t0" INNER JOIN (SELECT * FROM "orders" WHERE "amount" > $(__p1)) AS "t1" ON "t0"."id" = "t1"."userId"',
       );
       expect(result.params).to.deep.equal({ __p1: 1000 });
     });

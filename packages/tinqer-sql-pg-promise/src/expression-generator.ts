@@ -395,10 +395,10 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
     return `"${alias}"."${expr.name}"`;
   }
 
-  // No table specified - only use t0 if we have multiple tables (JOIN scenario)
-  // This handles cases like WHERE u.id > 100 before JOIN
-  if (context.tableAliases.size > 1) {
-    const firstAlias = context.tableAliases.values().next().value;
+  // No table specified - only use alias if we have JOINs
+  // For single-table queries, use unqualified column names
+  if (context.hasJoins) {
+    const firstAlias = context.tableAliases.values().next().value || "t0";
     return `"${firstAlias}"."${expr.name}"`;
   }
 
