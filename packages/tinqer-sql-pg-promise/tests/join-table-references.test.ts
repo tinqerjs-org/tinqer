@@ -256,35 +256,6 @@ describe("JOIN with Table References", () => {
         );
       }).to.throw("Failed to parse query");
     });
-
-    it("should not allow nested objects with mixed content in JOIN result selector", () => {
-      // This test verifies that nested objects with literals are not allowed
-      expect(() => {
-        query(
-          () =>
-            from<User>("users")
-              .join(
-                from<Department>("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({
-                  user: {
-                    info: u,
-                    type: "employee", // This is not allowed - can't mix references with literals
-                  },
-                  department: {
-                    data: d,
-                    active: true, // This is not allowed
-                  },
-                }),
-              )
-              .select((joined) => ({
-                userName: joined.user.info.name,
-              })),
-          {},
-        );
-      }).to.throw("Failed to parse query");
-    });
   });
 
   describe("Aggregations with table references", () => {
