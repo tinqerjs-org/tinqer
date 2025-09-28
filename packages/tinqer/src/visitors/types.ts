@@ -56,6 +56,7 @@ export interface VisitorContext {
   // Parameter tracking
   tableParams: Set<string>; // Table parameter names (x in x => x.name)
   queryParams: Set<string>; // Query parameter names (p in (p) => p.minAge)
+  helpersParam?: string; // Helpers parameter name (_ in (p, _) => _.functions.iequals)
   groupingParams?: Set<string>; // Grouping parameter names for aggregates
 
   // Auto-parameterization

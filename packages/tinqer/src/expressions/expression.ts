@@ -206,6 +206,15 @@ export interface BooleanMethodExpression {
 }
 
 /**
+ * Case-insensitive function calls from helpers.functions
+ */
+export interface CaseInsensitiveFunctionExpression {
+  type: "caseInsensitiveFunction";
+  function: "iequals" | "istartsWith" | "iendsWith" | "icontains";
+  arguments: [ValueExpression, ValueExpression];
+}
+
+/**
  * IN expression - value in list
  */
 export interface InExpression {
@@ -273,6 +282,7 @@ export type BooleanExpression =
   | BooleanColumnExpression
   | BooleanParameterExpression
   | BooleanMethodExpression
+  | CaseInsensitiveFunctionExpression
   | InExpression
   | BetweenExpression
   | IsNullExpression
@@ -419,6 +429,7 @@ export function isBooleanExpression(expr: Expression): expr is BooleanExpression
     "booleanColumn",
     "booleanParam",
     "booleanMethod",
+    "caseInsensitiveFunction",
     "in",
     "between",
     "isNull",

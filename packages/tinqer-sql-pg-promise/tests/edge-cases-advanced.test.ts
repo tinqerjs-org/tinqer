@@ -190,7 +190,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
       // Correct way: pass via params
       const result = query(
-        (params) => from<TestTable>("items").where((i) => i.createdAt > params.testDate),
+        (params: any) => from<TestTable>("items").where((i) => i.createdAt > params.testDate),
         { testDate },
       );
       expect(result.sql).to.include('"createdAt" > $(testDate)');
@@ -275,7 +275,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle parameter name collision with auto-params", () => {
       const result = query(
-        (params) =>
+        (params: any) =>
           from<TestTable>("items")
             .where((i) => i.value !== null && i.value > params.threshold)
             .where((i) => i.value !== null && i.value < 100),

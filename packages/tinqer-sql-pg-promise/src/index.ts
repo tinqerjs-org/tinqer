@@ -13,14 +13,17 @@ import type { SqlResult } from "./types.js";
 
 /**
  * Generate SQL from a query builder function
- * @param queryBuilder Function that builds the query using LINQ operations
+ * @param queryBuilder Function that builds the query using LINQ operations, optionally with helpers
  * @param params Parameters to pass to the query builder
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function query<TParams, TResult>(
-  queryBuilder: (
-    params: TParams,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
+  queryBuilder:
+    | ((params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
+    | ((
+        params: TParams,
+        helpers: any,
+      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
   params: TParams,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>> {
   // Parse the query to get the operation tree and auto-params

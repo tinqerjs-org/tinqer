@@ -11,6 +11,8 @@ export { TerminalQuery } from "./linq/terminal-query.js";
 export { from } from "./linq/from.js";
 export { Grouping } from "./linq/grouping.js";
 export { DatabaseContext, createContext } from "./linq/database-context.js";
+export { functions, createQueryHelpers } from "./linq/functions.js";
+export type { QueryHelpers } from "./linq/functions.js";
 
 // ==================== LINQ Interfaces ====================
 // Type contracts
@@ -49,6 +51,7 @@ export type {
   BooleanColumnExpression,
   BooleanParameterExpression,
   BooleanMethodExpression,
+  CaseInsensitiveFunctionExpression,
   InExpression,
   BetweenExpression,
   IsNullExpression,

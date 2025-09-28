@@ -17,6 +17,7 @@ import type {
   NotExpression,
   StringMethodExpression,
   BooleanMethodExpression,
+  CaseInsensitiveFunctionExpression,
   ObjectExpression,
   ArrayExpression,
   ConcatExpression,
@@ -71,6 +72,8 @@ export function generateBooleanExpression(expr: BooleanExpression, context: SqlC
       return expr.value ? "TRUE" : "FALSE";
     case "booleanMethod":
       return generateBooleanMethodExpression(expr, context);
+    case "caseInsensitiveFunction":
+      return generateCaseInsensitiveFunctionExpression(expr, context);
     case "in":
       return generateInExpression(expr as InExpression, context);
     case "isNull":
@@ -636,6 +639,30 @@ function generateBooleanMethodExpression(
       throw new Error("includes/contains requires an argument");
     default:
       throw new Error(`Unsupported boolean method: ${expr.method}`);
+  }
+}
+
+/**
+ * Generate SQL for case-insensitive function expressions
+ */
+function generateCaseInsensitiveFunctionExpression(
+  expr: CaseInsensitiveFunctionExpression,
+  context: SqlContext,
+): string {
+  const left = generateValueExpression(expr.arguments[0], context);
+  const right = generateValueExpression(expr.arguments[1], context);
+
+  switch (expr.function) {
+    case "iequals":
+      return `LOWER(${left}) = LOWER(${right})`;
+    case "istartsWith":
+      return `LOWER(${left}) LIKE LOWER(${right}) || '%'`;
+    case "iendsWith":
+      return `LOWER(${left}) LIKE '%' || LOWER(${right})`;
+    case "icontains":
+      return `LOWER(${left}) LIKE '%' || LOWER(${right}) || '%'`;
+    default:
+      throw new Error(`Unsupported case-insensitive function: ${expr.function}`);
   }
 }
 

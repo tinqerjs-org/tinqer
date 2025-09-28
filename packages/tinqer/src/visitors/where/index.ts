@@ -47,6 +47,7 @@ export function visitWhereOperation(
   // Important: Replace the context's autoParams and autoParamInfos with the shared ones
   context.autoParams = visitorContext.autoParams;
   context.autoParamInfos = visitorContext.autoParamInfos;
+  context.helpersParam = visitorContext.helpersParam;
 
   // Add lambda parameter to context
   if (lambda.params && lambda.params.length > 0) {
