@@ -30,7 +30,7 @@ describe("GROUP BY with Composite Keys", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "category" AS "category", "region" AS "region", SUM("amount") AS "total" FROM "sales" AS "t0" GROUP BY "category", "region"',
+        'SELECT "category" AS "category", "region" AS "region", SUM("amount") AS "total" FROM "sales" GROUP BY "category", "region"',
       );
     });
 
@@ -50,7 +50,7 @@ describe("GROUP BY with Composite Keys", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "category" AS "category", "region" AS "region", "year" AS "year", COUNT(*) AS "count", AVG("amount") AS "avgAmount" FROM "sales" AS "t0" GROUP BY "category", "region", "year"',
+        'SELECT "category" AS "category", "region" AS "region", "year" AS "year", COUNT(*) AS "count", AVG("amount") AS "avgAmount" FROM "sales" GROUP BY "category", "region", "year"',
       );
     });
 
@@ -113,7 +113,7 @@ describe("GROUP BY with Composite Keys", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "category" AS "category", "quarter" AS "quarter", SUM("amount") AS "total" FROM "sales" AS "t0" WHERE "year" >= $(__p1) GROUP BY "category", "quarter"',
+        'SELECT "category" AS "category", "quarter" AS "quarter", SUM("amount") AS "total" FROM "sales" WHERE "year" >= $(__p1) GROUP BY "category", "quarter"',
       );
       expect(result.params.__p1).to.equal(2020);
     });

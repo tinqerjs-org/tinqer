@@ -89,6 +89,68 @@ export interface TestSchema {
     id: number;
     name: string;
   };
+
+  // Additional tables for comprehensive testing
+  events: {
+    id: number;
+    title: string;
+    startDate: Date;
+    endDate: Date | null;
+    createdAt: Date;
+    updatedAt: Date | null;
+    location: string | null;
+    isRecurring: boolean;
+  };
+
+  categories: {
+    id: number;
+    name: string;
+    parentId: number | null;
+    level: number;
+    path: string;
+    isLeaf: boolean;
+    sortOrder: number;
+  };
+
+  comments: {
+    id: number;
+    content: string;
+    parentCommentId: number | null;
+    userId: number;
+    createdAt: Date;
+    depth: number;
+    likes: number;
+  };
+
+  accounts: {
+    id: number;
+    balance: number;
+    creditLimit: number;
+    interestRate: number;
+    overdraftFee: number | null;
+    minimumBalance: number;
+    lastTransactionDate: Date | null;
+  };
+
+  articles: {
+    id: number;
+    title: string;
+    content: string;
+    author: string;
+    tags: string;
+    publishedAt: Date;
+    views: number;
+    featured: boolean;
+  };
+
+  measurements: {
+    id: number;
+    temperature: number;
+    pressure: number;
+    humidity: number | null;
+    timestamp: Date;
+    sensorId: string;
+  };
 }
 
 // Create the database context

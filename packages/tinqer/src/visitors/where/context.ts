@@ -18,6 +18,9 @@ export interface WhereContext {
   // External query parameters (p in (p) => ...)
   queryParams: Set<string>;
 
+  // Helpers parameter (_ in (params, _) => _.functions.*)
+  helpersParam?: string;
+
   // Auto-generated parameters for literals
   autoParams: Map<string, unknown>;
   autoParamCounter: number;

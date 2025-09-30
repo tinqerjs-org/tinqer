@@ -14,7 +14,7 @@ describe("Auto-Parameterization SQL Generation", () => {
     const result = query(queryBuilder, {});
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE ("age" >= $(__p1) AND "name" = $(__p2))',
+      'SELECT * FROM "users" WHERE ("age" >= $(__p1) AND "name" = $(__p2))',
     );
     expect(result.params).to.deep.equal({
       __p1: 18,
@@ -29,7 +29,7 @@ describe("Auto-Parameterization SQL Generation", () => {
     const result = query(queryBuilder, { role: "admin" });
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE ("age" >= $(__p1) AND "role" = $(role))',
+      'SELECT * FROM "users" WHERE ("age" >= $(__p1) AND "role" = $(role))',
     );
     expect(result.params).to.deep.equal({
       role: "admin",
@@ -47,7 +47,7 @@ describe("Auto-Parameterization SQL Generation", () => {
     const result = query(queryBuilder, {});
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "posts" AS "t0" ORDER BY "id" ASC LIMIT $(__p2) OFFSET $(__p1)',
+      'SELECT * FROM "posts" ORDER BY "id" ASC LIMIT $(__p2) OFFSET $(__p1)',
     );
     expect(result.params).to.deep.equal({
       __p1: 20,
@@ -69,7 +69,7 @@ describe("Auto-Parameterization SQL Generation", () => {
     const result = query(queryBuilder, { category: "electronics" });
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "products" AS "t0" WHERE "price" > $(__p1) ' +
+      'SELECT * FROM "products" WHERE "price" > $(__p1) ' +
         'AND "discount" <= $(__p2) ' +
         'AND "category" = $(category) ' +
         'AND "inStock" = $(__p3) ' +
@@ -90,7 +90,7 @@ describe("Auto-Parameterization SQL Generation", () => {
 
     const result = query(queryBuilder, {});
 
-    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "email" IS NOT NULL');
+    expect(result.sql).to.equal('SELECT * FROM "users" WHERE "email" IS NOT NULL');
     expect(result.params).to.deep.equal({});
   });
 
@@ -104,7 +104,7 @@ describe("Auto-Parameterization SQL Generation", () => {
     const result = query(queryBuilder, {});
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) ' +
+      'SELECT * FROM "users" WHERE "age" >= $(__p1) ' +
         'AND "age" <= $(__p2) ' +
         'AND "age" != $(__p3)',
     );
@@ -124,7 +124,7 @@ describe("Auto-Parameterization SQL Generation", () => {
     const result = query(queryBuilder, {});
 
     // The potentially dangerous string is safely parameterized
-    expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE "username" = $(__p1)');
+    expect(result.sql).to.equal('SELECT * FROM "users" WHERE "username" = $(__p1)');
     expect(result.params).to.deep.equal({
       __p1: "admin' OR '1'='1", // Safely passed as parameter, not concatenated
     });

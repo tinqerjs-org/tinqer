@@ -103,15 +103,20 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
     context.groupByKey = groupByOp.keySelector;
   }
 
+  // Process JOIN operations to determine if we need table aliases
+  const joinOps = operations.filter((op) => op.operationType === "join") as JoinOperation[];
+
+  // Set hasJoins flag in context before processing FROM
+  if (joinOps.length > 0) {
+    context.hasJoins = true;
+  }
+
   // Process FROM first to establish base table
   const fromOp = operations.find((op) => op.operationType === "from") as FromOperation;
   if (!fromOp) {
     throw new Error("Query must have a FROM operation");
   }
   const fromClause = generateFrom(fromOp, context);
-
-  // Process JOIN operations to build symbol table
-  const joinOps = operations.filter((op) => op.operationType === "join") as JoinOperation[];
   const joinClauses: string[] = [];
   joinOps.forEach((joinOp) => {
     joinClauses.push(generateJoin(joinOp, context));

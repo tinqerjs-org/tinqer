@@ -8,6 +8,7 @@ import { parseJavaScript } from "./oxc-parser.js";
 import { convertAstToQueryOperationWithParams } from "./ast-visitor.js";
 import type { Queryable, OrderedQueryable } from "../linq/queryable.js";
 import type { TerminalQuery } from "../linq/terminal-query.js";
+import type { createQueryHelpers } from "../linq/functions.js";
 
 /**
  * Result of parsing a query, including auto-extracted parameters
@@ -20,13 +21,16 @@ export interface ParseResult {
 
 /**
  * Parses a query builder function into a QueryOperation tree with auto-extracted parameters
- * @param queryBuilder The function that builds the query
+ * @param queryBuilder The function that builds the query, optionally with helpers as second parameter
  * @returns The parsed result containing operation tree and auto-params, or null if parsing fails
  */
 export function parseQuery<TParams, TResult>(
-  queryBuilder: (
-    params: TParams,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
+  queryBuilder:
+    | ((params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
+    | ((
+        params: TParams,
+        helpers: ReturnType<typeof createQueryHelpers>,
+      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
 ): ParseResult | null {
   try {
     // 1. Convert function to string

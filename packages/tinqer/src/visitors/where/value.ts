@@ -12,6 +12,7 @@ import type {
   CoalesceExpression,
   CaseExpression,
   InExpression,
+  StringMethodExpression,
 } from "../../expressions/expression.js";
 
 import type {
@@ -343,17 +344,47 @@ export function visitValue(
     }
 
     case "CallExpression": {
+      const callNode = node as CallExpression;
+
       // Check if this is array.includes() for IN operator
-      const result = visitBooleanMethod(node as CallExpression, {
+      const boolResult = visitBooleanMethod(callNode, {
         ...context,
         autoParamCounter: currentCounter,
       });
+
       // If it returns a boolean expression with type "in", extract just the value part
-      if (result.value && (result.value as InExpression).type === "in") {
+      if (boolResult.value && (boolResult.value as InExpression).type === "in") {
         // Return null since IN is a boolean expression, not a value expression
         // The caller (visitPredicate) should handle this case
-        return { value: null, counter: result.counter };
+        return { value: null, counter: boolResult.counter };
       }
+
+      // Check if this is a string method (toLowerCase, toUpperCase)
+      if (callNode.callee.type === "MemberExpression") {
+        const memberExpr = callNode.callee as MemberExpression;
+        if (memberExpr.property.type === "Identifier") {
+          const methodName = (memberExpr.property as Identifier).name;
+
+          // Handle string transformation methods
+          if (["toLowerCase", "toUpperCase"].includes(methodName)) {
+            // Visit the object being called
+            const objectResult = visitValue(memberExpr.object, {
+              ...context,
+              autoParamCounter: currentCounter,
+            });
+
+            if (objectResult.value) {
+              const stringMethod: StringMethodExpression = {
+                type: "stringMethod",
+                object: objectResult.value,
+                method: methodName as "toLowerCase" | "toUpperCase",
+              };
+              return { value: stringMethod, counter: objectResult.counter };
+            }
+          }
+        }
+      }
+
       return { value: null, counter: currentCounter };
     }
 

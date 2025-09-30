@@ -8,7 +8,9 @@
     "test": "mocha tests/**/*.test.ts",
     "test:watch": "mocha tests/**/*.test.ts --watch",
     "test:grep": "mocha tests/**/*.test.ts --grep",
-    "test:build": "tsc --noEmit"
+    "test:build": "tsc --noEmit",
+    "lint": "eslint tests --ext .ts",
+    "lint:fix": "eslint tests --ext .ts --fix"
   },
   "dependencies": {
     "@webpods/tinqer": "file:../tinqer",

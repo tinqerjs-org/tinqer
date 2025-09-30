@@ -20,7 +20,7 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE ("age" >= $(minAge) AND "isActive") ORDER BY "name" ASC LIMIT $(__p1)',
+      'SELECT "id" AS "id", "name" AS "name" FROM "users" WHERE ("age" >= $(minAge) AND "isActive") ORDER BY "name" ASC LIMIT $(__p1)',
     );
     expect(result.params).to.deep.equal({ minAge: 18, __p1: 10 });
   });
@@ -36,7 +36,7 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "products" AS "t0" ORDER BY "name" ASC LIMIT $(pageSize) OFFSET ($(page) * $(pageSize))',
+      'SELECT * FROM "products" ORDER BY "name" ASC LIMIT $(pageSize) OFFSET ($(page) * $(pageSize))',
     );
     expect(result.params).to.deep.equal({ page: 2, pageSize: 20 });
   });
@@ -51,7 +51,7 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" AS "t0" WHERE "age" >= $(__p1) AND "role" = $(__p2)',
+      'SELECT * FROM "users" WHERE "age" >= $(__p1) AND "role" = $(__p2)',
     );
     expect(result.params).to.deep.equal({ __p1: 18, __p2: "admin" });
   });
@@ -65,7 +65,7 @@ describe("Complex Query Chaining", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT DISTINCT "category" FROM "products" AS "t0"');
+    expect(result.sql).to.equal('SELECT DISTINCT "category" FROM "products"');
   });
 
   it("should generate query with GROUP BY and COUNT aggregate", () => {
@@ -78,7 +78,7 @@ describe("Complex Query Chaining", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT "department" AS "department", COUNT(*) AS "count" FROM "employees" AS "t0" GROUP BY "department"',
+      'SELECT "department" AS "department", COUNT(*) AS "count" FROM "employees" GROUP BY "department"',
     );
   });
 });

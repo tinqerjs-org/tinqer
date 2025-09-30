@@ -6,19 +6,8 @@ import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery, from } from "../src/index.js";
 import { db } from "./test-schema.js";
-import {
-  asSelectOperation,
-  asWhereOperation,
-  getOperation,
-} from "./test-utils/operation-helpers.js";
-import type {
-  ObjectExpression,
-  ColumnExpression,
-  ConcatExpression,
-  ArithmeticExpression,
-  ComparisonExpression,
-} from "../src/expressions/expression.js";
-import type { ParamRef } from "../src/query-tree/operations.js";
+import { asSelectOperation, getOperation } from "./test-utils/operation-helpers.js";
+import type { ObjectExpression, ColumnExpression } from "../src/expressions/expression.js";
 
 describe("SELECT Operation", () => {
   describe("Simple Projections", () => {

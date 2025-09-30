@@ -64,12 +64,13 @@ export function convertAstToQueryOperationWithParams(
   >;
 } {
   // Extract parameter info from the lambda
-  const { tableParams, queryParams } = extractParameters(ast);
+  const { tableParams, queryParams, helpersParam } = extractParameters(ast);
 
   // Create shared visitor context
   const visitorContext: VisitorContext = {
     tableParams: new Set(tableParams),
     queryParams: new Set(queryParams),
+    helpersParam,
     autoParams: existingAutoParams || new Map(),
     autoParamCounter: startCounter || 0,
     autoParamInfos: new Map(), // Initialize enhanced field context tracking
@@ -94,31 +95,42 @@ export function convertAstToQueryOperationWithParams(
 }
 
 /**
- * Extract table and query parameters from the root lambda
+ * Extract table, query, and helpers parameters from the root lambda
  */
 function extractParameters(ast: ASTExpression): {
   tableParams: Set<string>;
   queryParams: Set<string>;
+  helpersParam?: string;
 } {
   const tableParams = new Set<string>();
   const queryParams = new Set<string>();
+  let helpersParam: string | undefined;
 
-  // Check if the root is an arrow function with params (query params)
+  // Check if the root is an arrow function with params
   // For queries like: () => from(...).where(...)
   // Or: (p) => from(...).where(x => x.id == p.minId)
+  // Or: (p, _) => from(...).where(x => _.functions.iequals(x.name, "john"))
   if (ast.type === "ArrowFunctionExpression") {
     const arrow = ast as ArrowFunctionExpression;
     if (arrow.params && arrow.params.length > 0) {
-      // If there are params, they're query params
+      // First param is query params
       const firstParam = arrow.params[0];
       if (firstParam && firstParam.type === "Identifier") {
         queryParams.add((firstParam as Identifier).name);
       }
+
+      // Second param is helpers
+      if (arrow.params.length > 1) {
+        const secondParam = arrow.params[1];
+        if (secondParam && secondParam.type === "Identifier") {
+          helpersParam = (secondParam as Identifier).name;
+        }
+      }
     }
-    // For parameterless lambdas, no query params
+    // For parameterless lambdas, no query params or helpers
   }
 
-  return { tableParams, queryParams };
+  return { tableParams, queryParams, helpersParam };
 }
 
 /**

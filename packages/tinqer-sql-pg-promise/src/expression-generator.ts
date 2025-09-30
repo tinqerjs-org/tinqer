@@ -17,6 +17,7 @@ import type {
   NotExpression,
   StringMethodExpression,
   BooleanMethodExpression,
+  CaseInsensitiveFunctionExpression,
   ObjectExpression,
   ArrayExpression,
   ConcatExpression,
@@ -71,6 +72,8 @@ export function generateBooleanExpression(expr: BooleanExpression, context: SqlC
       return expr.value ? "TRUE" : "FALSE";
     case "booleanMethod":
       return generateBooleanMethodExpression(expr, context);
+    case "caseInsensitiveFunction":
+      return generateCaseInsensitiveFunctionExpression(expr, context);
     case "in":
       return generateInExpression(expr as InExpression, context);
     case "isNull":
@@ -392,10 +395,10 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
     return `"${alias}"."${expr.name}"`;
   }
 
-  // No table specified - only use t0 if we have multiple tables (JOIN scenario)
-  // This handles cases like WHERE u.id > 100 before JOIN
-  if (context.tableAliases.size > 1) {
-    const firstAlias = context.tableAliases.values().next().value;
+  // No table specified - only use alias if we have JOINs
+  // For single-table queries, use unqualified column names
+  if (context.hasJoins) {
+    const firstAlias = context.tableAliases.values().next().value || "t0";
     return `"${firstAlias}"."${expr.name}"`;
   }
 
@@ -466,10 +469,12 @@ function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlCo
       isLikelyStringExpression(expr.right) ||
       // Check for string-related parameter names (heuristic)
       (expr.left.type === "param" && isLikelyStringParam(expr.left as ParameterExpression)) ||
-      (expr.right.type === "param" && isLikelyStringParam(expr.right as ParameterExpression));
+      (expr.right.type === "param" && isLikelyStringParam(expr.right as ParameterExpression)) ||
+      // If both operands are parameters, assume string concat to be safe
+      (expr.left.type === "param" && expr.right.type === "param");
 
     if (isStringConcat) {
-      return `${left} || ${right}`;
+      return `(${left} || ${right})`;
     }
   }
 
@@ -479,24 +484,27 @@ function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlCo
 /**
  * Check if a parameter expression is likely a string based on naming patterns
  */
-function isLikelyStringParam(expr: { param: string }): boolean {
-  const param = expr.param;
+function isLikelyStringParam(expr: ParameterExpression): boolean {
+  const param = expr.param.toLowerCase();
 
   // Check for common string parameter patterns
   const stringPatterns = [
-    /_text\d*$/i,
-    /_name\d*$/i,
-    /_title\d*$/i,
-    /_description\d*$/i,
-    /_message\d*$/i,
-    /_suffix\d*$/i,
-    /_prefix\d*$/i,
-    /_email\d*$/i,
-    /_url\d*$/i,
-    /_path\d*$/i,
-    /_label\d*$/i,
-    /_firstName\d*$/i,
-    /_lastName\d*$/i,
+    /text/i,
+    /name/i,
+    /title/i,
+    /description/i,
+    /message/i,
+    /suffix/i,
+    /prefix/i,
+    /email/i,
+    /url/i,
+    /path/i,
+    /label/i,
+    /firstname/i,
+    /lastname/i,
+    /string/i,
+    /content/i,
+    /body/i,
   ];
 
   return stringPatterns.some((pattern) => pattern.test(param));
@@ -636,6 +644,30 @@ function generateBooleanMethodExpression(
       throw new Error("includes/contains requires an argument");
     default:
       throw new Error(`Unsupported boolean method: ${expr.method}`);
+  }
+}
+
+/**
+ * Generate SQL for case-insensitive function expressions
+ */
+function generateCaseInsensitiveFunctionExpression(
+  expr: CaseInsensitiveFunctionExpression,
+  context: SqlContext,
+): string {
+  const left = generateValueExpression(expr.arguments[0], context);
+  const right = generateValueExpression(expr.arguments[1], context);
+
+  switch (expr.function) {
+    case "iequals":
+      return `LOWER(${left}) = LOWER(${right})`;
+    case "istartsWith":
+      return `LOWER(${left}) LIKE LOWER(${right}) || '%'`;
+    case "iendsWith":
+      return `LOWER(${left}) LIKE '%' || LOWER(${right})`;
+    case "icontains":
+      return `LOWER(${left}) LIKE '%' || LOWER(${right}) || '%'`;
+    default:
+      throw new Error(`Unsupported case-insensitive function: ${expr.function}`);
   }
 }
 

@@ -30,7 +30,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "id" IN ($(__p1), $(__p2), $(__p3), $(__p4), $(__p5))',
+        'SELECT * FROM "users" WHERE "id" IN ($(__p1), $(__p2), $(__p3), $(__p4), $(__p5))',
       );
       expect(result.params).to.deep.equal({
         __p1: 1,
@@ -48,7 +48,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "role" IN ($(__p1), $(__p2), $(__p3))',
+        'SELECT * FROM "users" WHERE "role" IN ($(__p1), $(__p2), $(__p3))',
       );
       expect(result.params).to.deep.equal({
         __p1: "admin",
@@ -63,7 +63,7 @@ describe("IN Operator", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "products" AS "t0" WHERE "category" IN ($(__p1))');
+      expect(result.sql).to.equal('SELECT * FROM "products" WHERE "category" IN ($(__p1))');
       expect(result.params).to.deep.equal({
         __p1: "electronics",
       });
@@ -75,7 +75,7 @@ describe("IN Operator", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE FALSE');
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE FALSE');
       expect(result.params).to.deep.equal({});
     });
   });
@@ -88,7 +88,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("id" IN ($(__p1), $(__p2), $(__p3)) AND "age" > $(__p4))',
+        'SELECT * FROM "users" WHERE ("id" IN ($(__p1), $(__p2), $(__p3)) AND "age" > $(__p4))',
       );
       expect(result.params).to.deep.equal({
         __p1: 1,
@@ -108,7 +108,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "products" AS "t0" WHERE ("category" IN ($(__p1), $(__p2)) OR "price" < $(__p3))',
+        'SELECT * FROM "products" WHERE ("category" IN ($(__p1), $(__p2)) OR "price" < $(__p3))',
       );
       expect(result.params).to.deep.equal({
         __p1: "electronics",
@@ -127,7 +127,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE ("id" IN ($(__p1), $(__p2), $(__p3)) AND "role" IN ($(__p4), $(__p5)))',
+        'SELECT * FROM "users" WHERE ("id" IN ($(__p1), $(__p2), $(__p3)) AND "role" IN ($(__p4), $(__p5)))',
       );
       expect(result.params).to.deep.equal({
         __p1: 1,
@@ -151,7 +151,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "id" AS "id", "name" AS "name" FROM "users" AS "t0" WHERE "role" IN ($(__p1), $(__p2)) ORDER BY "name" ASC',
+        'SELECT "id" AS "id", "name" AS "name" FROM "users" WHERE "role" IN ($(__p1), $(__p2)) ORDER BY "name" ASC',
       );
       expect(result.params).to.deep.equal({
         __p1: "admin",
@@ -170,7 +170,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT "category" AS "category", COUNT(*) AS "count" FROM "products" AS "t0" WHERE "category" IN ($(__p1), $(__p2), $(__p3)) GROUP BY "category"',
+        'SELECT "category" AS "category", COUNT(*) AS "count" FROM "products" WHERE "category" IN ($(__p1), $(__p2), $(__p3)) GROUP BY "category"',
       );
       expect(result.params).to.deep.equal({
         __p1: "electronics",
@@ -191,7 +191,7 @@ describe("IN Operator", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "users" AS "t0" WHERE "id" IN ($(__p1), $(__p2), $(__p3), $(__p4), $(__p5)) ORDER BY "id" ASC LIMIT $(__p7) OFFSET $(__p6)',
+        'SELECT * FROM "users" WHERE "id" IN ($(__p1), $(__p2), $(__p3), $(__p4), $(__p5)) ORDER BY "id" ASC LIMIT $(__p7) OFFSET $(__p6)',
       );
       expect(result.params).to.deep.equal({
         __p1: 1,
@@ -210,7 +210,7 @@ describe("IN Operator", () => {
       const result = query(() => from<User>("users").where((u) => ![1, 2, 3].includes(u.id)), {});
 
       expect(result.sql).to.equal(
-        `SELECT * FROM "users" AS "t0" WHERE NOT ("id" IN ($(__p1), $(__p2), $(__p3)))`,
+        `SELECT * FROM "users" WHERE NOT ("id" IN ($(__p1), $(__p2), $(__p3)))`,
       );
       expect(result.params).to.deep.equal({
         __p1: 1,
@@ -225,7 +225,7 @@ describe("IN Operator", () => {
         {},
       );
 
-      expect(result.sql).to.equal('SELECT * FROM "users" AS "t0" WHERE NOT FALSE');
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE NOT FALSE');
       expect(result.params).to.deep.equal({});
     });
   });

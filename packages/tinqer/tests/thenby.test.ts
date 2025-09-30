@@ -8,8 +8,6 @@ import { parseQuery, from } from "../src/index.js";
 import {
   asOrderByOperation,
   asThenByOperation,
-  asSelectOperation,
-  asWhereOperation,
   getOperation,
 } from "./test-utils/operation-helpers.js";
 import type { ArithmeticExpression } from "../src/expressions/expression.js";

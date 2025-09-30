@@ -7,10 +7,10 @@ import { db, from } from "./test-schema.js";
 
 // Mock database for type testing
 const mockDb = {
-  async any(_sql: string, _params: any): Promise<any[]> {
+  async any(_sql: string, _params: unknown): Promise<unknown[]> {
     return [];
   },
-  async one(_sql: string, _params: any): Promise<any> {
+  async one(_sql: string, _params: unknown): Promise<unknown> {
     return {};
   },
 };
