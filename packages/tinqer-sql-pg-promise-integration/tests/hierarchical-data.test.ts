@@ -52,7 +52,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       );
 
       expect(results).to.be.an("array");
-      expect(results).to.have.length(6); // All level 2 categories
+      expect(results).to.have.length(5); // All level 2 categories (Laptops, Desktops, Smartphones, Chairs, Desks)
       results.forEach((category) => {
         expect(category.is_leaf).to.be.true;
         expect(category.level).to.equal(2);
@@ -141,7 +141,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       );
 
       expect(results).to.be.an("array");
-      expect(results).to.have.length(9); // All non-root categories
+      expect(results).to.have.length(8); // All non-root categories (3 at level 1, 5 at level 2)
       results.forEach((category) => {
         expect(category.level).to.be.at.least(minLevel);
         expect(category.level).to.be.at.most(maxLevel);

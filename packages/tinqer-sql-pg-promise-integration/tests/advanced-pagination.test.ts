@@ -583,9 +583,9 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
           from(dbContext, "articles")
             .where(
               (a) =>
-                a.title.toLowerCase().indexOf(params.searchTerm) >= params.minIndex ||
-                a.content.toLowerCase().indexOf(params.searchTerm) >= params.minIndex ||
-                a.tags.indexOf(params.searchTerm) >= params.minIndex,
+                a.title.toLowerCase().includes(params.searchTerm) ||
+                a.content.toLowerCase().includes(params.searchTerm) ||
+                a.tags.includes(params.searchTerm),
             )
             .orderByDescending((a) => a.views)
             .take(params.pageSize),

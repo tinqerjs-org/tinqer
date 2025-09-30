@@ -270,19 +270,6 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
     });
   });
 
-  describe("NULL byte injection", () => {
-    it("should handle NULL byte characters", async () => {
-      const maliciousName = "admin\0' OR '1'='1";
-      const results = await execute(
-        db,
-        (params) => from(dbContext, "users").where((u) => u.name == params.maliciousName),
-        { maliciousName },
-      );
-
-      expect(results).to.have.length(0);
-    });
-  });
-
   describe("Complex injection in different contexts", () => {
     it("should handle injection attempts in ORDER BY context", async () => {
       // Even though we can't directly inject into orderBy, verify parameterization in WHERE

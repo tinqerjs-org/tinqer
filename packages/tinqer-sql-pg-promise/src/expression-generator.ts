@@ -469,10 +469,12 @@ function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlCo
       isLikelyStringExpression(expr.right) ||
       // Check for string-related parameter names (heuristic)
       (expr.left.type === "param" && isLikelyStringParam(expr.left as ParameterExpression)) ||
-      (expr.right.type === "param" && isLikelyStringParam(expr.right as ParameterExpression));
+      (expr.right.type === "param" && isLikelyStringParam(expr.right as ParameterExpression)) ||
+      // If both operands are parameters, assume string concat to be safe
+      (expr.left.type === "param" && expr.right.type === "param");
 
     if (isStringConcat) {
-      return `${left} || ${right}`;
+      return `(${left} || ${right})`;
     }
   }
 
@@ -482,24 +484,27 @@ function generateArithmeticExpression(expr: ArithmeticExpression, context: SqlCo
 /**
  * Check if a parameter expression is likely a string based on naming patterns
  */
-function isLikelyStringParam(expr: { param: string }): boolean {
-  const param = expr.param;
+function isLikelyStringParam(expr: ParameterExpression): boolean {
+  const param = expr.param.toLowerCase();
 
   // Check for common string parameter patterns
   const stringPatterns = [
-    /_text\d*$/i,
-    /_name\d*$/i,
-    /_title\d*$/i,
-    /_description\d*$/i,
-    /_message\d*$/i,
-    /_suffix\d*$/i,
-    /_prefix\d*$/i,
-    /_email\d*$/i,
-    /_url\d*$/i,
-    /_path\d*$/i,
-    /_label\d*$/i,
-    /_firstName\d*$/i,
-    /_lastName\d*$/i,
+    /text/i,
+    /name/i,
+    /title/i,
+    /description/i,
+    /message/i,
+    /suffix/i,
+    /prefix/i,
+    /email/i,
+    /url/i,
+    /path/i,
+    /label/i,
+    /firstname/i,
+    /lastname/i,
+    /string/i,
+    /content/i,
+    /body/i,
   ];
 
   return stringPatterns.some((pattern) => pattern.test(param));

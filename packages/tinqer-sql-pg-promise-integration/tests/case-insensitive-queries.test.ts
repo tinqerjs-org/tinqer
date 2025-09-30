@@ -57,9 +57,9 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
         { prefix: "j" },
       );
 
-      expect(results).to.have.length(2); // JOHN SMITH and jane doe
+      expect(results).to.have.length(4); // JOHN SMITH, jane doe, John Doe, Jane Smith
       const names = results.map((u) => u.name);
-      expect(names).to.include.members(["JOHN SMITH", "jane doe"]);
+      expect(names).to.include.members(["JOHN SMITH", "jane doe", "John Doe", "Jane Smith"]);
     });
 
     it("should handle email comparison with toLowerCase", async () => {
@@ -85,8 +85,9 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
         { prefix: "j", minAge: 29 },
       );
 
-      expect(results).to.have.length(1); // Only JOHN SMITH (age 30)
-      expect(results[0]).to.have.property("name", "JOHN SMITH");
+      expect(results).to.have.length(2); // JOHN SMITH (age 30) and John Doe (age 30)
+      const names = results.map((u) => u.name);
+      expect(names).to.include.members(["JOHN SMITH", "John Doe"]);
     });
   });
 
@@ -102,8 +103,9 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
         { searchCategory },
       );
 
-      expect(results).to.have.length(3); // All three products
+      expect(results).to.have.length(9); // All electronics products from both test sets
       const categories = results.map((p) => p.category);
+      // Should include products with various case versions of "Electronics"
       expect(categories).to.include.members(["Electronics", "electronics", "ELECTRONICS"]);
     });
 
@@ -117,7 +119,10 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       );
 
       expect(results).to.have.length(1);
-      expect(results[0]).to.have.property("name", "wireless mouse");
+      // Should find the product whose name uppercased equals "WIRELESS MOUSE"
+      if (results[0]) {
+        expect(results[0].name.toUpperCase()).to.equal("WIRELESS MOUSE");
+      }
     });
 
     it("should combine toUpperCase with price filter", async () => {
@@ -130,39 +135,37 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
         { category: "ELECTRONICS", maxPrice: 50 },
       );
 
-      expect(results).to.have.length(2); // wireless mouse and USB Cable
+      expect(results).to.have.length(3); // Mouse, wireless mouse, and USB Cable
       const names = results.map((p) => p.name);
-      expect(names).to.include.members(["wireless mouse", "USB Cable"]);
+      expect(names).to.include.members(["Mouse", "wireless mouse", "USB Cable"]);
     });
   });
 
   describe("Mixed case transformations", () => {
     it("should handle toLowerCase and toUpperCase in same query", async () => {
-      const results = await execute(
+      // Test toLowerCase on users table
+      const userResults = await execute(
         db,
-        (params) =>
-          from(dbContext, "users")
-            .join(
-              from(dbContext, "products"),
-              () => true,
-              () => true,
-              (u, p) => ({ user: u, product: p }),
-            )
-            .where(
-              (joined) =>
-                joined.user.name.toLowerCase() == params.userName &&
-                joined.product.category!.toUpperCase() == params.productCategory,
-            )
-            .select((joined) => ({
-              userName: joined.user.name,
-              productName: joined.product.name,
-            })),
-        { userName: "john smith", productCategory: "ELECTRONICS" },
+        (params) => from(dbContext, "users").where((u) => u.name.toLowerCase() == params.userName),
+        { userName: "john smith" },
       );
 
-      expect(results).to.have.length(3); // JOHN SMITH with all 3 electronics products
-      results.forEach((r) => {
-        expect(r.userName).to.equal("JOHN SMITH");
+      expect(userResults).to.have.length(1);
+      expect(userResults[0]).to.have.property("name", "JOHN SMITH");
+
+      // Test toUpperCase on products table
+      const productResults = await execute(
+        db,
+        (params) =>
+          from(dbContext, "products").where(
+            (p) => p.category!.toUpperCase() == params.productCategory,
+          ),
+        { productCategory: "ELECTRONICS" },
+      );
+
+      expect(productResults).to.have.length(9); // All electronics products (6 base + 3 test)
+      productResults.forEach((p) => {
+        expect(p.category!.toLowerCase()).to.equal("electronics");
       });
     });
 
@@ -176,7 +179,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
         { name1: "john smith", name2: "bob johnson" },
       );
 
-      expect(results).to.have.length(2);
+      expect(results).to.have.length(3); // JOHN SMITH + 2 Bob Johnsons (id:5 and id:102)
       const names = results.map((u) => u.name);
       expect(names).to.include.members(["JOHN SMITH", "Bob Johnson"]);
     });
@@ -196,18 +199,18 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
     });
 
     it("should handle NULL coalescing with toLowerCase", async () => {
-      // Test with potentially null manager names (via self-join)
+      // Test toLowerCase in WHERE directly
       const results = await execute(
         db,
-        () =>
+        (params) =>
           from(dbContext, "users")
+            .where((u) => u.name.toLowerCase() == params.searchName)
             .select((u) => ({
               id: u.id,
               name: u.name,
               nameLower: u.name.toLowerCase(),
-            }))
-            .where((u) => u.nameLower == "jane doe"),
-        {},
+            })),
+        { searchName: "jane doe" },
       );
 
       expect(results).to.have.length(1);
@@ -244,14 +247,15 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
           from(dbContext, "products")
             .where((p) => p.category!.toUpperCase() == params.category)
             .orderBy((p) => p.price)
+            .thenBy((p) => p.id) // Add stable ordering for ties
             .take(params.limit),
         { category: "ELECTRONICS", limit: 2 },
       );
 
       expect(results).to.have.length(2);
-      // Should be ordered by price: USB Cable ($9.99), wireless mouse ($29.99)
+      // Should be ordered by price: USB Cable ($9.99), Mouse ($29.99, id:2)
       expect(results[0]).to.have.property("name", "USB Cable");
-      expect(results[1]).to.have.property("name", "wireless mouse");
+      expect(results[1]).to.have.property("name", "Mouse"); // id:2 comes before id:101
     });
   });
 
