@@ -44,8 +44,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
           from(dbContext, "users").first((u) => u.age !== null && u.age > 100),
         );
         expect.fail("Should have thrown error");
-      } catch (error: any) {
-        expect(error.message).to.include("No elements found");
+      } catch (error: unknown) {
+        expect((error as Error).message).to.include("No elements found");
       }
     });
 
@@ -99,8 +99,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
           from(dbContext, "users").single((u) => u.department_id === 1),
         );
         expect.fail("Should have thrown error");
-      } catch (error: any) {
-        expect(error.message).to.include("Multiple elements found");
+      } catch (error: unknown) {
+        expect((error as Error).message).to.include("Multiple elements found");
       }
     });
 
@@ -110,8 +110,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
           from(dbContext, "users").single((u) => u.email === "nonexistent@example.com"),
         );
         expect.fail("Should have thrown error");
-      } catch (error: any) {
-        expect(error.message).to.include("No elements found");
+      } catch (error: unknown) {
+        expect((error as Error).message).to.include("No elements found");
       }
     });
 
@@ -129,8 +129,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
           from(dbContext, "users").singleOrDefault((u) => u.department_id === 1),
         );
         expect.fail("Should have thrown error");
-      } catch (error: any) {
-        expect(error.message).to.include("Multiple elements found");
+      } catch (error: unknown) {
+        expect((error as Error).message).to.include("Multiple elements found");
       }
     });
   });

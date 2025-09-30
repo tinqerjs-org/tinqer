@@ -4,6 +4,7 @@
 
 import type { IDatabase } from "pg-promise";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function setupTestDatabase(db: IDatabase<any>) {
   // Drop existing tables
   await db.none(`

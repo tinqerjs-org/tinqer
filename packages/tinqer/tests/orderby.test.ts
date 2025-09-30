@@ -8,7 +8,6 @@ import { parseQuery, from } from "../src/index.js";
 import {
   asOrderByOperation,
   asSelectOperation,
-  asWhereOperation,
   asTakeOperation,
   getOperation,
 } from "./test-utils/operation-helpers.js";

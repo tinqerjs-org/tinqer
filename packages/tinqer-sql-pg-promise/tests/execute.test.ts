@@ -189,17 +189,7 @@ describe("Execute Function", () => {
   describe("Type inference", () => {
     it("should properly type results from SELECT", () => {
       // This test is mainly for compile-time type checking
-      const queryBuilder = () =>
-        from(db, "users").select((u) => ({
-          userId: u.id,
-          userName: u.name,
-        }));
-
-      // The type of results should be { userId: number, userName: string }[]
-      type ResultType =
-        ReturnType<typeof queryBuilder> extends any
-          ? { userId: number; userName: string }[]
-          : never;
+      type ResultType = { userId: number; userName: string }[];
 
       // This should compile without errors
       const checkType: ResultType = [{ userId: 1, userName: "test" }];

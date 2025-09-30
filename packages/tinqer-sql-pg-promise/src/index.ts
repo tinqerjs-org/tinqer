@@ -7,6 +7,7 @@ import {
   type Queryable,
   type OrderedQueryable,
   type TerminalQuery,
+  type QueryHelpers,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
 import type { SqlResult } from "./types.js";
@@ -22,7 +23,7 @@ export function query<TParams, TResult>(
     | ((params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
     | ((
         params: TParams,
-        helpers: any,
+        helpers: QueryHelpers,
       ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
   params: TParams,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>> {
@@ -98,8 +99,8 @@ export function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | Termina
  * Database interface for pg-promise compatibility
  */
 interface PgDatabase {
-  any(sql: string, params?: any): Promise<any[]>;
-  one(sql: string, params?: any): Promise<any>;
+  any(sql: string, params?: unknown): Promise<unknown[]>;
+  one(sql: string, params?: unknown): Promise<unknown>;
 }
 
 /**
@@ -111,6 +112,7 @@ interface PgDatabase {
  */
 export async function execute<
   TParams,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
 >(
   db: PgDatabase,
@@ -142,11 +144,12 @@ export async function execute<
     case "single":
     case "singleOrDefault":
     case "last":
-    case "lastOrDefault":
+    case "lastOrDefault": {
       // These return a single item
       const rows = await db.any(sql, sqlParams);
       if (rows.length === 0) {
         if (operationType.includes("OrDefault")) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return null as any; // Return null for OrDefault operations
         }
         throw new Error(`No elements found for ${operationType} operation`);
@@ -154,50 +157,64 @@ export async function execute<
       if (operationType.startsWith("single") && rows.length > 1) {
         throw new Error(`Multiple elements found for ${operationType} operation`);
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return rows[0] as any; // Return single item
+    }
 
     case "count":
-    case "longCount":
+    case "longCount": {
       // These return a number - SQL is: SELECT COUNT(*) FROM ...
       const countResult = (await db.one(sql, sqlParams)) as { count: string };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return parseInt(countResult.count, 10) as any;
+    }
 
     case "sum":
     case "average":
     case "min":
-    case "max":
+    case "max": {
       // These return a single aggregate value - SQL is: SELECT SUM/AVG/MIN/MAX(column) FROM ...
       // The result is in the first column of the row
-      const aggResult = await db.one(sql, sqlParams);
+      const aggResult = (await db.one(sql, sqlParams)) as Record<string, unknown>;
       // pg-promise returns the aggregate with the function name as key
       const keys = Object.keys(aggResult);
       if (keys.length > 0 && keys[0]) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return aggResult[keys[0]] as any;
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return null as any;
+    }
 
-    case "any":
+    case "any": {
       // Returns boolean - SQL is: SELECT CASE WHEN EXISTS(...) THEN 1 ELSE 0 END
-      const anyResult = await db.one(sql, sqlParams);
+      const anyResult = (await db.one(sql, sqlParams)) as Record<string, unknown>;
       const anyKeys = Object.keys(anyResult);
       if (anyKeys.length > 0 && anyKeys[0]) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (anyResult[anyKeys[0]] === 1) as any;
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return false as any;
+    }
 
-    case "all":
+    case "all": {
       // Returns boolean - SQL is: SELECT CASE WHEN NOT EXISTS(...) THEN 1 ELSE 0 END
-      const allResult = await db.one(sql, sqlParams);
+      const allResult = (await db.one(sql, sqlParams)) as Record<string, unknown>;
       const allKeys = Object.keys(allResult);
       if (allKeys.length > 0 && allKeys[0]) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (allResult[allKeys[0]] === 1) as any;
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return false as any;
+    }
 
     case "toArray":
     case "toList":
     default:
       // Regular query that returns an array
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (await db.any(sql, sqlParams)) as any;
   }
 }
@@ -209,6 +226,7 @@ export async function execute<
  * @returns Promise with query results, properly typed based on the query
  */
 export async function executeSimple<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
 >(
   db: PgDatabase,

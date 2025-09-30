@@ -12,7 +12,7 @@ describe("Edge Cases and Error Handling", () => {
     id: number;
     name: string;
     value?: number;
-    data?: any;
+    data?: unknown;
     flag: boolean;
     "special-column"?: string;
     column_with_underscore?: string;
@@ -269,7 +269,7 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Parameter edge cases", () => {
     it("should handle empty parameter object", () => {
-      const result = query((_params: {}) => from<TestTable>("test"), {});
+      const result = query((_params: Record<string, never>) => from<TestTable>("test"), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test"');
       expect(result.params).to.deep.equal({});

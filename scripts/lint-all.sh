@@ -20,6 +20,7 @@ fi
 PACKAGES=(
   "tinqer"
   "tinqer-sql-pg-promise"
+  "tinqer-sql-pg-promise-integration"
 )
 
 # Track overall success
