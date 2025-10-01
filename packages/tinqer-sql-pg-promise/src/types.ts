@@ -44,6 +44,17 @@ export interface SqlContext {
 }
 
 /**
+ * Options for execute and executeSimple functions
+ */
+export interface ExecuteOptions {
+  /**
+   * Optional callback to inspect/verify the generated SQL before execution
+   * Useful for testing, logging, debugging, or monitoring
+   */
+  onSql?: (result: SqlResult<Record<string, unknown>>) => void;
+}
+
+/**
  * SQL fragment for building queries
  */
 export interface SqlFragment {

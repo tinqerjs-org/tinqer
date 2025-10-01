@@ -15,7 +15,7 @@ describe("GroupBy SQL Generation", () => {
   it("should generate GROUP BY clause", () => {
     const result = query(() => from<Sale>("sales").groupBy((s) => s.category), {});
 
-    expect(result.sql).to.equal('SELECT * FROM "sales" GROUP BY "category"');
+    expect(result.sql).to.equal('SELECT "category" FROM "sales" GROUP BY "category"');
   });
 
   it("should combine GROUP BY with WHERE", () => {
@@ -28,7 +28,7 @@ describe("GroupBy SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "sales" WHERE "amount" > $(__p1) GROUP BY "category"',
+      'SELECT "category" FROM "sales" WHERE "amount" > $(__p1) GROUP BY "category"',
     );
     expect(result.params).to.deep.equal({ __p1: 100 });
   });
@@ -54,7 +54,9 @@ describe("GroupBy SQL Generation", () => {
       {},
     );
 
-    expect(result.sql).to.equal('SELECT * FROM "sales" GROUP BY "product" ORDER BY "key" ASC');
+    expect(result.sql).to.equal(
+      'SELECT "product" FROM "sales" GROUP BY "product" ORDER BY "product" ASC',
+    );
   });
 
   it("should handle GROUP BY with COUNT aggregate", () => {

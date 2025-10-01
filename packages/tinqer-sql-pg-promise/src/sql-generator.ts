@@ -31,7 +31,7 @@ import type {
 import type { SqlContext } from "./types.js";
 import { generateFrom } from "./generators/from.js";
 import { generateSelect } from "./generators/select.js";
-import { generateBooleanExpression } from "./expression-generator.js";
+import { generateBooleanExpression, generateExpression } from "./expression-generator.js";
 import { generateOrderBy } from "./generators/orderby.js";
 import { generateThenBy } from "./generators/thenby.js";
 import { generateTake } from "./generators/take.js";
@@ -150,6 +150,13 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
       "JOIN with result selector requires explicit SELECT projection. " +
         "Add .select() to specify which columns to return. " +
         "Example: .select((joined) => ({ userName: joined.u.name, deptName: joined.d.name }))",
+    );
+  } else if (groupByOp) {
+    // GROUP BY without SELECT requires explicit projection of grouped columns
+    // SELECT * is invalid with GROUP BY in PostgreSQL
+    const selectClause = generateSelectForGroupBy(groupByOp, context);
+    fragments.push(
+      distinctKeyword ? `SELECT ${distinctKeyword} ${selectClause}` : `SELECT ${selectClause}`,
     );
   } else {
     // Default SELECT *
@@ -336,5 +343,33 @@ function generateExistsQuery(
     // For ALL: NOT EXISTS(SELECT 1 WHERE NOT predicate)
     // But we already added the NOT to the predicate above
     return `SELECT CASE WHEN NOT EXISTS(${innerQuery}) THEN 1 ELSE 0 END`;
+  }
+}
+
+/**
+ * Generate SELECT clause for GROUP BY when no explicit SELECT is provided
+ */
+function generateSelectForGroupBy(groupByOp: GroupByOperation, context: SqlContext): string {
+  const keySelector = groupByOp.keySelector;
+
+  if (keySelector.type === "object") {
+    // Composite key - project each grouped column
+    const columns: string[] = [];
+    for (const propName in keySelector.properties) {
+      const propExpr = keySelector.properties[propName];
+      if (propExpr) {
+        const sqlExpr = generateExpression(propExpr, context);
+        columns.push(`${sqlExpr} AS "${propName}"`);
+      }
+    }
+    return columns.join(", ");
+  } else if (keySelector.type === "column") {
+    // Single column grouping
+    const sqlExpr = generateExpression(keySelector, context);
+    return sqlExpr;
+  } else {
+    // Any other expression type
+    const sqlExpr = generateExpression(keySelector, context);
+    return sqlExpr;
   }
 }

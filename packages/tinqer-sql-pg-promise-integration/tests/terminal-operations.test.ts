@@ -17,11 +17,24 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
   describe("first() and firstOrDefault()", () => {
     it("should return first user", async () => {
-      const user = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .orderBy((u) => u.id)
-          .first(),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const user = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .orderBy((u) => u.id)
+            .first(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" ORDER BY "id" ASC LIMIT 1');
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(user).to.be.an("object");
       expect(user).to.have.property("id");
@@ -30,51 +43,110 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     });
 
     it("should return first user matching condition", async () => {
-      const user = await executeSimple(db, () =>
-        from(dbContext, "users").first((u) => u.age !== null && u.age > 40),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const user = await executeSimple(
+        db,
+        () => from(dbContext, "users").first((u) => u.age !== null && u.age > 40),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE ("age" IS NOT NULL AND "age" > $(__p1)) LIMIT 1',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 40 });
 
       expect(user).to.be.an("object");
       expect(user.age).to.be.greaterThan(40);
     });
 
     it("should throw error when no match for first()", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
       try {
-        await executeSimple(db, () =>
-          from(dbContext, "users").first((u) => u.age !== null && u.age > 100),
+        await executeSimple(
+          db,
+          () => from(dbContext, "users").first((u) => u.age !== null && u.age > 100),
+          {
+            onSql: (result) => {
+              capturedSql = result;
+            },
+          },
         );
         expect.fail("Should have thrown error");
       } catch (error: unknown) {
+        expect(capturedSql).to.exist;
+        expect(capturedSql!.sql).to.equal(
+          'SELECT * FROM "users" WHERE ("age" IS NOT NULL AND "age" > $(__p1)) LIMIT 1',
+        );
+        expect(capturedSql!.params).to.deep.equal({ __p1: 100 });
+
         expect((error as Error).message).to.include("No elements found");
       }
     });
 
     it("should return null for firstOrDefault() when no match", async () => {
-      const user = await executeSimple(db, () =>
-        from(dbContext, "users").firstOrDefault((u) => u.age !== null && u.age > 100),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const user = await executeSimple(
+        db,
+        () => from(dbContext, "users").firstOrDefault((u) => u.age !== null && u.age > 100),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE ("age" IS NOT NULL AND "age" > $(__p1)) LIMIT 1',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 100 });
 
       expect(user).to.be.null;
     });
 
     it("should work with complex queries", async () => {
-      const result = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .join(
-            from(dbContext, "departments"),
-            (u) => u.department_id,
-            (d) => d.id,
-            (u, d) => ({ u, d }),
-          )
-          .where((joined) => joined.u.is_active === true)
-          .orderBy((joined) => joined.u.age!)
-          .select((joined) => ({
-            userName: joined.u.name,
-            departmentName: joined.d.name,
-            age: joined.u.age,
-          }))
-          .first(),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const result = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .join(
+              from(dbContext, "departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .where((joined) => joined.u.is_active === true)
+            .orderBy((joined) => joined.u.age!)
+            .select((joined) => ({
+              userName: joined.u.name,
+              departmentName: joined.d.name,
+              age: joined.u.age,
+            }))
+            .first(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "t0"."name" AS "userName", "t1"."name" AS "departmentName", "t0"."age" AS "age" ' +
+          'FROM "users" AS "t0" INNER JOIN "departments" AS "t1" ON "t0"."department_id" = "t1"."id" ' +
+          'WHERE "t0"."is_active" = $(__p1) ORDER BY "t0"."age" ASC LIMIT 1',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: true });
 
       expect(result).to.be.an("object");
       expect(result).to.have.property("userName");
@@ -85,51 +157,116 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
   describe("single() and singleOrDefault()", () => {
     it("should return single user by unique email", async () => {
-      const user = await executeSimple(db, () =>
-        from(dbContext, "users").single((u) => u.email === "john@example.com"),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const user = await executeSimple(
+        db,
+        () => from(dbContext, "users").single((u) => u.email === "john@example.com"),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "email" = $(__p1) LIMIT 2');
+      expect(capturedSql!.params).to.deep.equal({ __p1: "john@example.com" });
 
       expect(user).to.be.an("object");
       expect(user.name).to.equal("John Doe");
     });
 
     it("should throw error when multiple matches for single()", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
       try {
-        await executeSimple(db, () =>
-          from(dbContext, "users").single((u) => u.department_id === 1),
+        await executeSimple(
+          db,
+          () => from(dbContext, "users").single((u) => u.department_id === 1),
+          {
+            onSql: (result) => {
+              capturedSql = result;
+            },
+          },
         );
         expect.fail("Should have thrown error");
       } catch (error: unknown) {
+        expect(capturedSql).to.exist;
+        expect(capturedSql!.sql).to.equal(
+          'SELECT * FROM "users" WHERE "department_id" = $(__p1) LIMIT 2',
+        );
+        expect(capturedSql!.params).to.deep.equal({ __p1: 1 });
+
         expect((error as Error).message).to.include("Multiple elements found");
       }
     });
 
     it("should throw error when no match for single()", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
       try {
-        await executeSimple(db, () =>
-          from(dbContext, "users").single((u) => u.email === "nonexistent@example.com"),
+        await executeSimple(
+          db,
+          () => from(dbContext, "users").single((u) => u.email === "nonexistent@example.com"),
+          {
+            onSql: (result) => {
+              capturedSql = result;
+            },
+          },
         );
         expect.fail("Should have thrown error");
       } catch (error: unknown) {
+        expect(capturedSql).to.exist;
+        expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "email" = $(__p1) LIMIT 2');
+        expect(capturedSql!.params).to.deep.equal({ __p1: "nonexistent@example.com" });
+
         expect((error as Error).message).to.include("No elements found");
       }
     });
 
     it("should return null for singleOrDefault() when no match", async () => {
-      const user = await executeSimple(db, () =>
-        from(dbContext, "users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const user = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "email" = $(__p1) LIMIT 2');
+      expect(capturedSql!.params).to.deep.equal({ __p1: "nonexistent@example.com" });
 
       expect(user).to.be.null;
     });
 
     it("should throw error for singleOrDefault() with multiple matches", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
       try {
-        await executeSimple(db, () =>
-          from(dbContext, "users").singleOrDefault((u) => u.department_id === 1),
+        await executeSimple(
+          db,
+          () => from(dbContext, "users").singleOrDefault((u) => u.department_id === 1),
+          {
+            onSql: (result) => {
+              capturedSql = result;
+            },
+          },
         );
         expect.fail("Should have thrown error");
       } catch (error: unknown) {
+        expect(capturedSql).to.exist;
+        expect(capturedSql!.sql).to.equal(
+          'SELECT * FROM "users" WHERE "department_id" = $(__p1) LIMIT 2',
+        );
+        expect(capturedSql!.params).to.deep.equal({ __p1: 1 });
+
         expect((error as Error).message).to.include("Multiple elements found");
       }
     });
@@ -137,32 +274,74 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
   describe("last() and lastOrDefault()", () => {
     it("should return last user", async () => {
-      const user = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .orderBy((u) => u.id)
-          .last(),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const user = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .orderBy((u) => u.id)
+            .last(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" ORDER BY "id" DESC LIMIT 1');
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(user).to.be.an("object");
       expect(user.id).to.equal(10); // Henry Ford is the last inserted
     });
 
     it("should return last user matching condition", async () => {
-      const user = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .where((u) => u.department_id === 1)
-          .orderBy((u) => u.name)
-          .last(),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const user = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .where((u) => u.department_id === 1)
+            .orderBy((u) => u.name)
+            .last(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE "department_id" = $(__p1) ORDER BY "name" DESC LIMIT 1',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 1 });
 
       expect(user).to.be.an("object");
       expect(user.department_id).to.equal(1);
     });
 
     it("should return null for lastOrDefault() when no match", async () => {
-      const user = await executeSimple(db, () =>
-        from(dbContext, "users").lastOrDefault((u) => u.age !== null && u.age > 100),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const user = await executeSimple(
+        db,
+        () => from(dbContext, "users").lastOrDefault((u) => u.age !== null && u.age > 100),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE ("age" IS NOT NULL AND "age" > $(__p1)) ORDER BY 1 DESC LIMIT 1',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 100 });
 
       expect(user).to.be.null;
     });
@@ -170,49 +349,132 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
   describe("any() and all()", () => {
     it("should return true when any user matches condition", async () => {
-      const hasYoungUsers = await executeSimple(db, () =>
-        from(dbContext, "users").any((u) => u.age !== null && u.age < 30),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const hasYoungUsers = await executeSimple(
+        db,
+        () => from(dbContext, "users").any((u) => u.age !== null && u.age < 30),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE ("age" IS NOT NULL AND "age" < $(__p1))) THEN 1 ELSE 0 END',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 30 });
 
       expect(hasYoungUsers).to.be.true;
     });
 
     it("should return false when no user matches condition", async () => {
-      const hasCentenarians = await executeSimple(db, () =>
-        from(dbContext, "users").any((u) => u.age !== null && u.age > 100),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const hasCentenarians = await executeSimple(
+        db,
+        () => from(dbContext, "users").any((u) => u.age !== null && u.age > 100),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE ("age" IS NOT NULL AND "age" > $(__p1))) THEN 1 ELSE 0 END',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 100 });
 
       expect(hasCentenarians).to.be.false;
     });
 
     it("should return true when any() is called without predicate on non-empty table", async () => {
-      const hasUsers = await executeSimple(db, () => from(dbContext, "users").any());
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const hasUsers = await executeSimple(db, () => from(dbContext, "users").any(), {
+        onSql: (result) => {
+          capturedSql = result;
+        },
+      });
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users") THEN 1 ELSE 0 END',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(hasUsers).to.be.true;
     });
 
     it("should check if all users match condition", async () => {
-      const allHaveEmail = await executeSimple(db, () =>
-        from(dbContext, "users").all((u) => u.email !== null),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const allHaveEmail = await executeSimple(
+        db,
+        () => from(dbContext, "users").all((u) => u.email !== null),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("email" IS NOT NULL)) THEN 1 ELSE 0 END',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(allHaveEmail).to.be.true;
     });
 
     it("should return false when not all match condition", async () => {
-      const allActive = await executeSimple(db, () =>
-        from(dbContext, "users").all((u) => u.is_active === true),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const allActive = await executeSimple(
+        db,
+        () => from(dbContext, "users").all((u) => u.is_active === true),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("is_active" = $(__p1))) THEN 1 ELSE 0 END',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: true });
 
       expect(allActive).to.be.false; // Some users are inactive
     });
 
     it("should work with WHERE clause", async () => {
-      const allEngineersActive = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .where((u) => u.department_id === 1)
-          .all((u) => u.is_active === true),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const allEngineersActive = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .where((u) => u.department_id === 1)
+            .all((u) => u.is_active === true),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE "department_id" = $(__p1) AND NOT ("is_active" = $(__p2))) THEN 1 ELSE 0 END',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 1, __p2: true });
 
       // Check the actual data to verify the result
       const engineerStatus = await executeSimple(db, () =>
@@ -228,12 +490,27 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
   describe("toArray() and toList()", () => {
     it("should return array of results", async () => {
-      const users = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .where((u) => u.is_active === true)
-          .orderBy((u) => u.name)
-          .toArray(),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const users = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .where((u) => u.is_active === true)
+            .orderBy((u) => u.name)
+            .toArray(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE "is_active" = $(__p1) ORDER BY "name" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: true });
 
       expect(users).to.be.an("array");
       expect(users.length).to.be.greaterThan(0);
@@ -243,12 +520,27 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     });
 
     it("should return list of results", async () => {
-      const products = await executeSimple(db, () =>
-        from(dbContext, "products")
-          .where((p) => p.stock > 50)
-          .orderByDescending((p) => p.price)
-          .toArray(),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const products = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "products")
+            .where((p) => p.stock > 50)
+            .orderByDescending((p) => p.price)
+            .toArray(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "products" WHERE "stock" > $(__p1) ORDER BY "price" DESC',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 50 });
 
       expect(products).to.be.an("array");
       products.forEach((product) => {
@@ -264,12 +556,23 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
   describe("Complex terminal operation scenarios", () => {
     it("should handle parameterized terminal operations", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
       const targetEmail = "jane@example.com";
       const user = await execute(
         db,
         (params) => from(dbContext, "users").single((u) => u.email === params.email),
         { email: targetEmail },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "email" = $(email) LIMIT 2');
+      expect(capturedSql!.params).to.deep.equal({ email: targetEmail });
 
       expect(user).to.be.an("object");
       expect(user.email).to.equal(targetEmail);
@@ -277,19 +580,48 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     });
 
     it("should check product availability", async () => {
-      const hasExpensiveElectronics = await executeSimple(db, () =>
-        from(dbContext, "products").any((p) => p.category === "Electronics" && p.price > 500),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const hasExpensiveElectronics = await executeSimple(
+        db,
+        () => from(dbContext, "products").any((p) => p.category === "Electronics" && p.price > 500),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT CASE WHEN EXISTS(SELECT 1 FROM "products" WHERE ("category" = $(__p1) AND "price" > $(__p2))) THEN 1 ELSE 0 END',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "Electronics", __p2: 500 });
 
       expect(hasExpensiveElectronics).to.be.true; // Laptop is $999.99
     });
 
     it("should verify all completed orders have positive totals", async () => {
-      const allPositive = await executeSimple(db, () =>
-        from(dbContext, "orders")
-          .where((o) => o.status === "completed")
-          .all((o) => o.total_amount > 0),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const allPositive = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "orders")
+            .where((o) => o.status === "completed")
+            .all((o) => o.total_amount > 0),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "orders" WHERE "status" = $(__p1) AND NOT ("total_amount" > $(__p2))) THEN 1 ELSE 0 END',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "completed", __p2: 0 });
 
       expect(allPositive).to.be.true;
     });

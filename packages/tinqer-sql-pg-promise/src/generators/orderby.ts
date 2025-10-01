@@ -4,7 +4,7 @@
 
 import type { OrderByOperation } from "@webpods/tinqer";
 import type { SqlContext } from "../types.js";
-import { generateValueExpression } from "../expression-generator.js";
+import { generateValueExpression, generateExpression } from "../expression-generator.js";
 
 /**
  * Generate ORDER BY clause
@@ -15,8 +15,17 @@ export function generateOrderBy(operation: OrderByOperation, context: SqlContext
   if (typeof operation.keySelector === "string") {
     // Simple column name - check if it maps to a source column
 
-    // Check if it's a path like "o.amount"
-    if (operation.keySelector.includes(".") && context.symbolTable) {
+    // Special handling for "key" when we have GROUP BY
+    if (operation.keySelector === "key" && context.groupByKey) {
+      // Translate g.key to the actual grouped column
+      if (context.groupByKey.type === "column") {
+        orderByExpr = `"${context.groupByKey.name}"`;
+      } else {
+        // For complex GROUP BY expressions, generate the expression
+        orderByExpr = generateExpression(context.groupByKey, context);
+      }
+    } else if (operation.keySelector.includes(".") && context.symbolTable) {
+      // Check if it's a path like "o.amount"
       const parts = operation.keySelector.split(".");
       if (parts.length === 2) {
         const tableRef = context.symbolTable.entries.get(parts[0]!);

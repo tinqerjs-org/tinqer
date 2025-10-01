@@ -10,7 +10,7 @@ import {
   type QueryHelpers,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
-import type { SqlResult } from "./types.js";
+import type { SqlResult, ExecuteOptions } from "./types.js";
 
 /**
  * Generate SQL from a query builder function
@@ -108,6 +108,7 @@ interface PgDatabase {
  * @param db pg-promise database instance
  * @param queryBuilder Function that builds the query using LINQ operations
  * @param params Parameters to pass to the query builder
+ * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Promise with query results, properly typed based on the query
  */
 export async function execute<
@@ -118,6 +119,7 @@ export async function execute<
   db: PgDatabase,
   queryBuilder: (params: TParams) => TQuery,
   params: TParams,
+  options: ExecuteOptions = {},
 ): Promise<
   TQuery extends Queryable<infer T>
     ? T[]
@@ -128,6 +130,11 @@ export async function execute<
         : never
 > {
   const { sql, params: sqlParams } = query(queryBuilder, params);
+
+  // Call onSql callback if provided
+  if (options.onSql) {
+    options.onSql({ sql, params: sqlParams });
+  }
 
   // Check if this is a terminal operation that returns a single value
   const parseResult = parseQuery(queryBuilder);
@@ -223,6 +230,7 @@ export async function execute<
  * Execute a query with no parameters
  * @param db pg-promise database instance
  * @param queryBuilder Function that builds the query using LINQ operations
+ * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Promise with query results, properly typed based on the query
  */
 export async function executeSimple<
@@ -231,6 +239,7 @@ export async function executeSimple<
 >(
   db: PgDatabase,
   queryBuilder: () => TQuery,
+  options: ExecuteOptions = {},
 ): Promise<
   TQuery extends Queryable<infer T>
     ? T[]
@@ -240,8 +249,8 @@ export async function executeSimple<
         ? T
         : never
 > {
-  return execute(db, queryBuilder, {});
+  return execute(db, queryBuilder, {}, options);
 }
 
 // Export types
-export type { SqlResult } from "./types.js";
+export type { SqlResult, ExecuteOptions } from "./types.js";

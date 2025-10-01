@@ -17,7 +17,17 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
   describe("SELECT queries", () => {
     it("should select all users", async () => {
-      const results = await executeSimple(db, () => from(dbContext, "users"));
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(db, () => from(dbContext, "users"), {
+        onSql: (result) => {
+          capturedSql = result;
+        },
+      });
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users"');
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -27,12 +37,25 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should select specific columns", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").select((u) => ({
-          id: u.id,
-          name: u.name,
-        })),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users").select((u) => ({
+            id: u.id,
+            name: u.name,
+          })),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT "id" AS "id", "name" AS "name" FROM "users"');
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -42,13 +65,28 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should rename columns in projection", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").select((u) => ({
-          userId: u.id,
-          fullName: u.name,
-          userEmail: u.email,
-        })),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users").select((u) => ({
+            userId: u.id,
+            fullName: u.name,
+            userEmail: u.email,
+          })),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "id" AS "userId", "name" AS "fullName", "email" AS "userEmail" FROM "users"',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results[0]).to.have.property("userId");
       expect(results[0]).to.have.property("fullName");
@@ -58,10 +96,26 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
   describe("WHERE clause", () => {
     it("should filter users by age", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.age !== null && u.age >= 30),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 30),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
 
+      // Verify SQL generation
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE ("age" IS NOT NULL AND "age" >= $(__p1))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 30 });
+
+      // Verify actual results
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
@@ -70,11 +124,26 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should filter with multiple conditions", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where(
-          (u) => u.age !== null && u.age >= 25 && u.is_active === true,
-        ),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users").where(
+            (u) => u.age !== null && u.age >= 25 && u.is_active === true,
+          ),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE (("age" IS NOT NULL AND "age" >= $(__p1)) AND "is_active" = $(__p2))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 25, __p2: true });
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -85,11 +154,26 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should filter with OR conditions", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where(
-          (u) => (u.age !== null && u.age < 30) || u.department_id === 4,
-        ),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users").where(
+            (u) => (u.age !== null && u.age < 30) || u.department_id === 4,
+          ),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE (("age" IS NOT NULL AND "age" < $(__p1)) OR "department_id" = $(__p2))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 30, __p2: 4 });
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -99,11 +183,24 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should filter with parameters", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
       const results = await execute(
         db,
         (params) => from(dbContext, "users").where((u) => u.age !== null && u.age >= params.minAge),
         { minAge: 35 },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE ("age" IS NOT NULL AND "age" >= $(minAge))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ minAge: 35 });
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -115,9 +212,21 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
   describe("ORDER BY", () => {
     it("should order users by name", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").orderBy((u) => u.name),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").orderBy((u) => u.name),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" ORDER BY "name" ASC');
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(1);
@@ -127,11 +236,26 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should order users by age descending", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .where((u) => u.age !== null)
-          .orderByDescending((u) => u.age!),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .where((u) => u.age !== null)
+            .orderByDescending((u) => u.age!),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE "age" IS NOT NULL ORDER BY "age" DESC',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(1);
@@ -141,12 +265,28 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should order with multiple columns", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .where((u) => u.age !== null && u.department_id !== null)
-          .orderBy((u) => u.department_id!)
-          .thenByDescending((u) => u.age!),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .where((u) => u.age !== null && u.department_id !== null)
+            .orderBy((u) => u.department_id!)
+            .thenByDescending((u) => u.age!),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE ("age" IS NOT NULL AND "department_id" IS NOT NULL) ' +
+          'ORDER BY "department_id" ASC, "age" DESC',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -165,7 +305,17 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
   describe("LIMIT and OFFSET", () => {
     it("should limit results", async () => {
-      const results = await executeSimple(db, () => from(dbContext, "users").take(5));
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(db, () => from(dbContext, "users").take(5), {
+        onSql: (result) => {
+          capturedSql = result;
+        },
+      });
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" LIMIT $(__p1)');
+      expect(capturedSql!.params).to.deep.equal({ __p1: 5 });
 
       expect(results).to.have.lengthOf(5);
     });
@@ -174,11 +324,25 @@ describe("PostgreSQL Integration - Basic Queries", () => {
       const allResults = await executeSimple(db, () =>
         from(dbContext, "users").orderBy((u) => u.id),
       );
-      const skippedResults = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .orderBy((u) => u.id)
-          .skip(3),
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const skippedResults = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .orderBy((u) => u.id)
+            .skip(3),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" ORDER BY "id" ASC OFFSET $(__p1)');
+      expect(capturedSql!.params).to.deep.equal({ __p1: 3 });
 
       expect(skippedResults[0]!.id).to.equal(allResults[3]!.id);
     });
@@ -189,12 +353,28 @@ describe("PostgreSQL Integration - Basic Queries", () => {
           .orderBy((u) => u.id)
           .take(3),
       );
-      const page2 = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .orderBy((u) => u.id)
-          .skip(3)
-          .take(3),
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const page2 = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .orderBy((u) => u.id)
+            .skip(3)
+            .take(3),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" ORDER BY "id" ASC LIMIT $(__p2) OFFSET $(__p1)',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: 3, __p2: 3 });
 
       expect(page1).to.have.lengthOf(3);
       expect(page2).to.have.lengthOf(3);
@@ -204,11 +384,26 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
   describe("DISTINCT", () => {
     it("should return distinct department IDs", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .select((u) => ({ department_id: u.department_id }))
-          .distinct(),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .select((u) => ({ department_id: u.department_id }))
+            .distinct(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT DISTINCT "department_id" AS "department_id" FROM "users"',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       const uniqueDepts = new Set(results.map((r) => r.department_id));
       expect(results.length).to.equal(uniqueDepts.size);
