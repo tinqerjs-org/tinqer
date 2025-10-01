@@ -196,7 +196,7 @@ describe("WHERE SQL Generation", () => {
       );
 
       expect(result.sql).to.equal(
-        'SELECT * FROM "sales" WHERE "amount" > $(__p1) AND "status" = $(__p2) GROUP BY "category"',
+        'SELECT "category" FROM "sales" WHERE "amount" > $(__p1) AND "status" = $(__p2) GROUP BY "category"',
       );
       expect(result.params).to.deep.equal({ __p1: 100, __p2: "completed" });
     });
