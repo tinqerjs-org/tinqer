@@ -18,6 +18,8 @@ PACKAGES=(
   "tinqer"
   "tinqer-sql-pg-promise"
   "tinqer-sql-pg-promise-integration"
+  "tinqer-sql-better-sqlite3"
+  "tinqer-sql-better-sqlite3-integration"
 )
 
 # 1 ▸ clean first
