@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { query } from "@webpods/tinqer-sql-pg-promise";
+import { query } from "../dist/index.js";
 
 describe("Null Coalescing Operator (??) with query", () => {
   it("should generate COALESCE for ?? operator in WHERE clause", () => {
