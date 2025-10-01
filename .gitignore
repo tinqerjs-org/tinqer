@@ -164,6 +164,7 @@ test-pod-*-backup-*.json
 .vscode/
 .idea/
 .claude/
+.codex/
 
 # Test output directory (for saving test results)
 .tests/

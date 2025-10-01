@@ -2,6 +2,15 @@
 
 Tinqer is a LINQ-to-SQL query builder for TypeScript that converts lambda expressions into SQL queries through runtime parsing and expression tree generation.
 
+## Database Adapters
+
+The core package is adapter-agnostic; database-specific behavior lives in companion adapters. The repository currently ships two adapters:
+
+- `@webpods/tinqer-sql-pg-promise` – PostgreSQL integration built on pg-promise
+- `@webpods/tinqer-sql-better-sqlite3` – SQLite integration powered by better-sqlite3
+
+Both adapters expose the same `from`, `query`, and `execute` helpers so applications can switch databases without rewriting query code.
+
 ## Core Design Principles
 
 ### Dual Type System
@@ -514,6 +523,10 @@ function query<TParams, TResult>(
 // SQL generation
 function generateSql(operation: QueryOperation, params: unknown): string;
 ```
+
+### Current Gaps
+
+- `HAVING` clauses are not emitted yet. Query builders can shape grouped results, but aggregated filters must be applied by chaining `.where` after `.select` or by filtering results in application code.
 
 ## Complete Example Flow
 

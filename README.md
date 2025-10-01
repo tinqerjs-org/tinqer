@@ -4,12 +4,22 @@ LINQ-to-SQL query builder for TypeScript. Parses lambda expressions at runtime t
 
 ## Installation
 
+Tinqer ships as adapter packages. Install the adapters that match your driver:
+
 ```bash
 # PostgreSQL with pg-promise
 npm install @webpods/tinqer-sql-pg-promise
+
+# SQLite with better-sqlite3
+npm install @webpods/tinqer-sql-better-sqlite3
 ```
 
 Do not install `@webpods/tinqer` directly. Use a database adapter.
+
+### Supported adapters
+
+- `@webpods/tinqer-sql-pg-promise` – PostgreSQL via pg-promise
+- `@webpods/tinqer-sql-better-sqlite3` – SQLite via better-sqlite3
 
 ## Basic Usage
 
@@ -33,6 +43,15 @@ interface User {
   salary: number;
   departmentId: number;
 }
+```
+
+The SQLite adapter exposes the same `from`, `query`, and `execute` helpers:
+
+```typescript
+import Database from "better-sqlite3";
+import { from, query, execute } from "@webpods/tinqer-sql-better-sqlite3";
+
+const db = new Database("app.db");
 ```
 
 ### Simple Queries
@@ -242,10 +261,14 @@ from<User>("users")
 // Simple grouping
 from<User>("users").groupBy((u) => u.department);
 
-// Group with HAVING
+// Group with aggregated filter (HAVING not generated yet)
 from<Order>("orders")
   .groupBy((o) => o.customerId)
-  .having((g) => g.sum((o) => o.total) > 1000);
+  .select((g) => ({
+    customerId: g.key,
+    totalSpent: g.sum((o) => o.total),
+  }))
+  .where((g) => g.totalSpent > 1000);
 
 // Group with SELECT
 from<User>("users")
@@ -679,20 +702,21 @@ from<Order>("orders")
     totalSpent: g.sum((o) => o.amount),
     orderCount: g.count(),
   }))
-  .having((g) => g.totalSpent > 1000)
   .orderByDescending((g) => g.totalSpent);
 ```
 
 Generates:
 
 ```sql
-SELECT customerId, SUM(amount) AS totalSpent, COUNT(*) AS orderCount
+SELECT "customerId" AS "customerId", SUM("amount") AS "totalSpent", COUNT(*) AS "orderCount"
 FROM "orders" AS t0
-WHERE status = $(_status1)
-GROUP BY customerId
-HAVING SUM(amount) > $(_amount1)
-ORDER BY totalSpent DESC
+WHERE "status" = $(_status1)
+GROUP BY "customerId"
+ORDER BY "totalSpent" DESC
+
 ```
+
+Filter aggregated results (e.g., high spenders) in application code or by chaining `.where` after `.select`, because the SQL generator does not emit a `HAVING` clause yet.
 
 ## Limitations
 
@@ -718,6 +742,7 @@ where((u) => isAdult(u.age)); // Error
 
 - No INSERT, UPDATE, DELETE operations
 - No CTEs (Common Table Expressions)
+- No HAVING clause generation (filter grouped results after aggregation)
 - No window functions
 - No stored procedures
 - No transactions
