@@ -199,7 +199,7 @@ function generateLogicalExpression(expr: LogicalExpression, context: SqlContext)
  * Generate SQL for NOT expressions
  */
 function generateNotExpression(expr: NotExpression, context: SqlContext): string {
-  // Special handling for NOT (x = ANY(array)) -> x <> ALL(array) for better PostgreSQL performance
+  // Special handling for NOT IN with array parameters
   if (expr.expression.type === "in") {
     const inExpr = expr.expression as InExpression;
     if (!Array.isArray(inExpr.list) && inExpr.list.type === "param") {
@@ -207,9 +207,30 @@ function generateNotExpression(expr: NotExpression, context: SqlContext): string
       const paramExpr = inExpr.list as ParameterExpression;
       // Use property if it exists (e.g., params.targetIds), otherwise use param
       const paramName = paramExpr.property || paramExpr.param;
-      const formattedParam = `\${${paramName}}`;
-      // Convert NOT (x = ANY(array)) to x <> ALL(array)
-      return `${value} <> ALL(${formattedParam})`;
+
+      // SQLite doesn't support ANY/ALL syntax, so we need to expand array parameters
+      // Get the actual array value from context.params
+      const arrayValue = context.params[paramName];
+
+      if (!Array.isArray(arrayValue)) {
+        throw new Error(`Expected array parameter '${paramName}' but got ${typeof arrayValue}`);
+      }
+
+      if (arrayValue.length === 0) {
+        // Empty array - NOT IN () is always TRUE
+        return "TRUE";
+      }
+
+      // Expand array into individual parameters: @paramName_0, @paramName_1, ...
+      const expandedParams = arrayValue.map((_, index) => `@${paramName}_${index}`);
+
+      // Add expanded parameters to context
+      arrayValue.forEach((value, index) => {
+        context.params[`${paramName}_${index}`] = value;
+      });
+
+      // Generate NOT IN clause with expanded parameters
+      return `${value} NOT IN (${expandedParams.join(", ")})`;
     }
   }
 
@@ -583,16 +604,30 @@ function generateInExpression(expr: InExpression, context: SqlContext): string {
     const paramExpr = expr.list as ParameterExpression;
     // Use property if it exists (e.g., params.targetIds), otherwise use param
     const paramName = paramExpr.property || paramExpr.param;
-    const formattedParam = `\${${paramName}}`;
 
-    // Check if we need to handle empty array specially
-    // We'll let pg-promise handle the parameter value
-    // If it's empty, pg-promise will pass an empty array
-    // PostgreSQL will correctly return false for = ANY(ARRAY[]::type[])
+    // SQLite doesn't support ANY/ALL syntax, so we need to expand array parameters
+    // Get the actual array value from context.params
+    const arrayValue = context.params[paramName];
 
-    // Use ANY for array parameters in PostgreSQL
-    // This converts array.includes(value) to value = ANY(array)
-    return `${value} = ANY(${formattedParam})`;
+    if (!Array.isArray(arrayValue)) {
+      throw new Error(`Expected array parameter '${paramName}' but got ${typeof arrayValue}`);
+    }
+
+    if (arrayValue.length === 0) {
+      // Empty array - always returns FALSE for IN
+      return "FALSE";
+    }
+
+    // Expand array into individual parameters: @paramName_0, @paramName_1, ...
+    const expandedParams = arrayValue.map((_, index) => `@${paramName}_${index}`);
+
+    // Add expanded parameters to context
+    arrayValue.forEach((value, index) => {
+      context.params[`${paramName}_${index}`] = value;
+    });
+
+    // Generate IN clause with expanded parameters
+    return `${value} IN (${expandedParams.join(", ")})`;
   }
 
   let listValues: string[];

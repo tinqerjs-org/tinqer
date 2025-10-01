@@ -49,7 +49,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
       results.forEach((user) => {
-        const condition1 = user.age !== null && user.age >= 25 && user.age <= 35 && user.is_active;
+        const condition1 =
+          user.age !== null && user.age >= 25 && user.age <= 35 && user.is_active === 1;
         const condition2 = user.department_id === 4 && user.age !== null && user.age >= 40;
         expect(condition1 || condition2).to.be.true;
       });
@@ -243,8 +244,16 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       );
 
       expect(capturedSql).to.exist;
-      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "id" = ANY(@targetIds)');
-      expect(capturedSql!.params).to.deep.equal({ targetIds: [1, 3, 5, 7] });
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE "id" IN (@targetIds_0, @targetIds_1, @targetIds_2, @targetIds_3)',
+      );
+      expect(capturedSql!.params).to.deep.equal({
+        targetIds: [1, 3, 5, 7],
+        targetIds_0: 1,
+        targetIds_1: 3,
+        targetIds_2: 5,
+        targetIds_3: 7,
+      });
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(4);
@@ -273,10 +282,12 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal(
-        'SELECT * FROM "products" WHERE ("category" IS NOT NULL AND "category" <> ALL(@excludedCategories))',
+        'SELECT * FROM "products" WHERE ("category" IS NOT NULL AND "category" NOT IN (@excludedCategories_0, @excludedCategories_1))',
       );
       expect(capturedSql!.params).to.deep.equal({
         excludedCategories: ["Furniture", "Stationery"],
+        excludedCategories_0: "Furniture",
+        excludedCategories_1: "Stationery",
       });
 
       expect(results).to.be.an("array");
@@ -302,7 +313,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       );
 
       expect(capturedSql).to.exist;
-      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "id" = ANY(@emptyList)');
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE FALSE');
       expect(capturedSql!.params).to.deep.equal({ emptyList: [] });
 
       expect(results).to.be.an("array");

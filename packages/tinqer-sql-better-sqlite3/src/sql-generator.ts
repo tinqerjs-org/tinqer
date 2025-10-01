@@ -51,11 +51,12 @@ import { generateJoin } from "./generators/join.js";
 /**
  * Generate SQL from a QueryOperation tree
  */
-export function generateSql(operation: QueryOperation, _params: unknown): string {
+export function generateSql(operation: QueryOperation, params: unknown): string {
   const context: SqlContext = {
     tableAliases: new Map(),
     aliasCounter: 0,
     formatParameter: (paramName: string) => `@${paramName}`, // Better SQLite3 format
+    params: (params as Record<string, unknown>) || {},
   };
 
   // Collect all operations in the chain
