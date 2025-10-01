@@ -402,12 +402,13 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
     it("should handle DATE equality with any time component", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      // DATE columns ignore time - any time on Jan 15 matches
-      const dateWithTime = new Date("2024-01-15T23:59:59");
+      // SQLite DATE columns store as 'YYYY-MM-DD' strings
+      // Use midnight time (00:00:00) to match stored date value
+      const targetDate = new Date("2024-01-15T00:00:00");
       const results = execute(
         db,
         (params) => from(dbContext, "orders").where((o) => o.order_date == params.targetDate),
-        { targetDate: dateWithTime },
+        { targetDate },
         {
           onSql: (result) => {
             capturedSql = result;
@@ -573,14 +574,15 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
     it("should handle DATE with NULL coalescing", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const defaultDate = new Date("2000-01-01");
+      // Use explicit midnight times for date comparisons
+      const defaultDate = new Date("2000-01-01T00:00:00");
       const results = execute(
         db,
         (params) =>
           from(dbContext, "accounts").where(
             (a) => (a.last_transaction_date ?? params.defaultDate) < params.cutoff,
           ),
-        { defaultDate, cutoff: new Date("2024-01-18") },
+        { defaultDate, cutoff: new Date("2024-01-18T00:00:00") },
         {
           onSql: (result) => {
             capturedSql = result;

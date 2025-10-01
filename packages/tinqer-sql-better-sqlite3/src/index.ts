@@ -146,7 +146,7 @@ export function execute<
 
   // Convert parameters for SQLite compatibility
   // - Booleans: SQLite doesn't have a native boolean type - use 0 for false, 1 for true
-  // - Dates: SQLite stores dates in DATETIME format 'YYYY-MM-DD HH:MM:SS'
+  // - Dates: Convert to SQLite DATETIME format 'YYYY-MM-DD HH:MM:SS'
   const convertedParams: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(sqlParams)) {
     if (typeof value === "boolean") {
@@ -156,7 +156,7 @@ export function execute<
       value !== undefined &&
       Object.prototype.toString.call(value) === "[object Date]"
     ) {
-      // Convert JavaScript Date to SQLite DATETIME format: 'YYYY-MM-DD HH:MM:SS'
+      // Convert to SQLite DATETIME format: 'YYYY-MM-DD HH:MM:SS'
       const date = value as unknown as Date;
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -164,6 +164,7 @@ export function execute<
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
       const seconds = String(date.getSeconds()).padStart(2, "0");
+      // For date-only comparisons, use just the date part (time will be 00:00:00)
       convertedParams[key] = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     } else {
       convertedParams[key] = value;

@@ -130,19 +130,19 @@ export function setupTestDatabase(db: Database.Database) {
   `);
 
   // Insert orders
-  // Using ISO 8601 datetime format for consistency with JavaScript Date objects
+  // Store DATE columns as DATETIME format for consistent comparisons
   db.exec(`
     INSERT INTO orders (user_id, order_date, total_amount, status) VALUES
-    (1, '2024-01-15T00:00:00.000Z', 1029.98, 'completed'),
-    (2, '2024-01-16T00:00:00.000Z', 109.98, 'completed'),
-    (3, '2024-01-17T00:00:00.000Z', 299.99, 'shipped'),
-    (1, '2024-01-18T00:00:00.000Z', 499.99, 'pending'),
-    (4, '2024-01-19T00:00:00.000Z', 6.98, 'completed'),
-    (5, '2024-01-20T00:00:00.000Z', 1299.97, 'cancelled'),
-    (6, '2024-01-21T00:00:00.000Z', 89.99, 'completed'),
-    (7, '2024-01-22T00:00:00.000Z', 599.98, 'shipped'),
-    (8, '2024-01-23T00:00:00.000Z', 79.99, 'pending'),
-    (9, '2024-01-24T00:00:00.000Z', 289.98, 'completed');
+    (1, '2024-01-15 00:00:00', 1029.98, 'completed'),
+    (2, '2024-01-16 00:00:00', 109.98, 'completed'),
+    (3, '2024-01-17 00:00:00', 299.99, 'shipped'),
+    (1, '2024-01-18 00:00:00', 499.99, 'pending'),
+    (4, '2024-01-19 00:00:00', 6.98, 'completed'),
+    (5, '2024-01-20 00:00:00', 1299.97, 'cancelled'),
+    (6, '2024-01-21 00:00:00', 89.99, 'completed'),
+    (7, '2024-01-22 00:00:00', 599.98, 'shipped'),
+    (8, '2024-01-23 00:00:00', 79.99, 'pending'),
+    (9, '2024-01-24 00:00:00', 289.98, 'completed');
   `);
 
   // Insert order items
@@ -258,13 +258,14 @@ export function setupTestDatabase(db: Database.Database) {
   `);
 
   // Insert accounts with various numeric values
+  // Store DATE columns as DATETIME format for consistent comparisons
   db.exec(`
     INSERT INTO accounts (user_id, balance, credit_limit, interest_rate, last_transaction_date) VALUES
-    (1, 10000.50, 50000.00, 0.0325, '2024-01-20'),
-    (2, -500.25, 10000.00, 0.1899, '2024-01-19'),
+    (1, 10000.50, 50000.00, 0.0325, '2024-01-20 00:00:00'),
+    (2, -500.25, 10000.00, 0.1899, '2024-01-19 00:00:00'),
     (3, 0.00, 5000.00, 0.0000, NULL),
-    (4, 999999999.99, 9999999.99, 0.0001, '2024-01-18'),
-    (5, -9999.99, 15000.00, 0.2499, '2024-01-17');
+    (4, 999999999.99, 9999999.99, 0.0001, '2024-01-18 00:00:00'),
+    (5, -9999.99, 15000.00, 0.2499, '2024-01-17 00:00:00');
   `);
 
   // Create articles table for search testing
