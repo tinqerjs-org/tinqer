@@ -13,7 +13,7 @@ describe("Skip SQL Generation", () => {
   it("should generate OFFSET clause", () => {
     const result = query(() => from<User>("users").skip(10), {});
 
-    expect(result.sql).to.equal('SELECT * FROM "users" OFFSET @__p1');
+    expect(result.sql).to.equal('SELECT * FROM "users" LIMIT -1 OFFSET @__p1');
     expect(result.params).to.deep.equal({ __p1: 10 });
   });
 
@@ -35,7 +35,7 @@ describe("Skip SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT * FROM "users" WHERE "age" >= @__p1 ORDER BY "name" ASC OFFSET @__p2',
+      'SELECT * FROM "users" WHERE "age" >= @__p1 ORDER BY "name" ASC LIMIT -1 OFFSET @__p2',
     );
     expect(result.params).to.deep.equal({ __p1: 21, __p2: 5 });
   });

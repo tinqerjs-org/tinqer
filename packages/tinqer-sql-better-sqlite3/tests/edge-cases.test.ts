@@ -241,7 +241,7 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle SKIP 0", () => {
       const result = query(() => from<TestTable>("test").skip(0), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" OFFSET @__p1');
+      expect(result.sql).to.equal('SELECT * FROM "test" LIMIT -1 OFFSET @__p1');
       expect(result.params).to.deep.equal({ __p1: 0 });
     });
 
@@ -255,7 +255,7 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle very large SKIP", () => {
       const result = query(() => from<TestTable>("test").skip(1000000), {});
 
-      expect(result.sql).to.equal('SELECT * FROM "test" OFFSET @__p1');
+      expect(result.sql).to.equal('SELECT * FROM "test" LIMIT -1 OFFSET @__p1');
       expect(result.params).to.deep.equal({ __p1: 1000000 });
     });
 
