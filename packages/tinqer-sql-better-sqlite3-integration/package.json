@@ -1,0 +1,30 @@
+{
+  "name": "@webpods/tinqer-sql-better-sqlite3-integration",
+  "version": "0.0.1",
+  "description": "Better SQLite3 integration tests for Tinqer",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "mocha tests/**/*.test.ts",
+    "test:watch": "mocha tests/**/*.test.ts --watch",
+    "test:grep": "mocha tests/**/*.test.ts --grep",
+    "test:build": "tsc --noEmit",
+    "lint": "eslint tests --ext .ts",
+    "lint:fix": "eslint tests --ext .ts --fix"
+  },
+  "dependencies": {
+    "@webpods/tinqer": "file:../tinqer",
+    "@webpods/tinqer-sql-better-sqlite3": "file:../tinqer-sql-better-sqlite3",
+    "better-sqlite3": "^11.8.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/chai": "^5.2.2",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.3.3",
+    "chai": "^5.3.3",
+    "mocha": "^11.7.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.2"
+  }
+}
