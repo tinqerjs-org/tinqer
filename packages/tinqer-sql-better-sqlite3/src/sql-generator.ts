@@ -252,11 +252,16 @@ export function generateSql(operation: QueryOperation, _params: unknown): string
   } else {
     // Process LIMIT/OFFSET
     const takeOp = operations.find((op) => op.operationType === "take") as TakeOperation;
+    const skipOp = operations.find((op) => op.operationType === "skip") as SkipOperation;
+
+    // SQLite requires LIMIT before OFFSET
+    // If we have OFFSET but no LIMIT, use LIMIT -1 (unlimited)
     if (takeOp) {
       fragments.push(generateTake(takeOp, context));
+    } else if (skipOp) {
+      fragments.push("LIMIT -1");
     }
 
-    const skipOp = operations.find((op) => op.operationType === "skip") as SkipOperation;
     if (skipOp) {
       fragments.push(generateSkip(skipOp, context));
     }

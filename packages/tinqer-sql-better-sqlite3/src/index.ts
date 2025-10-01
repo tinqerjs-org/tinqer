@@ -144,6 +144,24 @@ export function execute<
 
   const operationType = parseResult.operation.operationType;
 
+  // Convert parameters for SQLite compatibility
+  // - Booleans: SQLite doesn't have a native boolean type - use 0 for false, 1 for true
+  // - Dates: SQLite stores dates as ISO strings or Unix timestamps - convert to ISO string
+  const convertedParams: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(sqlParams)) {
+    if (typeof value === "boolean") {
+      convertedParams[key] = value ? 1 : 0;
+    } else if (
+      value !== null &&
+      value !== undefined &&
+      Object.prototype.toString.call(value) === "[object Date]"
+    ) {
+      convertedParams[key] = (value as unknown as Date).toISOString();
+    } else {
+      convertedParams[key] = value;
+    }
+  }
+
   // Prepare statement
   const stmt = db.prepare(sql);
 
@@ -156,7 +174,7 @@ export function execute<
     case "last":
     case "lastOrDefault": {
       // These return a single item
-      const rows = stmt.all(sqlParams);
+      const rows = stmt.all(convertedParams);
       if (rows.length === 0) {
         if (operationType.includes("OrDefault")) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -174,9 +192,15 @@ export function execute<
     case "count":
     case "longCount": {
       // These return a number - SQL is: SELECT COUNT(*) FROM ...
-      const countResult = stmt.get(sqlParams) as { count: number };
+      // SQLite returns the result with column name "COUNT(*)", so get the first column value
+      const countResult = stmt.get(convertedParams) as Record<string, unknown>;
+      const keys = Object.keys(countResult);
+      if (keys.length > 0 && keys[0]) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return countResult[keys[0]] as any;
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return countResult.count as any;
+      return 0 as any;
     }
 
     case "sum":
@@ -185,7 +209,7 @@ export function execute<
     case "max": {
       // These return a single aggregate value - SQL is: SELECT SUM/AVG/MIN/MAX(column) FROM ...
       // The result is in the first column of the row
-      const aggResult = stmt.get(sqlParams) as Record<string, unknown>;
+      const aggResult = stmt.get(convertedParams) as Record<string, unknown>;
       const keys = Object.keys(aggResult);
       if (keys.length > 0 && keys[0]) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -197,7 +221,7 @@ export function execute<
 
     case "any": {
       // Returns boolean - SQL is: SELECT CASE WHEN EXISTS(...) THEN 1 ELSE 0 END
-      const anyResult = stmt.get(sqlParams) as Record<string, unknown>;
+      const anyResult = stmt.get(convertedParams) as Record<string, unknown>;
       const anyKeys = Object.keys(anyResult);
       if (anyKeys.length > 0 && anyKeys[0]) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -209,7 +233,7 @@ export function execute<
 
     case "all": {
       // Returns boolean - SQL is: SELECT CASE WHEN NOT EXISTS(...) THEN 1 ELSE 0 END
-      const allResult = stmt.get(sqlParams) as Record<string, unknown>;
+      const allResult = stmt.get(convertedParams) as Record<string, unknown>;
       const allKeys = Object.keys(allResult);
       if (allKeys.length > 0 && allKeys[0]) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -224,7 +248,7 @@ export function execute<
     default:
       // Regular query that returns an array
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return stmt.all(sqlParams) as any;
+      return stmt.all(convertedParams) as any;
   }
 }
 
