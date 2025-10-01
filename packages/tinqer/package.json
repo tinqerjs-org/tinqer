@@ -1,6 +1,6 @@
 {
   "name": "@webpods/tinqer",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "LINQ to SQL for TypeScript",
   "type": "module",
   "main": "./dist/index.js",
