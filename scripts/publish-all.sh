@@ -10,10 +10,10 @@ publish_package() {
   pkg_dir=$(dirname "$manifest")
 
   local name
-  name=$(PKG_MANIFEST="$manifest" node -pe "(require(process.env.PKG_MANIFEST).name) || ''")
+  name=$(PKG_MANIFEST="$manifest" node -pe "const pkg = require(process.env.PKG_MANIFEST); console.log(pkg.name || '')")
 
   local is_private
-  is_private=$(PKG_MANIFEST="$manifest" node -pe "require(process.env.PKG_MANIFEST).private ? 'true' : 'false'")
+  is_private=$(PKG_MANIFEST="$manifest" node -pe "const pkg = require(process.env.PKG_MANIFEST); console.log(pkg.private ? 'true' : 'false')")
 
   if [[ "$is_private" == "true" ]]; then
     echo "Skipping $name (private package)"
