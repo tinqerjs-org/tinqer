@@ -18,9 +18,16 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
   describe("Parent-child relationships", () => {
     it("should find root nodes (no parent)", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "categories").where((c) => c.parent_id == null),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "categories").where((c) => c.parent_id == null),
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "categories" WHERE "parent_id" IS NULL');
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(2); // Electronics and Furniture
@@ -31,12 +38,20 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find children of specific parent", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const parentId = 1; // Electronics
       const results = await execute(
         db,
         (params) => from(dbContext, "categories").where((c) => c.parent_id == params.parentId),
         { parentId },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" WHERE "parent_id" = $(parentId)',
+      );
+      expect(capturedSql!.params).to.deep.equal({ parentId: 1 });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(2); // Computers and Phones
@@ -47,9 +62,16 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find leaf nodes", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "categories").where((c) => c.is_leaf == true),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "categories").where((c) => c.is_leaf == true),
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "categories" WHERE "is_leaf" = $(__p1)');
+      expect(capturedSql!.params).to.deep.equal({ __p1: true });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(5); // All level 2 categories (Laptops, Desktops, Smartphones, Chairs, Desks)
@@ -60,12 +82,20 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find nodes at specific level", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const targetLevel = 1;
       const results = await execute(
         db,
         (params) => from(dbContext, "categories").where((c) => c.level == params.targetLevel),
         { targetLevel },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" WHERE "level" = $(targetLevel)',
+      );
+      expect(capturedSql!.params).to.deep.equal({ targetLevel: 1 });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(3); // Computers, Phones, Office
@@ -77,13 +107,21 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
   describe("Path-based queries", () => {
     it("should find by path prefix", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const pathPrefix = "/electronics";
       const results = await execute(
         db,
         (params) =>
           from(dbContext, "categories").where((c) => c.path.startsWith(params.pathPrefix)),
         { pathPrefix },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" WHERE "path" LIKE $(pathPrefix) || \'%\'',
+      );
+      expect(capturedSql!.params).to.deep.equal({ pathPrefix: "/electronics" });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(6); // All electronics categories
@@ -93,6 +131,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find descendants using path", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const ancestorPath = "/electronics/computers";
       const pathSuffix = "/";
       const results = await execute(
@@ -102,7 +141,17 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
             c.path.startsWith(params.ancestorPath + params.pathSuffix),
           ),
         { ancestorPath, pathSuffix },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" WHERE "path" LIKE ($(ancestorPath) || $(pathSuffix)) || \'%\'',
+      );
+      expect(capturedSql!.params).to.deep.equal({
+        ancestorPath: "/electronics/computers",
+        pathSuffix: "/",
+      });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(2); // Laptops and Desktops
@@ -112,12 +161,18 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find by exact path", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const exactPath = "/electronics/phones/smartphones";
       const results = await execute(
         db,
         (params) => from(dbContext, "categories").where((c) => c.path == params.exactPath),
         { exactPath },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "categories" WHERE "path" = $(exactPath)');
+      expect(capturedSql!.params).to.deep.equal({ exactPath: "/electronics/phones/smartphones" });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(1);
@@ -129,6 +184,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
   describe("Level-based queries", () => {
     it("should find nodes within level range", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const minLevel = 1;
       const maxLevel = 2;
       const results = await execute(
@@ -138,7 +194,14 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
             (c) => c.level >= params.minLevel && c.level <= params.maxLevel,
           ),
         { minLevel, maxLevel },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" WHERE ("level" >= $(minLevel) AND "level" <= $(maxLevel))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ minLevel: 1, maxLevel: 2 });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(8); // All non-root categories (3 at level 1, 5 at level 2)
@@ -149,11 +212,21 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should order by level and name", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "categories")
-          .orderBy((c) => c.level)
-          .thenBy((c) => c.name),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "categories")
+            .orderBy((c) => c.level)
+            .thenBy((c) => c.name),
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" ORDER BY "level" ASC, "name" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(10);
@@ -175,9 +248,16 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
   describe("Manager-employee relationships", () => {
     it("should find employees without managers (top level)", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.manager_id == null),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.manager_id == null),
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "manager_id" IS NULL');
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(4); // John, Jane, Charlie, Henry
@@ -187,12 +267,18 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find all subordinates of a manager", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const managerId = 1; // John Doe
       const results = await execute(
         db,
         (params) => from(dbContext, "users").where((u) => u.manager_id == params.managerId),
         { managerId },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "manager_id" = $(managerId)');
+      expect(capturedSql!.params).to.deep.equal({ managerId: 1 });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(4); // Bob, Diana, Frank, Grace
@@ -202,15 +288,25 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should count subordinates per manager", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .where((u) => u.manager_id != null)
-          .groupBy((u) => u.manager_id!)
-          .select((g) => ({
-            managerId: g.key,
-            subordinateCount: g.count(),
-          })),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .where((u) => u.manager_id != null)
+            .groupBy((u) => u.manager_id!)
+            .select((g) => ({
+              managerId: g.key,
+              subordinateCount: g.count(),
+            })),
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "manager_id" AS "managerId", COUNT(*) AS "subordinateCount" FROM "users" WHERE "manager_id" IS NOT NULL GROUP BY "manager_id"',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -231,9 +327,18 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
   describe("Comment thread patterns", () => {
     it("should find top-level comments", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "comments").where((c) => c.parent_comment_id == null),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "comments").where((c) => c.parent_comment_id == null),
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "comments" WHERE "parent_comment_id" IS NULL',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(2); // Two root comments
@@ -244,13 +349,21 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find replies to specific comment", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const commentId = 1; // "Great product!"
       const results = await execute(
         db,
         (params) =>
           from(dbContext, "comments").where((c) => c.parent_comment_id == params.commentId),
         { commentId },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "comments" WHERE "parent_comment_id" = $(commentId)',
+      );
+      expect(capturedSql!.params).to.deep.equal({ commentId: 1 });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(2); // "I agree!" and "Thanks for the feedback"
@@ -261,12 +374,18 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find comments by depth", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const maxDepth = 1;
       const results = await execute(
         db,
         (params) => from(dbContext, "comments").where((c) => c.depth <= params.maxDepth),
         { maxDepth },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "comments" WHERE "depth" <= $(maxDepth)');
+      expect(capturedSql!.params).to.deep.equal({ maxDepth: 1 });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(5); // All except the depth-2 comment
@@ -276,11 +395,21 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should order comments for threading display", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "comments")
-          .orderBy((c) => c.created_at)
-          .thenBy((c) => c.depth),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "comments")
+            .orderBy((c) => c.created_at)
+            .thenBy((c) => c.depth),
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "comments" ORDER BY "created_at" ASC, "depth" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(6);
@@ -300,6 +429,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
   describe("Self-join patterns", () => {
     it("should join categories with their parents", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = await execute(
         db,
         () =>
@@ -316,7 +446,14 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
               parentName: joined.parent.name,
             })),
         {},
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "t0"."id" AS "childId", "t0"."name" AS "childName", "t1"."name" AS "parentName" FROM "categories" AS "t0" INNER JOIN "categories" AS "t1" ON "t0"."parent_id" = "t1"."id"',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(8); // All non-root categories
@@ -328,6 +465,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find employees with their managers", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = await execute(
         db,
         () =>
@@ -344,7 +482,14 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
               employeeDept: joined.emp.department_id,
             })),
         {},
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "t0"."name" AS "employeeName", "t1"."name" AS "managerName", "t0"."department_id" AS "employeeDept" FROM "users" AS "t0" INNER JOIN "users" AS "t1" ON "t0"."manager_id" = "t1"."id"',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(6); // All employees with managers
@@ -356,6 +501,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find siblings (same parent)", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const parentId = 1; // Electronics
       const results = await execute(
         db,
@@ -364,7 +510,14 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
             .where((c) => c.parent_id == params.parentId)
             .orderBy((c) => c.sort_order),
         { parentId },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" WHERE "parent_id" = $(parentId) ORDER BY "sort_order" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal({ parentId: 1 });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(2); // Computers and Phones
@@ -379,6 +532,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
   describe("Complex hierarchical queries", () => {
     it("should find categories with specific parent and level", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const parentId = 2; // Computers
       const level = 2;
       const results = await execute(
@@ -388,7 +542,14 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
             (c) => c.parent_id == params.parentId && c.level == params.level && c.is_leaf == true,
           ),
         { parentId, level },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" WHERE (("parent_id" = $(parentId) AND "level" = $(level)) AND "is_leaf" = $(__p1))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ parentId: 2, level: 2, __p1: true });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(2); // Laptops and Desktops
@@ -400,6 +561,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should find path between nodes", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const startLevel = 1;
       const endLevel = 2;
       const pathPrefix = "/electronics";
@@ -415,7 +577,18 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
             )
             .orderBy((c) => c.level),
         { pathPrefix, startLevel, endLevel },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" WHERE (("path" LIKE $(pathPrefix) || \'%\' AND "level" >= $(startLevel)) AND "level" <= $(endLevel)) ORDER BY "level" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal({
+        pathPrefix: "/electronics",
+        startLevel: 1,
+        endLevel: 2,
+      });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(5); // All electronics except root
@@ -431,15 +604,25 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should count nodes per level", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "categories")
-          .groupBy((c) => c.level)
-          .select((g) => ({
-            level: g.key,
-            nodeCount: g.count(),
-          }))
-          .orderBy((r) => r.level),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "categories")
+            .groupBy((c) => c.level)
+            .select((g) => ({
+              level: g.key,
+              nodeCount: g.count(),
+            }))
+            .orderBy((r) => r.level),
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "level" AS "level", COUNT(*) AS "nodeCount" FROM "categories" GROUP BY "level" ORDER BY "level" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(3); // Levels 0, 1, 2
@@ -463,6 +646,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
   describe("Performance-oriented hierarchical patterns", () => {
     it("should use path for subtree queries", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const rootPath = "/electronics";
       const pathSuffix = "/";
       const results = await execute(
@@ -479,7 +663,14 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
               relativePath: c.path,
             })),
         { rootPath, pathSuffix },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "id" AS "id", "name" AS "name", "path" AS "relativePath" FROM "categories" WHERE ("path" = $(rootPath) OR "path" LIKE ($(rootPath) || $(pathSuffix)) || \'%\')',
+      );
+      expect(capturedSql!.params).to.deep.equal({ rootPath: "/electronics", pathSuffix: "/" });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(6); // Electronics and all its descendants
@@ -489,6 +680,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     });
 
     it("should efficiently check ancestry using path", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const childPath = "/electronics/computers/laptops";
       // Would check if a category is an ancestor by checking if child path starts with ancestor path
       const results = await execute(
@@ -498,7 +690,14 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
             (c) => params.childPath.startsWith(c.path) && c.path != params.childPath,
           ),
         { childPath },
+        { onSql: (result) => (capturedSql = result) },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "categories" WHERE ($(childPath) LIKE "path" || \'%\' AND "path" != $(childPath))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ childPath: "/electronics/computers/laptops" });
 
       expect(results).to.be.an("array");
       expect(results).to.have.length(2); // Electronics and Computers are ancestors

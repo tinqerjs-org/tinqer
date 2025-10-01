@@ -17,9 +17,21 @@ describe("PostgreSQL Integration - String Operations", () => {
 
   describe("startsWith", () => {
     it("should find users with names starting with 'J'", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name.startsWith("J")),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.name.startsWith("J")),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "name" LIKE $(__p1) || \'%\'');
+      expect(capturedSql!.params).to.deep.equal({ __p1: "J" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -29,9 +41,23 @@ describe("PostgreSQL Integration - String Operations", () => {
     });
 
     it("should find emails starting with specific prefix", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.email.startsWith("alice")),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.email.startsWith("alice")),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE "email" LIKE $(__p1) || \'%\'',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "alice" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1);
@@ -39,9 +65,23 @@ describe("PostgreSQL Integration - String Operations", () => {
     });
 
     it("should combine startsWith with other conditions", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name.startsWith("J") && u.is_active === true),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.name.startsWith("J") && u.is_active === true),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE ("name" LIKE $(__p1) || \'%\' AND "is_active" = $(__p2))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "J", __p2: true });
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -54,9 +94,23 @@ describe("PostgreSQL Integration - String Operations", () => {
 
   describe("endsWith", () => {
     it("should find emails ending with '@example.com'", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.email.endsWith("@example.com")),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.email.endsWith("@example.com")),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE "email" LIKE \'%\' || $(__p1)',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "@example.com" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(10); // All our test users have @example.com
@@ -66,9 +120,23 @@ describe("PostgreSQL Integration - String Operations", () => {
     });
 
     it("should find products with names ending with specific suffix", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products").where((p) => p.name.endsWith("top")),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "products").where((p) => p.name.endsWith("top")),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "products" WHERE "name" LIKE \'%\' || $(__p1)',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "top" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1);
@@ -78,9 +146,23 @@ describe("PostgreSQL Integration - String Operations", () => {
 
   describe("contains (includes)", () => {
     it("should find users with 'oh' in their name", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name.includes("oh")),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.name.includes("oh")),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        "SELECT * FROM \"users\" WHERE \"name\" LIKE '%' || $(__p1) || '%'",
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "oh" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -90,11 +172,26 @@ describe("PostgreSQL Integration - String Operations", () => {
     });
 
     it("should find products with 'office' in description", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products").where(
-          (p) => p.description !== null && p.description.includes("office"),
-        ),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "products").where(
+            (p) => p.description !== null && p.description.includes("office"),
+          ),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "products" WHERE ("description" IS NOT NULL AND "description" LIKE \'%\' || $(__p1) || \'%\')',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "office" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1); // Ergonomic office chair
@@ -102,15 +199,30 @@ describe("PostgreSQL Integration - String Operations", () => {
     });
 
     it("should combine multiple string operations", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products").where(
-          (p) =>
-            p.category !== null &&
-            p.category.startsWith("Electr") &&
-            (p.name.includes("e") ||
-              (p.description !== null && p.description.includes("performance"))),
-        ),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "products").where(
+            (p) =>
+              p.category !== null &&
+              p.category.startsWith("Electr") &&
+              (p.name.includes("e") ||
+                (p.description !== null && p.description.includes("performance"))),
+          ),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "products" WHERE (("category" IS NOT NULL AND "category" LIKE $(__p1) || \'%\') AND ("name" LIKE \'%\' || $(__p2) || \'%\' OR ("description" IS NOT NULL AND "description" LIKE \'%\' || $(__p3) || \'%\')))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "Electr", __p2: "e", __p3: "performance" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -122,11 +234,26 @@ describe("PostgreSQL Integration - String Operations", () => {
 
   describe("Complex string queries", () => {
     it("should find users with specific email patterns", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users").where(
-          (u) => u.email.startsWith("j") && u.email.endsWith("@example.com"),
-        ),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users").where(
+            (u) => u.email.startsWith("j") && u.email.endsWith("@example.com"),
+          ),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE ("email" LIKE $(__p1) || \'%\' AND "email" LIKE \'%\' || $(__p2))',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "j", __p2: "@example.com" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(2); // John and Jane
@@ -136,32 +263,63 @@ describe("PostgreSQL Integration - String Operations", () => {
     });
 
     it("should search products by multiple string fields", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products").where(
-          (p) =>
-            p.name.includes("e") || (p.description !== null && p.description.includes("wireless")),
-        ),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "products").where(
+            (p) =>
+              p.name.includes("e") ||
+              (p.description !== null && p.description.includes("wireless")),
+          ),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        "SELECT * FROM \"products\" WHERE (\"name\" LIKE '%' || $(__p1) || '%' OR (\"description\" IS NOT NULL AND \"description\" LIKE '%' || $(__p2) || '%'))",
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "e", __p2: "wireless" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
     });
 
     it("should combine string operations with joins", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .join(
-            from(dbContext, "departments"),
-            (u) => u.department_id,
-            (d) => d.id,
-            (u, d) => ({ u, d }),
-          )
-          .where((joined) => joined.u.name.startsWith("J") && joined.d.name.includes("ing"))
-          .select((joined) => ({
-            userName: joined.u.name,
-            departmentName: joined.d.name,
-          })),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .join(
+              from(dbContext, "departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .where((joined) => joined.u.name.startsWith("J") && joined.d.name.includes("ing"))
+            .select((joined) => ({
+              userName: joined.u.name,
+              departmentName: joined.d.name,
+            })),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "t0"."name" AS "userName", "t1"."name" AS "departmentName" FROM "users" AS "t0" INNER JOIN "departments" AS "t1" ON "t0"."department_id" = "t1"."id" WHERE ("t0"."name" LIKE $(__p1) || \'%\' AND "t1"."name" LIKE \'%\' || $(__p2) || \'%\')',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "J", __p2: "ing" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.be.greaterThan(0);
@@ -173,13 +331,39 @@ describe("PostgreSQL Integration - String Operations", () => {
 
     it("should handle case-sensitive string operations", async () => {
       // Note: PostgreSQL LIKE is case-sensitive by default
-      const upperResults = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name.includes("J")),
+      let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
+      const upperResults = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.name.includes("J")),
+        {
+          onSql: (result) => {
+            capturedSql1 = result;
+          },
+        },
       );
 
-      const lowerResults = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name.includes("o")),
+      expect(capturedSql1).to.exist;
+      expect(capturedSql1!.sql).to.equal(
+        "SELECT * FROM \"users\" WHERE \"name\" LIKE '%' || $(__p1) || '%'",
       );
+      expect(capturedSql1!.params).to.deep.equal({ __p1: "J" });
+
+      let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
+      const lowerResults = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.name.includes("o")),
+        {
+          onSql: (result) => {
+            capturedSql2 = result;
+          },
+        },
+      );
+
+      expect(capturedSql2).to.exist;
+      expect(capturedSql2!.sql).to.equal(
+        "SELECT * FROM \"users\" WHERE \"name\" LIKE '%' || $(__p1) || '%'",
+      );
+      expect(capturedSql2!.params).to.deep.equal({ __p1: "o" });
 
       // John, Jane, Bob Johnson have capital J
       expect(upperResults.length).to.be.greaterThan(0);
@@ -187,12 +371,39 @@ describe("PostgreSQL Integration - String Operations", () => {
       expect(lowerResults.length).to.be.greaterThan(0);
 
       // Case sensitivity check - capital D vs lowercase d
-      const capitalD = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name.includes("D")),
+      let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
+      const capitalD = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.name.includes("D")),
+        {
+          onSql: (result) => {
+            capturedSql3 = result;
+          },
+        },
       );
-      const lowercaseD = await executeSimple(db, () =>
-        from(dbContext, "users").where((u) => u.name.includes("d")),
+
+      expect(capturedSql3).to.exist;
+      expect(capturedSql3!.sql).to.equal(
+        "SELECT * FROM \"users\" WHERE \"name\" LIKE '%' || $(__p1) || '%'",
       );
+      expect(capturedSql3!.params).to.deep.equal({ __p1: "D" });
+
+      let capturedSql4: { sql: string; params: Record<string, unknown> } | undefined;
+      const lowercaseD = await executeSimple(
+        db,
+        () => from(dbContext, "users").where((u) => u.name.includes("d")),
+        {
+          onSql: (result) => {
+            capturedSql4 = result;
+          },
+        },
+      );
+
+      expect(capturedSql4).to.exist;
+      expect(capturedSql4!.sql).to.equal(
+        "SELECT * FROM \"users\" WHERE \"name\" LIKE '%' || $(__p1) || '%'",
+      );
+      expect(capturedSql4!.params).to.deep.equal({ __p1: "d" });
 
       // Diana, John Doe have capital D
       expect(capitalD.length).to.be.greaterThan(0);
@@ -203,11 +414,26 @@ describe("PostgreSQL Integration - String Operations", () => {
 
   describe("String operations with aggregates", () => {
     it("should count users by email domain", async () => {
-      const count = await executeSimple(db, () =>
-        from(dbContext, "users")
-          .where((u) => u.email.endsWith("@example.com"))
-          .count(),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const count = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .where((u) => u.email.endsWith("@example.com"))
+            .count(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT COUNT(*) FROM "users" WHERE "email" LIKE \'%\' || $(__p1)',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "@example.com" });
 
       expect(count).to.equal(10);
     });
@@ -215,11 +441,26 @@ describe("PostgreSQL Integration - String Operations", () => {
 
   describe("String operations with NULL handling", () => {
     it("should handle nullable description fields", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products").where(
-          (p) => p.description !== null && p.description.includes("High"),
-        ),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "products").where(
+            (p) => p.description !== null && p.description.includes("High"),
+          ),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "products" WHERE ("description" IS NOT NULL AND "description" LIKE \'%\' || $(__p1) || \'%\')',
+      );
+      expect(capturedSql!.params).to.deep.equal({ __p1: "High" });
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1); // High-performance laptop
@@ -227,9 +468,21 @@ describe("PostgreSQL Integration - String Operations", () => {
     });
 
     it("should check for non-null strings", async () => {
-      const results = await executeSimple(db, () =>
-        from(dbContext, "products").where((p) => p.description !== null),
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "products").where((p) => p.description !== null),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "products" WHERE "description" IS NOT NULL');
+      expect(capturedSql!.params).to.deep.equal({});
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(10); // All products have descriptions

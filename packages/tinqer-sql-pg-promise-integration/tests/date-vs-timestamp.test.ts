@@ -18,6 +18,10 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
 
   describe("DATE column behavior (orders.order_date)", () => {
     it("should match dates regardless of time component", async () => {
+      let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
+      let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
+      let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
+
       // Create dates with different times
       const date1 = new Date("2024-01-15"); // 00:00:00
       const date2 = new Date("2024-01-15T12:00:00"); // 12:00:00
@@ -28,19 +32,52 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
         db,
         (params) => from(dbContext, "orders").where((o) => o.order_date == params.targetDate),
         { targetDate: date1 },
+        {
+          onSql: (result) => {
+            capturedSql1 = result;
+          },
+        },
       );
 
       const results2 = await execute(
         db,
         (params) => from(dbContext, "orders").where((o) => o.order_date == params.targetDate),
         { targetDate: date2 },
+        {
+          onSql: (result) => {
+            capturedSql2 = result;
+          },
+        },
       );
 
       const results3 = await execute(
         db,
         (params) => from(dbContext, "orders").where((o) => o.order_date == params.targetDate),
         { targetDate: date3 },
+        {
+          onSql: (result) => {
+            capturedSql3 = result;
+          },
+        },
       );
+
+      expect(capturedSql1).to.exist;
+      expect(capturedSql1!.sql).to.equal(
+        'SELECT * FROM "orders" WHERE "order_date" = $(targetDate)',
+      );
+      expect(capturedSql1!.params.targetDate).to.be.instanceOf(Date);
+
+      expect(capturedSql2).to.exist;
+      expect(capturedSql2!.sql).to.equal(
+        'SELECT * FROM "orders" WHERE "order_date" = $(targetDate)',
+      );
+      expect(capturedSql2!.params.targetDate).to.be.instanceOf(Date);
+
+      expect(capturedSql3).to.exist;
+      expect(capturedSql3!.sql).to.equal(
+        'SELECT * FROM "orders" WHERE "order_date" = $(targetDate)',
+      );
+      expect(capturedSql3!.params.targetDate).to.be.instanceOf(Date);
 
       // All should return the same order
       expect(results1).to.have.length(1);
@@ -52,6 +89,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
     });
 
     it("should compare DATE columns properly with inequality", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
       // Use UTC midnight for DATE column comparison
       const targetDate = new Date("2024-01-18T00:00:00.000Z");
 
@@ -59,7 +98,18 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
         db,
         (params) => from(dbContext, "orders").where((o) => o.order_date != params.targetDate),
         { targetDate },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "orders" WHERE "order_date" != $(targetDate)',
+      );
+      expect(capturedSql!.params.targetDate).to.be.instanceOf(Date);
 
       // Should return all orders except Order ID 4 (which has date 2024-01-18 in the database)
       expect(results).to.have.length(9);
@@ -72,6 +122,9 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
 
   describe("TIMESTAMP column behavior (events.start_date)", () => {
     it("should require exact time match for equality", async () => {
+      let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
+      let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
+
       // These are different timestamps
       const midnight = new Date("2024-01-15"); // 00:00:00
       const actual = new Date("2024-01-15T09:00:00"); // 09:00:00 (actual time in DB)
@@ -80,13 +133,35 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
         db,
         (params) => from(dbContext, "events").where((e) => e.start_date == params.targetDate),
         { targetDate: midnight },
+        {
+          onSql: (result) => {
+            capturedSql1 = result;
+          },
+        },
       );
 
       const resultsActual = await execute(
         db,
         (params) => from(dbContext, "events").where((e) => e.start_date == params.targetDate),
         { targetDate: actual },
+        {
+          onSql: (result) => {
+            capturedSql2 = result;
+          },
+        },
       );
+
+      expect(capturedSql1).to.exist;
+      expect(capturedSql1!.sql).to.equal(
+        'SELECT * FROM "events" WHERE "start_date" = $(targetDate)',
+      );
+      expect(capturedSql1!.params.targetDate).to.be.instanceOf(Date);
+
+      expect(capturedSql2).to.exist;
+      expect(capturedSql2!.sql).to.equal(
+        'SELECT * FROM "events" WHERE "start_date" = $(targetDate)',
+      );
+      expect(capturedSql2!.params.targetDate).to.be.instanceOf(Date);
 
       // Midnight won't match
       expect(resultsMidnight).to.have.length(0);
@@ -97,6 +172,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
     });
 
     it("should handle timestamp inequality with time precision", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
       // This is midnight, but the actual event is at 10:00:00
       const targetDate = new Date("2024-01-20");
 
@@ -104,7 +181,18 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
         db,
         (params) => from(dbContext, "events").where((e) => e.start_date != params.targetDate),
         { targetDate },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
       );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "events" WHERE "start_date" != $(targetDate)',
+      );
+      expect(capturedSql!.params.targetDate).to.be.instanceOf(Date);
 
       // Returns ALL events because none match midnight exactly
       expect(results).to.have.length(5);
@@ -113,6 +201,10 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
 
   describe("Comparison: DATE vs TIMESTAMP for date-only queries", () => {
     it("should show different behavior for 'find all on specific date'", async () => {
+      let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
+      let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
+      let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
+
       const searchDate = new Date("2024-01-15");
 
       // DATE column: Simple equality works
@@ -120,7 +212,19 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
         db,
         (params) => from(dbContext, "orders").where((o) => o.order_date == params.searchDate),
         { searchDate },
+        {
+          onSql: (result) => {
+            capturedSql1 = result;
+          },
+        },
       );
+
+      expect(capturedSql1).to.exist;
+      expect(capturedSql1!.sql).to.equal(
+        'SELECT * FROM "orders" WHERE "order_date" = $(searchDate)',
+      );
+      expect(capturedSql1!.params.searchDate).to.be.instanceOf(Date);
+
       expect(ordersOnDate).to.have.length(1);
 
       // TIMESTAMP column: Simple equality doesn't work (would need range)
@@ -128,7 +232,19 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
         db,
         (params) => from(dbContext, "events").where((e) => e.start_date == params.searchDate),
         { searchDate },
+        {
+          onSql: (result) => {
+            capturedSql2 = result;
+          },
+        },
       );
+
+      expect(capturedSql2).to.exist;
+      expect(capturedSql2!.sql).to.equal(
+        'SELECT * FROM "events" WHERE "start_date" = $(searchDate)',
+      );
+      expect(capturedSql2!.params.searchDate).to.be.instanceOf(Date);
+
       expect(eventsOnDate).to.have.length(0); // No match at midnight
 
       // TIMESTAMP column: Need range for date-only comparison
@@ -141,7 +257,20 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
             (e) => e.start_date >= params.startOfDay && e.start_date < params.endOfDay,
           ),
         { startOfDay, endOfDay },
+        {
+          onSql: (result) => {
+            capturedSql3 = result;
+          },
+        },
       );
+
+      expect(capturedSql3).to.exist;
+      expect(capturedSql3!.sql).to.equal(
+        'SELECT * FROM "events" WHERE ("start_date" >= $(startOfDay) AND "start_date" < $(endOfDay))',
+      );
+      expect(capturedSql3!.params.startOfDay).to.be.instanceOf(Date);
+      expect(capturedSql3!.params.endOfDay).to.be.instanceOf(Date);
+
       expect(eventsInRange).to.have.length(1); // Team Meeting
     });
   });
