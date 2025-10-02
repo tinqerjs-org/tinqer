@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { executeSimple } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should count all users", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = executeSimple(db, () => from(dbContext, "users").count(), {
+      const count = executeSelectSimple(db, () => from(dbContext, "users").count(), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -36,7 +36,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should count with WHERE clause", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = executeSimple(
+      const count = executeSelectSimple(
         db,
         () => from(dbContext, "users").count((u) => u.is_active === 1),
         {
@@ -57,7 +57,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should count with complex conditions", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = executeSimple(
+      const count = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -85,7 +85,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should sum product prices", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const sum = executeSimple(db, () => from(dbContext, "products").sum((p) => p.price), {
+      const sum = executeSelectSimple(db, () => from(dbContext, "products").sum((p) => p.price), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -102,7 +102,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should sum with WHERE clause", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const sum = executeSimple(
+      const sum = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -128,11 +128,15 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should sum order totals", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const sum = executeSimple(db, () => from(dbContext, "orders").sum((o) => o.total_amount), {
-        onSql: (result) => {
-          capturedSql = result;
+      const sum = executeSelectSimple(
+        db,
+        () => from(dbContext, "orders").sum((o) => o.total_amount),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
         },
-      });
+      );
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal('SELECT SUM("total_amount") FROM "orders"');
@@ -147,7 +151,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should calculate average user age", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const avg = executeSimple(
+      const avg = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -173,7 +177,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const avgElectronics = executeSimple(
+      const avgElectronics = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -186,7 +190,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
         },
       );
 
-      const avgFurniture = executeSimple(
+      const avgFurniture = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -222,7 +226,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const minAge = executeSimple(
+      const minAge = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -235,7 +239,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
         },
       );
 
-      const maxAge = executeSimple(
+      const maxAge = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -267,17 +271,25 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const minPrice = executeSimple(db, () => from(dbContext, "products").min((p) => p.price), {
-        onSql: (result) => {
-          capturedSql1 = result;
+      const minPrice = executeSelectSimple(
+        db,
+        () => from(dbContext, "products").min((p) => p.price),
+        {
+          onSql: (result) => {
+            capturedSql1 = result;
+          },
         },
-      });
+      );
 
-      const maxPrice = executeSimple(db, () => from(dbContext, "products").max((p) => p.price), {
-        onSql: (result) => {
-          capturedSql2 = result;
+      const maxPrice = executeSelectSimple(
+        db,
+        () => from(dbContext, "products").max((p) => p.price),
+        {
+          onSql: (result) => {
+            capturedSql2 = result;
+          },
         },
-      });
+      );
 
       expect(capturedSql1).to.exist;
       expect(capturedSql1!.sql).to.equal('SELECT MIN("price") FROM "products"');
@@ -296,7 +308,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should find min/max with WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const maxElectronicsPrice = executeSimple(
+      const maxElectronicsPrice = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -323,7 +335,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should group users by department", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -353,7 +365,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should group products by category with aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -391,7 +403,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should group with WHERE clause", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -426,7 +438,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should group orders by status", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "orders")
@@ -470,7 +482,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const sum = executeSimple(
+      const sum = executeSelectSimple(
         db,
         () => from<{ id: number; value: number | null }>("test_nulls").sum((t) => t.value!),
         {
@@ -502,7 +514,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const avg = executeSimple(
+      const avg = executeSelectSimple(
         db,
         () => from<{ id: number; score: number | null }>("test_avg_nulls").average((t) => t.score!),
         {
@@ -534,7 +546,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = executeSimple(
+      const count = executeSelectSimple(
         db,
         () => from<{ id: number; name: string | null }>("test_count_nulls").count(),
         {
@@ -567,7 +579,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from<{ id: number; category: string | null }>("test_distinct_nulls")
@@ -608,7 +620,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       let capturedSqlMin: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSqlMax: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const minPrice = executeSimple(
+      const minPrice = executeSelectSimple(
         db,
         () => from<{ id: number; price: number | null }>("test_minmax_nulls").min((t) => t.price!),
         {
@@ -618,7 +630,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
         },
       );
 
-      const maxPrice = executeSimple(
+      const maxPrice = executeSelectSimple(
         db,
         () => from<{ id: number; price: number | null }>("test_minmax_nulls").max((t) => t.price!),
         {
@@ -654,7 +666,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from<{ id: number; category: string | null; amount: number }>("test_group_nulls")
@@ -693,7 +705,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should handle COUNT + SUM + AVG together", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -737,7 +749,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should handle MIN + MAX + COUNT together", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "orders")
@@ -792,7 +804,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       let capturedSql5: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Get each aggregate separately (Tinqer terminal operations)
-      const count = executeSimple(
+      const count = executeSelectSimple(
         db,
         () => from<{ id: number; value: number }>("test_agg_all").count(),
         {
@@ -801,7 +813,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
           },
         },
       );
-      const min = executeSimple(
+      const min = executeSelectSimple(
         db,
         () => from<{ id: number; value: number }>("test_agg_all").min((t) => t.value),
         {
@@ -810,7 +822,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
           },
         },
       );
-      const max = executeSimple(
+      const max = executeSelectSimple(
         db,
         () => from<{ id: number; value: number }>("test_agg_all").max((t) => t.value),
         {
@@ -819,7 +831,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
           },
         },
       );
-      const avg = executeSimple(
+      const avg = executeSelectSimple(
         db,
         () => from<{ id: number; value: number }>("test_agg_all").average((t) => t.value),
         {
@@ -828,7 +840,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
           },
         },
       );
-      const sum = executeSimple(
+      const sum = executeSelectSimple(
         db,
         () => from<{ id: number; value: number }>("test_agg_all").sum((t) => t.value),
         {
@@ -861,7 +873,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should handle aggregates with WHERE filter", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")

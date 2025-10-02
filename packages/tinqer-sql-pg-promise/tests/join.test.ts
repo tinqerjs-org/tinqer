@@ -1,6 +1,6 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 describe("Join SQL Generation", () => {
@@ -45,7 +45,7 @@ describe("Join SQL Generation", () => {
 
   describe("INNER JOIN", () => {
     it("should generate INNER JOIN with proper syntax", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -64,7 +64,7 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with WHERE clause", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .where((u) => u.id > 100)
@@ -85,7 +85,7 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with complex inner query", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -105,7 +105,7 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with GROUP BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -128,7 +128,7 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with DISTINCT", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -148,7 +148,7 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with ORDER BY and TAKE", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -172,7 +172,7 @@ describe("Join SQL Generation", () => {
 
   describe("Multiple JOINs", () => {
     it("should handle multiple JOINs (3 tables)", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -200,7 +200,7 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle 4-table JOIN chain", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Order>("orders")
             .join(
@@ -239,7 +239,7 @@ describe("Join SQL Generation", () => {
 
   describe("Self JOIN", () => {
     it("should handle self JOIN for hierarchical data", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -260,7 +260,7 @@ describe("Join SQL Generation", () => {
 
   describe("Complex JOIN scenarios", () => {
     it("should handle JOIN with aggregates", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -285,7 +285,7 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with complex conditions", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -305,7 +305,7 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with complex WHERE and ORDER BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .where((u) => u.id > 50)
@@ -336,7 +336,7 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with pagination", () => {
-      const result = query(
+      const result = selectStatement(
         (p: { page: number; pageSize: number }) =>
           from<User>("users")
             .join(

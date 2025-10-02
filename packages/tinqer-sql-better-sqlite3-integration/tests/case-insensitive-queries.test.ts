@@ -6,7 +6,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -38,7 +38,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       const searchName = "john smith";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where((u) => u.name.toLowerCase() == params.searchName),
@@ -60,7 +60,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
     it("should find multiple users with toLowerCase", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where((u) => u.name.toLowerCase().startsWith(params.prefix)),
@@ -86,7 +86,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       const searchEmail = "bob.johnson@example.com";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where((u) => u.email.toLowerCase() == params.searchEmail),
@@ -110,7 +110,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
     it("should combine toLowerCase with other conditions", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where(
@@ -140,7 +140,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       const searchCategory = "ELECTRONICS";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where(
@@ -169,7 +169,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       const searchName = "WIRELESS MOUSE";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where((p) => p.name.toUpperCase() == params.searchName),
@@ -196,7 +196,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
     it("should combine toUpperCase with price filter", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where(
@@ -226,7 +226,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Test toLowerCase on users table
-      const userResults = execute(
+      const userResults = executeSelect(
         db,
         (params) => from(dbContext, "users").where((u) => u.name.toLowerCase() == params.userName),
         { userName: "john smith" },
@@ -245,7 +245,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       // Test toUpperCase on products table
       capturedSql = undefined;
-      const productResults = execute(
+      const productResults = executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where(
@@ -273,7 +273,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
     it("should handle OR conditions with case transformations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where(
@@ -300,7 +300,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
     it("should work with pattern matching and case transformation", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where((p) =>
@@ -327,7 +327,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Test toLowerCase in WHERE directly
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "users")
@@ -363,7 +363,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       // Create a functional index for better performance
       db.exec("CREATE INDEX IF NOT EXISTS idx_users_name_lower ON users(LOWER(name))");
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "users")
@@ -392,7 +392,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
     it("should handle large result sets with case-insensitive filtering", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")

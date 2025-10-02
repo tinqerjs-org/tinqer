@@ -4,7 +4,7 @@
  */
 
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 interface User {
@@ -17,19 +17,22 @@ interface User {
 describe("NULL Handling", () => {
   describe("IS NULL generation", () => {
     it("should generate IS NULL for == null comparison", () => {
-      const result = query(() => from<User>("users").where((u) => u.middleName == null), {});
+      const result = selectStatement(
+        () => from<User>("users").where((u) => u.middleName == null),
+        {},
+      );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "middleName" IS NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NULL for === null comparison", () => {
-      const result = query(() => from<User>("users").where((u) => u.age === null), {});
+      const result = selectStatement(() => from<User>("users").where((u) => u.age === null), {});
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" IS NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NULL with null on left side", () => {
-      const result = query(() => from<User>("users").where((u) => null == u.name), {});
+      const result = selectStatement(() => from<User>("users").where((u) => null == u.name), {});
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" IS NULL');
       expect(result.params).to.deep.equal({});
     });
@@ -37,19 +40,22 @@ describe("NULL Handling", () => {
 
   describe("IS NOT NULL generation", () => {
     it("should generate IS NOT NULL for != null comparison", () => {
-      const result = query(() => from<User>("users").where((u) => u.middleName != null), {});
+      const result = selectStatement(
+        () => from<User>("users").where((u) => u.middleName != null),
+        {},
+      );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "middleName" IS NOT NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NOT NULL for !== null comparison", () => {
-      const result = query(() => from<User>("users").where((u) => u.age !== null), {});
+      const result = selectStatement(() => from<User>("users").where((u) => u.age !== null), {});
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" IS NOT NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NOT NULL with null on left side", () => {
-      const result = query(() => from<User>("users").where((u) => null != u.name), {});
+      const result = selectStatement(() => from<User>("users").where((u) => null != u.name), {});
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" IS NOT NULL');
       expect(result.params).to.deep.equal({});
     });
@@ -57,7 +63,7 @@ describe("NULL Handling", () => {
 
   describe("Complex NULL conditions", () => {
     it("should handle NULL checks with AND", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<User>("users").where((u) => u.name != null && u.age == null),
         {},
       );
@@ -68,7 +74,7 @@ describe("NULL Handling", () => {
     });
 
     it("should handle NULL checks with OR", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<User>("users").where((u) => u.middleName == null || u.age == null),
         {},
       );
@@ -79,7 +85,7 @@ describe("NULL Handling", () => {
     });
 
     it("should handle NULL checks in complex conditions", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<User>("users").where((u) => u.id > 10 && u.middleName != null),
         {},
       );

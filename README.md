@@ -33,8 +33,8 @@ Runtime LINQ-to-SQL builder for TypeScript. Queries are expressed as inline arro
   - [6.3 Array Membership (`Array.includes`)](#63-array-membership-arrayincludes)
   - [6.4 Case-Insensitive Helper Functions](#64-case-insensitive-helper-functions)
 - [7. Execution APIs](#7-execution-apis)
-  - [7.1 `query` Function](#71-query-function)
-  - [7.2 `execute` and `executeSimple`](#72-execute-and-executesimple)
+  - [7.1 `selectStatement` Function](#71-selectstatement-function)
+  - [7.2 `executeSelect` and `executeSelectSimple`](#72-executeselect-and-executeselectsimple)
   - [7.3 `toSql`](#73-tosql)
 - [8. Adapter-Specific Notes](#8-adapter-specific-notes)
   - [8.1 PostgreSQL (pg-promise)](#81-postgresql-pg-promise)
@@ -73,7 +73,7 @@ All examples assume TypeScript with `strict` enabled and ECMAScript modules.
 | Package                              | Purpose                                                                     | Notes                                                                  |
 | ------------------------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `@webpods/tinqer`                    | Core expression tree, visitors, and TypeScript types.                       | Not meant to be installed directly; the adapters re-export everything. |
-| `@webpods/tinqer-sql-pg-promise`     | SQL generator for PostgreSQL with pg-promise parameter markers (`$(name)`). | Provides `query`, `execute`, `executeSimple`, and `toSql`.             |
+| `@webpods/tinqer-sql-pg-promise`     | SQL generator for PostgreSQL with pg-promise parameter markers (`$(name)`). | Provides `selectStatement`, `executeSelect`, `executeSelectSimple`, and `toSql`.             |
 | `@webpods/tinqer-sql-better-sqlite3` | SQL generator for SQLite using better-sqlite3 (`@name`).                    | Handles boolean conversion and date formatting before execution.       |
 
 Both adapters expose identical TypeScript APIs so query builders can be shared between them.
@@ -87,7 +87,7 @@ Create a database connection, define your model interfaces, and build queries wi
 ### 3.1 PostgreSQL Example
 
 ```typescript
-import { from, query, execute } from "@webpods/tinqer-sql-pg-promise";
+import { from, selectStatement, executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
 type User = {
@@ -107,7 +107,7 @@ type Department = {
 const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/app");
 
-const result = query(
+const result = selectStatement(
   () =>
     from<User>("users")
       .where((u) => u.age >= 18)
@@ -116,7 +116,7 @@ const result = query(
   {},
 );
 
-await execute(
+await executeSelect(
   db,
   () =>
     from<User>("users")
@@ -135,7 +135,7 @@ await execute(
 
 ```typescript
 import Database from "better-sqlite3";
-import { from, query, execute } from "@webpods/tinqer-sql-better-sqlite3";
+import { from, selectStatement, executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 
 type Product = {
   id: number;
@@ -154,7 +154,7 @@ type Order = {
 
 const sqlite = new Database("./data.db");
 
-const summary = query(
+const summary = selectStatement(
   () =>
     from<Order>("orders")
       .groupBy((o) => o.productId)
@@ -163,7 +163,7 @@ const summary = query(
   {},
 );
 
-const bestSellers = await execute(
+const bestSellers = await executeSelect(
   sqlite,
   () =>
     from<Order>("orders")
@@ -186,11 +186,11 @@ const bestSellers = await execute(
 ### 4.1 Query Lifecycle
 
 1. **Queryable Chain** – Build a fluent chain beginning with `from(...)`. Each method call returns a `Queryable` or `OrderedQueryable` placeholder.
-2. **Builder Function** – Wrap the chain in a lambda supplied to `query(...)`, `execute(...)`, or `executeSimple(...)`. The lambda is never executed; it is stringified and parsed.
+2. **Builder Function** – Wrap the chain in a lambda supplied to `selectStatement(...)`, `executeSelect(...)`, or `executeSelectSimple(...)`. The lambda is never executed; it is stringified and parsed.
 3. **Parser** – The builder function is converted to a string. The OXC parser produces a JavaScript AST, which is translated to an internal query operation tree.
 4. **Auto-Parameterisation** – Literal values are extracted into auto-generated parameters (`__p1`, `__p2`, ...). External parameters remain by name.
 5. **SQL Generator** – The adapter walks the operation tree, assigns table aliases, composes clauses, and formats parameters for the target driver.
-6. **Execution** – `query` returns `{ sql, params }`. `execute` runs the SQL using the appropriate driver helpers (`db.any`, `db.one`, or better-sqlite3 prepared statements).
+6. **Execution** – `selectStatement` returns `{ sql, params }`. `executeSelect` runs the SQL using the appropriate driver helpers (`db.any`, `db.one`, or better-sqlite3 prepared statements).
 
 ### 4.2 Queryable Chain vs Terminal Operations
 
@@ -229,7 +229,7 @@ Each subsection provides TypeScript, PostgreSQL SQL, SQLite SQL, and parameter o
 #### Basic comparison
 
 ```typescript
-const adults = query(() => from<User>("users").where((u) => u.age >= 18), {});
+const adults = selectStatement(() => from<User>("users").where((u) => u.age >= 18), {});
 ```
 
 ```sql
@@ -249,7 +249,7 @@ SELECT * FROM "users" WHERE "age" >= @__p1
 #### Combining multiple predicates
 
 ```typescript
-const activeRange = query(
+const activeRange = selectStatement(
   () =>
     from<User>("users")
       .where((u) => u.age >= 21)
@@ -278,7 +278,7 @@ WHERE "age" >= @__p1 AND "age" <= @__p2 AND "active" = @__p3
 #### Logical nesting and arithmetic
 
 ```typescript
-const premium = query(
+const premium = selectStatement(
   () =>
     from<User>("users").where(
       (u) => (u.salary * 0.9 > 150_000 && u.age < 55) || u.active === false,
@@ -306,7 +306,7 @@ WHERE ((("salary" * @__p1) > @__p2 AND "age" < @__p3) OR "active" = @__p4)
 #### Null checks and null coalescing
 
 ```typescript
-const preferredName = query(
+const preferredName = selectStatement(
   () => from<User>("users").where((u) => (u.nickname ?? u.name) === "anonymous"),
   {},
 );
@@ -329,7 +329,7 @@ SELECT * FROM "users" WHERE COALESCE("nickname", "name") = @__p1
 #### String operations on columns
 
 ```typescript
-const emailFilters = query(
+const emailFilters = selectStatement(
   () =>
     from<User>("users")
       .where((u) => u.email.startsWith("admin"))
@@ -366,7 +366,7 @@ import { createQueryHelpers } from "@webpods/tinqer";
 
 const helpers = createQueryHelpers();
 
-const insensitive = query(
+const insensitive = selectStatement(
   (_: unknown, h = helpers) =>
     from<User>("users").where((u) => h.functions.iequals(u.name, "ALICE")),
   {},
@@ -390,7 +390,7 @@ SELECT * FROM "users" WHERE LOWER("name") = LOWER(@__p1)
 #### Array membership (`IN`)
 
 ```typescript
-const allowed = query(
+const allowed = selectStatement(
   () => from<User>("users").where((u) => ["admin", "support", "auditor"].includes(u.role)),
   {},
 );
@@ -417,7 +417,7 @@ Negating the predicate (`!array.includes(...)`) yields `NOT IN`.
 ```typescript
 const helpers = createQueryHelpers();
 
-const advancedFilter = query(
+const advancedFilter = selectStatement(
   (params: { minAge: number; categories: string[] }, h = helpers) =>
     from<User>("users")
       .where((u) => u.age >= params.minAge)
@@ -452,7 +452,7 @@ WHERE "age" >= @minAge
 #### Full row projection (identity)
 
 ```typescript
-const fullRow = query(() => from<User>("users").select((u) => u), {});
+const fullRow = selectStatement(() => from<User>("users").select((u) => u), {});
 ```
 
 ```sql
@@ -468,7 +468,7 @@ SELECT * FROM "users"
 #### Object projection
 
 ```typescript
-const summary = query(
+const summary = selectStatement(
   () =>
     from<User>("users")
       .where((u) => u.active)
@@ -496,7 +496,7 @@ SELECT "id" AS "id", "name" AS "name", "email" AS "contact.email" FROM "users" W
 #### Projection with null coalescing and arithmetic
 
 ```typescript
-const pricing = query(
+const pricing = selectStatement(
   () =>
     from<Product>("products").select((p) => ({
       id: p.id,
@@ -526,7 +526,7 @@ SELECT "id" AS "id", "name" AS "name", ("price" - COALESCE("discount", @__p1)) A
 #### Single key ascending
 
 ```typescript
-const alphabetical = query(() => from<User>("users").orderBy((u) => u.name), {});
+const alphabetical = selectStatement(() => from<User>("users").orderBy((u) => u.name), {});
 ```
 
 ```sql
@@ -542,7 +542,7 @@ SELECT * FROM "users" ORDER BY "name" ASC
 #### Mixed ordering
 
 ```typescript
-const ordered = query(
+const ordered = selectStatement(
   () =>
     from<User>("users")
       .orderBy((u) => u.departmentId)
@@ -565,7 +565,7 @@ SELECT * FROM "users" ORDER BY "departmentId" ASC, "salary" DESC, "name" ASC
 ### 5.4 Distinct (`distinct`)
 
 ```typescript
-const departments = query(
+const departments = selectStatement(
   () =>
     from<User>("users")
       .select((u) => u.departmentId)
@@ -589,7 +589,7 @@ SELECT DISTINCT "departmentId" AS "departmentId" FROM "users"
 #### Offset/limit pattern
 
 ```typescript
-const page = query(
+const page = selectStatement(
   () =>
     from<User>("users")
       .orderBy((u) => u.id)
@@ -616,7 +616,7 @@ SELECT * FROM "users" ORDER BY "id" ASC LIMIT @__p2 OFFSET @__p1
 #### Pagination with filtering
 
 ```typescript
-const filteredPage = query(
+const filteredPage = selectStatement(
   () =>
     from<User>("users")
       .where((u) => u.active)
@@ -646,7 +646,7 @@ SELECT * FROM "users" WHERE "active" ORDER BY "name" ASC LIMIT @__p3 OFFSET @__p
 #### Simple inner join
 
 ```typescript
-const userDepartments = query(
+const userDepartments = selectStatement(
   () =>
     from<User>("users").join(
       from<Department>("departments"),
@@ -675,7 +675,7 @@ INNER JOIN "departments" AS "t1" ON "t0"."departmentId" = "t1"."id"
 #### Join with additional filter
 
 ```typescript
-const regionOrders = query(
+const regionOrders = selectStatement(
   () =>
     from<User>("users")
       .where((u) => u.id > 100)
@@ -713,7 +713,7 @@ WHERE "t0"."id" > @__p1 AND "t1"."total" > @__p2
 #### Join with grouped results
 
 ```typescript
-const totalsByDepartment = query(
+const totalsByDepartment = selectStatement(
   () =>
     from<User>("users")
       .join(
@@ -753,7 +753,7 @@ GROUP BY "t0"."departmentId"
 #### Basic grouping
 
 ```typescript
-const byDepartment = query(() => from<User>("users").groupBy((u) => u.departmentId), {});
+const byDepartment = selectStatement(() => from<User>("users").groupBy((u) => u.departmentId), {});
 ```
 
 ```sql
@@ -769,7 +769,7 @@ SELECT "departmentId" FROM "users" GROUP BY "departmentId"
 #### Group with multiple aggregates
 
 ```typescript
-const departmentStats = query(
+const departmentStats = selectStatement(
   () =>
     from<User>("users")
       .groupBy((u) => u.departmentId)
@@ -804,7 +804,7 @@ ORDER BY "totalSalary" DESC
 #### Group with post-filter (application-level HAVING)
 
 ```typescript
-const largeDepartments = await execute(
+const largeDepartments = await executeSelect(
   db,
   () =>
     from<User>("users")
@@ -820,7 +820,7 @@ The adapter emits the `WHERE` on the grouped projection; explicit HAVING clauses
 ### 5.8 Scalar Aggregates on Root Queries
 
 ```typescript
-const totals = query(
+const totals = selectStatement(
   () =>
     from<User>("users")
       .where((u) => u.active === true)
@@ -846,7 +846,7 @@ SELECT SUM("salary") FROM "users" WHERE "active" = @__p1
 `count`, `average`, `min`, and `max` follow the same structure. `count` also accepts a predicate:
 
 ```typescript
-const activeCount = query(() => from<User>("users").count((u) => u.active), {});
+const activeCount = selectStatement(() => from<User>("users").count((u) => u.active), {});
 ```
 
 ```sql
@@ -862,7 +862,7 @@ SELECT COUNT(*) FROM "users" WHERE "active"
 ### 5.9 Quantifiers (`any`, `all`)
 
 ```typescript
-const hasAdults = query(() => from<User>("users").any((u) => u.age >= 18), {});
+const hasAdults = selectStatement(() => from<User>("users").any((u) => u.age >= 18), {});
 ```
 
 ```sql
@@ -882,7 +882,7 @@ SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "age" >= @__p1) THEN 1 ELSE 
 `all` emits a `NOT EXISTS` check:
 
 ```typescript
-const allActive = query(() => from<User>("users").all((u) => u.active === true), {});
+const allActive = selectStatement(() => from<User>("users").all((u) => u.active === true), {});
 ```
 
 ```sql
@@ -898,7 +898,7 @@ SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("active" = @__p1)) 
 ### 5.10 Element Retrieval (`first`, `firstOrDefault`, `single`, `singleOrDefault`, `last`, `lastOrDefault`)
 
 ```typescript
-const newestUser = query(
+const newestUser = selectStatement(
   () =>
     from<User>("users")
       .orderBy((u) => u.createdAt)
@@ -922,7 +922,7 @@ SELECT * FROM "users" ORDER BY "createdAt" ASC LIMIT 1
 ### 5.11 Materialisation (`toArray`)
 
 ```typescript
-const activeUsers = await execute(
+const activeUsers = await executeSelect(
   db,
   () =>
     from<User>("users")
@@ -942,7 +942,7 @@ The generated SQL matches the chain preceding `toArray`.
 ### 6.1 External Parameter Objects
 
 ```typescript
-const filtered = query(
+const filtered = selectStatement(
   (params: { minAge: number; role: string }) =>
     from<User>("users")
       .where((u) => u.age >= params.minAge)
@@ -970,7 +970,7 @@ Nested properties and array indices are preserved (`params.filters.departments[0
 ### 6.2 Literal Auto-Parameterisation
 
 ```typescript
-const autoParams = query(
+const autoParams = selectStatement(
   () => from<User>("users").where((u) => u.departmentId === 7 && u.name.startsWith("A")),
   {},
 );
@@ -993,7 +993,7 @@ SELECT * FROM "users" WHERE "departmentId" = @__p1 AND "name" LIKE @__p2 || '%'
 ### 6.3 Array Membership (`Array.includes`)
 
 ```typescript
-const membership = query(() => from<User>("users").where((u) => [1, 2, 3].includes(u.id)), {});
+const membership = selectStatement(() => from<User>("users").where((u) => [1, 2, 3].includes(u.id)), {});
 ```
 
 ```sql
@@ -1013,7 +1013,7 @@ SELECT * FROM "users" WHERE "id" IN (@__p1, @__p2, @__p3)
 Parameterized array example:
 
 ```typescript
-const dynamicMembership = query(
+const dynamicMembership = selectStatement(
   (params: { allowed: readonly number[] }) =>
     from<User>("users").where((u) => params.allowed.includes(u.id)),
   { allowed: [5, 8] },
@@ -1029,7 +1029,7 @@ const dynamicMembership = query(
 ```typescript
 const helpers = createQueryHelpers();
 
-const ic = query(
+const ic = selectStatement(
   (_: unknown, h = helpers) =>
     from<User>("users").where((u) => h.functions.icontains(u.email, "support")),
   {},
@@ -1054,12 +1054,12 @@ SELECT * FROM "users" WHERE LOWER("email") LIKE '%' || LOWER(@__p1) || '%'
 
 ## 7. Execution APIs
 
-### 7.1 `query` Function
+### 7.1 `selectStatement` Function
 
 Returns the generated SQL and merged parameters without executing the statement.
 
 ```typescript
-const { sql, params } = query(
+const { sql, params } = selectStatement(
   () =>
     from<User>("users")
       .where((u) => u.active)
@@ -1069,12 +1069,12 @@ const { sql, params } = query(
 );
 ```
 
-### 7.2 `execute` and `executeSimple`
+### 7.2 `executeSelect` and `executeSelectSimple`
 
 #### PostgreSQL
 
 ```typescript
-const rows = await execute(
+const rows = await executeSelect(
   db,
   () =>
     from<User>("users")
@@ -1090,13 +1090,13 @@ const rows = await execute(
   },
 );
 
-const allUsers = await executeSimple(db, () => from<User>("users"));
+const allUsers = await executeSelectSimple(db, () => from<User>("users"));
 ```
 
 #### SQLite
 
 ```typescript
-const rows = await execute(
+const rows = await executeSelect(
   sqlite,
   (params: { category: string }) =>
     from<Product>("products")
@@ -1105,7 +1105,7 @@ const rows = await execute(
   { category: "electronics" },
 );
 
-const everything = await executeSimple(sqlite, () => from<Product>("products"));
+const everything = await executeSelectSimple(sqlite, () => from<Product>("products"));
 ```
 
 ### 7.3 `toSql`
@@ -1122,7 +1122,7 @@ const { text, parameters } = toSql(queryable);
 ### 8.1 PostgreSQL (pg-promise)
 
 - Parameters use pg-promise syntax `$(name)`.
-- `execute` uses `db.any` for sequences and `db.one` for scalar aggregates.
+- `executeSelect` uses `db.any` for sequences and `db.one` for scalar aggregates.
 - `last*` operations emit `ORDER BY ... DESC LIMIT 1` when no explicit descending order exists.
 - Parameters are forwarded without mutation.
 
@@ -1130,7 +1130,7 @@ const { text, parameters } = toSql(queryable);
 
 - Parameters use `@name` placeholders.
 - Booleans are converted to `1`/`0`; dates become `YYYY-MM-DD HH:MM:SS` strings.
-- `execute` prepares the SQL and invokes `.all()` or `.get()` depending on the terminal operation.
+- `executeSelect` prepares the SQL and invokes `.all()` or `.get()` depending on the terminal operation.
 
 ---
 
@@ -1157,7 +1157,7 @@ const departments = from(ctx, "departments");
 ```typescript
 const helpers = createQueryHelpers();
 
-const caseInsensitive = query(
+const caseInsensitive = selectStatement(
   (_: unknown, h = helpers) =>
     from<User>("users").where((u) => h.functions.iendsWith(u.email, ".org")),
   {},
@@ -1176,7 +1176,7 @@ const caseInsensitive = query(
 Example:
 
 ```typescript
-const upcoming = query(
+const upcoming = selectStatement(
   (params: { cutoff: Date }) =>
     from<Event>("events")
       .where((e) => e.startDate >= params.cutoff)
@@ -1219,8 +1219,8 @@ const upcoming = query(
 | `Failed to parse query`                          | Lambda uses an unsupported construct (captured variable, named function, helper call, template literal). | Rewrite the lambda using the supported subset; pass values via the parameter object. |
 | `Unknown query method`                           | Fluent method (`union`, `selectMany`, `longCount`, etc.) not implemented.                                | Remove the call or implement support before using it.                                |
 | Query returns no rows for `last*`                | No ordering specified and result set is empty.                                                           | Provide an explicit `orderBy` or switch to `lastOrDefault`.                          |
-| SQLite booleans stored as `true`/`false` strings | Manual execution without adapter conversion.                                                             | Use `execute`/`executeSimple`, which convert booleans to integers.                   |
-| Auto-parameter names unfamiliar                  | Literals are auto-parameterised (`__pN`).                                                                | Use the `params` object returned by `query`; do not assume positional order.         |
+| SQLite booleans stored as `true`/`false` strings | Manual execution without adapter conversion.                                                             | Use `executeSelect`/`executeSelectSimple`, which convert booleans to integers.                   |
+| Auto-parameter names unfamiliar                  | Literals are auto-parameterised (`__pN`).                                                                | Use the `params` object returned by `selectStatement`; do not assume positional order.         |
 | Grouped projection filter acts like HAVING       | `where` after `groupBy` translates to a standard `WHERE`.                                                | Filter in application code or extend the generator for HAVING support.               |
 
 ---

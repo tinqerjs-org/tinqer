@@ -3,7 +3,7 @@
  */
 
 import { expect } from "chai";
-import { query } from "../src/index.js";
+import { selectStatement } from "../src/index.js";
 import { from } from "@webpods/tinqer";
 
 interface User {
@@ -39,7 +39,7 @@ interface Product {
 describe("JOIN with Table References", () => {
   describe("Basic table reference returns", () => {
     it("should support (u, d) => ({ u, d }) pattern", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -69,7 +69,7 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support accessing nested properties after table reference JOIN", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -94,7 +94,7 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support WHERE clause with table references", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -124,7 +124,7 @@ describe("JOIN with Table References", () => {
 
   describe("Chained JOINs with table references", () => {
     it("should support chaining JOINs with table references", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -165,7 +165,7 @@ describe("JOIN with Table References", () => {
     });
 
     it("should correctly resolve properties through chained table references", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -194,7 +194,7 @@ describe("JOIN with Table References", () => {
     });
 
     it("should handle three-way JOINs with table references", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -235,7 +235,7 @@ describe("JOIN with Table References", () => {
     it("should enforce table references only in JOIN result selector", () => {
       // This test verifies that mixing table references with field selections is not allowed
       expect(() => {
-        query(
+        selectStatement(
           () =>
             from<User>("users")
               .join(
@@ -260,7 +260,7 @@ describe("JOIN with Table References", () => {
 
   describe("Aggregations with table references", () => {
     it("should support GROUP BY with table references", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -288,7 +288,7 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support complex aggregations with chained table references", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -324,7 +324,7 @@ describe("JOIN with Table References", () => {
   describe("Edge cases and validation", () => {
     it("should throw error when SELECT is missing after JOIN with result selector", () => {
       expect(() => {
-        query(
+        selectStatement(
           () =>
             from<User>("users").join(
               from<Department>("departments"),
@@ -338,7 +338,7 @@ describe("JOIN with Table References", () => {
     });
 
     it("should handle empty object in result selector with SELECT", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -361,7 +361,7 @@ describe("JOIN with Table References", () => {
     });
 
     it("should handle single table reference return", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -384,7 +384,7 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support ORDER BY with table references", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -412,7 +412,7 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support DISTINCT with table references", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(

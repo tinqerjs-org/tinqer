@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 
 describe("Advanced SELECT Projection SQL Generation", () => {
   interface User {
@@ -37,7 +37,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Removed: nested object structures with || operator
 
     it("should handle deeply nested projections", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Product>("products").select((p) => ({
             basic: {
@@ -78,7 +78,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Test removed: Chained SELECT with expressions no longer supported
 
     it("should project after filtering", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Product>("products")
             .where((p) => p.stock > 0 && p.price > 10)
@@ -110,7 +110,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
         name: string;
       }
 
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -135,7 +135,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     });
 
     it("should work with DISTINCT", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Product>("products")
             .select((p) => ({
@@ -159,7 +159,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
   describe("Edge cases in SELECT", () => {
     it("should handle SELECT with only literals", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users").select(() => ({
             constant: 42,
@@ -182,13 +182,13 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Test removed: Very complex nested arithmetic no longer supported in SELECT
 
     it("should handle SELECT with no projection (identity)", () => {
-      const result = query(() => from<User>("users").select((u) => u), {});
+      const result = selectStatement(() => from<User>("users").select((u) => u), {});
 
       expect(result.sql).to.contain("SELECT * FROM");
     });
 
     it("should handle SELECT with renamed fields", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users").select((u) => ({
             userId: u.id,
@@ -212,7 +212,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
   describe("SELECT with special cases", () => {
     it("should handle SELECT with pagination pattern", () => {
-      const result = query(
+      const result = selectStatement(
         (params: { page: number; pageSize: number }) =>
           from<Product>("products")
             .select((p) => ({

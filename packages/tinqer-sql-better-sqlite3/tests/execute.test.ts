@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { db, from } from "./test-schema.js";
 
 describe("Execute Function", () => {
@@ -14,7 +14,7 @@ describe("Execute Function", () => {
 
       // Just verify the function signature and that it compiles
       // Real execution would need a real database
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT * FROM "users"');
     });
 
@@ -25,14 +25,14 @@ describe("Execute Function", () => {
           name: u.name,
         }));
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT "id" AS "id", "name" AS "name" FROM "users"');
     });
 
     it("should execute with WHERE clause", async () => {
       const queryBuilder = () => from(db, "users").where((u) => u.age >= 18);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "age" >= @__p1');
       expect(sqlResult.params).to.deep.equal({ __p1: 18 });
     });
@@ -41,7 +41,7 @@ describe("Execute Function", () => {
       const queryBuilder = (p: { minAge: number }) =>
         from(db, "users").where((u) => u.age >= p.minAge);
 
-      const sqlResult = query(queryBuilder, { minAge: 21 });
+      const sqlResult = selectStatement(queryBuilder, { minAge: 21 });
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "age" >= @minAge');
       expect(sqlResult.params).to.deep.equal({ minAge: 21 });
     });
@@ -51,7 +51,7 @@ describe("Execute Function", () => {
     it("should handle first() operation", async () => {
       const queryBuilder = () => from(db, "users").first();
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" LIMIT 1');
       expect(sqlResult.params).to.deep.equal({});
     });
@@ -59,7 +59,7 @@ describe("Execute Function", () => {
     it("should handle first() with predicate", async () => {
       const queryBuilder = () => from(db, "users").first((u) => u.id === 1);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "id" = @__p1 LIMIT 1');
       expect(sqlResult.params).to.deep.equal({ __p1: 1 });
     });
@@ -67,7 +67,7 @@ describe("Execute Function", () => {
     it("should handle single() operation", async () => {
       const queryBuilder = () => from(db, "users").single((u) => u.id === 1);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       // Single adds LIMIT 2 to check for multiple results
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "id" = @__p1 LIMIT 2');
       expect(sqlResult.params).to.deep.equal({ __p1: 1 });
@@ -76,7 +76,7 @@ describe("Execute Function", () => {
     it("should handle firstOrDefault() operation", async () => {
       const queryBuilder = () => from(db, "users").firstOrDefault((u) => u.id === 999);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "id" = @__p1 LIMIT 1');
       expect(sqlResult.params).to.deep.equal({ __p1: 999 });
       // Note: firstOrDefault returns null when no results, not throwing
@@ -85,7 +85,7 @@ describe("Execute Function", () => {
     it("should handle singleOrDefault() operation", async () => {
       const queryBuilder = () => from(db, "users").singleOrDefault((u) => u.id === 999);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       // SingleOrDefault also adds LIMIT 2 to check for multiple results
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "id" = @__p1 LIMIT 2');
       expect(sqlResult.params).to.deep.equal({ __p1: 999 });
@@ -98,7 +98,7 @@ describe("Execute Function", () => {
           .orderBy((u) => u.id)
           .last();
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       // Last reverses the ORDER BY direction
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" ORDER BY "id" DESC LIMIT 1');
     });
@@ -106,14 +106,14 @@ describe("Execute Function", () => {
     it("should handle count() operation", async () => {
       const queryBuilder = () => from(db, "users").count();
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT COUNT(*) FROM "users"');
     });
 
     it("should handle count() with predicate", async () => {
       const queryBuilder = () => from(db, "users").count((u) => u.age >= 18);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT COUNT(*) FROM "users" WHERE "age" >= @__p1');
       expect(sqlResult.params).to.deep.equal({ __p1: 18 });
     });
@@ -121,35 +121,35 @@ describe("Execute Function", () => {
     it("should handle sum() operation", async () => {
       const queryBuilder = () => from(db, "users").sum((u) => u.age);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT SUM("age") FROM "users"');
     });
 
     it("should handle average() operation", async () => {
       const queryBuilder = () => from(db, "users").average((u) => u.salary);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT AVG("salary") FROM "users"');
     });
 
     it("should handle min() operation", async () => {
       const queryBuilder = () => from(db, "products").min((p) => p.price);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT MIN("price") FROM "products"');
     });
 
     it("should handle max() operation", async () => {
       const queryBuilder = () => from(db, "products").max((p) => p.price);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT MAX("price") FROM "products"');
     });
 
     it("should handle any() operation without predicate", async () => {
       const queryBuilder = () => from(db, "users").any();
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal(
         'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users") THEN 1 ELSE 0 END',
       );
@@ -158,7 +158,7 @@ describe("Execute Function", () => {
     it("should handle any() operation with predicate", async () => {
       const queryBuilder = () => from(db, "users").any((u) => u.age >= 18);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal(
         'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "age" >= @__p1) THEN 1 ELSE 0 END',
       );
@@ -168,7 +168,7 @@ describe("Execute Function", () => {
     it("should handle all() operation", async () => {
       const queryBuilder = () => from(db, "users").all((u) => u.isActive);
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal(
         'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("isActive")) THEN 1 ELSE 0 END',
       );
@@ -180,7 +180,7 @@ describe("Execute Function", () => {
           .where((u) => u.age >= 18)
           .toArray();
 
-      const sqlResult = query(queryBuilder, {});
+      const sqlResult = selectStatement(queryBuilder, {});
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "age" >= @__p1');
       expect(sqlResult.params).to.deep.equal({ __p1: 18 });
     });

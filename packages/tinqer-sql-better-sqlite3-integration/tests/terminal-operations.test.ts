@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute, executeSimple } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return first user", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = executeSimple(
+      const user = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -45,7 +45,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return first user matching condition", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = executeSimple(
+      const user = executeSelectSimple(
         db,
         () => from(dbContext, "users").first((u) => u.age !== null && u.age > 40),
         {
@@ -69,7 +69,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       try {
-        executeSimple(
+        executeSelectSimple(
           db,
           () => from(dbContext, "users").first((u) => u.age !== null && u.age > 100),
           {
@@ -93,7 +93,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return null for firstOrDefault() when no match", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = executeSimple(
+      const user = executeSelectSimple(
         db,
         () => from(dbContext, "users").firstOrDefault((u) => u.age !== null && u.age > 100),
         {
@@ -115,7 +115,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should work with complex queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const result = executeSimple(
+      const result = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -159,7 +159,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return single user by unique email", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = executeSimple(
+      const user = executeSelectSimple(
         db,
         () => from(dbContext, "users").single((u) => u.email === "john@example.com"),
         {
@@ -181,11 +181,15 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       try {
-        executeSimple(db, () => from(dbContext, "users").single((u) => u.department_id === 1), {
-          onSql: (result) => {
-            capturedSql = result;
+        executeSelectSimple(
+          db,
+          () => from(dbContext, "users").single((u) => u.department_id === 1),
+          {
+            onSql: (result) => {
+              capturedSql = result;
+            },
           },
-        });
+        );
         expect.fail("Should have thrown error");
       } catch (error: unknown) {
         expect(capturedSql).to.exist;
@@ -202,7 +206,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       try {
-        executeSimple(
+        executeSelectSimple(
           db,
           () => from(dbContext, "users").single((u) => u.email === "nonexistent@example.com"),
           {
@@ -224,7 +228,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return null for singleOrDefault() when no match", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = executeSimple(
+      const user = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
@@ -246,7 +250,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       try {
-        executeSimple(
+        executeSelectSimple(
           db,
           () => from(dbContext, "users").singleOrDefault((u) => u.department_id === 1),
           {
@@ -272,7 +276,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return last user", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = executeSimple(
+      const user = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -296,7 +300,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return last user matching condition", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = executeSimple(
+      const user = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -323,7 +327,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return null for lastOrDefault() when no match", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = executeSimple(
+      const user = executeSelectSimple(
         db,
         () => from(dbContext, "users").lastOrDefault((u) => u.age !== null && u.age > 100),
         {
@@ -347,7 +351,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return true when any user matches condition", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasYoungUsers = executeSimple(
+      const hasYoungUsers = executeSelectSimple(
         db,
         () => from(dbContext, "users").any((u) => u.age !== null && u.age < 30),
         {
@@ -369,7 +373,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return false when no user matches condition", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasCentenarians = executeSimple(
+      const hasCentenarians = executeSelectSimple(
         db,
         () => from(dbContext, "users").any((u) => u.age !== null && u.age > 100),
         {
@@ -391,7 +395,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return true when any() is called without predicate on non-empty table", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasUsers = executeSimple(db, () => from(dbContext, "users").any(), {
+      const hasUsers = executeSelectSimple(db, () => from(dbContext, "users").any(), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -409,7 +413,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should check if all users match condition", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const allHaveEmail = executeSimple(
+      const allHaveEmail = executeSelectSimple(
         db,
         () => from(dbContext, "users").all((u) => u.email !== null),
         {
@@ -431,7 +435,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return false when not all match condition", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const allActive = executeSimple(
+      const allActive = executeSelectSimple(
         db,
         () => from(dbContext, "users").all((u) => u.is_active === 1),
         {
@@ -453,7 +457,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should work with WHERE clause", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const allEngineersActive = executeSimple(
+      const allEngineersActive = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -473,7 +477,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       expect(capturedSql!.params).to.deep.equal({ __p1: 1, __p2: 1 });
 
       // Check the actual data to verify the result
-      const engineerStatus = executeSimple(db, () =>
+      const engineerStatus = executeSelectSimple(db, () =>
         from(dbContext, "users")
           .where((u) => u.department_id === 1)
           .select((u) => ({ is_active: u.is_active })),
@@ -488,7 +492,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return array of results", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const users = executeSimple(
+      const users = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -518,7 +522,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return list of results", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const products = executeSimple(
+      const products = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -555,7 +559,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const targetEmail = "jane@example.com";
-      const user = execute(
+      const user = executeSelect(
         db,
         (params) => from(dbContext, "users").single((u) => u.email === params.email),
         { email: targetEmail },
@@ -578,7 +582,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should check product availability", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasExpensiveElectronics = executeSimple(
+      const hasExpensiveElectronics = executeSelectSimple(
         db,
         () => from(dbContext, "products").any((p) => p.category === "Electronics" && p.price > 500),
         {
@@ -600,7 +604,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should verify all completed orders have positive totals", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const allPositive = executeSimple(
+      const allPositive = executeSelectSimple(
         db,
         () =>
           from(dbContext, "orders")

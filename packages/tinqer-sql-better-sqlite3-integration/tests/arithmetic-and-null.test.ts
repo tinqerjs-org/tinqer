@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { executeSimple } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
     it("should handle addition in SELECT", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").select((p) => ({
@@ -52,7 +52,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
     it("should handle subtraction and multiplication", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "order_items").select((oi) => ({
@@ -86,7 +86,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
     it("should handle division", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -121,7 +121,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const evenUsers = executeSimple(
+      const evenUsers = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -134,7 +134,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
         },
       );
 
-      const oddUsers = executeSimple(
+      const oddUsers = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -168,7 +168,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
     it("should handle complex arithmetic expressions", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -202,7 +202,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
     it("should handle arithmetic in GROUP BY aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "order_items")
@@ -247,7 +247,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
         VALUES ('Test Null User', 'testnull@example.com', NULL, 1, 1)
       `);
 
-      const nullAgeUsers = executeSimple(
+      const nullAgeUsers = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.age === null),
         {
@@ -257,7 +257,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
         },
       );
 
-      const nonNullAgeUsers = executeSimple(
+      const nonNullAgeUsers = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.age !== null),
         {
@@ -295,7 +295,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
 
       // Test NULL handling in arithmetic with nullable columns
       // Since stock is NOT NULL, we'll test with nullable category and arithmetic
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").select((p) => ({
@@ -344,7 +344,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
         VALUES (999, 'Test Dept', NULL)
       `);
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "departments")
@@ -385,7 +385,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
         VALUES (999, 'No Description Product', 49.99, 10, 'Test', NULL)
       `);
 
-      const withDescription = executeSimple(
+      const withDescription = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -398,7 +398,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
         },
       );
 
-      const withoutDescription = executeSimple(
+      const withoutDescription = executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.description === null),
         {
@@ -442,7 +442,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
         VALUES (999, 'No Dept User', 'nodept@example.com', 30, NULL, 1)
       `);
 
-      const joinResults = executeSimple(
+      const joinResults = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -491,14 +491,14 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
       `);
 
       // COUNT should count rows with NULL
-      const totalCount = executeSimple(db, () => from(dbContext, "users").count(), {
+      const totalCount = executeSelectSimple(db, () => from(dbContext, "users").count(), {
         onSql: (result) => {
           capturedSql1 = result;
         },
       });
 
       // AVG, SUM, MIN, MAX ignore NULL values
-      const avgAge = executeSimple(
+      const avgAge = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -523,7 +523,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
       expect(avgAge).to.be.a("number");
 
       // Average should only consider non-NULL values
-      const nonNullAges = executeSimple(
+      const nonNullAges = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -555,7 +555,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const activeUsers = executeSimple(
+      const activeUsers = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.is_active === 1),
         {
@@ -565,7 +565,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
         },
       );
 
-      const inactiveUsers = executeSimple(
+      const inactiveUsers = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.is_active === 0),
         {
@@ -598,7 +598,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
     it("should handle boolean comparisons", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where((u) => u.is_active === 1 && u.age !== null && u.age >= 30),
@@ -626,7 +626,7 @@ describe("Better SQLite3 Integration - Arithmetic and NULL Operations", () => {
     it("should handle complex boolean logic", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(

@@ -4,7 +4,7 @@
  */
 
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 interface User {
@@ -24,7 +24,7 @@ interface Product {
 describe("IN Operator", () => {
   describe("Basic IN operations", () => {
     it("should generate SQL for array.includes() with numbers", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<User>("users").where((u) => [1, 2, 3, 4, 5].includes(u.id)),
         {},
       );
@@ -42,7 +42,7 @@ describe("IN Operator", () => {
     });
 
     it("should generate SQL for array.includes() with strings", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<User>("users").where((u) => ["admin", "user", "guest"].includes(u.role)),
         {},
       );
@@ -58,7 +58,7 @@ describe("IN Operator", () => {
     });
 
     it("should handle single item array", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<Product>("products").where((p) => ["electronics"].includes(p.category)),
         {},
       );
@@ -70,7 +70,7 @@ describe("IN Operator", () => {
     });
 
     it("should handle empty array as FALSE", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<User>("users").where((u) => ([] as number[]).includes(u.id)),
         {},
       );
@@ -82,7 +82,7 @@ describe("IN Operator", () => {
 
   describe("IN with other conditions", () => {
     it("should combine IN with AND conditions", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<User>("users").where((u) => [1, 2, 3].includes(u.id) && u.age > 18),
         {},
       );
@@ -99,7 +99,7 @@ describe("IN Operator", () => {
     });
 
     it("should combine IN with OR conditions", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Product>("products").where(
             (p) => ["electronics", "computers"].includes(p.category) || p.price < 100,
@@ -118,7 +118,7 @@ describe("IN Operator", () => {
     });
 
     it("should handle multiple IN conditions", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users").where(
             (u) => [1, 2, 3].includes(u.id) && ["admin", "moderator"].includes(u.role),
@@ -141,7 +141,7 @@ describe("IN Operator", () => {
 
   describe("IN with other SQL operations", () => {
     it("should work with SELECT and ORDER BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .where((u) => ["admin", "moderator"].includes(u.role))
@@ -160,7 +160,7 @@ describe("IN Operator", () => {
     });
 
     it("should work with GROUP BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Product>("products")
             .where((p) => ["electronics", "computers", "phones"].includes(p.category))
@@ -180,7 +180,7 @@ describe("IN Operator", () => {
     });
 
     it("should work with TAKE and SKIP", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .where((u) => [1, 2, 3, 4, 5].includes(u.id))
@@ -207,7 +207,10 @@ describe("IN Operator", () => {
 
   describe("NOT IN operations", () => {
     it("should generate NOT IN with negation", () => {
-      const result = query(() => from<User>("users").where((u) => ![1, 2, 3].includes(u.id)), {});
+      const result = selectStatement(
+        () => from<User>("users").where((u) => ![1, 2, 3].includes(u.id)),
+        {},
+      );
 
       expect(result.sql).to.equal(
         `SELECT * FROM "users" WHERE NOT ("id" IN ($(__p1), $(__p2), $(__p3)))`,
@@ -220,7 +223,7 @@ describe("IN Operator", () => {
     });
 
     it("should handle negated empty array as TRUE", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<User>("users").where((u) => !([] as number[]).includes(u.id)),
         {},
       );

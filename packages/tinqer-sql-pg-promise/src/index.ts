@@ -18,7 +18,7 @@ import type { SqlResult, ExecuteOptions } from "./types.js";
  * @param params Parameters to pass to the query builder
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
-export function query<TParams, TResult>(
+export function selectStatement<TParams, TResult>(
   queryBuilder:
     | ((params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
     | ((
@@ -111,7 +111,7 @@ interface PgDatabase {
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Promise with query results, properly typed based on the query
  */
-export async function execute<
+export async function executeSelect<
   TParams,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
@@ -129,7 +129,7 @@ export async function execute<
         ? T
         : never
 > {
-  const { sql, params: sqlParams } = query(queryBuilder, params);
+  const { sql, params: sqlParams } = selectStatement(queryBuilder, params);
 
   // Call onSql callback if provided
   if (options.onSql) {
@@ -233,7 +233,7 @@ export async function execute<
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Promise with query results, properly typed based on the query
  */
-export async function executeSimple<
+export async function executeSelectSimple<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
 >(
@@ -249,7 +249,7 @@ export async function executeSimple<
         ? T
         : never
 > {
-  return execute(db, queryBuilder, {}, options);
+  return executeSelect(db, queryBuilder, {}, options);
 }
 
 // Export types

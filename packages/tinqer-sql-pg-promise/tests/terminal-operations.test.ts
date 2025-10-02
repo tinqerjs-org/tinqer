@@ -4,7 +4,7 @@
  */
 
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 interface User {
@@ -17,31 +17,34 @@ interface User {
 describe("Terminal Operations", () => {
   describe("FIRST operations", () => {
     it("should generate SQL for first()", () => {
-      const result = query(() => from<User>("users").first(), {});
+      const result = selectStatement(() => from<User>("users").first(), {});
       expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for first() with predicate", () => {
-      const result = query(() => from<User>("users").first((u) => u.age > 18), {});
+      const result = selectStatement(() => from<User>("users").first((u) => u.age > 18), {});
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" > $(__p1) LIMIT 1');
       expect(result.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should generate SQL for firstOrDefault()", () => {
-      const result = query(() => from<User>("users").firstOrDefault(), {});
+      const result = selectStatement(() => from<User>("users").firstOrDefault(), {});
       expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for firstOrDefault() with predicate", () => {
-      const result = query(() => from<User>("users").firstOrDefault((u) => u.isActive), {});
+      const result = selectStatement(
+        () => from<User>("users").firstOrDefault((u) => u.isActive),
+        {},
+      );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "isActive" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should combine WHERE and first() predicate", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .where((u) => u.age > 18)
@@ -57,25 +60,28 @@ describe("Terminal Operations", () => {
 
   describe("SINGLE operations", () => {
     it("should generate SQL for single()", () => {
-      const result = query(() => from<User>("users").single(), {});
+      const result = selectStatement(() => from<User>("users").single(), {});
       expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 2');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for single() with predicate", () => {
-      const result = query(() => from<User>("users").single((u) => u.id == 1), {});
+      const result = selectStatement(() => from<User>("users").single((u) => u.id == 1), {});
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "id" = $(__p1) LIMIT 2');
       expect(result.params).to.deep.equal({ __p1: 1 });
     });
 
     it("should generate SQL for singleOrDefault()", () => {
-      const result = query(() => from<User>("users").singleOrDefault(), {});
+      const result = selectStatement(() => from<User>("users").singleOrDefault(), {});
       expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 2');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for singleOrDefault() with predicate", () => {
-      const result = query(() => from<User>("users").singleOrDefault((u) => u.name == "John"), {});
+      const result = selectStatement(
+        () => from<User>("users").singleOrDefault((u) => u.name == "John"),
+        {},
+      );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" = $(__p1) LIMIT 2');
       expect(result.params).to.deep.equal({ __p1: "John" });
     });
@@ -83,14 +89,14 @@ describe("Terminal Operations", () => {
 
   describe("LAST operations", () => {
     it("should generate SQL for last() without ORDER BY", () => {
-      const result = query(() => from<User>("users").last(), {});
+      const result = selectStatement(() => from<User>("users").last(), {});
       // Without ORDER BY, we add a default ORDER BY 1 DESC
       expect(result.sql).to.equal('SELECT * FROM "users" ORDER BY 1 DESC LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for last() with existing ORDER BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .orderBy((u) => u.id)
@@ -103,19 +109,22 @@ describe("Terminal Operations", () => {
     });
 
     it("should generate SQL for last() with predicate", () => {
-      const result = query(() => from<User>("users").last((u) => u.isActive), {});
+      const result = selectStatement(() => from<User>("users").last((u) => u.isActive), {});
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "isActive" ORDER BY 1 DESC LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for lastOrDefault()", () => {
-      const result = query(() => from<User>("users").lastOrDefault(), {});
+      const result = selectStatement(() => from<User>("users").lastOrDefault(), {});
       expect(result.sql).to.equal('SELECT * FROM "users" ORDER BY 1 DESC LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for lastOrDefault() with predicate", () => {
-      const result = query(() => from<User>("users").lastOrDefault((u) => u.age < 30), {});
+      const result = selectStatement(
+        () => from<User>("users").lastOrDefault((u) => u.age < 30),
+        {},
+      );
       expect(result.sql).to.equal(
         'SELECT * FROM "users" WHERE "age" < $(__p1) ORDER BY 1 DESC LIMIT 1',
       );
@@ -125,7 +134,7 @@ describe("Terminal Operations", () => {
 
   describe("Complex terminal operations", () => {
     it("should work with SELECT projection and first()", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .select((u) => ({ name: u.name }))
@@ -144,7 +153,7 @@ describe("Terminal Operations", () => {
         amount: number;
       }
 
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .join(
@@ -164,7 +173,7 @@ describe("Terminal Operations", () => {
     });
 
     it("should work with DISTINCT and first()", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .select((u) => ({ name: u.name }))
@@ -177,7 +186,7 @@ describe("Terminal Operations", () => {
     });
 
     it("should work with ORDER BY and last()", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .orderBy((u) => u.name)

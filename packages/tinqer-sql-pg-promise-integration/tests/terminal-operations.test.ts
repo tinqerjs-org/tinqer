@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return first user", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = await executeSimple(
+      const user = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -45,7 +45,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return first user matching condition", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = await executeSimple(
+      const user = await executeSelectSimple(
         db,
         () => from(dbContext, "users").first((u) => u.age !== null && u.age > 40),
         {
@@ -69,7 +69,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       try {
-        await executeSimple(
+        await executeSelectSimple(
           db,
           () => from(dbContext, "users").first((u) => u.age !== null && u.age > 100),
           {
@@ -93,7 +93,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return null for firstOrDefault() when no match", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = await executeSimple(
+      const user = await executeSelectSimple(
         db,
         () => from(dbContext, "users").firstOrDefault((u) => u.age !== null && u.age > 100),
         {
@@ -115,7 +115,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should work with complex queries", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const result = await executeSimple(
+      const result = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -159,7 +159,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return single user by unique email", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = await executeSimple(
+      const user = await executeSelectSimple(
         db,
         () => from(dbContext, "users").single((u) => u.email === "john@example.com"),
         {
@@ -181,7 +181,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       try {
-        await executeSimple(
+        await executeSelectSimple(
           db,
           () => from(dbContext, "users").single((u) => u.department_id === 1),
           {
@@ -206,7 +206,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       try {
-        await executeSimple(
+        await executeSelectSimple(
           db,
           () => from(dbContext, "users").single((u) => u.email === "nonexistent@example.com"),
           {
@@ -228,7 +228,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return null for singleOrDefault() when no match", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = await executeSimple(
+      const user = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
@@ -250,7 +250,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       try {
-        await executeSimple(
+        await executeSelectSimple(
           db,
           () => from(dbContext, "users").singleOrDefault((u) => u.department_id === 1),
           {
@@ -276,7 +276,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return last user", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = await executeSimple(
+      const user = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -300,7 +300,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return last user matching condition", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = await executeSimple(
+      const user = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -327,7 +327,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return null for lastOrDefault() when no match", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const user = await executeSimple(
+      const user = await executeSelectSimple(
         db,
         () => from(dbContext, "users").lastOrDefault((u) => u.age !== null && u.age > 100),
         {
@@ -351,7 +351,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return true when any user matches condition", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasYoungUsers = await executeSimple(
+      const hasYoungUsers = await executeSelectSimple(
         db,
         () => from(dbContext, "users").any((u) => u.age !== null && u.age < 30),
         {
@@ -373,7 +373,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return false when no user matches condition", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasCentenarians = await executeSimple(
+      const hasCentenarians = await executeSelectSimple(
         db,
         () => from(dbContext, "users").any((u) => u.age !== null && u.age > 100),
         {
@@ -395,7 +395,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return true when any() is called without predicate on non-empty table", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasUsers = await executeSimple(db, () => from(dbContext, "users").any(), {
+      const hasUsers = await executeSelectSimple(db, () => from(dbContext, "users").any(), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -413,7 +413,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should check if all users match condition", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const allHaveEmail = await executeSimple(
+      const allHaveEmail = await executeSelectSimple(
         db,
         () => from(dbContext, "users").all((u) => u.email !== null),
         {
@@ -435,7 +435,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return false when not all match condition", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const allActive = await executeSimple(
+      const allActive = await executeSelectSimple(
         db,
         () => from(dbContext, "users").all((u) => u.is_active === true),
         {
@@ -457,7 +457,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should work with WHERE clause", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const allEngineersActive = await executeSimple(
+      const allEngineersActive = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -477,7 +477,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       expect(capturedSql!.params).to.deep.equal({ __p1: 1, __p2: true });
 
       // Check the actual data to verify the result
-      const engineerStatus = await executeSimple(db, () =>
+      const engineerStatus = await executeSelectSimple(db, () =>
         from(dbContext, "users")
           .where((u) => u.department_id === 1)
           .select((u) => ({ is_active: u.is_active })),
@@ -492,7 +492,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return array of results", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const users = await executeSimple(
+      const users = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -522,7 +522,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return list of results", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const products = await executeSimple(
+      const products = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -559,7 +559,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const targetEmail = "jane@example.com";
-      const user = await execute(
+      const user = await executeSelect(
         db,
         (params) => from(dbContext, "users").single((u) => u.email === params.email),
         { email: targetEmail },
@@ -582,7 +582,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should check product availability", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasExpensiveElectronics = await executeSimple(
+      const hasExpensiveElectronics = await executeSelectSimple(
         db,
         () => from(dbContext, "products").any((p) => p.category === "Electronics" && p.price > 500),
         {
@@ -604,7 +604,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should verify all completed orders have positive totals", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const allPositive = await executeSimple(
+      const allPositive = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "orders")

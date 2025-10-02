@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle complex nested AND/OR conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -57,7 +57,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle deeply nested conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -102,7 +102,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle multiple NOT conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -135,7 +135,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle BETWEEN-like conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.price >= 50 && p.price <= 300),
         {
@@ -162,7 +162,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle multiple range conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -200,7 +200,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle exclusive ranges", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.stock > 100 && p.stock < 500),
         {
@@ -230,7 +230,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const targetIds = [1, 3, 5, 7];
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) => from(dbContext, "users").where((u) => params.targetIds.includes(u.id)),
         { targetIds },
@@ -256,7 +256,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const excludedCategories = ["Furniture", "Stationery"];
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where(
@@ -289,7 +289,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const emptyList: number[] = [];
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) => from(dbContext, "users").where((u) => params.emptyList.includes(u.id)),
         { emptyList },
@@ -314,7 +314,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // All our test users have department_id, but let's test the syntax
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where((u) => u.department_id !== null && u.is_active === true),
@@ -342,7 +342,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle complex NULL checks", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -374,7 +374,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle arithmetic comparisons", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.price * 0.9 > 100),
         {
@@ -400,7 +400,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle complex arithmetic", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "order_items").where((oi) => oi.quantity * oi.unit_price > 500),
         {
@@ -426,7 +426,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle division and modulo", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.id % 2 === 0),
         {
@@ -452,7 +452,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should combine 3 WHERE clauses", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -484,7 +484,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should combine 5 WHERE clauses", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -534,7 +534,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
         mustBeActive: true,
       };
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (p) =>
           from(dbContext, "users").where(
@@ -578,7 +578,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
 
       const params = { threshold: 100 };
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (p) =>
           from(dbContext, "products").where(
@@ -617,7 +617,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle very long condition chains", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -665,7 +665,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
     it("should handle conditions with all comparison operators", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -704,7 +704,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const activeResults = await executeSimple(
+      const activeResults = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.is_active),
         {
@@ -714,7 +714,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
         },
       );
 
-      const inactiveResults = await executeSimple(
+      const inactiveResults = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => !u.is_active),
         {

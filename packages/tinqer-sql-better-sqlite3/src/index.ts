@@ -18,7 +18,7 @@ import type { SqlResult, ExecuteOptions } from "./types.js";
  * @param params Parameters to pass to the query builder
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
-export function query<TParams, TResult>(
+export function selectStatement<TParams, TResult>(
   queryBuilder:
     | ((params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
     | ((
@@ -113,7 +113,7 @@ interface BetterSqlite3Database {
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Query results, properly typed based on the query
  */
-export function execute<
+export function executeSelect<
   TParams,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
@@ -129,7 +129,7 @@ export function execute<
     : TQuery extends TerminalQuery<infer T>
       ? T
       : never {
-  const { sql, params: sqlParams } = query(queryBuilder, params);
+  const { sql, params: sqlParams } = selectStatement(queryBuilder, params);
 
   // Call onSql callback if provided
   if (options.onSql) {
@@ -268,7 +268,7 @@ export function execute<
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Query results, properly typed based on the query
  */
-export function executeSimple<
+export function executeSelectSimple<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
 >(
@@ -282,7 +282,7 @@ export function executeSimple<
     : TQuery extends TerminalQuery<infer T>
       ? T
       : never {
-  return execute(db, queryBuilder, {}, options);
+  return executeSelect(db, queryBuilder, {}, options);
 }
 
 // Export types

@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute, executeSimple } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle complex nested AND/OR conditions", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -59,7 +59,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle deeply nested conditions", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -104,7 +104,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle multiple NOT conditions", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -137,7 +137,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle BETWEEN-like conditions", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.price >= 50 && p.price <= 300),
         {
@@ -164,7 +164,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle multiple range conditions", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -202,7 +202,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle exclusive ranges", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.stock > 100 && p.stock < 500),
         {
@@ -232,7 +232,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const targetIds = [1, 3, 5, 7];
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) => from(dbContext, "users").where((u) => params.targetIds.includes(u.id)),
         { targetIds },
@@ -266,7 +266,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const excludedCategories = ["Furniture", "Stationery"];
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where(
@@ -301,7 +301,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const emptyList: number[] = [];
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) => from(dbContext, "users").where((u) => params.emptyList.includes(u.id)),
         { emptyList },
@@ -326,7 +326,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // All our test users have department_id, but let's test the syntax
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.department_id !== null && u.is_active === 1),
         {
@@ -353,7 +353,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle complex NULL checks", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -385,7 +385,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle arithmetic comparisons", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.price * 0.9 > 100),
         {
@@ -409,7 +409,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle complex arithmetic", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "order_items").where((oi) => oi.quantity * oi.unit_price > 500),
         {
@@ -435,7 +435,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle division and modulo", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.id % 2 === 0),
         {
@@ -461,7 +461,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should combine 3 WHERE clauses", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -493,7 +493,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should combine 5 WHERE clauses", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -543,7 +543,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
         mustBeActive: 1, // SQLite uses INTEGER (0 or 1) for boolean values
       };
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (p) =>
           from(dbContext, "users").where(
@@ -587,7 +587,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
 
       const params = { threshold: 100 };
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (p) =>
           from(dbContext, "products").where(
@@ -626,7 +626,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle very long condition chains", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -674,7 +674,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
     it("should handle conditions with all comparison operators", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -713,7 +713,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const activeResults = executeSimple(
+      const activeResults = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.is_active === 1),
         {
@@ -723,7 +723,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
         },
       );
 
-      const inactiveResults = executeSimple(
+      const inactiveResults = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.is_active === 0),
         {

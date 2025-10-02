@@ -1,6 +1,6 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 describe("Take SQL Generation", () => {
@@ -11,21 +11,21 @@ describe("Take SQL Generation", () => {
   }
 
   it("should generate LIMIT clause", () => {
-    const result = query(() => from<User>("users").take(10), {});
+    const result = selectStatement(() => from<User>("users").take(10), {});
 
     expect(result.sql).to.equal('SELECT * FROM "users" LIMIT $(__p1)');
     expect(result.params).to.deep.equal({ __p1: 10 });
   });
 
   it("should handle take(1)", () => {
-    const result = query(() => from<User>("users").take(1), {});
+    const result = selectStatement(() => from<User>("users").take(1), {});
 
     expect(result.sql).to.equal('SELECT * FROM "users" LIMIT $(__p1)');
     expect(result.params).to.deep.equal({ __p1: 1 });
   });
 
   it("should combine take with where", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<User>("users")
           .where((u) => u.age > 18)
@@ -38,7 +38,7 @@ describe("Take SQL Generation", () => {
   });
 
   it("should combine take with orderBy", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<User>("users")
           .orderBy((u) => u.name)

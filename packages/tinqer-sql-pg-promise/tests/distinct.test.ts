@@ -1,6 +1,6 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 describe("Distinct SQL Generation", () => {
@@ -12,13 +12,13 @@ describe("Distinct SQL Generation", () => {
   }
 
   it("should generate DISTINCT for all columns", () => {
-    const result = query(() => from<Product>("products").distinct(), {});
+    const result = selectStatement(() => from<Product>("products").distinct(), {});
 
     expect(result.sql).to.equal('SELECT DISTINCT * FROM "products"');
   });
 
   it("should combine DISTINCT with WHERE", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Product>("products")
           .where((p) => p.price > 100)
@@ -31,7 +31,7 @@ describe("Distinct SQL Generation", () => {
   });
 
   it("should combine DISTINCT with SELECT projection", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Product>("products")
           .select((p) => ({ category: p.category }))
@@ -43,7 +43,7 @@ describe("Distinct SQL Generation", () => {
   });
 
   it("should work with DISTINCT, WHERE, and ORDER BY", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Product>("products")
           .where((p) => p.price < 500)

@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join users with departments", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -65,7 +65,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join orders with users", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "orders")
@@ -109,7 +109,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join with WHERE clause", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "orders")
@@ -152,7 +152,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join with aggregates", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "orders")
@@ -199,7 +199,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join order_items with orders and products", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "order_items")
@@ -255,7 +255,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join users with departments and count orders - LIMITATION: pass-through properties in chained JOINs", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -309,7 +309,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should join employees with their managers", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -365,7 +365,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should find employees in the same department as their manager", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -416,7 +416,7 @@ describe("PostgreSQL Integration - JOINs", () => {
     it("should find customers with high-value orders", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
