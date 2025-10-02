@@ -4,17 +4,17 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery } from "../src/parser/parse-query.js";
-import { from } from "../src/linq/from.js";
-import { createQueryHelpers } from "../src/linq/functions.js";
-import type { DatabaseContext } from "../src/linq/database-context.js";
-import type { WhereOperation, SelectOperation } from "../src/query-tree/operations.js";
+import { parseQuery } from "../dist/parser/parse-query.js";
+import { from } from "../dist/linq/from.js";
+import { createQueryHelpers } from "../dist/linq/functions.js";
+import type { DatabaseContext } from "../dist/linq/database-context.js";
+import type { WhereOperation, SelectOperation } from "../dist/query-tree/operations.js";
 import type {
   CaseInsensitiveFunctionExpression,
   LogicalExpression,
   ColumnExpression,
   ParameterExpression,
-} from "../src/expressions/expression.js";
+} from "../dist/expressions/expression.js";
 
 type User = {
   id: number;

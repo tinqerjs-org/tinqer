@@ -4,13 +4,13 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery, from } from "../src/index.js";
+import { parseQuery, from } from "../dist/index.js";
 import {
   asOrderByOperation,
   asThenByOperation,
   getOperation,
 } from "./test-utils/operation-helpers.js";
-import type { ArithmeticExpression } from "../src/expressions/expression.js";
+import type { ArithmeticExpression } from "../dist/expressions/expression.js";
 import { db } from "./test-schema.js";
 
 describe("THEN BY Operations", () => {

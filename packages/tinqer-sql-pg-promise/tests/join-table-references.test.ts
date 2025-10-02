@@ -3,7 +3,7 @@
  */
 
 import { expect } from "chai";
-import { selectStatement } from "../src/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 interface User {

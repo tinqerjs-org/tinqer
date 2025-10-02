@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery, from } from "../src/index.js";
+import { parseQuery, from } from "../dist/index.js";
 import {
   asFromOperation,
   asWhereOperation,
@@ -14,8 +14,8 @@ import {
   asTakeOperation,
   getOperation,
 } from "./test-utils/operation-helpers.js";
-import type { ComparisonExpression, ColumnExpression } from "../src/expressions/expression.js";
-import type { ParamRef } from "../src/query-tree/operations.js";
+import type { ComparisonExpression, ColumnExpression } from "../dist/expressions/expression.js";
+import type { ParamRef } from "../dist/query-tree/operations.js";
 import { db } from "./test-schema.js";
 
 describe("Operation Chaining", () => {

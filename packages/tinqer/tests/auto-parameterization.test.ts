@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery, from } from "../src/index.js";
+import { parseQuery, from } from "../dist/index.js";
 import { getOperation } from "./test-utils/operation-helpers.js";
 import { db } from "./test-schema.js";
 

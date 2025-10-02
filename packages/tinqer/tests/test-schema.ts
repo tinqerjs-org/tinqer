@@ -2,7 +2,7 @@
  * Shared test schema for all test files
  */
 
-import { createContext } from "../src/index.js";
+import { createContext } from "../dist/index.js";
 
 // Common test schema
 export interface TestSchema {
