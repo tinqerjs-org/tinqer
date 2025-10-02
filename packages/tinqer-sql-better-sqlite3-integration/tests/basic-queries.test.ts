@@ -295,6 +295,113 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
         prevAge = results[i]!.age;
       }
     });
+
+    it("should order by boolean column ascending", () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = executeSimple(
+        db,
+        () => from(dbContext, "users").orderBy((u) => u.is_active),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" ORDER BY "is_active" ASC');
+      expect(capturedSql!.params).to.deep.equal({});
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
+
+      // Verify ordering: inactive (0) should come before active (1)
+      let foundActive = false;
+      for (const user of results) {
+        if (user.is_active === 1) {
+          foundActive = true;
+        } else if (foundActive) {
+          // If we found an inactive user after an active one, ordering is wrong
+          expect.fail("Inactive user found after active user - ordering incorrect");
+        }
+      }
+    });
+
+    it("should order by boolean column descending", () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = executeSimple(
+        db,
+        () => from(dbContext, "users").orderByDescending((u) => u.is_active),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" ORDER BY "is_active" DESC');
+      expect(capturedSql!.params).to.deep.equal({});
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
+
+      // Verify ordering: active (1) should come before inactive (0)
+      let foundInactive = false;
+      for (const user of results) {
+        if (user.is_active === 0) {
+          foundInactive = true;
+        } else if (foundInactive) {
+          // If we found an active user after an inactive one, ordering is wrong
+          expect.fail("Active user found after inactive user - ordering incorrect");
+        }
+      }
+    });
+
+    it("should order by boolean then by string", () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .orderBy((u) => u.is_active)
+            .thenBy((u) => u.name),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" ORDER BY "is_active" ASC, "name" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
+
+      // Verify ordering: within each is_active group, names should be sorted
+      let prevActive = results[0]!.is_active;
+      let prevName = results[0]!.name;
+
+      for (let i = 1; i < results.length; i++) {
+        const curr = results[i]!;
+        if (curr.is_active === prevActive) {
+          // Within same is_active value, names should be ascending
+          expect(curr.name >= prevName).to.be.true;
+        } else {
+          // is_active should be ascending (0 before 1)
+          expect(curr.is_active).to.be.greaterThan(prevActive);
+        }
+        prevActive = curr.is_active;
+        prevName = curr.name;
+      }
+    });
   });
 
   describe("LIMIT and OFFSET", () => {

@@ -301,6 +301,100 @@ describe("PostgreSQL Integration - Basic Queries", () => {
         prevAge = results[i]!.age;
       }
     });
+
+    it("should order by boolean column ascending", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").orderBy((u) => u.is_active),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" ORDER BY "is_active" ASC');
+      expect(capturedSql!.params).to.deep.equal({});
+
+      // Verify ordering: inactive (false) should come before active (true)
+      let foundActive = false;
+      for (const user of results) {
+        if (user.is_active === true) {
+          foundActive = true;
+        } else if (foundActive) {
+          expect.fail("Inactive user found after active user - ordering incorrect");
+        }
+      }
+    });
+
+    it("should order by boolean column descending", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () => from(dbContext, "users").orderByDescending((u) => u.is_active),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" ORDER BY "is_active" DESC');
+      expect(capturedSql!.params).to.deep.equal({});
+
+      // Verify ordering: active (true) should come before inactive (false)
+      let foundInactive = false;
+      for (const user of results) {
+        if (user.is_active === false) {
+          foundInactive = true;
+        } else if (foundInactive) {
+          expect.fail("Active user found after inactive user - ordering incorrect");
+        }
+      }
+    });
+
+    it("should order by boolean then by name", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .orderByDescending((u) => u.is_active)
+            .thenBy((u) => u.name),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" ORDER BY "is_active" DESC, "name" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
+
+      // Verify compound ordering
+      let prevActive = true;
+      let prevName = "";
+
+      for (const user of results) {
+        if (user.is_active === prevActive) {
+          // Within same active status, names should be sorted
+          expect(user.name >= prevName).to.be.true;
+        } else if (user.is_active === true && prevActive === false) {
+          expect.fail("Active user found after inactive - primary ordering incorrect");
+        }
+        prevActive = user.is_active;
+        prevName = user.name;
+      }
+    });
   });
 
   describe("LIMIT and OFFSET", () => {

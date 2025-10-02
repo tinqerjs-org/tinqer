@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { executeSimple } from "@webpods/tinqer-sql-better-sqlite3";
+import { execute, executeSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -482,6 +482,183 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(10); // All products have descriptions
+    });
+  });
+
+  describe("String pattern escaping", () => {
+    it("should handle percent sign in search term", () => {
+      // Insert test data with percent signs
+      db.exec(`
+        CREATE TEMP TABLE test_special_chars (
+          id INTEGER PRIMARY KEY,
+          text TEXT
+        );
+        INSERT INTO test_special_chars (id, text) VALUES
+          (1, '100% cotton'),
+          (2, '50% off sale'),
+          (3, 'Regular product'),
+          (4, '%percent% everywhere');
+      `);
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = execute(
+        db,
+        (params: { search: string }) =>
+          from<{ id: number; text: string }>("test_special_chars").where((t) =>
+            t.text.includes(params.search),
+          ),
+        { search: "%" },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        "SELECT * FROM \"test_special_chars\" WHERE \"text\" LIKE '%' || @search || '%'",
+      );
+      expect(capturedSql!.params).to.deep.equal({ search: "%" });
+
+      // Note: SQLite LIKE treats % as wildcard even in parameters
+      // So searching for "%" will match ALL rows (acts like %%%)
+      expect(results).to.be.an("array");
+      expect(results).to.have.length(4); // All rows match because % is wildcard
+      expect(results.map((r: { id: number }) => r.id).sort()).to.deep.equal([1, 2, 3, 4]);
+
+      db.exec("DROP TABLE test_special_chars");
+    });
+
+    it("should handle underscore in search term", () => {
+      // Insert test data with underscores
+      db.exec(`
+        CREATE TEMP TABLE test_underscores (
+          id INTEGER PRIMARY KEY,
+          name TEXT
+        );
+        INSERT INTO test_underscores (id, name) VALUES
+          (1, 'test_file'),
+          (2, 'test-file'),
+          (3, 'testfile'),
+          (4, 'my_test_file');
+      `);
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = execute(
+        db,
+        (params: { search: string }) =>
+          from<{ id: number; name: string }>("test_underscores").where((n) =>
+            n.name.includes(params.search),
+          ),
+        { search: "_" },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        "SELECT * FROM \"test_underscores\" WHERE \"name\" LIKE '%' || @search || '%'",
+      );
+
+      // Note: SQLite LIKE treats _ as wildcard even in parameters
+      // So searching for "_" will match ALL rows (acts like %_%)
+      expect(results).to.be.an("array");
+      expect(results).to.have.length(4); // All rows match because _ is wildcard for any single char
+      expect(results.map((r: { id: number }) => r.id).sort()).to.deep.equal([1, 2, 3, 4]);
+
+      db.exec("DROP TABLE test_underscores");
+    });
+
+    it("should handle backslash in search term", () => {
+      // Insert test data with backslashes
+      db.exec(`
+        CREATE TEMP TABLE test_backslashes (
+          id INTEGER PRIMARY KEY,
+          path TEXT
+        );
+        INSERT INTO test_backslashes (id, path) VALUES
+          (1, 'C:\\Users\\Admin'),
+          (2, 'C:/Users/Admin'),
+          (3, '/home/user'),
+          (4, 'D:\\Program Files\\App');
+      `);
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = execute(
+        db,
+        (params: { search: string }) =>
+          from<{ id: number; path: string }>("test_backslashes").where((p) =>
+            p.path.includes(params.search),
+          ),
+        { search: "\\" },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        "SELECT * FROM \"test_backslashes\" WHERE \"path\" LIKE '%' || @search || '%'",
+      );
+      expect(capturedSql!.params).to.deep.equal({ search: "\\" });
+
+      // Should find Windows paths with backslashes
+      expect(results).to.be.an("array");
+      expect(results).to.have.length(2); // Rows 1 and 4
+      expect(results.map((r) => r.id).sort()).to.deep.equal([1, 4]);
+
+      db.exec("DROP TABLE test_backslashes");
+    });
+
+    it("should handle multiple special characters together", () => {
+      // Insert test data with mixed special characters
+      db.exec(`
+        CREATE TEMP TABLE test_mixed_special (
+          id INTEGER PRIMARY KEY,
+          content TEXT
+        );
+        INSERT INTO test_mixed_special (id, content) VALUES
+          (1, 'Price: $10 (50% off)'),
+          (2, 'File: data_2024_%backup.sql'),
+          (3, 'Path: C:\\temp\\%data%\\file_01.txt'),
+          (4, 'Normal text here');
+      `);
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      // Search for pattern containing both % and _
+      const results = execute(
+        db,
+        (params: { search: string }) =>
+          from<{ id: number; content: string }>("test_mixed_special").where((c) =>
+            c.content.includes(params.search),
+          ),
+        { search: "%_" },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.params).to.deep.equal({ search: "%_" });
+
+      // Should find rows containing literal "%_" pattern
+      expect(results).to.be.an("array");
+      const matchingIds = results.map((r) => r.id);
+      expect(matchingIds).to.include(2); // Contains "_%"
+
+      db.exec("DROP TABLE test_mixed_special");
     });
   });
 });
