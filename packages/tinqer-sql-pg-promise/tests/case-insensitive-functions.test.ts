@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { selectStatement } from "../src/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from, createQueryHelpers } from "@webpods/tinqer";
 
 type User = {

@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery, from } from "../src/index.js";
+import { parseQuery, from } from "../dist/index.js";
 import { db } from "./test-schema.js";
 
 describe("Auto-Parameter Field Context", () => {

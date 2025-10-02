@@ -70,11 +70,11 @@ All examples assume TypeScript with `strict` enabled and ECMAScript modules.
 
 ## 2. Adapter Packages
 
-| Package                              | Purpose                                                                     | Notes                                                                  |
-| ------------------------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `@webpods/tinqer`                    | Core expression tree, visitors, and TypeScript types.                       | Not meant to be installed directly; the adapters re-export everything. |
-| `@webpods/tinqer-sql-pg-promise`     | SQL generator for PostgreSQL with pg-promise parameter markers (`$(name)`). | Provides `selectStatement`, `executeSelect`, `executeSelectSimple`, and `toSql`.             |
-| `@webpods/tinqer-sql-better-sqlite3` | SQL generator for SQLite using better-sqlite3 (`@name`).                    | Handles boolean conversion and date formatting before execution.       |
+| Package                              | Purpose                                                                     | Notes                                                                            |
+| ------------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `@webpods/tinqer`                    | Core expression tree, visitors, and TypeScript types.                       | Not meant to be installed directly; the adapters re-export everything.           |
+| `@webpods/tinqer-sql-pg-promise`     | SQL generator for PostgreSQL with pg-promise parameter markers (`$(name)`). | Provides `selectStatement`, `executeSelect`, `executeSelectSimple`, and `toSql`. |
+| `@webpods/tinqer-sql-better-sqlite3` | SQL generator for SQLite using better-sqlite3 (`@name`).                    | Handles boolean conversion and date formatting before execution.                 |
 
 Both adapters expose identical TypeScript APIs so query builders can be shared between them.
 
@@ -993,7 +993,10 @@ SELECT * FROM "users" WHERE "departmentId" = @__p1 AND "name" LIKE @__p2 || '%'
 ### 6.3 Array Membership (`Array.includes`)
 
 ```typescript
-const membership = selectStatement(() => from<User>("users").where((u) => [1, 2, 3].includes(u.id)), {});
+const membership = selectStatement(
+  () => from<User>("users").where((u) => [1, 2, 3].includes(u.id)),
+  {},
+);
 ```
 
 ```sql
@@ -1214,14 +1217,14 @@ const upcoming = selectStatement(
 
 ## 14. Troubleshooting
 
-| Symptom                                          | Cause                                                                                                    | Resolution                                                                           |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `Failed to parse query`                          | Lambda uses an unsupported construct (captured variable, named function, helper call, template literal). | Rewrite the lambda using the supported subset; pass values via the parameter object. |
-| `Unknown query method`                           | Fluent method (`union`, `selectMany`, `longCount`, etc.) not implemented.                                | Remove the call or implement support before using it.                                |
-| Query returns no rows for `last*`                | No ordering specified and result set is empty.                                                           | Provide an explicit `orderBy` or switch to `lastOrDefault`.                          |
-| SQLite booleans stored as `true`/`false` strings | Manual execution without adapter conversion.                                                             | Use `executeSelect`/`executeSelectSimple`, which convert booleans to integers.                   |
-| Auto-parameter names unfamiliar                  | Literals are auto-parameterised (`__pN`).                                                                | Use the `params` object returned by `selectStatement`; do not assume positional order.         |
-| Grouped projection filter acts like HAVING       | `where` after `groupBy` translates to a standard `WHERE`.                                                | Filter in application code or extend the generator for HAVING support.               |
+| Symptom                                          | Cause                                                                                                    | Resolution                                                                             |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `Failed to parse query`                          | Lambda uses an unsupported construct (captured variable, named function, helper call, template literal). | Rewrite the lambda using the supported subset; pass values via the parameter object.   |
+| `Unknown query method`                           | Fluent method (`union`, `selectMany`, `longCount`, etc.) not implemented.                                | Remove the call or implement support before using it.                                  |
+| Query returns no rows for `last*`                | No ordering specified and result set is empty.                                                           | Provide an explicit `orderBy` or switch to `lastOrDefault`.                            |
+| SQLite booleans stored as `true`/`false` strings | Manual execution without adapter conversion.                                                             | Use `executeSelect`/`executeSelectSimple`, which convert booleans to integers.         |
+| Auto-parameter names unfamiliar                  | Literals are auto-parameterised (`__pN`).                                                                | Use the `params` object returned by `selectStatement`; do not assume positional order. |
+| Grouped projection filter acts like HAVING       | `where` after `groupBy` translates to a standard `WHERE`.                                                | Filter in application code or extend the generator for HAVING support.                 |
 
 ---
 
