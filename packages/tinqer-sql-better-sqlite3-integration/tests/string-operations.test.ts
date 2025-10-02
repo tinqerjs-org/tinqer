@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute, executeSimple } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should find users with names starting with 'J'", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.startsWith("J")),
         {
@@ -43,7 +43,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should find emails starting with specific prefix", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.email.startsWith("alice")),
         {
@@ -65,7 +65,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should combine startsWith with other conditions", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.startsWith("J") && u.is_active === 1),
         {
@@ -94,7 +94,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should find emails ending with '@example.com'", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.email.endsWith("@example.com")),
         {
@@ -118,7 +118,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should find products with names ending with specific suffix", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.name.endsWith("top")),
         {
@@ -144,7 +144,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should find users with 'oh' in their name", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("oh")),
         {
@@ -170,7 +170,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should find products with 'office' in description", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -197,7 +197,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should combine multiple string operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -232,7 +232,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should find users with specific email patterns", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -261,7 +261,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should search products by multiple string fields", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -289,7 +289,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should combine string operations with joins", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -328,7 +328,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should handle case-sensitive string operations", () => {
       // Note: PostgreSQL LIKE is case-sensitive by default
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
-      const upperResults = executeSimple(
+      const upperResults = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("J")),
         {
@@ -345,7 +345,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       expect(capturedSql1!.params).to.deep.equal({ __p1: "J" });
 
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
-      const lowerResults = executeSimple(
+      const lowerResults = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("o")),
         {
@@ -368,7 +368,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       // Case sensitivity check - capital D vs lowercase d
       let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
-      const capitalD = executeSimple(
+      const capitalD = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("D")),
         {
@@ -385,7 +385,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       expect(capturedSql3!.params).to.deep.equal({ __p1: "D" });
 
       let capturedSql4: { sql: string; params: Record<string, unknown> } | undefined;
-      const lowercaseD = executeSimple(
+      const lowercaseD = executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("d")),
         {
@@ -412,7 +412,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should count users by email domain", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = executeSimple(
+      const count = executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -439,7 +439,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should handle nullable description fields", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -466,7 +466,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
     it("should check for non-null strings", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = executeSimple(
+      const results = executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.description !== null),
         {
@@ -502,7 +502,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params: { search: string }) =>
           from<{ id: number; text: string }>("test_special_chars").where((t) =>
@@ -547,7 +547,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params: { search: string }) =>
           from<{ id: number; name: string }>("test_underscores").where((n) =>
@@ -591,7 +591,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params: { search: string }) =>
           from<{ id: number; path: string }>("test_backslashes").where((p) =>
@@ -636,7 +636,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Search for pattern containing both % and _
-      const results = execute(
+      const results = executeSelect(
         db,
         (params: { search: string }) =>
           from<{ id: number; content: string }>("test_mixed_special").where((c) =>

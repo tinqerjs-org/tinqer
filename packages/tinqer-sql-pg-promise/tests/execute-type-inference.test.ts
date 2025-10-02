@@ -2,7 +2,7 @@
  * Tests for type inference in execute function
  */
 
-import { execute } from "../dist/index.js";
+import { executeSelect } from "../dist/index.js";
 import { db, from } from "./test-schema.js";
 
 // Mock database for type testing
@@ -35,10 +35,10 @@ async function typeTests() {
     username: string;
     active: boolean;
     deptId: number;
-  }[] = await execute(mockDb, () => from(db, "users"), {});
+  }[] = await executeSelect(mockDb, () => from(db, "users"), {});
 
   // With select, returns projected array
-  const userNames: { id: number; name: string }[] = await execute(
+  const userNames: { id: number; name: string }[] = await executeSelect(
     mockDb,
     () => from(db, "users").select((u) => ({ id: u.id, name: u.name })),
     {},
@@ -62,7 +62,7 @@ async function typeTests() {
     username: string;
     active: boolean;
     deptId: number;
-  } = await execute(mockDb, () => from(db, "users").first(), {});
+  } = await executeSelect(mockDb, () => from(db, "users").first(), {});
 
   // firstOrDefault() returns item or undefined
   const maybeUser:
@@ -84,16 +84,20 @@ async function typeTests() {
         active: boolean;
         deptId: number;
       }
-    | undefined = await execute(mockDb, () => from(db, "users").firstOrDefault(), {});
+    | undefined = await executeSelect(mockDb, () => from(db, "users").firstOrDefault(), {});
 
   // count() returns number
-  const count: number = await execute(mockDb, () => from(db, "users").count(), {});
+  const count: number = await executeSelect(mockDb, () => from(db, "users").count(), {});
 
   // any() returns boolean
-  const hasUsers: boolean = await execute(mockDb, () => from(db, "users").any(), {});
+  const hasUsers: boolean = await executeSelect(mockDb, () => from(db, "users").any(), {});
 
   // sum() returns number
-  const totalAge: number = await execute(mockDb, () => from(db, "users").sum((u) => u.age), {});
+  const totalAge: number = await executeSelect(
+    mockDb,
+    () => from(db, "users").sum((u) => u.age),
+    {},
+  );
 
   // Use the variables to avoid unused variable warnings
   console.log(users, userNames, firstUser, maybeUser, count, hasUsers, totalAge);

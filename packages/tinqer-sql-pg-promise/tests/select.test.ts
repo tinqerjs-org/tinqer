@@ -4,18 +4,18 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { db, from } from "./test-schema.js";
 
 describe("SELECT SQL Generation", () => {
   it("should generate SELECT with single column", () => {
-    const result = query(() => from(db, "users").select((x) => x.name), {});
+    const result = selectStatement(() => from(db, "users").select((x) => x.name), {});
 
     expect(result.sql).to.equal('SELECT "name" FROM "users"');
   });
 
   it("should generate SELECT with object projection", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from(db, "users").select((x) => ({
           userId: x.id,
@@ -30,7 +30,7 @@ describe("SELECT SQL Generation", () => {
   // Test removed: Computed values with expressions no longer supported in SELECT projections
 
   it("should generate SELECT after WHERE", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from(db, "users")
           .where((x) => x.age >= 18)

@@ -533,7 +533,7 @@ function generateSql(operation: QueryOperation, params: unknown): string;
 ### User Code
 
 ```typescript
-const result = query(
+const result = selectStatement(
   (p: { minAge: number; dept: string }) =>
     from<User>("users")
       .where((x) => x.age >= p.minAge && x.department === p.dept)

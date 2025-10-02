@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should select all users", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(db, () => from(dbContext, "users"), {
+      const results = await executeSelectSimple(db, () => from(dbContext, "users"), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -39,7 +39,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should select specific columns", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").select((u) => ({
@@ -67,7 +67,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should rename columns in projection", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").select((u) => ({
@@ -98,7 +98,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should filter users by age", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 30),
         {
@@ -126,7 +126,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should filter with multiple conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -156,7 +156,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should filter with OR conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -185,7 +185,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should filter with parameters", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) => from(dbContext, "users").where((u) => u.age !== null && u.age >= params.minAge),
         { minAge: 35 },
@@ -214,7 +214,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should order users by name", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").orderBy((u) => u.name),
         {
@@ -238,7 +238,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should order users by age descending", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -267,7 +267,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should order with multiple columns", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -305,7 +305,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should order by boolean column ascending", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").orderBy((u) => u.is_active),
         {
@@ -333,7 +333,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should order by boolean column descending", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").orderByDescending((u) => u.is_active),
         {
@@ -361,7 +361,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should order by boolean then by name", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -401,7 +401,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should limit results", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(db, () => from(dbContext, "users").take(5), {
+      const results = await executeSelectSimple(db, () => from(dbContext, "users").take(5), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -415,13 +415,13 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should skip results", async () => {
-      const allResults = await executeSimple(db, () =>
+      const allResults = await executeSelectSimple(db, () =>
         from(dbContext, "users").orderBy((u) => u.id),
       );
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const skippedResults = await executeSimple(
+      const skippedResults = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -442,7 +442,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should paginate results", async () => {
-      const page1 = await executeSimple(db, () =>
+      const page1 = await executeSelectSimple(db, () =>
         from(dbContext, "users")
           .orderBy((u) => u.id)
           .take(3),
@@ -450,7 +450,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const page2 = await executeSimple(
+      const page2 = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -480,7 +480,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should return distinct department IDs", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")

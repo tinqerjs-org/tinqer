@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 
 describe("Edge Cases and Error Handling", () => {
   interface TestTable {
@@ -21,7 +21,7 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Empty queries", () => {
     it("should handle simple FROM without any operations", () => {
-      const result = query(() => from<TestTable>("test_table"), {});
+      const result = selectStatement(() => from<TestTable>("test_table"), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test_table"');
       expect(result.params).to.deep.equal({});
@@ -32,19 +32,19 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Special characters and identifiers", () => {
     it("should handle table names with underscores", () => {
-      const result = query(() => from<TestTable>("user_accounts_table"), {});
+      const result = selectStatement(() => from<TestTable>("user_accounts_table"), {});
 
       expect(result.sql).to.equal('SELECT * FROM "user_accounts_table"');
     });
 
     it("should handle table names with numbers", () => {
-      const result = query(() => from<TestTable>("table123"), {});
+      const result = selectStatement(() => from<TestTable>("table123"), {});
 
       expect(result.sql).to.equal('SELECT * FROM "table123"');
     });
 
     it("should handle column names with underscores", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<TestTable>("test").where((t) => t.column_with_underscore == "test"),
         {},
       );
@@ -54,7 +54,7 @@ describe("Edge Cases and Error Handling", () => {
     });
 
     it("should handle uppercase column names", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<TestTable>("test").where((t) => t.UPPERCASE_COLUMN == "TEST"),
         {},
       );
@@ -66,7 +66,7 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Extreme values", () => {
     it("should handle very large integers", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<TestTable>("test").where((t) => t.id == Number.MAX_SAFE_INTEGER),
         {},
       );
@@ -78,7 +78,7 @@ describe("Edge Cases and Error Handling", () => {
     // Removed: || operator for defaults
 
     it("should handle zero values", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.value == 0), {});
+      const result = selectStatement(() => from<TestTable>("test").where((t) => t.value == 0), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "value" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 0 });
@@ -89,21 +89,24 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("String edge cases", () => {
     it("should handle empty strings", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.name == ""), {});
+      const result = selectStatement(() => from<TestTable>("test").where((t) => t.name == ""), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "name" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: "" });
     });
 
     it("should handle strings with quotes", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.name == "O'Brien"), {});
+      const result = selectStatement(
+        () => from<TestTable>("test").where((t) => t.name == "O'Brien"),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "name" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: "O'Brien" });
     });
 
     it("should handle strings with double quotes", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<TestTable>("test").where((t) => t.name == 'He said "Hello"'),
         {},
       );
@@ -113,7 +116,7 @@ describe("Edge Cases and Error Handling", () => {
     });
 
     it("should handle strings with special characters", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<TestTable>("test").where((t) => t.name == "test@#$%^&*()"),
         {},
       );
@@ -123,7 +126,7 @@ describe("Edge Cases and Error Handling", () => {
     });
 
     it("should handle strings with newlines and tabs", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<TestTable>("test").where((t) => t.name == "line1\nline2\ttab"),
         {},
       );
@@ -133,7 +136,7 @@ describe("Edge Cases and Error Handling", () => {
     });
 
     it("should handle Unicode strings", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<TestTable>("test").where((t) => t.name == "Hello 世界 🌍"),
         {},
       );
@@ -145,14 +148,20 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("NULL handling edge cases", () => {
     it("should handle explicit null comparisons", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.value == null), {});
+      const result = selectStatement(
+        () => from<TestTable>("test").where((t) => t.value == null),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "value" IS NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should handle null inequality", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.value != null), {});
+      const result = selectStatement(
+        () => from<TestTable>("test").where((t) => t.value != null),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "value" IS NOT NULL');
       expect(result.params).to.deep.equal({});
@@ -163,28 +172,34 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Boolean edge cases", () => {
     it("should handle true literal", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.flag == true), {});
+      const result = selectStatement(
+        () => from<TestTable>("test").where((t) => t.flag == true),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "flag" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: true });
     });
 
     it("should handle false literal", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.flag == false), {});
+      const result = selectStatement(
+        () => from<TestTable>("test").where((t) => t.flag == false),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "flag" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: false });
     });
 
     it("should handle boolean field directly", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.flag), {});
+      const result = selectStatement(() => from<TestTable>("test").where((t) => t.flag), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "flag"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should handle negated boolean", () => {
-      const result = query(() => from<TestTable>("test").where((t) => !t.flag), {});
+      const result = selectStatement(() => from<TestTable>("test").where((t) => !t.flag), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE NOT "flag"');
       expect(result.params).to.deep.equal({});
@@ -193,7 +208,7 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Complex nested structures", () => {
     it("should handle deeply nested logical conditions", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<TestTable>("test").where(
             (t) =>
@@ -213,7 +228,7 @@ describe("Edge Cases and Error Handling", () => {
     });
 
     it("should handle many chained operations", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<TestTable>("test")
             .where((t) => t.id > 0)
@@ -239,28 +254,28 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Pagination edge cases", () => {
     it("should handle SKIP 0", () => {
-      const result = query(() => from<TestTable>("test").skip(0), {});
+      const result = selectStatement(() => from<TestTable>("test").skip(0), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" OFFSET $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 0 });
     });
 
     it("should handle TAKE 0", () => {
-      const result = query(() => from<TestTable>("test").take(0), {});
+      const result = selectStatement(() => from<TestTable>("test").take(0), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" LIMIT $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 0 });
     });
 
     it("should handle very large SKIP", () => {
-      const result = query(() => from<TestTable>("test").skip(1000000), {});
+      const result = selectStatement(() => from<TestTable>("test").skip(1000000), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" OFFSET $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 1000000 });
     });
 
     it("should handle very large TAKE", () => {
-      const result = query(() => from<TestTable>("test").take(999999), {});
+      const result = selectStatement(() => from<TestTable>("test").take(999999), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" LIMIT $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 999999 });
@@ -269,7 +284,10 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Parameter edge cases", () => {
     it("should handle empty parameter object", () => {
-      const result = query((_params: Record<string, never>) => from<TestTable>("test"), {});
+      const result = selectStatement(
+        (_params: Record<string, never>) => from<TestTable>("test"),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test"');
       expect(result.params).to.deep.equal({});
@@ -278,7 +296,7 @@ describe("Edge Cases and Error Handling", () => {
     // Removed: || operator for defaults
 
     it("should handle null parameter values", () => {
-      const result = query(
+      const result = selectStatement(
         (params: { name: string | null }) =>
           from<TestTable>("test").where((t) => t.name == params.name),
         { name: null },
@@ -303,7 +321,7 @@ describe("Edge Cases and Error Handling", () => {
     }
 
     it("should handle reserved keywords as column names", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<ReservedTable>("reserved").where((t) => t.select == "value" && t.from == "test"),
         {},
       );
@@ -315,7 +333,7 @@ describe("Edge Cases and Error Handling", () => {
     });
 
     it("should handle reserved keywords in SELECT", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<ReservedTable>("reserved").select((t) => ({
             selectCol: t.select,
@@ -333,14 +351,20 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Whitespace handling", () => {
     it("should handle strings with only whitespace", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.name == "   "), {});
+      const result = selectStatement(
+        () => from<TestTable>("test").where((t) => t.name == "   "),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "name" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: "   " });
     });
 
     it("should handle strings with leading/trailing whitespace", () => {
-      const result = query(() => from<TestTable>("test").where((t) => t.name == "  test  "), {});
+      const result = selectStatement(
+        () => from<TestTable>("test").where((t) => t.name == "  test  "),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "name" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: "  test  " });

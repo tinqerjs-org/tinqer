@@ -4,12 +4,12 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { db, from } from "./test-schema.js";
 
 describe("Complex Query Chaining", () => {
   it("should generate complex query with WHERE, SELECT, ORDER BY, TAKE", () => {
-    const result = query(
+    const result = selectStatement(
       (p: { minAge: number }) =>
         from(db, "users")
           .where((x) => x.age >= p.minAge && x.isActive)
@@ -26,7 +26,7 @@ describe("Complex Query Chaining", () => {
   });
 
   it("should generate query with SKIP and TAKE for pagination", () => {
-    const result = query(
+    const result = selectStatement(
       (p: { page: number; pageSize: number }) =>
         from(db, "products")
           .orderBy((x) => x.name)
@@ -42,7 +42,7 @@ describe("Complex Query Chaining", () => {
   });
 
   it("should generate query with multiple WHERE clauses combined with AND", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from(db, "users")
           .where((x) => x.age >= 18)
@@ -55,7 +55,7 @@ describe("Complex Query Chaining", () => {
   });
 
   it("should generate query with DISTINCT", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from(db, "products")
           .select((x) => x.category)
@@ -67,7 +67,7 @@ describe("Complex Query Chaining", () => {
   });
 
   it("should generate query with GROUP BY and COUNT aggregate", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from(db, "employees")
           .groupBy((x) => x.department)

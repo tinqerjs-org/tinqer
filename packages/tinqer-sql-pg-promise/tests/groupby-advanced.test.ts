@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 
 describe("Advanced GROUP BY SQL Generation", () => {
   interface Sale {
@@ -35,7 +35,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
   describe("GROUP BY with all aggregate functions", () => {
     it("should use all aggregate functions together", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => s.category)
@@ -56,7 +56,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     });
 
     it("should handle different columns for different aggregates", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => s.region)
@@ -81,7 +81,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
   describe("GROUP BY with complex WHERE conditions", () => {
     it("should filter before grouping", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .where((s) => s.amount > 1000 && s.discount < 20)
@@ -101,7 +101,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     });
 
     it("should handle multiple WHERE clauses before GROUP BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Employee>("employees")
             .where((e) => e.salary > 50000)
@@ -123,7 +123,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
   describe("GROUP BY with ORDER BY", () => {
     it("should order by aggregated values", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => s.salesperson)
@@ -141,7 +141,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     });
 
     it("should order by group key", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => s.category)
@@ -159,7 +159,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     });
 
     it("should handle ORDER BY DESC with GROUP BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => s.region)
@@ -179,7 +179,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
   describe("GROUP BY with TAKE and SKIP", () => {
     it("should limit grouped results", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => s.category)
@@ -199,7 +199,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     });
 
     it("should paginate grouped results", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Employee>("employees")
             .groupBy((e) => e.department)
@@ -240,7 +240,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
         country: string;
       }
 
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Order>("orders")
             .join(
@@ -267,7 +267,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
   describe("GROUP BY with parameters", () => {
     it("should handle parameters in WHERE before GROUP BY", () => {
-      const result = query(
+      const result = selectStatement(
         (params: { minAmount: number; region: string }) =>
           from<Sale>("sales")
             .where((s) => s.amount >= params.minAmount && s.region == params.region)
@@ -286,7 +286,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     });
 
     it("should mix parameters with auto-params in GROUP BY queries", () => {
-      const result = query(
+      const result = selectStatement(
         (params: { targetProfit: number }) =>
           from<Sale>("sales")
             .where((s) => s.profit > params.targetProfit && s.quantity > 10)
@@ -314,7 +314,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
   describe("Complex GROUP BY scenarios", () => {
     it("should handle GROUP BY with all query operations", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .where((s) => s.amount > 100)
@@ -344,7 +344,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     });
 
     it("should handle nested GROUP BY logic", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .where((s) => s.quantity > 0 && s.discount < 50)
@@ -376,7 +376,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
   describe("GROUP BY edge cases", () => {
     it("should handle GROUP BY with no aggregates", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => s.category)
@@ -390,7 +390,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     });
 
     it("should handle GROUP BY with only COUNT", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => s.region)
@@ -404,7 +404,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     });
 
     it("should handle GROUP BY with DISTINCT", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .distinct()

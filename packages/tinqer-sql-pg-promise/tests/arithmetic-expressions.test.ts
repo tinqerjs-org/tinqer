@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 
 describe("Arithmetic Expression SQL Generation", () => {
   interface Product {
@@ -43,14 +43,17 @@ describe("Arithmetic Expression SQL Generation", () => {
 
   describe("Arithmetic in WHERE clauses", () => {
     it("should handle arithmetic comparisons in WHERE", () => {
-      const result = query(() => from<Product>("products").where((p) => p.price - p.cost > 50), {});
+      const result = selectStatement(
+        () => from<Product>("products").where((p) => p.price - p.cost > 50),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "products" WHERE ("price" - "cost") > $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 50 });
     });
 
     it("should handle complex arithmetic in WHERE", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<Financial>("financial").where((f) => f.revenue / f.employees > 100000),
         {},
       );
@@ -62,7 +65,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     });
 
     it("should handle multiple arithmetic conditions", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Product>("products").where(
             (p) => p.price * 0.9 > 100 && p.cost * p.quantity < 10000,
@@ -85,7 +88,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     // Removed: uses JavaScript || operator for defaults - not in .NET LINQ
 
     it("should handle arithmetic with nullable checks", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Product>("products").where((p) => p.discount != null && p.price - p.discount > 50),
         {},
@@ -103,7 +106,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     // Test removed: Arithmetic with parameters no longer supported in SELECT projections
 
     it("should mix parameters with constants in arithmetic", () => {
-      const result = query(
+      const result = selectStatement(
         (params: { baseDiscount: number }) =>
           from<Product>("products").where((p) => p.price * (1 - params.baseDiscount - 0.05) > 100),
         { baseDiscount: 0.1 },
@@ -129,7 +132,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     // Removed: ternary operator test - will add back when ConditionalExpression is supported
 
     it("should handle very large numbers", () => {
-      const result = query(
+      const result = selectStatement(
         () => from<Financial>("financial").where((f) => f.revenue > 1000000000),
         {},
       );

@@ -1,6 +1,6 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 describe("Skip SQL Generation", () => {
@@ -11,21 +11,21 @@ describe("Skip SQL Generation", () => {
   }
 
   it("should generate OFFSET clause", () => {
-    const result = query(() => from<User>("users").skip(10), {});
+    const result = selectStatement(() => from<User>("users").skip(10), {});
 
     expect(result.sql).to.equal('SELECT * FROM "users" LIMIT -1 OFFSET @__p1');
     expect(result.params).to.deep.equal({ __p1: 10 });
   });
 
   it("should combine skip with take for pagination", () => {
-    const result = query(() => from<User>("users").skip(20).take(10), {});
+    const result = selectStatement(() => from<User>("users").skip(20).take(10), {});
 
     expect(result.sql).to.equal('SELECT * FROM "users" LIMIT @__p2 OFFSET @__p1');
     expect(result.params).to.deep.equal({ __p2: 10, __p1: 20 });
   });
 
   it("should combine skip with where and orderBy", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<User>("users")
           .where((u) => u.age >= 21)
@@ -46,7 +46,7 @@ describe("Skip SQL Generation", () => {
 
     // Local variables should NOT work - parser should return null and throw error
     expect(() => {
-      query(
+      selectStatement(
         () =>
           from<User>("users")
             .orderBy((u) => u.id)

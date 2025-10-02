@@ -4,7 +4,7 @@
  */
 
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 interface User {
@@ -17,13 +17,13 @@ interface User {
 describe("Basic Terminal Operations", () => {
   describe("COUNT operations", () => {
     it("should generate SQL for count()", () => {
-      const result = query(() => from<User>("users").count(), {});
+      const result = selectStatement(() => from<User>("users").count(), {});
       expect(result.sql).to.equal('SELECT COUNT(*) FROM "users"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for count() with WHERE", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .where((u) => u.isActive)
@@ -37,14 +37,14 @@ describe("Basic Terminal Operations", () => {
 
   describe("TOARRAY operations", () => {
     it("should generate SQL for toArray()", () => {
-      const result = query(() => from<User>("users").toArray(), {});
+      const result = selectStatement(() => from<User>("users").toArray(), {});
       // toArray just executes the query without modifications
       expect(result.sql).to.equal('SELECT * FROM "users"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for toArray() with WHERE", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<User>("users")
             .where((u) => u.age > 18)
@@ -56,7 +56,7 @@ describe("Basic Terminal Operations", () => {
     });
 
     it("should generate SQL for toList()", () => {
-      const result = query(() => from<User>("users").toList(), {});
+      const result = selectStatement(() => from<User>("users").toList(), {});
       expect(result.sql).to.equal('SELECT * FROM "users"');
       expect(result.params).to.deep.equal({});
     });

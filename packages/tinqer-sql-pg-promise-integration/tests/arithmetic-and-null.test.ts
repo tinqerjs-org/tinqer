@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
     it("should handle addition in SELECT", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").select((p) => ({
@@ -52,7 +52,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
     it("should handle subtraction and multiplication", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "order_items").select((oi) => ({
@@ -86,7 +86,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
     it("should handle division", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -121,7 +121,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const evenUsers = await executeSimple(
+      const evenUsers = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -134,7 +134,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
         },
       );
 
-      const oddUsers = await executeSimple(
+      const oddUsers = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -168,7 +168,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
     it("should handle complex arithmetic expressions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -202,7 +202,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
     it("should handle arithmetic in GROUP BY aggregates", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "order_items")
@@ -248,7 +248,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
         ON CONFLICT (email) DO UPDATE SET age = NULL
       `);
 
-      const nullAgeUsers = await executeSimple(
+      const nullAgeUsers = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.age === null),
         {
@@ -258,7 +258,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
         },
       );
 
-      const nonNullAgeUsers = await executeSimple(
+      const nonNullAgeUsers = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.age !== null),
         {
@@ -296,7 +296,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
       // Test NULL handling in arithmetic with nullable columns
       // Since stock is NOT NULL, we'll test with nullable category and arithmetic
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").select((p) => ({
@@ -346,7 +346,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
         ON CONFLICT (id) DO UPDATE SET budget = NULL
       `);
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "departments")
@@ -388,7 +388,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
         ON CONFLICT (id) DO UPDATE SET description = NULL
       `);
 
-      const withDescription = await executeSimple(
+      const withDescription = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -401,7 +401,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
         },
       );
 
-      const withoutDescription = await executeSimple(
+      const withoutDescription = await executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.description === null),
         {
@@ -446,7 +446,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
         ON CONFLICT (id) DO UPDATE SET department_id = NULL
       `);
 
-      const joinResults = await executeSimple(
+      const joinResults = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -496,14 +496,14 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       // COUNT should count rows with NULL
-      const totalCount = await executeSimple(db, () => from(dbContext, "users").count(), {
+      const totalCount = await executeSelectSimple(db, () => from(dbContext, "users").count(), {
         onSql: (result) => {
           capturedSql1 = result;
         },
       });
 
       // AVG, SUM, MIN, MAX ignore NULL values
-      const avgAge = await executeSimple(
+      const avgAge = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -528,7 +528,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       expect(avgAge).to.be.a("number");
 
       // Average should only consider non-NULL values
-      const nonNullAges = await executeSimple(
+      const nonNullAges = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -560,7 +560,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const activeUsers = await executeSimple(
+      const activeUsers = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.is_active),
         {
@@ -570,7 +570,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
         },
       );
 
-      const inactiveUsers = await executeSimple(
+      const inactiveUsers = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => !u.is_active),
         {
@@ -603,7 +603,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
     it("should handle boolean comparisons", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -633,7 +633,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
     it("should handle complex boolean logic", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(

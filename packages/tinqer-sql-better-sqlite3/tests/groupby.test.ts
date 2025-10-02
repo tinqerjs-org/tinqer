@@ -1,6 +1,6 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 describe("GroupBy SQL Generation", () => {
@@ -13,13 +13,13 @@ describe("GroupBy SQL Generation", () => {
   }
 
   it("should generate GROUP BY clause", () => {
-    const result = query(() => from<Sale>("sales").groupBy((s) => s.category), {});
+    const result = selectStatement(() => from<Sale>("sales").groupBy((s) => s.category), {});
 
     expect(result.sql).to.equal('SELECT "category" FROM "sales" GROUP BY "category"');
   });
 
   it("should combine GROUP BY with WHERE", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Sale>("sales")
           .where((s) => s.amount > 100)
@@ -34,7 +34,7 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with SELECT projection", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Sale>("sales")
           .groupBy((s) => s.category)
@@ -46,7 +46,7 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should work with GROUP BY and ORDER BY", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Sale>("sales")
           .groupBy((s) => s.product)
@@ -60,7 +60,7 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with COUNT aggregate", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Sale>("sales")
           .groupBy((s) => s.category)
@@ -74,7 +74,7 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with SUM aggregate", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Sale>("sales")
           .groupBy((s) => s.category)
@@ -91,7 +91,7 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with multiple aggregates", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Sale>("sales")
           .groupBy((s) => s.category)
@@ -110,7 +110,7 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with WHERE and aggregates", () => {
-    const result = query(
+    const result = selectStatement(
       () =>
         from<Sale>("sales")
           .where((s) => s.quantity > 10)

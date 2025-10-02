@@ -6,7 +6,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute, executeSimple } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -23,7 +23,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const offset = (page - 1) * pageSize;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -56,7 +56,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const offset = (pageNumber - 1) * pageSize;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -84,7 +84,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const pageSize = 4;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -116,7 +116,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const offset = (page - 1) * pageSize;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -147,7 +147,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const offset = (page - 1) * pageSize;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -182,7 +182,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const pageSize = 3;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -218,7 +218,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const pageSize = 3;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -256,7 +256,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const pageSize = 2;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "articles")
@@ -293,7 +293,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const pageSize = 3;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -326,7 +326,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const pageSize = 2;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "articles")
@@ -362,7 +362,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const offset = (page - 1) * pageSize;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -403,7 +403,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Note: having clause not directly supported, filter after grouping
-      const allResults = executeSimple(
+      const allResults = executeSelectSimple(
         db,
         () =>
           from(dbContext, "products")
@@ -450,7 +450,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const offset = (page - 1) * pageSize;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "orders")
@@ -496,7 +496,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const offset = 1;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -533,7 +533,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const actualSize = Math.min(requestedSize, maxSize);
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -562,7 +562,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const skipCount = 9; // Skip to near the end (10 products total)
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -597,7 +597,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Select only indexed columns for better performance
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -639,7 +639,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const pageSize = 3;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -674,7 +674,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Forward
-      const forwardResults = execute(
+      const forwardResults = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -704,7 +704,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       // Backward
       capturedSql = undefined;
-      const backwardResults = execute(
+      const backwardResults = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -746,7 +746,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const minStock = 0;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "products")
@@ -795,7 +795,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const pageSize = 3;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "articles")
@@ -830,7 +830,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       const pageSize = 2;
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = execute(
+      const results = executeSelect(
         db,
         (params) =>
           from(dbContext, "articles")

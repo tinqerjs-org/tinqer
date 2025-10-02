@@ -1,6 +1,6 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { query } from "../dist/index.js";
+import { selectStatement } from "../dist/index.js";
 import { from } from "@webpods/tinqer";
 
 describe("GROUP BY with Composite Keys", () => {
@@ -17,7 +17,7 @@ describe("GROUP BY with Composite Keys", () => {
 
   describe("Composite key GROUP BY", () => {
     it("should group by object with two properties", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({ category: s.category, region: s.region }))
@@ -35,7 +35,7 @@ describe("GROUP BY with Composite Keys", () => {
     });
 
     it("should group by object with three properties", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({ category: s.category, region: s.region, year: s.year }))
@@ -55,7 +55,7 @@ describe("GROUP BY with Composite Keys", () => {
     });
 
     it("should handle composite key with computed properties", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({
@@ -74,7 +74,7 @@ describe("GROUP BY with Composite Keys", () => {
     });
 
     it("should group by mixed expressions", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({
@@ -99,7 +99,7 @@ describe("GROUP BY with Composite Keys", () => {
 
   describe("GROUP BY with WHERE and composite keys", () => {
     it("should filter before grouping with composite key", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .where((s) => s.year >= 2020)
@@ -119,7 +119,7 @@ describe("GROUP BY with Composite Keys", () => {
     });
 
     it("should handle multiple WHERE with composite GROUP BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .where((s) => s.region === "North")
@@ -141,7 +141,7 @@ describe("GROUP BY with Composite Keys", () => {
 
   describe("GROUP BY with ORDER BY and composite keys", () => {
     it("should order by grouped composite key properties", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({ category: s.category, year: s.year }))
@@ -159,7 +159,7 @@ describe("GROUP BY with Composite Keys", () => {
     });
 
     it("should order by aggregate with composite GROUP BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({ product: s.product, region: s.region }))
@@ -178,7 +178,7 @@ describe("GROUP BY with Composite Keys", () => {
 
   describe("GROUP BY with TAKE/SKIP and composite keys", () => {
     it("should limit results with composite GROUP BY", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({ category: s.category, region: s.region }))
@@ -199,7 +199,7 @@ describe("GROUP BY with Composite Keys", () => {
     });
 
     it("should paginate grouped results with composite keys", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({ product: s.product, year: s.year, quarter: s.quarter }))
@@ -229,7 +229,7 @@ describe("GROUP BY with Composite Keys", () => {
 
   describe("Complex GROUP BY scenarios", () => {
     it("should handle GROUP BY with method calls in key", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({
@@ -262,7 +262,7 @@ describe("GROUP BY with Composite Keys", () => {
         quantity: number;
       }
 
-      const result = query(
+      const result = selectStatement(
         () =>
           from<OrderWithCustomer>("orders")
             .groupBy((o) => ({
@@ -283,7 +283,7 @@ describe("GROUP BY with Composite Keys", () => {
     });
 
     it("should handle GROUP BY with all aggregate functions", () => {
-      const result = query(
+      const result = selectStatement(
         () =>
           from<Sale>("sales")
             .groupBy((s) => ({ category: s.category, year: s.year }))

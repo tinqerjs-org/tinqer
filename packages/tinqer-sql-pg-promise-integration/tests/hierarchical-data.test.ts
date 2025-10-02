@@ -6,7 +6,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
   describe("Parent-child relationships", () => {
     it("should find root nodes (no parent)", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "categories").where((c) => c.parent_id == null),
         { onSql: (result) => (capturedSql = result) },
@@ -40,7 +40,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     it("should find children of specific parent", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const parentId = 1; // Electronics
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) => from(dbContext, "categories").where((c) => c.parent_id == params.parentId),
         { parentId },
@@ -63,7 +63,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
     it("should find leaf nodes", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "categories").where((c) => c.is_leaf == true),
         { onSql: (result) => (capturedSql = result) },
@@ -84,7 +84,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     it("should find nodes at specific level", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const targetLevel = 1;
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) => from(dbContext, "categories").where((c) => c.level == params.targetLevel),
         { targetLevel },
@@ -109,7 +109,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     it("should find by path prefix", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const pathPrefix = "/electronics";
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "categories").where((c) => c.path.startsWith(params.pathPrefix)),
@@ -134,7 +134,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const ancestorPath = "/electronics/computers";
       const pathSuffix = "/";
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "categories").where((c) =>
@@ -163,7 +163,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     it("should find by exact path", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const exactPath = "/electronics/phones/smartphones";
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) => from(dbContext, "categories").where((c) => c.path == params.exactPath),
         { exactPath },
@@ -187,7 +187,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const minLevel = 1;
       const maxLevel = 2;
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "categories").where(
@@ -213,7 +213,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
     it("should order by level and name", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "categories")
@@ -249,7 +249,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
   describe("Manager-employee relationships", () => {
     it("should find employees without managers (top level)", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.manager_id == null),
         { onSql: (result) => (capturedSql = result) },
@@ -269,7 +269,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     it("should find all subordinates of a manager", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const managerId = 1; // John Doe
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) => from(dbContext, "users").where((u) => u.manager_id == params.managerId),
         { managerId },
@@ -289,7 +289,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
     it("should count subordinates per manager", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -328,7 +328,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
   describe("Comment thread patterns", () => {
     it("should find top-level comments", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "comments").where((c) => c.parent_comment_id == null),
         { onSql: (result) => (capturedSql = result) },
@@ -351,7 +351,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     it("should find replies to specific comment", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const commentId = 1; // "Great product!"
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "comments").where((c) => c.parent_comment_id == params.commentId),
@@ -376,7 +376,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     it("should find comments by depth", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const maxDepth = 1;
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) => from(dbContext, "comments").where((c) => c.depth <= params.maxDepth),
         { maxDepth },
@@ -396,7 +396,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
     it("should order comments for threading display", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "comments")
@@ -430,7 +430,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
   describe("Self-join patterns", () => {
     it("should join categories with their parents", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await execute(
+      const results = await executeSelect(
         db,
         () =>
           from(dbContext, "categories")
@@ -466,7 +466,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
     it("should find employees with their managers", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await execute(
+      const results = await executeSelect(
         db,
         () =>
           from(dbContext, "users")
@@ -503,7 +503,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
     it("should find siblings (same parent)", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const parentId = 1; // Electronics
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "categories")
@@ -535,7 +535,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const parentId = 2; // Computers
       const level = 2;
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "categories").where(
@@ -565,7 +565,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const startLevel = 1;
       const endLevel = 2;
       const pathPrefix = "/electronics";
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "categories")
@@ -605,7 +605,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
 
     it("should count nodes per level", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "categories")
@@ -649,7 +649,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const rootPath = "/electronics";
       const pathSuffix = "/";
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "categories")
@@ -683,7 +683,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const childPath = "/electronics/computers/laptops";
       // Would check if a category is an ancestor by checking if child path starts with ancestor path
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "categories").where(

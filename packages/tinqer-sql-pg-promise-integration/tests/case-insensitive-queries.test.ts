@@ -6,7 +6,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -40,7 +40,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       const searchName = "john smith";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where((u) => u.name.toLowerCase() == params.searchName),
@@ -64,7 +64,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
     it("should find multiple users with toLowerCase", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where((u) => u.name.toLowerCase().startsWith(params.prefix)),
@@ -90,7 +90,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       const searchEmail = "bob.johnson@example.com";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where((u) => u.email.toLowerCase() == params.searchEmail),
@@ -114,7 +114,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
     it("should combine toLowerCase with other conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where(
@@ -144,7 +144,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       const searchCategory = "ELECTRONICS";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where(
@@ -173,7 +173,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       const searchName = "WIRELESS MOUSE";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where((p) => p.name.toUpperCase() == params.searchName),
@@ -200,7 +200,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
     it("should combine toUpperCase with price filter", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where(
@@ -230,7 +230,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Test toLowerCase on users table
-      const userResults = await execute(
+      const userResults = await executeSelect(
         db,
         (params) => from(dbContext, "users").where((u) => u.name.toLowerCase() == params.userName),
         { userName: "john smith" },
@@ -249,7 +249,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       // Test toUpperCase on products table
       capturedSql = undefined;
-      const productResults = await execute(
+      const productResults = await executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where(
@@ -277,7 +277,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
     it("should handle OR conditions with case transformations", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "users").where(
@@ -304,7 +304,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
     it("should work with pattern matching and case transformation", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "products").where((p) =>
@@ -331,7 +331,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Test toLowerCase in WHERE directly
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "users")
@@ -367,7 +367,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       // Create a functional index for better performance
       await db.none("CREATE INDEX IF NOT EXISTS idx_users_name_lower ON users(LOWER(name))");
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "users")
@@ -396,7 +396,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
     it("should handle large result sets with case-insensitive filtering", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params) =>
           from(dbContext, "products")

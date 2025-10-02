@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should find users with names starting with 'J'", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.startsWith("J")),
         {
@@ -43,7 +43,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should find emails starting with specific prefix", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.email.startsWith("alice")),
         {
@@ -67,7 +67,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should combine startsWith with other conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.startsWith("J") && u.is_active === true),
         {
@@ -96,7 +96,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should find emails ending with '@example.com'", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.email.endsWith("@example.com")),
         {
@@ -122,7 +122,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should find products with names ending with specific suffix", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.name.endsWith("top")),
         {
@@ -148,7 +148,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should find users with 'oh' in their name", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("oh")),
         {
@@ -174,7 +174,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should find products with 'office' in description", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -201,7 +201,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should combine multiple string operations", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -236,7 +236,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should find users with specific email patterns", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users").where(
@@ -265,7 +265,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should search products by multiple string fields", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -293,7 +293,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should combine string operations with joins", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -332,7 +332,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should handle case-sensitive string operations", async () => {
       // Note: PostgreSQL LIKE is case-sensitive by default
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
-      const upperResults = await executeSimple(
+      const upperResults = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("J")),
         {
@@ -349,7 +349,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       expect(capturedSql1!.params).to.deep.equal({ __p1: "J" });
 
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
-      const lowerResults = await executeSimple(
+      const lowerResults = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("o")),
         {
@@ -372,7 +372,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       // Case sensitivity check - capital D vs lowercase d
       let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
-      const capitalD = await executeSimple(
+      const capitalD = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("D")),
         {
@@ -389,7 +389,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       expect(capturedSql3!.params).to.deep.equal({ __p1: "D" });
 
       let capturedSql4: { sql: string; params: Record<string, unknown> } | undefined;
-      const lowercaseD = await executeSimple(
+      const lowercaseD = await executeSelectSimple(
         db,
         () => from(dbContext, "users").where((u) => u.name.includes("d")),
         {
@@ -416,7 +416,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should count users by email domain", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = await executeSimple(
+      const count = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "users")
@@ -443,7 +443,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should handle nullable description fields", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () =>
           from(dbContext, "products").where(
@@ -470,7 +470,7 @@ describe("PostgreSQL Integration - String Operations", () => {
     it("should check for non-null strings", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSimple(
+      const results = await executeSelectSimple(
         db,
         () => from(dbContext, "products").where((p) => p.description !== null),
         {
@@ -505,7 +505,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params: { search: string }) =>
           from<{ id: number; text: string }>("test_special_chars").where((t) =>
@@ -546,7 +546,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params: { search: string }) =>
           from<{ id: number; text: string }>("test_special_chars").where((t) =>
@@ -587,7 +587,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params: { search: string }) =>
           from<{ id: number; text: string }>("test_backslash").where((t) =>
@@ -628,7 +628,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await execute(
+      const results = await executeSelect(
         db,
         (params: { search: string }) =>
           from<{ id: number; text: string }>("test_mixed_chars").where((t) =>

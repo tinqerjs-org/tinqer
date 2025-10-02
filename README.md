@@ -107,7 +107,7 @@ type Department = {
 const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/app");
 
-const result = query(
+const result = selectStatement(
   () =>
     from<User>("users")
       .where((u) => u.age >= 18)
