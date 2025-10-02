@@ -739,4 +739,100 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       expect(results).to.have.length(0);
     });
   });
+
+  describe("Binary payload injection attempts", () => {
+    it("should handle NULL byte in string parameters", () => {
+      const nullBytePayload = "malicious\0payload";
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.nullBytePayload),
+        { nullBytePayload },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "name" = @nullBytePayload');
+      expect(capturedSql!.params).to.deep.equal({ nullBytePayload });
+      expect(results).to.be.an("array");
+      expect(results).to.have.length(0);
+    });
+
+    it("should handle UTF-16 surrogate pairs", () => {
+      const surrogatePayload = "test\uD800\uDC00value"; // Valid surrogate pair
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.email == params.surrogatePayload),
+        { surrogatePayload },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "email" = @surrogatePayload');
+      expect(capturedSql!.params).to.deep.equal({ surrogatePayload });
+      expect(results).to.be.an("array");
+    });
+
+    it("should handle binary-looking encoded strings", () => {
+      const binaryEncoded = "\x00\x01\x02DROP TABLE users;\x03";
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.binaryEncoded),
+        { binaryEncoded },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "name" = @binaryEncoded');
+      expect(capturedSql!.params).to.deep.equal({ binaryEncoded });
+      expect(results).to.be.an("array");
+      expect(results).to.have.length(0);
+
+      // Verify table still exists
+      const users = executeSimple(db, () => from(dbContext, "users").take(1));
+      expect(users).to.have.length(1);
+    });
+
+    it("should handle mixed binary and SQL injection attempts", () => {
+      const mixedPayload = "'; DROP TABLE users;\0--";
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.email == params.mixedPayload),
+        { mixedPayload },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "email" = @mixedPayload');
+      expect(capturedSql!.params).to.deep.equal({ mixedPayload });
+      expect(results).to.have.length(0);
+
+      // Verify database integrity
+      const users = executeSimple(db, () => from(dbContext, "users"));
+      expect(users.length).to.be.greaterThan(0);
+    });
+  });
 });

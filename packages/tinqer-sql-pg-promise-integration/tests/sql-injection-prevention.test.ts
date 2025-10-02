@@ -673,6 +673,82 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
     });
   });
 
+  describe("Binary payload injection attempts", () => {
+    it("should handle UTF-16 surrogate pairs in string parameters", async () => {
+      const surrogatePayload = "test\uD800\uDC00payload"; // Valid surrogate pair
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.email == params.surrogatePayload),
+        { surrogatePayload },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE "email" = $(surrogatePayload)',
+      );
+      expect(capturedSql!.params).to.deep.equal({ surrogatePayload });
+      expect(results).to.be.an("array");
+      expect(results).to.have.length(0);
+    });
+
+    it("should handle control characters in parameters", async () => {
+      const controlCharsPayload = "test\x01\x02\x03payload"; // Control characters (not NULL)
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "products").where((p) => p.name == params.controlCharsPayload),
+        { controlCharsPayload },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "products" WHERE "name" = $(controlCharsPayload)',
+      );
+      expect(capturedSql!.params).to.deep.equal({ controlCharsPayload });
+      expect(results).to.be.an("array");
+      expect(results).to.have.length(0);
+    });
+
+    it("should handle SQL injection with special characters", async () => {
+      const mixedPayload = "'; DROP TABLE users;--";
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await execute(
+        db,
+        (params) => from(dbContext, "users").where((u) => u.name == params.mixedPayload),
+        { mixedPayload },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "name" = $(mixedPayload)');
+      expect(capturedSql!.params).to.deep.equal({ mixedPayload });
+      expect(results).to.be.an("array");
+      expect(results).to.have.length(0);
+
+      // Verify table still exists
+      const users = await executeSimple(db, () => from(dbContext, "users").take(1));
+      expect(users).to.have.length(1);
+    });
+  });
+
   describe("Complex nested injection attempts", () => {
     it("should handle nested conditions with injection attempts", async () => {
       const name1 = "admin' OR '1'='1";

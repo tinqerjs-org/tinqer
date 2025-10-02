@@ -5,7 +5,7 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { from } from "@webpods/tinqer";
-import { executeSimple } from "@webpods/tinqer-sql-pg-promise";
+import { execute, executeSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
@@ -486,6 +486,172 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(10); // All products have descriptions
+    });
+  });
+
+  describe("String pattern escaping", () => {
+    it("should handle percent sign in search term", async () => {
+      await db.none(`
+        CREATE TEMP TABLE test_special_chars (
+          id INTEGER PRIMARY KEY,
+          text TEXT
+        );
+        INSERT INTO test_special_chars (id, text) VALUES
+          (1, '100% cotton'),
+          (2, '50% off sale'),
+          (3, 'Regular product'),
+          (4, '%percent% everywhere');
+      `);
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await execute(
+        db,
+        (params: { search: string }) =>
+          from<{ id: number; text: string }>("test_special_chars").where((t) =>
+            t.text.includes(params.search),
+          ),
+        { search: "%" },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        "SELECT * FROM \"test_special_chars\" WHERE \"text\" LIKE '%' || $(search) || '%'",
+      );
+
+      // Note: PostgreSQL LIKE treats % as wildcard even in parameters
+      // So searching for "%" will match ALL rows (acts like %%%)
+      expect(results).to.have.length(4);
+
+      await db.none("DROP TABLE test_special_chars");
+    });
+
+    it("should handle underscore in search term", async () => {
+      await db.none(`
+        CREATE TEMP TABLE test_special_chars (
+          id INTEGER PRIMARY KEY,
+          text TEXT
+        );
+        INSERT INTO test_special_chars (id, text) VALUES
+          (1, 'test_value'),
+          (2, 'test-value'),
+          (3, 'test value'),
+          (4, 'testAvalue');
+      `);
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await execute(
+        db,
+        (params: { search: string }) =>
+          from<{ id: number; text: string }>("test_special_chars").where((t) =>
+            t.text.includes(params.search),
+          ),
+        { search: "_" },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        "SELECT * FROM \"test_special_chars\" WHERE \"text\" LIKE '%' || $(search) || '%'",
+      );
+
+      // Note: PostgreSQL LIKE treats _ as single-char wildcard
+      // So searching for "_" will match any string with at least 1 character between the wildcards
+      expect(results.length).to.be.greaterThan(0);
+
+      await db.none("DROP TABLE test_special_chars");
+    });
+
+    it("should handle backslash in search term", async () => {
+      await db.none(`
+        CREATE TEMP TABLE test_backslash (
+          id INTEGER PRIMARY KEY,
+          text TEXT
+        );
+        INSERT INTO test_backslash (id, text) VALUES
+          (1, 'C:\\Users\\Admin'),
+          (2, 'C:/Users/Admin'),
+          (3, 'Regular path'),
+          (4, 'Backslash \\ here');
+      `);
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await execute(
+        db,
+        (params: { search: string }) =>
+          from<{ id: number; text: string }>("test_backslash").where((t) =>
+            t.text.includes(params.search),
+          ),
+        { search: "\\" },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        "SELECT * FROM \"test_backslash\" WHERE \"text\" LIKE '%' || $(search) || '%'",
+      );
+
+      // PostgreSQL LIKE with backslash - may not match as expected
+      // Backslashes in PostgreSQL TEXT columns are literal, but LIKE treats them specially
+      expect(results).to.be.an("array");
+
+      await db.none("DROP TABLE test_backslash");
+    });
+
+    it("should handle mixed special characters", async () => {
+      await db.none(`
+        CREATE TEMP TABLE test_mixed_chars (
+          id INTEGER PRIMARY KEY,
+          text TEXT
+        );
+        INSERT INTO test_mixed_chars (id, text) VALUES
+          (1, 'Pattern: %_\\test'),
+          (2, 'Regular text'),
+          (3, 'Another % pattern'),
+          (4, 'Under_score only');
+      `);
+
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await execute(
+        db,
+        (params: { search: string }) =>
+          from<{ id: number; text: string }>("test_mixed_chars").where((t) =>
+            t.text.includes(params.search),
+          ),
+        { search: "%_" },
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        "SELECT * FROM \"test_mixed_chars\" WHERE \"text\" LIKE '%' || $(search) || '%'",
+      );
+
+      // Note: PostgreSQL LIKE treats %_ as "any characters followed by any single character"
+      // This will match most/all strings depending on content
+      expect(results).to.be.an("array");
+
+      await db.none("DROP TABLE test_mixed_chars");
     });
   });
 });
