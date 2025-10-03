@@ -795,7 +795,7 @@ SELECT * FROM "users" ORDER BY "createdAt" ASC LIMIT 1
 
 ## 11. Materialisation
 
-The `toArray` method executes the query without adding additional clauses.
+Queries are executed directly without requiring a materialization method. The query builder returns results as arrays by default.
 
 ```typescript
 const activeUsers = await executeSelect(
@@ -803,13 +803,12 @@ const activeUsers = await executeSelect(
   () =>
     from<User>("users")
       .where((u) => u.active)
-      .orderBy((u) => u.name)
-      .toArray(),
+      .orderBy((u) => u.name),
   {},
 );
 ```
 
-The generated SQL matches the chain preceding `toArray`.
+The generated SQL matches the entire query chain.
 
 ---
 
