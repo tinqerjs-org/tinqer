@@ -272,8 +272,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       assert(Array.isArray(results));
       assert.equal(results.length, 1);
       // Note: Currently returns {id: number}, not just number (type mismatch to fix later)
-      assert(typeof (results[0]! as any).id === "number");
-      assert((results[0]! as any).id > 0);
+      assert(typeof (results[0]! as unknown as { id: number }).id === "number");
+      assert((results[0]! as unknown as { id: number }).id > 0);
     });
   });
 
@@ -418,8 +418,11 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
           {},
         );
         assert.fail("Should have thrown unique constraint error");
-      } catch (error: any) {
-        assert(error.message.includes("duplicate key") || error.message.includes("unique"));
+      } catch (error: unknown) {
+        assert(
+          (error as Error).message.includes("duplicate key") ||
+            (error as Error).message.includes("unique"),
+        );
       }
     });
   });
@@ -440,7 +443,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
         {},
       );
 
-      const customerId = (customerResults[0]! as any).id as number;
+      const customerId = (customerResults[0]! as unknown as { id: number }).id;
 
       // Insert product
       const productResults = await executeInsert(
@@ -456,7 +459,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
         {},
       );
 
-      const productId = (productResults[0]! as any).id as number;
+      const productId = (productResults[0]! as unknown as { id: number }).id;
 
       // Insert order referencing both
       const orderCount = await executeInsert(

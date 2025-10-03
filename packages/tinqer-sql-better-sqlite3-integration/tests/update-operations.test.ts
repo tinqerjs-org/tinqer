@@ -175,7 +175,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const product = db
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
-        .get("Laptop") as any;
+        .get("Laptop") as TestSchema["inventory"];
       assert.equal(product.quantity, 20);
     });
 
@@ -197,7 +197,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const product = db
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
-        .get("Keyboard") as any;
+        .get("Keyboard") as TestSchema["inventory"];
       assert.equal(product.quantity, 15);
       assert.equal(product.price, 89.99);
       assert.equal(product.status, "available");
@@ -226,7 +226,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const product = db
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
-        .get(params.productName) as any;
+        .get(params.productName) as TestSchema["inventory"];
       assert.equal(product.quantity, 100);
       assert.equal(product.price, 24.99);
     });
@@ -245,7 +245,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const user = db
         .prepare("SELECT * FROM user_profiles WHERE username = ?")
-        .get("jane_smith") as any;
+        .get("jane_smith") as TestSchema["user_profiles"];
       assert.equal(user.is_verified, 1); // true = 1 in SQLite
     });
 
@@ -263,7 +263,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const user = db
         .prepare("SELECT * FROM user_profiles WHERE username = ?")
-        .get("john_doe") as any;
+        .get("john_doe") as TestSchema["user_profiles"];
       assert.equal(user.bio, null);
       assert.equal(user.age, null);
     });
@@ -284,7 +284,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const monitor = db
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
-        .get("Monitor") as any;
+        .get("Monitor") as TestSchema["inventory"];
       assert.equal(monitor.status, "reorder_needed");
     });
 
@@ -302,12 +302,12 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const keyboard = db
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
-        .get("Keyboard") as any;
+        .get("Keyboard") as TestSchema["inventory"];
       assert.equal(keyboard.warehouse_location, "Warehouse D");
 
       const monitor = db
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
-        .get("Monitor") as any;
+        .get("Monitor") as TestSchema["inventory"];
       assert.equal(monitor.warehouse_location, "Warehouse D");
     });
 
@@ -330,7 +330,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const keyboard = db
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
-        .get("Keyboard") as any;
+        .get("Keyboard") as TestSchema["inventory"];
       assert.equal(keyboard.is_active, 0); // false = 0 in SQLite
     });
 
@@ -348,7 +348,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const laptop = db
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
-        .get("Laptop") as any;
+        .get("Laptop") as TestSchema["inventory"];
       assert.equal(laptop.notes, "Premium product");
     });
 
@@ -368,7 +368,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const results = db
         .prepare("SELECT product_name FROM inventory WHERE warehouse_location = ?")
-        .all("Warehouse E") as any[];
+        .all("Warehouse E") as { product_name: string }[];
       assert.equal(results.length, 3);
       const names = results.map((r) => r.product_name).sort();
       assert.deepEqual(names, ["Headphones", "Keyboard", "Mouse"]);
@@ -413,7 +413,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const unverifiedCount = db
         .prepare("SELECT COUNT(*) as count FROM user_profiles WHERE is_verified = 0")
-        .get() as any;
+        .get() as { count: number };
       assert.equal(unverifiedCount.count, 0);
     });
 
@@ -431,7 +431,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const totalHelpful = db
         .prepare("SELECT SUM(helpful_count) as total FROM product_reviews")
-        .get() as any;
+        .get() as { total: number | null };
       assert.equal(totalHelpful.total, 0);
     });
 
@@ -443,9 +443,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
           {},
         );
         assert.fail("Should have thrown error for missing WHERE clause");
-      } catch (error: any) {
+      } catch (error: unknown) {
         assert(
-          error.message.includes("WHERE clause") || error.message.includes("allowFullTableUpdate"),
+          (error as Error).message.includes("WHERE clause") ||
+            (error as Error).message.includes("allowFullTableUpdate"),
         );
       }
     });
@@ -468,7 +469,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const user = db
         .prepare("SELECT * FROM user_profiles WHERE username = ?")
-        .get("bob_wilson") as any;
+        .get("bob_wilson") as TestSchema["user_profiles"];
       // SQLite stores dates as strings
       assert(typeof user.last_login === "string");
       assert(user.last_login.includes("2024-06-01"));
@@ -494,7 +495,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const product = db
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
-        .get("Headphones") as any;
+        .get("Headphones") as TestSchema["inventory"];
       // Verify the timestamp was updated (as string in SQLite)
       assert(product.last_updated);
       const updatedDate = new Date(product.last_updated);
@@ -527,8 +528,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const user = db
         .prepare("SELECT * FROM user_profiles WHERE username = ?")
-        .get("alice_jones") as any;
-      const parsedSettings = JSON.parse(user.settings);
+        .get("alice_jones") as TestSchema["user_profiles"];
+      const parsedSettings = JSON.parse(user.settings!);
       assert.deepEqual(parsedSettings, newSettings);
     });
   });
@@ -548,11 +549,13 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db.prepare("SELECT * FROM inventory WHERE id = ?").get(1) as any;
-      assert(product.notes.includes("'quotes'"));
-      assert(product.notes.includes('"double"'));
-      assert(product.notes.includes("\n"));
-      assert(product.notes.includes("\t"));
+      const product = db
+        .prepare("SELECT * FROM inventory WHERE id = ?")
+        .get(1) as TestSchema["inventory"];
+      assert(product.notes!.includes("'quotes'"));
+      assert(product.notes!.includes('"double"'));
+      assert(product.notes!.includes("\n"));
+      assert(product.notes!.includes("\t"));
     });
 
     it("should handle Unicode characters", () => {
@@ -569,10 +572,12 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = db.prepare("SELECT * FROM user_profiles WHERE id = ?").get(2) as any;
-      assert(user.bio.includes("你好"));
-      assert(user.bio.includes("🎉"));
-      assert(user.bio.includes("Здравствуйте"));
+      const user = db
+        .prepare("SELECT * FROM user_profiles WHERE id = ?")
+        .get(2) as TestSchema["user_profiles"];
+      assert(user.bio!.includes("你好"));
+      assert(user.bio!.includes("🎉"));
+      assert(user.bio!.includes("Здравствуйте"));
     });
   });
 
@@ -584,7 +589,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         () =>
           updateTable(dbContext, "inventory")
             .set(() => ({
-              quantity: "50" as any, // String that will be coerced to number
+              quantity: "50" as unknown as number, // String that will be coerced to number
               price: 99, // Integer that will be stored as REAL
             }))
             .where((i) => i.id === 1),
@@ -593,7 +598,9 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db.prepare("SELECT * FROM inventory WHERE id = ?").get(1) as any;
+      const product = db
+        .prepare("SELECT * FROM inventory WHERE id = ?")
+        .get(1) as TestSchema["inventory"];
       // SQLite will coerce types based on column affinity
       assert(product.quantity == 50);
       assert(product.price == 99);
@@ -605,14 +612,16 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ is_active: 0 as any }))
+            .set(() => ({ is_active: 0 }))
             .where((i) => i.id === 1),
         {},
       );
 
       assert.equal(rowCount1, 1);
 
-      const product1 = db.prepare("SELECT is_active FROM inventory WHERE id = ?").get(1) as any;
+      const product1 = db.prepare("SELECT is_active FROM inventory WHERE id = ?").get(1) as {
+        is_active: number;
+      };
       assert.equal(product1.is_active, 0);
 
       const rowCount2 = executeUpdate(
@@ -626,7 +635,9 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount2, 1);
 
-      const product2 = db.prepare("SELECT is_active FROM inventory WHERE id = ?").get(1) as any;
+      const product2 = db.prepare("SELECT is_active FROM inventory WHERE id = ?").get(1) as {
+        is_active: number;
+      };
       assert.equal(product2.is_active, 1);
     });
   });

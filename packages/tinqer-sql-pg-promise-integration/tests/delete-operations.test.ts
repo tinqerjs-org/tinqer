@@ -491,9 +491,10 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       try {
         await executeDelete(db, () => deleteFrom(dbContext, "test_products"), {});
         assert.fail("Should have thrown error for missing WHERE clause");
-      } catch (error: any) {
+      } catch (error: unknown) {
         assert(
-          error.message.includes("WHERE clause") || error.message.includes("allowFullTableDelete"),
+          (error as Error).message.includes("WHERE clause") ||
+            (error as Error).message.includes("allowFullTableDelete"),
         );
       }
     });

@@ -401,8 +401,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       assert.equal(results.length, 2); // Two reviews with rating 5
       // Note: Currently returns {id: number}, not just number (type mismatch to fix later)
       results.forEach((result) => {
-        assert(typeof (result as any).id === "number");
-        assert((result as any).id > 0);
+        assert(typeof (result as unknown as { id: number }).id === "number");
+        assert((result as unknown as { id: number }).id > 0);
       });
     });
   });
@@ -446,9 +446,10 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       try {
         await executeUpdate(db, () => updateTable(dbContext, "inventory").set({ quantity: 0 }), {});
         assert.fail("Should have thrown error for missing WHERE clause");
-      } catch (error: any) {
+      } catch (error: unknown) {
         assert(
-          error.message.includes("WHERE clause") || error.message.includes("allowFullTableUpdate"),
+          (error as Error).message.includes("WHERE clause") ||
+            (error as Error).message.includes("allowFullTableUpdate"),
         );
       }
     });

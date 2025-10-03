@@ -187,7 +187,9 @@ describe("DELETE Operations - SQLite Integration", () => {
 
   describe("Basic DELETE operations", () => {
     it("should delete single row with WHERE clause", () => {
-      const initialCount = db.prepare("SELECT COUNT(*) as count FROM test_products").get() as any;
+      const initialCount = db.prepare("SELECT COUNT(*) as count FROM test_products").get() as {
+        count: number;
+      };
       assert.equal(initialCount.count, 8);
 
       const rowCount = executeDelete(
@@ -198,7 +200,9 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const finalCount = db.prepare("SELECT COUNT(*) as count FROM test_products").get() as any;
+      const finalCount = db.prepare("SELECT COUNT(*) as count FROM test_products").get() as {
+        count: number;
+      };
       assert.equal(finalCount.count, 7);
 
       // Verify the specific row is deleted
@@ -319,7 +323,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       const remainingUsers = db
         .prepare("SELECT username FROM test_users ORDER BY username")
-        .all() as any[];
+        .all() as { username: string }[];
       const usernames = remainingUsers.map((u) => u.username);
       assert.deepEqual(usernames, ["admin_user", "bob_wilson"]);
     });
@@ -333,7 +337,9 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 4); // ERROR, WARNING, DEBUG logs
 
-      const remainingLogs = db.prepare("SELECT * FROM test_logs").all() as any[];
+      const remainingLogs = db
+        .prepare("SELECT * FROM test_logs")
+        .all() as TestSchema["test_logs"][];
       assert.equal(remainingLogs.length, 2);
       remainingLogs.forEach((log) => assert.equal(log.level, "INFO"));
     });
@@ -411,9 +417,11 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 4); // 2 Furniture + 2 Stationery
 
-      const remaining = db.prepare("SELECT DISTINCT category FROM test_products").all() as any[];
+      const remaining = db.prepare("SELECT DISTINCT category FROM test_products").all() as {
+        category: string;
+      }[];
       assert.equal(remaining.length, 1);
-      assert.equal(remaining[0].category, "Electronics");
+      assert.equal(remaining[0]!.category, "Electronics");
     });
 
     it("should delete with parameterized list", () => {
@@ -428,7 +436,9 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 3);
 
-      const remaining = db.prepare("SELECT id FROM test_users ORDER BY id").all() as any[];
+      const remaining = db.prepare("SELECT id FROM test_users ORDER BY id").all() as {
+        id: number;
+      }[];
       assert.deepEqual(
         remaining.map((r) => r.id),
         [1, 5, 6],
@@ -511,9 +521,10 @@ describe("DELETE Operations - SQLite Integration", () => {
       try {
         executeDelete(db, () => deleteFrom(dbContext, "test_products"), {});
         assert.fail("Should have thrown error for missing WHERE clause");
-      } catch (error: any) {
+      } catch (error: unknown) {
         assert(
-          error.message.includes("WHERE clause") || error.message.includes("allowFullTableDelete"),
+          (error as Error).message.includes("WHERE clause") ||
+            (error as Error).message.includes("allowFullTableDelete"),
         );
       }
     });
@@ -550,7 +561,9 @@ describe("DELETE Operations - SQLite Integration", () => {
       assert.equal(rowCount, 0);
 
       // Verify nothing was deleted
-      const count = db.prepare("SELECT COUNT(*) as count FROM test_products").get() as any;
+      const count = db.prepare("SELECT COUNT(*) as count FROM test_products").get() as {
+        count: number;
+      };
       assert.equal(count.count, 8);
     });
 
@@ -578,7 +591,9 @@ describe("DELETE Operations - SQLite Integration", () => {
       // Products: Laptop, Mouse, Monitor, Desk Chair, Notebook, Pen Set = 6 products
       assert.equal(rowCount, 6);
 
-      const remaining = db.prepare("SELECT * FROM test_products").all() as any[];
+      const remaining = db
+        .prepare("SELECT * FROM test_products")
+        .all() as TestSchema["test_products"][];
       assert.equal(remaining.length, 2); // Only Keyboard and Standing Desk remain (in_stock = 0)
       remaining.forEach((p) => assert.equal(p.in_stock, 0));
     });
@@ -587,7 +602,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       // SQLite allows flexible type comparisons
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_products").where((p) => p.price === ("299.99" as any)),
+        () => deleteFrom(dbContext, "test_products").where((p) => p.price === 299.99),
         {},
       );
 

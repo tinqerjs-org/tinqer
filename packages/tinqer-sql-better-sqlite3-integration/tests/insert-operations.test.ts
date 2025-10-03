@@ -131,7 +131,9 @@ describe("INSERT Operations - SQLite Integration", () => {
       assert.equal(rowCount, 1);
 
       // Verify the insert
-      const product = db.prepare("SELECT * FROM products WHERE name = ?").get("Laptop") as any;
+      const product = db
+        .prepare("SELECT * FROM products WHERE name = ?")
+        .get("Laptop") as TestSchema["products"];
       assert.equal(product.name, "Laptop");
       assert.equal(product.price, 999.99);
       assert.equal(product.category, "Electronics");
@@ -152,7 +154,9 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db.prepare("SELECT * FROM products WHERE name = ?").get("Basic Item") as any;
+      const product = db
+        .prepare("SELECT * FROM products WHERE name = ?")
+        .get("Basic Item") as TestSchema["products"];
       assert.equal(product.name, "Basic Item");
       assert.equal(product.price, 10.0);
       assert.equal(product.category, null); // Should be null
@@ -180,7 +184,9 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db.prepare("SELECT * FROM products WHERE name = ?").get("Tablet") as any;
+      const product = db
+        .prepare("SELECT * FROM products WHERE name = ?")
+        .get("Tablet") as TestSchema["products"];
       assert.equal(product.name, "Tablet");
       assert.equal(product.price, 599.99);
     });
@@ -201,7 +207,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const product = db
         .prepare("SELECT * FROM products WHERE name = ?")
-        .get("Out of Stock Item") as any;
+        .get("Out of Stock Item") as TestSchema["products"];
       assert.equal(product.in_stock, 0); // false = 0 in SQLite
     });
 
@@ -222,7 +228,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const product = db
         .prepare("SELECT * FROM products WHERE name = ?")
-        .get("Minimal Product") as any;
+        .get("Minimal Product") as TestSchema["products"];
       assert.equal(product.category, null);
       assert.equal(product.description, null);
     });
@@ -241,7 +247,7 @@ describe("INSERT Operations - SQLite Integration", () => {
               name: "Test Product",
               price: 99.99,
             })
-            .returning((p) => p.id),
+            .returning((p: TestSchema["products"]) => p.id),
         {},
       );
 
@@ -268,11 +274,13 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db.prepare("SELECT * FROM products WHERE price = ?").get(100.0) as any;
+      const product = db
+        .prepare("SELECT * FROM products WHERE price = ?")
+        .get(100.0) as TestSchema["products"];
       assert(product.name.includes("'quotes'"));
       assert(product.name.includes('"double quotes"'));
-      assert(product.description.includes("\n"));
-      assert(product.description.includes("\t"));
+      assert(product.description!.includes("\n"));
+      assert(product.description!.includes("\t"));
     });
 
     it("should handle Unicode characters", () => {
@@ -289,10 +297,12 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db.prepare("SELECT * FROM products WHERE price = ?").get(88.88) as any;
+      const product = db
+        .prepare("SELECT * FROM products WHERE price = ?")
+        .get(88.88) as TestSchema["products"];
       assert(product.name.includes("🚀"));
       assert(product.name.includes("中文"));
-      assert(product.category.includes("ñ"));
+      assert(product.category!.includes("ñ"));
     });
 
     it("should handle numeric edge cases", () => {
@@ -310,7 +320,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const product = db
         .prepare("SELECT * FROM products WHERE name = ?")
-        .get("Edge Case Product") as any;
+        .get("Edge Case Product") as TestSchema["products"];
       assert.equal(product.price, 0.01);
     });
 
@@ -334,7 +344,9 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const order = db.prepare("SELECT * FROM orders WHERE customer_id = ?").get(1) as any;
+      const order = db
+        .prepare("SELECT * FROM orders WHERE customer_id = ?")
+        .get(1) as TestSchema["orders"];
       assert.equal(order.status, "completed");
       // SQLite stores dates as strings in ISO format
       assert(typeof order.order_date === "string");
@@ -365,8 +377,8 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const product = db
         .prepare("SELECT * FROM products WHERE name = ?")
-        .get("Product with Metadata") as any;
-      const parsedMetadata = JSON.parse(product.metadata);
+        .get("Product with Metadata") as TestSchema["products"];
+      const parsedMetadata = JSON.parse(product.metadata!);
       assert.deepEqual(parsedMetadata, metadata);
     });
   });
@@ -398,8 +410,8 @@ describe("INSERT Operations - SQLite Integration", () => {
           {},
         );
         assert.fail("Should have thrown unique constraint error");
-      } catch (error: any) {
-        assert(error.message.includes("UNIQUE constraint"));
+      } catch (error: unknown) {
+        assert((error as Error).message.includes("UNIQUE constraint"));
       }
     });
   });
@@ -423,8 +435,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Get the inserted customer ID
       const customer = db
         .prepare("SELECT id FROM customers WHERE email = ?")
-        .get("john@example.com") as any;
-      const customerId = customer.id;
+        .get("john@example.com") as TestSchema["customers"];
+      const customerId: number = customer.id!;
 
       // Insert product
       const productCount = executeInsert(
@@ -443,8 +455,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Get the inserted product ID
       const product = db
         .prepare("SELECT id FROM products WHERE name = ?")
-        .get("Test Product") as any;
-      const productId = product.id;
+        .get("Test Product") as TestSchema["products"];
+      const productId: number = product.id!;
 
       // Insert order referencing both
       const orderCount = executeInsert(
@@ -465,7 +477,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Verify all inserts
       const order = db
         .prepare("SELECT * FROM orders WHERE customer_id = ? AND product_id = ?")
-        .get(customerId, productId) as any;
+        .get(customerId, productId) as TestSchema["orders"];
       assert.equal(order.quantity, 3);
       assert.equal(order.total_price, 149.97);
     });
@@ -486,12 +498,14 @@ describe("INSERT Operations - SQLite Integration", () => {
         );
       }
 
-      const products = db.prepare("SELECT id, name FROM products ORDER BY id").all() as any[];
+      const products = db.prepare("SELECT id, name FROM products ORDER BY id").all() as {
+        id: number;
+      }[];
       assert.equal(products.length, 3);
       // Auto-increment IDs should be sequential
-      assert.equal(products[0].id, 1);
-      assert.equal(products[1].id, 2);
-      assert.equal(products[2].id, 3);
+      assert.equal(products[0]!.id, 1);
+      assert.equal(products[1]!.id, 2);
+      assert.equal(products[2]!.id, 3);
     });
 
     it("should handle SQLite's flexible typing", () => {
@@ -501,8 +515,8 @@ describe("INSERT Operations - SQLite Integration", () => {
         () =>
           insertInto(dbContext, "products").values({
             name: "Flexible Type Product",
-            price: "99.99" as any, // String that can be coerced to number
-            category: 123 as any, // Number in text field
+            price: "99.99" as unknown as number, // String that can be coerced to number
+            category: 123 as unknown as string, // Number in text field
           }),
         {},
       );
@@ -511,10 +525,10 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const product = db
         .prepare("SELECT * FROM products WHERE name = ?")
-        .get("Flexible Type Product") as any;
+        .get("Flexible Type Product") as TestSchema["products"];
       // SQLite will store these as provided
       assert(product.price == 99.99); // May be string or number depending on affinity
-      assert(product.category == 123);
+      assert(product.category == (123 as unknown as string));
     });
 
     it("should handle CURRENT_TIMESTAMP default", () => {
@@ -532,7 +546,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const customer = db
         .prepare("SELECT * FROM customers WHERE email = ?")
-        .get("timestamp@test.com") as any;
+        .get("timestamp@test.com") as TestSchema["customers"];
       assert(customer.created_at); // Should have a timestamp
       // Verify it's a valid ISO timestamp string
       assert(customer.created_at.match(/^\d{4}-\d{2}-\d{2}/));
