@@ -141,12 +141,6 @@ export type QueryOperation = {
   operationType: string;
 };
 
-// ✅ Good - Interface for contracts that may be extended
-export interface IQueryable<T> {
-  where(predicate: (item: T) => boolean): IQueryable<T>;
-  select<TResult>(selector: (item: T) => TResult): IQueryable<TResult>;
-}
-
 // ❌ Bad - Interface for simple data
 export interface QueryOperation {
   type: "queryOperation";
