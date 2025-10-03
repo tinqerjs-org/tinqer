@@ -36,13 +36,11 @@ const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const ctx = createContext<Schema>();
 
-const results = await executeSelectSimple(
-  db,
-  () =>
-    from(ctx, "users")
-      .where((u) => u.age >= 18)
-      .orderBy((u) => u.name)
-      .select((u) => ({ id: u.id, name: u.name })),
+const results = await executeSelectSimple(db, () =>
+  from(ctx, "users")
+    .where((u) => u.age >= 18)
+    .orderBy((u) => u.name)
+    .select((u) => ({ id: u.id, name: u.name })),
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
 ```

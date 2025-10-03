@@ -53,16 +53,19 @@ const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const ctx = createContext<Schema>();
 
 // Execute without external params
-const activeUsers = await executeSelectSimple(
-  db,
-  () => from(ctx, "users").where((u) => u.active).orderBy((u) => u.name),
+const activeUsers = await executeSelectSimple(db, () =>
+  from(ctx, "users")
+    .where((u) => u.active)
+    .orderBy((u) => u.name),
 );
 
 // Execute with params
 const matchingUsers = await executeSelect(
   db,
   (p: { minAge: number }) =>
-    from(ctx, "users").where((u) => u.age >= p.minAge).select((u) => ({ id: u.id, name: u.name })),
+    from(ctx, "users")
+      .where((u) => u.age >= p.minAge)
+      .select((u) => ({ id: u.id, name: u.name })),
   { minAge: 21 },
 );
 
@@ -155,9 +158,10 @@ const inserted = executeInsert(
 );
 // inserted === 1
 
-const users = executeSelectSimple(
-  db,
-  () => from(ctx, "users").where((u) => u.isActive === 1).orderBy((u) => u.name),
+const users = executeSelectSimple(db, () =>
+  from(ctx, "users")
+    .where((u) => u.isActive === 1)
+    .orderBy((u) => u.name),
 );
 
 const updated = executeUpdate(
@@ -194,21 +198,21 @@ const rows = db.prepare(sql).all(params);
 
 ### 3.1 Parameter Placeholders
 
-| Database    | Placeholder Format        | Example                                  |
-| ----------- | ------------------------- | ---------------------------------------- |
-| PostgreSQL  | `$(name)` / `$(__p1)`     | `WHERE "age" >= $(minAge)`              |
-| SQLite      | `@name` / `@__p1`         | `WHERE "age" >= @minAge`                |
+| Database   | Placeholder Format    | Example                    |
+| ---------- | --------------------- | -------------------------- |
+| PostgreSQL | `$(name)` / `$(__p1)` | `WHERE "age" >= $(minAge)` |
+| SQLite     | `@name` / `@__p1`     | `WHERE "age" >= @minAge`   |
 
 ### 3.2 Data Types
 
-| Type        | PostgreSQL                   | SQLite                               | Schema Recommendation                 |
-| ----------- | ---------------------------- | ------------------------------------- | ------------------------------------- |
-| Boolean     | `BOOLEAN` (`true`/`false`)    | `INTEGER` (0/1)                       | `boolean` for PG, `number` for SQLite |
-| Integer     | `INTEGER`, `BIGINT`          | `INTEGER`                             | `number` or `bigint`                  |
-| Decimal     | `NUMERIC`, `DECIMAL`         | `REAL`                                | `number`                              |
-| String      | `TEXT`, `VARCHAR`            | `TEXT`                                | `string`                              |
-| Date/Time   | `TIMESTAMP`, `DATE`          | `TEXT` / `INTEGER` (ISO strings)      | `Date` or `string`                    |
-| JSON        | `JSONB`, `JSON`              | `TEXT` (with JSON functions)          | `unknown` / structured type           |
+| Type      | PostgreSQL                 | SQLite                           | Schema Recommendation                 |
+| --------- | -------------------------- | -------------------------------- | ------------------------------------- |
+| Boolean   | `BOOLEAN` (`true`/`false`) | `INTEGER` (0/1)                  | `boolean` for PG, `number` for SQLite |
+| Integer   | `INTEGER`, `BIGINT`        | `INTEGER`                        | `number` or `bigint`                  |
+| Decimal   | `NUMERIC`, `DECIMAL`       | `REAL`                           | `number`                              |
+| String    | `TEXT`, `VARCHAR`          | `TEXT`                           | `string`                              |
+| Date/Time | `TIMESTAMP`, `DATE`        | `TEXT` / `INTEGER` (ISO strings) | `Date` or `string`                    |
+| JSON      | `JSONB`, `JSON`            | `TEXT` (with JSON functions)     | `unknown` / structured type           |
 
 ### 3.3 Case-Insensitive Matching
 

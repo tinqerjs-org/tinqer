@@ -212,9 +212,10 @@ describe("PostgreSQL Integration", () => {
   });
 
   it("should execute SELECT query", async () => {
-    const results = await executeSelectSimple(
-      db,
-      () => from(ctx, "users").where((u) => u.age >= 25).select((u) => u.name),
+    const results = await executeSelectSimple(db, () =>
+      from(ctx, "users")
+        .where((u) => u.age >= 25)
+        .select((u) => u.name),
     );
 
     assert.deepEqual(results, ["Alice", "Bob"]);

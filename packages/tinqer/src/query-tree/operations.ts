@@ -101,6 +101,9 @@ export interface SelectManyOperation extends QueryOperation {
   collectionParam?: string;
   resultParam?: string;
   collectionPropertyPath?: string[];
+  usesDefaultIfEmpty?: boolean;
+  resultShape?: ResultShape;
+  resultBindings?: Array<{ name: string; source: "outer" | "inner"; path?: string[] }>;
 }
 
 /**
@@ -219,15 +222,6 @@ export interface SkipOperation extends QueryOperation {
 export interface ReverseOperation extends QueryOperation {
   operationType: "reverse";
   source: QueryOperation;
-}
-
-/**
- * DEFAULT IF EMPTY operation
- */
-export interface DefaultIfEmptyOperation extends QueryOperation {
-  operationType: "defaultIfEmpty";
-  source: QueryOperation;
-  defaultValue?: ValueExpression;
 }
 
 /**

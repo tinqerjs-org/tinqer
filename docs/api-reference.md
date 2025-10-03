@@ -345,8 +345,7 @@ const ctx = createContext<Schema>();
 const helpers = createQueryHelpers<Schema>();
 
 const result = selectStatement(
-  (_params, h = helpers) =>
-    from(ctx, "users").where((u) => h.functions.icontains(u.name, "alice")),
+  (_params, h = helpers) => from(ctx, "users").where((u) => h.functions.icontains(u.name, "alice")),
   {},
 );
 ```

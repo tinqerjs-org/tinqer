@@ -29,6 +29,8 @@ import { visitTakeOperation } from "../visitors/take-skip/take.js";
 import { visitSkipOperation } from "../visitors/take-skip/skip.js";
 import { visitDistinctOperation } from "../visitors/distinct/index.js";
 import { visitJoinOperation } from "../visitors/join/index.js";
+import { visitGroupJoinOperation } from "../visitors/groupjoin/index.js";
+import { visitSelectManyOperation } from "../visitors/select-many/index.js";
 import { visitGroupByOperation } from "../visitors/groupby/index.js";
 import { visitCountOperation } from "../visitors/count/index.js";
 import { visitSumOperation } from "../visitors/aggregates/sum.js";
@@ -283,8 +285,7 @@ function visitCallExpression(
         return null;
       }
 
-      case "select":
-      case "selectMany": {
+      case "select": {
         const result = visitSelectOperation(ast, source, visitorContext);
         if (result) {
           // Merge auto-params back into context
@@ -370,6 +371,44 @@ function visitCallExpression(
             // Create a virtual table parameter for the JOIN result
             visitorContext.joinResultParam = "$joinResult";
             visitorContext.tableParams.add("$joinResult");
+          }
+
+          return result.operation;
+        }
+        return null;
+      }
+
+      case "groupJoin": {
+        const result = visitGroupJoinOperation(ast, source, methodName, visitorContext);
+        if (result) {
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
+
+          const groupJoinOp = result.operation;
+          if (groupJoinOp.resultShape) {
+            visitorContext.currentResultShape = groupJoinOp.resultShape;
+            visitorContext.joinResultParam = "$groupJoin";
+            visitorContext.tableParams.add("$groupJoin");
+          }
+
+          return result.operation;
+        }
+        return null;
+      }
+
+      case "selectMany": {
+        const result = visitSelectManyOperation(ast, source, methodName, visitorContext);
+        if (result) {
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
+
+          const selectManyOp = result.operation;
+          if (selectManyOp.resultShape) {
+            visitorContext.currentResultShape = selectManyOp.resultShape;
+            visitorContext.joinResultParam = "$selectMany";
+            visitorContext.tableParams.add("$selectMany");
           }
 
           return result.operation;
