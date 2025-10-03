@@ -175,7 +175,7 @@ npm test
 ```typescript
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { Queryable } from "../src/queryable/queryable.js";
+import { createContext, from } from "@webpods/tinqer";
 
 describe("Queryable", () => {
   it("should filter with WHERE clause", () => {
@@ -183,12 +183,13 @@ describe("Queryable", () => {
       users: { id: number; name: string; age: number };
     }
 
-    const query = new Queryable<Schema, "users">("users")
+    const ctx = createContext<Schema>();
+    const query = from(ctx, "users")
       .where((u) => u.age >= 18)
       .select((u) => u);
 
-    // Assert expression tree structure
-    assert.equal(query.expression.type, "select");
+    // Assert expression tree structure (simplified example)
+    assert.ok(query);
   });
 });
 ```
@@ -198,8 +199,11 @@ describe("Queryable", () => {
 ```typescript
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { executeSelectSimple, pgPromiseAdapter } from "tinqer-sql-pg-promise";
+import { createContext, from } from "@webpods/tinqer";
+import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
+
+const ctx = createContext<Schema>();
 
 describe("PostgreSQL Integration", () => {
   beforeEach(async () => {
@@ -208,11 +212,10 @@ describe("PostgreSQL Integration", () => {
   });
 
   it("should execute SELECT query", async () => {
-    const query = new Queryable<Schema, "users">("users")
-      .where((u) => u.age >= 25)
-      .select((u) => u.name);
-
-    const results = await executeSelectSimple(query, db, pgPromiseAdapter);
+    const results = await executeSelectSimple(
+      db,
+      () => from(ctx, "users").where((u) => u.age >= 25).select((u) => u.name),
+    );
 
     assert.deepEqual(results, ["Alice", "Bob"]);
   });
@@ -486,7 +489,7 @@ const minAge = 18;
 **Issue: Type Inference Not Working**
 
 ```typescript
-const query = new Queryable("users"); // Type is Queryable<unknown>
+const query = from("users"); // Type is Queryable<unknown>
 ```
 
 **Solution:** Provide explicit schema type:
@@ -496,7 +499,7 @@ interface Schema {
   users: { id: number; name: string };
 }
 
-const query = new Queryable<Schema, "users">("users"); // Fully typed
+const query = from<Schema["users"]>("users"); // Fully typed
 ```
 
 **Issue: Property Does Not Exist**
