@@ -7,99 +7,6 @@ import type { IGrouping } from "./igrouping.js";
 import { TerminalQuery } from "./terminal-query.js";
 
 /**
- * OrderedQueryable extends Queryable with thenBy operations
- */
-export class OrderedQueryable<T> {
-  constructor() {
-    // Never actually instantiated
-  }
-
-  // Chainable operations
-  where(_predicate: (_item: T) => boolean): OrderedQueryable<T> {
-    return this;
-  }
-
-  select<TResult>(_selector: (_item: T) => TResult): Queryable<TResult> {
-    return new Queryable<TResult>();
-  }
-
-  // Secondary ordering
-  thenBy<TKey>(_keySelector: (_item: T) => TKey): OrderedQueryable<T> {
-    return this;
-  }
-
-  thenByDescending<TKey>(_keySelector: (_item: T) => TKey): OrderedQueryable<T> {
-    return this;
-  }
-
-  // More chainable operations
-  distinct(): OrderedQueryable<T> {
-    return this;
-  }
-
-  take(_count: number): OrderedQueryable<T> {
-    return this;
-  }
-
-  skip(_count: number): OrderedQueryable<T> {
-    return this;
-  }
-
-  // Terminal operations
-  first(_predicate?: (_item: T) => boolean): TerminalQuery<T> {
-    return new TerminalQuery<T>();
-  }
-
-  firstOrDefault(_predicate?: (_item: T) => boolean): TerminalQuery<T | undefined> {
-    return new TerminalQuery<T | undefined>();
-  }
-
-  single(_predicate?: (_item: T) => boolean): TerminalQuery<T> {
-    return new TerminalQuery<T>();
-  }
-
-  singleOrDefault(_predicate?: (_item: T) => boolean): TerminalQuery<T | undefined> {
-    return new TerminalQuery<T | undefined>();
-  }
-
-  last(_predicate?: (_item: T) => boolean): TerminalQuery<T> {
-    return new TerminalQuery<T>();
-  }
-
-  lastOrDefault(_predicate?: (_item: T) => boolean): TerminalQuery<T | undefined> {
-    return new TerminalQuery<T | undefined>();
-  }
-
-  count(_predicate?: (_item: T) => boolean): TerminalQuery<number> {
-    return new TerminalQuery<number>();
-  }
-
-  contains(_value: T): TerminalQuery<boolean> {
-    return new TerminalQuery<boolean>();
-  }
-
-  sum(_selector?: (_item: T) => number): TerminalQuery<number> {
-    return new TerminalQuery<number>();
-  }
-
-  average(_selector?: (_item: T) => number): TerminalQuery<number> {
-    return new TerminalQuery<number>();
-  }
-
-  min<TResult>(_selector?: (_item: T) => TResult): TerminalQuery<TResult> {
-    return new TerminalQuery<TResult>();
-  }
-
-  max<TResult>(_selector?: (_item: T) => TResult): TerminalQuery<TResult> {
-    return new TerminalQuery<TResult>();
-  }
-
-  toArray(): TerminalQuery<T[]> {
-    return new TerminalQuery<T[]>();
-  }
-}
-
-/**
  * Queryable provides a fluent API for building queries with type safety.
  * This class is never actually executed - it's parsed from its string representation.
  */
@@ -235,16 +142,6 @@ export class Queryable<T> {
     return new TerminalQuery<T | TResult>();
   }
 
-  // ==================== Conversion ====================
-
-  toArray(): TerminalQuery<T[]> {
-    return new TerminalQuery<T[]>();
-  }
-
-  toList(): TerminalQuery<T[]> {
-    return new TerminalQuery<T[]>();
-  }
-
   // ==================== Boolean Tests ====================
 
   any(_predicate?: (_item: T) => boolean): TerminalQuery<boolean> {
@@ -260,8 +157,40 @@ export class Queryable<T> {
   count(_predicate?: (_item: T) => boolean): TerminalQuery<number> {
     return new TerminalQuery<number>();
   }
+}
 
-  longCount(_predicate?: (_item: T) => boolean): TerminalQuery<bigint> {
-    return new TerminalQuery<bigint>();
+/**
+ * OrderedQueryable extends Queryable with thenBy operations
+ * Matches .NET's IOrderedQueryable<T> : IQueryable<T> inheritance
+ */
+export class OrderedQueryable<T> extends Queryable<T> {
+  constructor() {
+    super();
+  }
+
+  // Override methods that need to return OrderedQueryable instead of Queryable
+  override where(_predicate: (_item: T) => boolean): OrderedQueryable<T> {
+    return this;
+  }
+
+  override distinct(): OrderedQueryable<T> {
+    return this;
+  }
+
+  override take(_count: number): OrderedQueryable<T> {
+    return this;
+  }
+
+  override skip(_count: number): OrderedQueryable<T> {
+    return this;
+  }
+
+  // Secondary ordering methods (unique to OrderedQueryable)
+  thenBy<TKey>(_keySelector: (_item: T) => TKey): OrderedQueryable<T> {
+    return this;
+  }
+
+  thenByDescending<TKey>(_keySelector: (_item: T) => TKey): OrderedQueryable<T> {
+    return this;
   }
 }

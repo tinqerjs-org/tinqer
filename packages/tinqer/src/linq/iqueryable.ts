@@ -154,11 +154,6 @@ export interface IQueryable<T> {
   count(predicate?: (source: T) => boolean): number;
 
   /**
-   * Returns a long representing the number of elements
-   */
-  longCount(predicate?: (source: T) => boolean): bigint;
-
-  /**
    * Computes the sum of a sequence of numeric values
    */
   sum(selector?: (source: T) => number): number;
@@ -177,14 +172,4 @@ export interface IQueryable<T> {
    * Returns the maximum value in a sequence
    */
   max<TResult = T>(selector?: (source: T) => TResult): TResult;
-
-  /**
-   * Converts the sequence to an array
-   */
-  toArray(): T[];
-
-  /**
-   * Converts the sequence to a List<T>
-   */
-  toList(): T[];
 }

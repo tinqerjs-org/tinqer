@@ -132,7 +132,6 @@ export type {
   AverageOperation,
   MinOperation,
   MaxOperation,
-  ToArrayOperation,
 
   // Data modification operations
   InsertOperation,

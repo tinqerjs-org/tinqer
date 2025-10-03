@@ -497,8 +497,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
         () =>
           from(dbContext, "users")
             .where((u) => u.is_active === true)
-            .orderBy((u) => u.name)
-            .toArray(),
+            .orderBy((u) => u.name),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -527,8 +526,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
         () =>
           from(dbContext, "products")
             .where((p) => p.stock > 50)
-            .orderByDescending((p) => p.price)
-            .toArray(),
+            .orderByDescending((p) => p.price),
         {
           onSql: (result) => {
             capturedSql = result;

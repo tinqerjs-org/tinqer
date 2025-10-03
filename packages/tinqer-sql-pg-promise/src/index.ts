@@ -225,8 +225,6 @@ export async function executeSelect<
       return false as any;
     }
 
-    case "toArray":
-    case "toList":
     default:
       // Regular query that returns an array
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

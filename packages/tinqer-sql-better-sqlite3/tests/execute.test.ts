@@ -173,17 +173,6 @@ describe("Execute Function", () => {
         'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("isActive")) THEN 1 ELSE 0 END',
       );
     });
-
-    it("should handle toArray() operation", async () => {
-      const queryBuilder = () =>
-        from(db, "users")
-          .where((u) => u.age >= 18)
-          .toArray();
-
-      const sqlResult = selectStatement(queryBuilder, {});
-      expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "age" >= @__p1');
-      expect(sqlResult.params).to.deep.equal({ __p1: 18 });
-    });
   });
 
   describe("Type inference", () => {
