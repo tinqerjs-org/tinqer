@@ -1,0 +1,545 @@
+[← Back to README](../README.md)
+
+# Development Guide
+
+Guide for contributing to Tinqer, running tests, and troubleshooting.
+
+## Table of Contents
+
+- [1. Getting Started](#1-getting-started)
+  - [1.1 Prerequisites](#11-prerequisites)
+  - [1.2 Installation](#12-installation)
+  - [1.3 Project Structure](#13-project-structure)
+- [2. Building](#2-building)
+  - [2.1 Build Commands](#21-build-commands)
+  - [2.2 Clean Build](#22-clean-build)
+- [3. Testing](#3-testing)
+  - [3.1 Running Tests](#31-running-tests)
+  - [3.2 Test Organization](#32-test-organization)
+  - [3.3 Writing Tests](#33-writing-tests)
+- [4. Code Quality](#4-code-quality)
+  - [4.1 Linting](#41-linting)
+  - [4.2 Formatting](#42-formatting)
+- [5. Contributing](#5-contributing)
+  - [5.1 Coding Standards](#51-coding-standards)
+  - [5.2 Commit Guidelines](#52-commit-guidelines)
+  - [5.3 Pull Requests](#53-pull-requests)
+- [6. Troubleshooting](#6-troubleshooting)
+  - [6.1 Common Issues](#61-common-issues)
+  - [6.2 Parser Errors](#62-parser-errors)
+  - [6.3 Type Errors](#63-type-errors)
+
+---
+
+## 1. Getting Started
+
+### 1.1 Prerequisites
+
+- Node.js 18+ (for ESM support)
+- npm 8+
+- TypeScript 5.3+
+- PostgreSQL 12+ (for PostgreSQL adapter development)
+- SQLite 3.35+ (for SQLite adapter development)
+
+### 1.2 Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/webpods-org/tinqer.git
+cd tinqer
+
+# Install dependencies
+npm install
+
+# Build all packages
+./scripts/build.sh
+```
+
+### 1.3 Project Structure
+
+```
+tinqer/
+├── packages/
+│   ├── tinqer/                          # Core library
+│   │   ├── src/
+│   │   │   ├── parser/                  # Lambda expression parser (OXC)
+│   │   │   ├── converter/               # AST to expression tree converter
+│   │   │   ├── queryable/               # Queryable API
+│   │   │   ├── visitors/                # SQL generation visitors
+│   │   │   └── types/                   # TypeScript type definitions
+│   │   └── tests/                       # Core library tests
+│   │
+│   ├── tinqer-sql-pg-promise/           # PostgreSQL adapter
+│   │   ├── src/
+│   │   │   ├── adapter.ts               # PostgreSQL SQL adapter
+│   │   │   ├── execute.ts               # Execution functions
+│   │   │   └── visitors/                # PostgreSQL-specific visitors
+│   │   └── tests/                       # Integration tests
+│   │
+│   ├── tinqer-sql-better-sqlite3/       # SQLite adapter
+│   │   ├── src/
+│   │   │   ├── adapter.ts               # SQLite SQL adapter
+│   │   │   ├── execute.ts               # Execution functions
+│   │   │   └── visitors/                # SQLite-specific visitors
+│   │   └── tests/                       # Integration tests
+│   │
+│   └── tinqer-sql-*/                    # Integration test packages
+│
+├── scripts/                             # Build and utility scripts
+│   ├── build.sh                         # Main build script
+│   ├── clean.sh                         # Clean build artifacts
+│   ├── lint-all.sh                      # Lint all packages
+│   └── format-all.sh                    # Format with Prettier
+│
+└── docs/                                # Documentation
+```
+
+---
+
+## 2. Building
+
+### 2.1 Build Commands
+
+```bash
+# Standard build with formatting
+./scripts/build.sh
+
+# Build without formatting (faster during development)
+./scripts/build.sh --no-format
+
+# Build specific package
+cd packages/tinqer
+npm run build
+```
+
+**Build Process:**
+
+1. Runs TypeScript compiler for each package
+2. Generates ES modules with `.js` extensions
+3. Runs Prettier formatting (unless `--no-format` is used)
+4. Outputs to `dist/` directories
+
+### 2.2 Clean Build
+
+```bash
+# Remove build artifacts
+./scripts/clean.sh
+
+# Remove build artifacts and node_modules
+./scripts/clean.sh --all
+```
+
+---
+
+## 3. Testing
+
+### 3.1 Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run specific tests by pattern
+npm run test:grep -- "WHERE operations"
+npm run test:grep -- "INSERT"
+npm run test:grep -- "JOIN"
+
+# Run tests for specific package
+cd packages/tinqer
+npm test
+```
+
+### 3.2 Test Organization
+
+**Core Library Tests** (`packages/tinqer/tests/`):
+
+- Parser tests: Lambda expression parsing
+- Converter tests: AST to expression tree conversion
+- Queryable tests: Query builder API
+- Type tests: TypeScript type inference
+
+**Integration Tests** (`packages/tinqer-sql-*/tests/`):
+
+- PostgreSQL integration: `tinqer-sql-pg-promise-integration/tests/`
+- SQLite integration: `tinqer-sql-better-sqlite3-integration/tests/`
+- Full end-to-end query execution tests
+- Database-specific feature tests
+
+### 3.3 Writing Tests
+
+**Unit Test Example:**
+
+```typescript
+import { describe, it } from "mocha";
+import { strict as assert } from "assert";
+import { Queryable } from "../src/queryable/queryable.js";
+
+describe("Queryable", () => {
+  it("should filter with WHERE clause", () => {
+    interface Schema {
+      users: { id: number; name: string; age: number };
+    }
+
+    const query = new Queryable<Schema, "users">("users")
+      .where((u) => u.age >= 18)
+      .select((u) => u);
+
+    // Assert expression tree structure
+    assert.equal(query.expression.type, "select");
+  });
+});
+```
+
+**Integration Test Example:**
+
+```typescript
+import { describe, it, beforeEach } from "mocha";
+import { strict as assert } from "assert";
+import { executeSelectSimple, pgPromiseAdapter } from "tinqer-sql-pg-promise";
+import { db } from "./shared-db.js";
+
+describe("PostgreSQL Integration", () => {
+  beforeEach(async () => {
+    await db.none("TRUNCATE TABLE users RESTART IDENTITY CASCADE");
+    await db.none("INSERT INTO users (name, age) VALUES ('Alice', 30), ('Bob', 25)");
+  });
+
+  it("should execute SELECT query", async () => {
+    const query = new Queryable<Schema, "users">("users")
+      .where((u) => u.age >= 25)
+      .select((u) => u.name);
+
+    const results = await executeSelectSimple(query, db, pgPromiseAdapter);
+
+    assert.deepEqual(results, ["Alice", "Bob"]);
+  });
+});
+```
+
+**Test Database Setup:**
+
+PostgreSQL tests use shared connection (`packages/tinqer-sql-pg-promise-integration/tests/shared-db.ts`):
+
+```typescript
+import pgPromise from "pg-promise";
+
+const pgp = pgPromise();
+export const db = pgp({
+  host: "localhost",
+  port: 5432,
+  database: "tinqer_test",
+  user: "tinqer_test",
+  password: "tinqer_test",
+});
+```
+
+SQLite tests use isolated in-memory databases:
+
+```typescript
+import Database from "better-sqlite3";
+
+describe("SQLite Tests", () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    // Create schema and seed data
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+});
+```
+
+---
+
+## 4. Code Quality
+
+### 4.1 Linting
+
+```bash
+# Lint all packages
+./scripts/lint-all.sh
+
+# Lint with auto-fix
+./scripts/lint-all.sh --fix
+
+# Lint specific package
+cd packages/tinqer
+npm run lint
+npm run lint:fix
+```
+
+**ESLint Configuration:**
+
+- `@typescript-eslint/no-explicit-any`: error (no `any` types allowed)
+- `@typescript-eslint/prefer-const`: error
+- Strict type checking enabled
+
+### 4.2 Formatting
+
+```bash
+# Format all files with Prettier
+./scripts/format-all.sh
+
+# Check formatting without changes
+./scripts/format-all.sh --check
+
+# Format specific package
+cd packages/tinqer
+npm run format
+```
+
+**IMPORTANT:** Always run `./scripts/format-all.sh` before committing.
+
+---
+
+## 5. Contributing
+
+### 5.1 Coding Standards
+
+**TypeScript Guidelines:**
+
+- **No `any` types**: All code must be strictly typed
+- **Prefer `type` over `interface`**: Use `interface` only for extensible contracts
+- **ESM imports**: Always include `.js` extension in imports
+
+  ```typescript
+  // Correct
+  import { Queryable } from "./queryable/queryable.js";
+
+  // Incorrect
+  import { Queryable } from "./queryable/queryable";
+  ```
+
+- **Pure functions**: Prefer stateless functions with explicit dependency injection
+- **No dynamic imports**: Always use static imports
+
+**Code Organization:**
+
+- Export functions from modules when possible
+- Use classes only for stateful connections or complex state management
+- Keep files focused and single-purpose
+- Write comprehensive JSDoc comments for public APIs
+
+### 5.2 Commit Guidelines
+
+```bash
+# Before committing:
+./scripts/format-all.sh  # Format code
+./scripts/lint-all.sh    # Check linting
+./scripts/build.sh       # Build all packages
+npm test                 # Run all tests
+
+# Commit with descriptive message
+git add .
+git commit -m "feat: add support for window functions"
+```
+
+**Commit Message Format:**
+
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `refactor:` - Code refactoring
+- `test:` - Test additions or changes
+- `docs:` - Documentation changes
+- `chore:` - Build process or tooling changes
+
+### 5.3 Pull Requests
+
+1. **Create feature branch:**
+
+   ```bash
+   git checkout -b feat/my-feature
+   ```
+
+2. **Make changes and test:**
+
+   ```bash
+   ./scripts/format-all.sh
+   ./scripts/lint-all.sh
+   ./scripts/build.sh
+   npm test
+   ```
+
+3. **Push and create PR:**
+
+   ```bash
+   git push -u origin feat/my-feature
+   # Create PR on GitHub
+   ```
+
+4. **PR Requirements:**
+   - All tests passing
+   - Code formatted and linted
+   - Documentation updated
+   - Clear description of changes
+   - Type safety maintained
+
+---
+
+## 6. Troubleshooting
+
+### 6.1 Common Issues
+
+**Issue: Build Fails with Module Resolution Errors**
+
+```
+Error: Cannot find module './queryable.js'
+```
+
+**Solution:** Ensure all imports include `.js` extension:
+
+```typescript
+// Incorrect
+import { Queryable } from "./queryable";
+
+// Correct
+import { Queryable } from "./queryable.js";
+```
+
+**Issue: Tests Fail with Connection Pool Destroyed**
+
+```
+Error: Connection pool has been destroyed
+```
+
+**Solution:** Use shared database connection, don't call `pgp.end()` in tests:
+
+```typescript
+// Correct
+import { db } from "./shared-db.js";
+
+// Incorrect - don't create new pgp instances in tests
+const pgp = pgPromise();
+const db = pgp({...});
+pgp.end(); // This destroys the global pool!
+```
+
+**Issue: SQLite Boolean Type Errors**
+
+```
+TypeError: SQLite3 can only bind numbers, strings, bigints, buffers, and null
+```
+
+**Solution:** Use `number` type (0/1) for boolean columns in SQLite schemas:
+
+```typescript
+// Correct for SQLite
+interface Schema {
+  users: {
+    is_active: number; // Use 0 for false, 1 for true
+  };
+}
+
+// Incorrect for SQLite
+interface Schema {
+  users: {
+    is_active: boolean; // SQLite doesn't have boolean type
+  };
+}
+```
+
+### 6.2 Parser Errors
+
+**Issue: Unsupported AST Node Type**
+
+```
+Error: Unsupported AST node type: TemplateLiteral
+```
+
+**Solution:** Use params pattern for dynamic values:
+
+```typescript
+// Incorrect - template literal in lambda
+.where(u => u.name === `User ${userId}`)
+
+// Correct - use params
+.where((u, params: { name: string }) => u.name === params.name)
+// Pass: { name: `User ${userId}` }
+```
+
+**Issue: Unknown Identifier**
+
+```
+Error: Unknown identifier 'externalVar'
+```
+
+**Solution:** Pass external variables via params object:
+
+```typescript
+// Incorrect - closure variable
+const minAge = 18;
+.where(u => u.age >= minAge)
+
+// Correct - params pattern
+.where((u, params: { minAge: number }) => u.age >= params.minAge)
+// Pass: { minAge: 18 }
+```
+
+### 6.3 Type Errors
+
+**Issue: Type Inference Not Working**
+
+```typescript
+const query = new Queryable("users"); // Type is Queryable<unknown>
+```
+
+**Solution:** Provide explicit schema type:
+
+```typescript
+interface Schema {
+  users: { id: number; name: string };
+}
+
+const query = new Queryable<Schema, "users">("users"); // Fully typed
+```
+
+**Issue: Property Does Not Exist**
+
+```
+Property 'email' does not exist on type '{ id: number; name: string }'
+```
+
+**Solution:** Ensure schema definition includes all columns:
+
+```typescript
+interface Schema {
+  users: {
+    id: number;
+    name: string;
+    email: string; // Add missing column
+  };
+}
+```
+
+---
+
+## Development Workflow
+
+**Typical Development Cycle:**
+
+1. **Make changes** to source files
+2. **Run linter**: `./scripts/lint-all.sh --fix`
+3. **Build**: `./scripts/build.sh --no-format` (skip formatting for speed)
+4. **Run specific tests**: `npm run test:grep -- "your feature"`
+5. **Iterate** until tests pass
+6. **Run full test suite**: `npm test`
+7. **Format code**: `./scripts/format-all.sh`
+8. **Final build**: `./scripts/build.sh`
+9. **Commit changes**
+
+**Debugging Tips:**
+
+- Use `npm run test:grep -- "pattern"` to focus on specific tests
+- Check `.tests/` directory for saved test output (gitignored)
+- Use TypeScript's `tsc --noEmit` to check types without building
+- Enable verbose logging in tests with `DEBUG=* npm test`
+
+---
+
+[← Back to README](../README.md)

@@ -33,7 +33,7 @@ export function selectStatement<TParams, TResult>(
         helpers: QueryHelpers,
       ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
   params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
   // Parse the query to get the operation tree and auto-params
   const parseResult = parseQuery(queryBuilder);
 
@@ -266,9 +266,14 @@ export async function executeSelectSimple<
  * Generate INSERT SQL statement
  */
 export function insertStatement<TParams, TTable, TReturning = never>(
-  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
+  queryBuilder: (
+    params: TParams,
+  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+): SqlResult<
+  TParams & Record<string, string | number | boolean | null>,
+  TReturning extends never ? void : TReturning
+> {
   const parseResult = parseQuery(queryBuilder);
 
   if (!parseResult) {
@@ -309,7 +314,9 @@ export async function executeInsert<TParams, TTable, TReturning>(
 // eslint-disable-next-line no-redeclare
 export async function executeInsert<TParams, TTable, TReturning = never>(
   db: PgDatabase,
-  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
+  queryBuilder: (
+    params: TParams,
+  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions = {},
 ): Promise<number | TReturning[]> {
@@ -345,9 +352,15 @@ export async function executeInsert<TParams, TTable, TReturning = never>(
 export function updateStatement<TParams, TTable, TReturning = never>(
   queryBuilder: (
     params: TParams,
-  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
+  ) =>
+    | UpdatableWithSet<TTable>
+    | UpdatableComplete<TTable>
+    | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+): SqlResult<
+  TParams & Record<string, string | number | boolean | null>,
+  TReturning extends never ? void : TReturning
+> {
   const parseResult = parseQuery(queryBuilder);
 
   if (!parseResult) {
@@ -390,7 +403,10 @@ export async function executeUpdate<TParams, TTable, TReturning = never>(
   db: PgDatabase,
   queryBuilder: (
     params: TParams,
-  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
+  ) =>
+    | UpdatableWithSet<TTable>
+    | UpdatableComplete<TTable>
+    | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions = {},
 ): Promise<number | TReturning[]> {
@@ -426,7 +442,7 @@ export async function executeUpdate<TParams, TTable, TReturning = never>(
 export function deleteStatement<TParams, TResult>(
   queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
   params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
   const parseResult = parseQuery(queryBuilder);
 
   if (!parseResult) {

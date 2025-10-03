@@ -7,9 +7,12 @@ import type { Expression } from "@webpods/tinqer";
 /**
  * Result of SQL generation
  */
-export interface SqlResult<TParams> {
+export interface SqlResult<TParams, TResult> {
   sql: string;
   params: TParams;
+  // Phantom property to preserve result type information at compile time
+  // This is never used at runtime but allows TypeScript to track what the query returns
+  _resultType?: TResult;
 }
 
 /**
@@ -52,7 +55,7 @@ export interface ExecuteOptions {
    * Optional callback to inspect/verify the generated SQL before execution
    * Useful for testing, logging, debugging, or monitoring
    */
-  onSql?: (result: SqlResult<Record<string, unknown>>) => void;
+  onSql?: (result: SqlResult<Record<string, unknown>, unknown>) => void;
 }
 
 /**

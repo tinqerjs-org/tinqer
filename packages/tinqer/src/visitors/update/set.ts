@@ -8,6 +8,9 @@ import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
   ObjectExpression as ASTObjectExpression,
+  Expression,
+  Statement,
+  ReturnStatement,
 } from "../../parser/ast-types.js";
 import type { VisitorContext } from "../types.js";
 import { visitExpression } from "../index.js";
@@ -33,37 +36,46 @@ export function visitSetOperation(
     throw new Error("set() can only be called once per UPDATE query");
   }
 
-  // .set(() => ({ column1: value1, column2: value2 }))
+  // .set({ column1: value1, column2: value2 }) or .set(() => ({ column1: value1, column2: value2 }))
   const args = ast.arguments;
   if (!args || args.length === 0) {
     return null;
   }
 
-  const lambda = args[0];
-  if (!lambda || lambda.type !== "ArrowFunctionExpression") {
-    throw new Error("set() requires a lambda expression");
+  const firstArg = args[0];
+  if (!firstArg) {
+    return null;
   }
 
-  const arrowFn = lambda as ArrowFunctionExpression;
-  let bodyExpr = arrowFn.body;
+  let bodyExpr: Expression = firstArg;
 
-  // Handle block statement with return
-  if (bodyExpr.type === "BlockStatement") {
-    const returnStmt = bodyExpr.body?.find((stmt) => stmt.type === "ReturnStatement");
-    if (!returnStmt || !returnStmt.argument) {
-      throw new Error("set() lambda must return an object");
+  // If it's a lambda (for backward compatibility or when using parameters), extract the body
+  if (firstArg.type === "ArrowFunctionExpression") {
+    const arrowFn = firstArg as ArrowFunctionExpression;
+    const lambdaBody = arrowFn.body;
+
+    // Handle block statement with return
+    if (lambdaBody.type === "BlockStatement") {
+      const returnStmt = lambdaBody.body?.find(
+        (stmt: Statement) => stmt.type === "ReturnStatement",
+      ) as ReturnStatement | undefined;
+      if (!returnStmt || !returnStmt.argument) {
+        throw new Error("set() lambda must return an object");
+      }
+      bodyExpr = returnStmt.argument as Expression;
+    } else {
+      bodyExpr = lambdaBody;
     }
-    bodyExpr = returnStmt.argument;
-  }
 
-  // Handle parenthesized expression (common pattern: () => ({ ... }))
-  if (bodyExpr.type === "ParenthesizedExpression") {
-    bodyExpr = (bodyExpr as { expression: typeof bodyExpr }).expression;
+    // Handle parenthesized expression (common pattern: () => ({ ... }))
+    if (bodyExpr.type === "ParenthesizedExpression") {
+      bodyExpr = (bodyExpr as { expression: Expression }).expression;
+    }
   }
 
   // Must be an object expression
   if (bodyExpr.type !== "ObjectExpression") {
-    throw new Error("set() must return an object literal");
+    throw new Error("set() must be an object literal or return an object literal");
   }
 
   // Visit the object expression to get column-value assignments
