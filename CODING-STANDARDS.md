@@ -322,8 +322,8 @@ Operations should build expression trees without immediate processing.
 const query = users.where((u) => u.age >= 18).select((u) => u.name);
 // No database hit yet
 
-// Terminal operation triggers execution
-const results = query.toArray();
+// Execution happens when passed to executeSelect/executeSelectSimple
+const results = await executeSelect(db, () => query, {});
 ```
 
 ### Expression Reuse

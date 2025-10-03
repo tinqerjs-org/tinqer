@@ -481,7 +481,6 @@ class Queryable<T> {
   // Terminal operations
   count(predicate?: (item: T) => boolean): TerminalQuery<number>;
   first(predicate?: (item: T) => boolean): TerminalQuery<T>;
-  toArray(): TerminalQuery<T[]>;
 }
 
 // Terminal query marker
