@@ -13,6 +13,9 @@ const mockDb = {
   async one(_sql: string, _params: unknown): Promise<unknown> {
     return {};
   },
+  async result(_sql: string, _params: unknown): Promise<{ rowCount: number }> {
+    return { rowCount: 0 };
+  },
 };
 
 // Type tests - these should compile without errors

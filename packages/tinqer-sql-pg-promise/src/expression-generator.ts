@@ -110,6 +110,8 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
       return generateCaseExpression(expr as CaseExpression, context);
     case "reference":
       return generateReferenceExpression(expr as ReferenceExpression, context);
+    case "allColumns":
+      return "*";
     default:
       throw new Error(
         `Unsupported value expression type: ${(expr as ValueExpression & { type: string }).type}`,
@@ -207,7 +209,7 @@ function generateNotExpression(expr: NotExpression, context: SqlContext): string
       const paramExpr = inExpr.list as ParameterExpression;
       // Use property if it exists (e.g., params.targetIds), otherwise use param
       const paramName = paramExpr.property || paramExpr.param;
-      const formattedParam = `\${${paramName}}`;
+      const formattedParam = `$(${paramName})`;
       // Convert NOT (x = ANY(array)) to x <> ALL(array)
       return `${value} <> ALL(${formattedParam})`;
     }
@@ -583,7 +585,7 @@ function generateInExpression(expr: InExpression, context: SqlContext): string {
     const paramExpr = expr.list as ParameterExpression;
     // Use property if it exists (e.g., params.targetIds), otherwise use param
     const paramName = paramExpr.property || paramExpr.param;
-    const formattedParam = `\${${paramName}}`;
+    const formattedParam = `$(${paramName})`;
 
     // Check if we need to handle empty array specially
     // We'll let pg-promise handle the parameter value

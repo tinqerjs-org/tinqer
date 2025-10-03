@@ -3,7 +3,14 @@
  * Main entry point for the visitor-based parsing system
  */
 
-import type { QueryOperation, JoinOperation, ResultShape } from "../query-tree/operations.js";
+import type {
+  QueryOperation,
+  JoinOperation,
+  ResultShape,
+  InsertOperation,
+  UpdateOperation,
+  DeleteOperation,
+} from "../query-tree/operations.js";
 import type {
   Expression as ASTExpression,
   CallExpression as ASTCallExpression,
@@ -36,6 +43,19 @@ import { visitAllOperation } from "../visitors/boolean-predicates/all.js";
 import { visitContainsOperation } from "../visitors/contains/index.js";
 import { visitReverseOperation } from "../visitors/reverse/index.js";
 import { visitToArrayOperation } from "../visitors/toarray/index.js";
+
+// Data modification visitors
+import { visitInsertOperation } from "../visitors/insert/index.js";
+import { visitValuesOperation } from "../visitors/insert/values.js";
+import { visitReturningOperation } from "../visitors/insert/returning.js";
+import { visitUpdateOperation } from "../visitors/update/index.js";
+import { visitSetOperation } from "../visitors/update/set.js";
+import { visitWhereUpdateOperation } from "../visitors/update/where-update.js";
+import { visitAllowFullUpdateOperation } from "../visitors/update/allow-full-update.js";
+import { visitReturningUpdateOperation } from "../visitors/update/returning-update.js";
+import { visitDeleteOperation } from "../visitors/delete/index.js";
+import { visitWhereDeleteOperation } from "../visitors/delete/where-delete.js";
+import { visitAllowFullDeleteOperation } from "../visitors/delete/allow-full-delete.js";
 
 /**
  * Parse result with operation and auto-params
@@ -181,7 +201,7 @@ function visitCallExpression(
   const methodName = getMethodName(ast);
   if (!methodName) return null;
 
-  // Handle FROM (root operation)
+  // Handle root operations
   if (methodName === "from") {
     const operation = visitFromOperation(ast);
     // Set current table in context for field tracking
@@ -189,6 +209,33 @@ function visitCallExpression(
       visitorContext.currentTable = operation.table;
     }
     // FROM doesn't have auto-params
+    return operation;
+  }
+
+  if (methodName === "insertInto") {
+    const operation = visitInsertOperation(ast);
+    // Set current table in context for field tracking
+    if (operation) {
+      visitorContext.currentTable = operation.table;
+    }
+    return operation;
+  }
+
+  if (methodName === "updateTable") {
+    const operation = visitUpdateOperation(ast);
+    // Set current table in context for field tracking
+    if (operation) {
+      visitorContext.currentTable = operation.table;
+    }
+    return operation;
+  }
+
+  if (methodName === "deleteFrom") {
+    const operation = visitDeleteOperation(ast);
+    // Set current table in context for field tracking
+    if (operation) {
+      visitorContext.currentTable = operation.table;
+    }
     return operation;
   }
 
@@ -204,6 +251,28 @@ function visitCallExpression(
     // Visit specific operation based on method name
     switch (methodName) {
       case "where": {
+        // Handle WHERE for UPDATE and DELETE operations differently
+        if (source.operationType === "update") {
+          const result = visitWhereUpdateOperation(ast, source as UpdateOperation, visitorContext);
+          if (result) {
+            for (const [key, value] of Object.entries(result.autoParams)) {
+              visitorContext.autoParams.set(key, value);
+            }
+            return result.operation;
+          }
+          return null;
+        } else if (source.operationType === "delete") {
+          const result = visitWhereDeleteOperation(ast, source as DeleteOperation, visitorContext);
+          if (result) {
+            for (const [key, value] of Object.entries(result.autoParams)) {
+              visitorContext.autoParams.set(key, value);
+            }
+            return result.operation;
+          }
+          return null;
+        }
+
+        // Regular WHERE for SELECT operations
         const result = visitWhereOperation(ast, source, visitorContext);
         if (result) {
           // Merge auto-params back into context
@@ -476,7 +545,123 @@ function visitCallExpression(
         return null;
       }
 
+      // INSERT operations
+      case "values": {
+        if (source.operationType !== "insert") {
+          throw new Error("values() can only be called on INSERT operations");
+        }
+        const result = visitValuesOperation(ast, source as InsertOperation, visitorContext);
+        if (result) {
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
+          return result.operation;
+        }
+        return null;
+      }
+
+      case "returning": {
+        if (source.operationType === "insert") {
+          const result = visitReturningOperation(ast, source as InsertOperation, visitorContext);
+          if (result) {
+            for (const [key, value] of Object.entries(result.autoParams)) {
+              visitorContext.autoParams.set(key, value);
+            }
+            return result.operation;
+          }
+          return null;
+        } else if (source.operationType === "update") {
+          const result = visitReturningUpdateOperation(
+            ast,
+            source as UpdateOperation,
+            visitorContext,
+          );
+          if (result) {
+            for (const [key, value] of Object.entries(result.autoParams)) {
+              visitorContext.autoParams.set(key, value);
+            }
+            return result.operation;
+          }
+          return null;
+        }
+        throw new Error("returning() can only be called on INSERT or UPDATE operations");
+      }
+
+      // UPDATE operations
+      case "set": {
+        if (source.operationType !== "update") {
+          throw new Error("set() can only be called on UPDATE operations");
+        }
+        const result = visitSetOperation(ast, source as UpdateOperation, visitorContext);
+        if (result) {
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
+          return result.operation;
+        }
+        return null;
+      }
+
+      case "allowFullTableUpdate": {
+        if (source.operationType !== "update") {
+          throw new Error("allowFullTableUpdate() can only be called on UPDATE operations");
+        }
+        const result = visitAllowFullUpdateOperation(ast, source as UpdateOperation);
+        if (result) {
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
+          return result.operation;
+        }
+        return null;
+      }
+
+      // DELETE operations
+      case "allowFullTableDelete": {
+        if (source.operationType !== "delete") {
+          throw new Error("allowFullTableDelete() can only be called on DELETE operations");
+        }
+        const result = visitAllowFullDeleteOperation(ast, source as DeleteOperation);
+        if (result) {
+          for (const [key, value] of Object.entries(result.autoParams)) {
+            visitorContext.autoParams.set(key, value);
+          }
+          return result.operation;
+        }
+        return null;
+      }
+
       default:
+        // Handle WHERE based on source type
+        if (methodName === "where") {
+          if (source.operationType === "update") {
+            const result = visitWhereUpdateOperation(
+              ast,
+              source as UpdateOperation,
+              visitorContext,
+            );
+            if (result) {
+              for (const [key, value] of Object.entries(result.autoParams)) {
+                visitorContext.autoParams.set(key, value);
+              }
+              return result.operation;
+            }
+            return null;
+          } else if (source.operationType === "delete") {
+            const result = visitWhereDeleteOperation(
+              ast,
+              source as DeleteOperation,
+              visitorContext,
+            );
+            if (result) {
+              for (const [key, value] of Object.entries(result.autoParams)) {
+                visitorContext.autoParams.set(key, value);
+              }
+              return result.operation;
+            }
+            return null;
+          }
+        }
         console.warn(`Unknown query method: ${methodName}`);
         return null;
     }

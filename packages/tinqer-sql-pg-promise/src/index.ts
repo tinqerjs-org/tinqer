@@ -8,6 +8,13 @@ import {
   type OrderedQueryable,
   type TerminalQuery,
   type QueryHelpers,
+  type Insertable,
+  type InsertableWithReturning,
+  type UpdatableWithSet,
+  type UpdatableComplete,
+  type UpdatableWithReturning,
+  type Deletable,
+  type DeletableComplete,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
 import type { SqlResult, ExecuteOptions } from "./types.js";
@@ -101,6 +108,7 @@ export function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | Termina
 interface PgDatabase {
   any(sql: string, params?: unknown): Promise<unknown[]>;
   one(sql: string, params?: unknown): Promise<unknown>;
+  result(sql: string, params?: unknown): Promise<{ rowCount: number }>;
 }
 
 /**
@@ -250,6 +258,233 @@ export async function executeSelectSimple<
         : never
 > {
   return executeSelect(db, queryBuilder, {}, options);
+}
+
+// ==================== INSERT Statement & Execution ====================
+
+/**
+ * Generate INSERT SQL statement - without RETURNING
+ */
+export function insertStatement<TParams, TResult>(
+  queryBuilder: (params: TParams) => Insertable<TResult>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>>;
+
+/**
+ * Generate INSERT SQL statement - with RETURNING
+ */
+// eslint-disable-next-line no-redeclare
+export function insertStatement<TParams, TReturning>(
+  queryBuilder: (params: TParams) => InsertableWithReturning<TReturning>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>>;
+
+// Implementation
+// eslint-disable-next-line no-redeclare
+export function insertStatement<TParams, TResult>(
+  queryBuilder: (params: TParams) => Insertable<TResult> | InsertableWithReturning<unknown>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+  const parseResult = parseQuery(queryBuilder);
+
+  if (!parseResult) {
+    throw new Error("Failed to parse INSERT query");
+  }
+
+  const mergedParams = { ...parseResult.autoParams, ...params };
+  const sql = generateSql(parseResult.operation, mergedParams);
+
+  return {
+    sql,
+    params: mergedParams as TParams & Record<string, string | number | boolean | null>,
+  };
+}
+
+/**
+ * Execute INSERT and return row count or RETURNING results
+ */
+export async function executeInsert<TParams, TResult>(
+  db: PgDatabase,
+  queryBuilder: (params: TParams) => Insertable<TResult>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<number>;
+
+// eslint-disable-next-line no-redeclare
+export async function executeInsert<TParams, TReturning>(
+  db: PgDatabase,
+  queryBuilder: (params: TParams) => InsertableWithReturning<TReturning>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<TReturning[]>;
+
+// eslint-disable-next-line no-redeclare
+export async function executeInsert<TParams>(
+  db: PgDatabase,
+  queryBuilder: (params: TParams) => Insertable<unknown> | InsertableWithReturning<unknown>,
+  params: TParams,
+  options: ExecuteOptions = {},
+): Promise<number | unknown[]> {
+  const { sql, params: sqlParams } = insertStatement(queryBuilder, params);
+
+  if (options.onSql) {
+    options.onSql({ sql, params: sqlParams });
+  }
+
+  const parseResult = parseQuery(queryBuilder);
+  if (!parseResult) {
+    throw new Error("Failed to parse INSERT query");
+  }
+
+  // Check if RETURNING clause is present
+  const hasReturning =
+    parseResult.operation.operationType === "insert" &&
+    (parseResult.operation as { returning?: unknown }).returning;
+
+  if (hasReturning) {
+    return await db.any(sql, sqlParams);
+  } else {
+    const result = await db.result(sql, sqlParams);
+    return result.rowCount;
+  }
+}
+
+// ==================== UPDATE Statement & Execution ====================
+
+/**
+ * Generate UPDATE SQL statement - without RETURNING
+ */
+export function updateStatement<TParams, TResult>(
+  queryBuilder: (
+    params: TParams,
+  ) => UpdatableWithSet<TResult> | UpdatableComplete<TResult>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>>;
+
+/**
+ * Generate UPDATE SQL statement - with RETURNING
+ */
+// eslint-disable-next-line no-redeclare
+export function updateStatement<TParams, TReturning>(
+  queryBuilder: (params: TParams) => UpdatableWithReturning<TReturning>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>>;
+
+// Implementation
+// eslint-disable-next-line no-redeclare
+export function updateStatement<TParams, TResult>(
+  queryBuilder: (
+    params: TParams,
+  ) => UpdatableWithSet<TResult> | UpdatableComplete<TResult> | UpdatableWithReturning<unknown>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+  const parseResult = parseQuery(queryBuilder);
+
+  if (!parseResult) {
+    throw new Error("Failed to parse UPDATE query");
+  }
+
+  const mergedParams = { ...parseResult.autoParams, ...params };
+  const sql = generateSql(parseResult.operation, mergedParams);
+
+  return {
+    sql,
+    params: mergedParams as TParams & Record<string, string | number | boolean | null>,
+  };
+}
+
+/**
+ * Execute UPDATE and return row count or RETURNING results
+ */
+export async function executeUpdate<TParams, TResult>(
+  db: PgDatabase,
+  queryBuilder: (params: TParams) => UpdatableWithSet<TResult> | UpdatableComplete<TResult>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<number>;
+
+// eslint-disable-next-line no-redeclare
+export async function executeUpdate<TParams, TReturning>(
+  db: PgDatabase,
+  queryBuilder: (params: TParams) => UpdatableWithReturning<TReturning>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<TReturning[]>;
+
+// eslint-disable-next-line no-redeclare
+export async function executeUpdate<TParams>(
+  db: PgDatabase,
+  queryBuilder: (
+    params: TParams,
+  ) => UpdatableWithSet<unknown> | UpdatableComplete<unknown> | UpdatableWithReturning<unknown>,
+  params: TParams,
+  options: ExecuteOptions = {},
+): Promise<number | unknown[]> {
+  const { sql, params: sqlParams } = updateStatement(queryBuilder, params);
+
+  if (options.onSql) {
+    options.onSql({ sql, params: sqlParams });
+  }
+
+  const parseResult = parseQuery(queryBuilder);
+  if (!parseResult) {
+    throw new Error("Failed to parse UPDATE query");
+  }
+
+  // Check if RETURNING clause is present
+  const hasReturning =
+    parseResult.operation.operationType === "update" &&
+    (parseResult.operation as { returning?: unknown }).returning;
+
+  if (hasReturning) {
+    return await db.any(sql, sqlParams);
+  } else {
+    const result = await db.result(sql, sqlParams);
+    return result.rowCount;
+  }
+}
+
+// ==================== DELETE Statement & Execution ====================
+
+/**
+ * Generate DELETE SQL statement
+ */
+export function deleteStatement<TParams, TResult>(
+  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+  const parseResult = parseQuery(queryBuilder);
+
+  if (!parseResult) {
+    throw new Error("Failed to parse DELETE query");
+  }
+
+  const mergedParams = { ...parseResult.autoParams, ...params };
+  const sql = generateSql(parseResult.operation, mergedParams);
+
+  return {
+    sql,
+    params: mergedParams as TParams & Record<string, string | number | boolean | null>,
+  };
+}
+
+/**
+ * Execute DELETE and return row count
+ */
+export async function executeDelete<TParams, TResult>(
+  db: PgDatabase,
+  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+  params: TParams,
+  options: ExecuteOptions = {},
+): Promise<number> {
+  const { sql, params: sqlParams } = deleteStatement(queryBuilder, params);
+
+  if (options.onSql) {
+    options.onSql({ sql, params: sqlParams });
+  }
+
+  const result = await db.result(sql, sqlParams);
+  return result.rowCount;
 }
 
 // Export types

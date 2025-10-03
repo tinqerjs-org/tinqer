@@ -9,6 +9,14 @@ import { convertAstToQueryOperationWithParams } from "./ast-visitor.js";
 import type { Queryable, OrderedQueryable } from "../linq/queryable.js";
 import type { TerminalQuery } from "../linq/terminal-query.js";
 import type { createQueryHelpers } from "../linq/functions.js";
+import type { Insertable, InsertableWithReturning } from "../linq/insertable.js";
+import type {
+  Updatable,
+  UpdatableWithSet,
+  UpdatableComplete,
+  UpdatableWithReturning,
+} from "../linq/updatable.js";
+import type { Deletable, DeletableComplete } from "../linq/deletable.js";
 
 /**
  * Result of parsing a query, including auto-extracted parameters
@@ -24,6 +32,7 @@ export interface ParseResult {
  * @param queryBuilder The function that builds the query, optionally with helpers as second parameter
  * @returns The parsed result containing operation tree and auto-params, or null if parsing fails
  */
+// SELECT overload (existing)
 export function parseQuery<TParams, TResult>(
   queryBuilder:
     | ((params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
@@ -31,6 +40,45 @@ export function parseQuery<TParams, TResult>(
         params: TParams,
         helpers: ReturnType<typeof createQueryHelpers>,
       ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
+): ParseResult | null;
+
+// INSERT overload - without RETURNING
+// eslint-disable-next-line no-redeclare
+export function parseQuery<TParams, TResult>(
+  queryBuilder: (params: TParams) => Insertable<TResult>,
+): ParseResult | null;
+
+// INSERT overload - with RETURNING
+// eslint-disable-next-line no-redeclare
+export function parseQuery<TParams, TResult, TReturning>(
+  queryBuilder: (params: TParams) => InsertableWithReturning<TReturning>,
+): ParseResult | null;
+
+// UPDATE overload - without RETURNING
+// eslint-disable-next-line no-redeclare
+export function parseQuery<TParams, TResult>(
+  queryBuilder: (
+    params: TParams,
+  ) => Updatable<TResult> | UpdatableWithSet<TResult> | UpdatableComplete<TResult>,
+): ParseResult | null;
+
+// UPDATE overload - with RETURNING
+// eslint-disable-next-line no-redeclare
+export function parseQuery<TParams, TResult, TReturning>(
+  queryBuilder: (params: TParams) => UpdatableWithReturning<TReturning>,
+): ParseResult | null;
+
+// DELETE overload
+// eslint-disable-next-line no-redeclare
+export function parseQuery<TParams, TResult>(
+  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+): ParseResult | null;
+
+// Implementation
+// eslint-disable-next-line no-redeclare
+export function parseQuery(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  queryBuilder: any,
 ): ParseResult | null {
   try {
     // 1. Convert function to string

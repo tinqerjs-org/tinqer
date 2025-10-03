@@ -110,6 +110,8 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
       return generateCaseExpression(expr as CaseExpression, context);
     case "reference":
       return generateReferenceExpression(expr as ReferenceExpression, context);
+    case "allColumns":
+      return "*";
     default:
       throw new Error(
         `Unsupported value expression type: ${(expr as ValueExpression & { type: string }).type}`,

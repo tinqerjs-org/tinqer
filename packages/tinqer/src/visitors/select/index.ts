@@ -12,6 +12,7 @@ import type {
   ValueExpression,
   ObjectExpression,
   Expression,
+  AllColumnsExpression,
 } from "../../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
@@ -111,13 +112,14 @@ export function visitSelectOperation(
     const identifierName = (bodyExpr as Identifier).name;
     // If the body is just the table parameter, it's an identity projection
     if (context.tableParams.has(identifierName) && context.hasTableParam) {
-      // Return null selector for SELECT *
+      // Return AllColumnsExpression for SELECT *
+      const allColumns: AllColumnsExpression = { type: "allColumns" };
       return {
         operation: {
           type: "queryOperation",
           operationType: "select",
           source,
-          selector: null as unknown as ValueExpression, // null selector means SELECT *
+          selector: allColumns as ValueExpression,
         },
         autoParams: Object.fromEntries(context.autoParams),
       };

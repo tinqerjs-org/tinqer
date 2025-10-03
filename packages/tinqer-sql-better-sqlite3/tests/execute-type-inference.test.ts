@@ -15,6 +15,9 @@ const mockDb = {
       get(_params?: Record<string, unknown>): unknown {
         return {};
       },
+      run(_params?: Record<string, unknown>): { changes: number } {
+        return { changes: 0 };
+      },
     };
   },
 };

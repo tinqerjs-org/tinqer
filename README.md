@@ -32,23 +32,30 @@ Runtime LINQ-to-SQL builder for TypeScript. Queries are expressed as inline arro
   - [6.2 Literal Auto-Parameterisation](#62-literal-auto-parameterisation)
   - [6.3 Array Membership (`Array.includes`)](#63-array-membership-arrayincludes)
   - [6.4 Case-Insensitive Helper Functions](#64-case-insensitive-helper-functions)
-- [7. Execution APIs](#7-execution-apis)
-  - [7.1 `selectStatement` Function](#71-selectstatement-function)
-  - [7.2 `executeSelect` and `executeSelectSimple`](#72-executeselect-and-executeselectsimple)
-  - [7.3 `toSql`](#73-tosql)
-- [8. Adapter-Specific Notes](#8-adapter-specific-notes)
-  - [8.1 PostgreSQL (pg-promise)](#81-postgresql-pg-promise)
-  - [8.2 SQLite (better-sqlite3)](#82-sqlite-better-sqlite3)
-- [9. Type-Safe Contexts (`createContext`)](#9-type-safe-contexts-createcontext)
-- [10. Helper Utilities (`createQueryHelpers`)](#10-helper-utilities-createqueryhelpers)
-- [11. Date and Time Handling](#11-date-and-time-handling)
-- [12. Limitations and Unsupported Features](#12-limitations-and-unsupported-features)
-- [13. Differences from .NET LINQ to SQL](#13-differences-from-net-linq-to-sql)
-- [14. Troubleshooting](#14-troubleshooting)
-- [15. Development Notes](#15-development-notes)
-- [16. Appendices](#16-appendices)
-  - [16.1 Expression Tree Example](#161-expression-tree-example)
-  - [16.2 Generated SQL Inventory](#162-generated-sql-inventory)
+- [7. CRUD Operations (INSERT, UPDATE, DELETE)](#7-crud-operations-insert-update-delete)
+  - [7.1 INSERT Statements](#71-insert-statements)
+  - [7.2 UPDATE Statements](#72-update-statements)
+  - [7.3 DELETE Statements](#73-delete-statements)
+  - [7.4 Safety Features](#74-safety-features)
+  - [7.5 Executing CRUD Operations](#75-executing-crud-operations)
+- [8. Execution APIs](#8-execution-apis)
+  - [8.1 `selectStatement` Function](#81-selectstatement-function)
+  - [8.2 `executeSelect` and `executeSelectSimple`](#82-executeselect-and-executeselectsimple)
+  - [8.3 CRUD Execution Functions](#83-crud-execution-functions)
+  - [8.4 `toSql`](#84-tosql)
+- [9. Adapter-Specific Notes](#9-adapter-specific-notes)
+  - [9.1 PostgreSQL (pg-promise)](#91-postgresql-pg-promise)
+  - [9.2 SQLite (better-sqlite3)](#92-sqlite-better-sqlite3)
+- [10. Type-Safe Contexts (`createContext`)](#10-type-safe-contexts-createcontext)
+- [11. Helper Utilities (`createQueryHelpers`)](#11-helper-utilities-createqueryhelpers)
+- [12. Date and Time Handling](#12-date-and-time-handling)
+- [13. Limitations and Unsupported Features](#13-limitations-and-unsupported-features)
+- [14. Differences from .NET LINQ to SQL](#14-differences-from-net-linq-to-sql)
+- [15. Troubleshooting](#15-troubleshooting)
+- [16. Development Notes](#16-development-notes)
+- [17. Appendices](#17-appendices)
+  - [17.1 Expression Tree Example](#171-expression-tree-example)
+  - [17.2 Generated SQL Inventory](#172-generated-sql-inventory)
 
 ---
 
@@ -70,11 +77,11 @@ All examples assume TypeScript with `strict` enabled and ECMAScript modules.
 
 ## 2. Adapter Packages
 
-| Package                              | Purpose                                                                     | Notes                                                                            |
-| ------------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `@webpods/tinqer`                    | Core expression tree, visitors, and TypeScript types.                       | Not meant to be installed directly; the adapters re-export everything.           |
-| `@webpods/tinqer-sql-pg-promise`     | SQL generator for PostgreSQL with pg-promise parameter markers (`$(name)`). | Provides `selectStatement`, `executeSelect`, `executeSelectSimple`, and `toSql`. |
-| `@webpods/tinqer-sql-better-sqlite3` | SQL generator for SQLite using better-sqlite3 (`@name`).                    | Handles boolean conversion and date formatting before execution.                 |
+| Package                              | Purpose                                                                     | Notes                                                                                 |
+| ------------------------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `@webpods/tinqer`                    | Core expression tree, visitors, and TypeScript types.                       | Not meant to be installed directly; the adapters re-export everything.                |
+| `@webpods/tinqer-sql-pg-promise`     | SQL generator for PostgreSQL with pg-promise parameter markers (`$(name)`). | Provides `selectStatement`, CRUD statement functions, execution helpers, and `toSql`. |
+| `@webpods/tinqer-sql-better-sqlite3` | SQL generator for SQLite using better-sqlite3 (`@name`).                    | Handles boolean conversion, supports RETURNING (SQLite 3.35.0+), and date formatting. |
 
 Both adapters expose identical TypeScript APIs so query builders can be shared between them.
 
@@ -1055,9 +1062,403 @@ SELECT * FROM "users" WHERE LOWER("email") LIKE '%' || LOWER(@__p1) || '%'
 
 ---
 
-## 7. Execution APIs
+## 7. CRUD Operations (INSERT, UPDATE, DELETE)
 
-### 7.1 `selectStatement` Function
+Tinqer provides full CRUD support with the same type-safety and lambda expression support as SELECT queries. All CRUD operations follow the same pattern: builder functions return operation chains, statement functions generate SQL, and execute functions run the queries.
+
+### 7.1 INSERT Statements
+
+The `insertInto` function creates INSERT operations with type-safe value specifications.
+
+#### Basic INSERT
+
+```typescript
+import { insertInto, insertStatement } from "@webpods/tinqer";
+
+// Insert with literal values
+const insert = insertStatement(
+  () =>
+    insertInto(db, "users").values(() => ({
+      name: "Alice",
+      age: 30,
+      email: "alice@example.com",
+    })),
+  {},
+);
+```
+
+Generated SQL:
+
+```sql
+-- PostgreSQL
+INSERT INTO "users" ("name", "age", "email")
+VALUES ($(__p1), $(__p2), $(__p3))
+
+-- SQLite
+INSERT INTO "users" ("name", "age", "email")
+VALUES (@__p1, @__p2, @__p3)
+```
+
+#### INSERT with External Parameters
+
+```typescript
+const insert = insertStatement(
+  (p: { name: string; age: number }) =>
+    insertInto(db, "users").values(() => ({
+      name: p.name,
+      age: p.age,
+      email: "default@example.com",
+    })),
+  { name: "Bob", age: 25 },
+);
+```
+
+Generated SQL uses external parameters directly:
+
+```sql
+INSERT INTO "users" ("name", "age", "email")
+VALUES ($(name), $(age), $(__p1))  -- PostgreSQL
+VALUES (@name, @age, @__p1)        -- SQLite
+```
+
+#### INSERT with RETURNING Clause
+
+Both PostgreSQL and SQLite (3.35.0+) support the RETURNING clause to retrieve values from inserted rows:
+
+```typescript
+// Return specific columns
+const insertWithReturn = insertStatement(
+  () =>
+    insertInto(db, "users")
+      .values(() => ({ name: "Charlie", age: 35 }))
+      .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
+  {},
+);
+
+// Return all columns
+const insertReturnAll = insertStatement(
+  () =>
+    insertInto(db, "users")
+      .values(() => ({ name: "David", age: 40 }))
+      .returning((u) => u), // Returns *
+  {},
+);
+```
+
+#### NULL Values in INSERT
+
+```typescript
+const insert = insertStatement(
+  () =>
+    insertInto(db, "users").values(() => ({
+      name: "Eve",
+      email: null, // Generates NULL, not parameterized
+      phone: undefined, // Column omitted from INSERT
+    })),
+  {},
+);
+```
+
+### 7.2 UPDATE Statements
+
+The `updateTable` function creates UPDATE operations with mandatory SET clause and optional WHERE conditions.
+
+#### Basic UPDATE
+
+```typescript
+import { updateTable, updateStatement } from "@webpods/tinqer";
+
+const update = updateStatement(
+  () =>
+    updateTable(db, "users")
+      .set(() => ({ age: 31, lastModified: new Date() }))
+      .where((u) => u.id === 1),
+  {},
+);
+```
+
+Generated SQL:
+
+```sql
+-- PostgreSQL
+UPDATE "users"
+SET "age" = $(__p1), "lastModified" = $(__p2)
+WHERE "id" = $(__p3)
+
+-- SQLite
+UPDATE "users"
+SET "age" = @__p1, "lastModified" = @__p2
+WHERE "id" = @__p3
+```
+
+#### UPDATE with Complex WHERE
+
+```typescript
+const update = updateStatement(
+  () =>
+    updateTable(db, "users")
+      .set(() => ({ status: "inactive" }))
+      .where((u) => u.lastLogin < new Date("2023-01-01") && u.role !== "admin"),
+  {},
+);
+```
+
+#### UPDATE with RETURNING Clause
+
+```typescript
+const updateWithReturn = updateStatement(
+  () =>
+    updateTable(db, "users")
+      .set(() => ({ age: 32 }))
+      .where((u) => u.id === 2)
+      .returning((u) => ({ id: u.id, age: u.age, updatedAt: u.updatedAt })),
+  {},
+);
+```
+
+#### Full Table UPDATE (Requires Explicit Permission)
+
+```typescript
+// UPDATE without WHERE requires explicit permission
+const updateAll = updateStatement(
+  () =>
+    updateTable(db, "users")
+      .set(() => ({ isActive: true }))
+      .allowFullTableUpdate(), // Required flag
+  {},
+);
+```
+
+Without the flag, attempting an UPDATE without WHERE throws an error:
+
+```
+Error: UPDATE requires a WHERE clause or explicit allowFullTableUpdate().
+Full table updates are dangerous and must be explicitly allowed.
+```
+
+### 7.3 DELETE Statements
+
+The `deleteFrom` function creates DELETE operations with optional WHERE conditions.
+
+#### Basic DELETE
+
+```typescript
+import { deleteFrom, deleteStatement } from "@webpods/tinqer";
+
+const del = deleteStatement(() => deleteFrom(db, "users").where((u) => u.age > 100), {});
+```
+
+Generated SQL:
+
+```sql
+DELETE FROM "users" WHERE "age" > $(__p1)  -- PostgreSQL
+DELETE FROM "users" WHERE "age" > @__p1    -- SQLite
+```
+
+#### DELETE with Complex Conditions
+
+```typescript
+const del = deleteStatement(
+  () =>
+    deleteFrom(db, "users").where(
+      (u) => u.isDeleted === true || (u.age < 18 && u.role !== "admin") || u.email === null,
+    ),
+  {},
+);
+```
+
+#### DELETE with IN Clause
+
+```typescript
+const del = deleteStatement(
+  (p: { userIds: number[] }) => deleteFrom(db, "users").where((u) => p.userIds.includes(u.id)),
+  { userIds: [1, 2, 3, 4, 5] },
+);
+```
+
+Generated SQL:
+
+```sql
+-- PostgreSQL
+DELETE FROM "users"
+WHERE "id" IN ($(userIds[0]), $(userIds[1]), $(userIds[2]), $(userIds[3]), $(userIds[4]))
+
+-- SQLite
+DELETE FROM "users"
+WHERE "id" IN (@userIds[0], @userIds[1], @userIds[2], @userIds[3], @userIds[4])
+```
+
+#### Full Table DELETE (Requires Explicit Permission)
+
+```typescript
+// DELETE without WHERE requires explicit permission
+const deleteAll = deleteStatement(
+  () => deleteFrom(db, "users").allowFullTableDelete(), // Required flag
+  {},
+);
+```
+
+### 7.4 Safety Features
+
+Tinqer includes multiple safety guards for CRUD operations:
+
+#### Mandatory WHERE Clauses
+
+UPDATE and DELETE operations require WHERE clauses by default to prevent accidental full-table operations:
+
+```typescript
+// This throws an error
+deleteStatement(() => deleteFrom(db, "users"), {});
+// Error: DELETE requires a WHERE clause or explicit allowFullTableDelete()
+
+// This works
+deleteStatement(() => deleteFrom(db, "users").allowFullTableDelete(), {});
+```
+
+#### Type Safety
+
+All CRUD operations maintain full TypeScript type safety:
+
+```typescript
+interface User {
+  id: number;
+  name: string;
+  email: string | null;
+  age: number;
+}
+
+// Type error: 'username' doesn't exist on User
+insertInto<User>("users").values(() => ({
+  username: "Alice", // ❌ Type error
+}));
+
+// Type error: age must be number
+updateTable<User>("users").set(() => ({
+  age: "30", // ❌ Type error - must be number
+}));
+```
+
+#### Parameter Sanitization
+
+All values are automatically parameterized to prevent SQL injection:
+
+```typescript
+const maliciousName = "'; DROP TABLE users; --";
+const insert = insertStatement(
+  () =>
+    insertInto(db, "users").values(() => ({
+      name: maliciousName, // Safely parameterized
+    })),
+  {},
+);
+// Generates: INSERT INTO "users" ("name") VALUES ($(__p1))
+// Parameters: { __p1: "'; DROP TABLE users; --" }
+```
+
+### 7.5 Executing CRUD Operations
+
+The adapter packages provide execution functions for all CRUD operations:
+
+#### PostgreSQL (pg-promise)
+
+```typescript
+import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
+
+// Execute INSERT with RETURNING
+const insertedUser = await executeInsert(
+  () =>
+    insertInto(db, "users")
+      .values(() => ({ name: "Frank", age: 28 }))
+      .returning((u) => ({ id: u.id, name: u.name })),
+  {},
+  pgConnection,
+);
+// Returns: { id: 123, name: "Frank" }
+
+// Execute UPDATE with affected row count
+const updateCount = await executeUpdate(
+  () =>
+    updateTable(db, "users")
+      .set(() => ({ age: 29 }))
+      .where((u) => u.id === insertedUser.id),
+  {},
+  pgConnection,
+);
+// Returns number of affected rows
+
+// Execute DELETE
+const deleteCount = await executeDelete(
+  () => deleteFrom(db, "users").where((u) => u.id === insertedUser.id),
+  {},
+  pgConnection,
+);
+```
+
+#### SQLite (better-sqlite3)
+
+```typescript
+import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-better-sqlite3";
+
+// Execute INSERT with lastInsertRowid
+const result = executeInsert(
+  () => insertInto(db, "users").values(() => ({ name: "Grace", age: 30 })),
+  {},
+  sqliteDb,
+);
+// Returns: { lastInsertRowid: 124, changes: 1 }
+
+// Execute with RETURNING (SQLite 3.35.0+)
+const insertedUser = executeInsert(
+  () =>
+    insertInto(db, "users")
+      .values(() => ({ name: "Henry", age: 32 }))
+      .returning((u) => u),
+  {},
+  sqliteDb,
+);
+// Returns the inserted row
+```
+
+#### Transaction Support
+
+Both adapters support transactions through their respective database drivers:
+
+```typescript
+// PostgreSQL transactions
+await pgConnection.tx(async (t) => {
+  const user = await executeInsert(
+    () =>
+      insertInto(db, "users")
+        .values(() => ({ name: "Ivy" }))
+        .returning((u) => u.id),
+    {},
+    t, // Use transaction object
+  );
+
+  await executeInsert(
+    () =>
+      insertInto(db, "user_logs").values(() => ({
+        userId: user.id,
+        action: "created",
+      })),
+    {},
+    t,
+  );
+});
+
+// SQLite transactions
+const transaction = sqliteDb.transaction(() => {
+  executeInsert(/* ... */);
+  executeUpdate(/* ... */);
+});
+transaction();
+```
+
+---
+
+## 8. Execution APIs
+
+### 8.1 `selectStatement` Function
 
 Returns the generated SQL and merged parameters without executing the statement.
 
@@ -1072,7 +1473,7 @@ const { sql, params } = selectStatement(
 );
 ```
 
-### 7.2 `executeSelect` and `executeSelectSimple`
+### 8.2 `executeSelect` and `executeSelectSimple`
 
 #### PostgreSQL
 
@@ -1111,7 +1512,18 @@ const rows = await executeSelect(
 const everything = await executeSelectSimple(sqlite, () => from<Product>("products"));
 ```
 
-### 7.3 `toSql`
+### 8.3 CRUD Execution Functions
+
+The adapter packages provide specialized execution functions for CRUD operations:
+
+- `insertStatement(builder, params)` - Generate INSERT SQL
+- `updateStatement(builder, params)` - Generate UPDATE SQL
+- `deleteStatement(builder, params)` - Generate DELETE SQL
+- `executeInsert(builder, params, db)` - Execute INSERT and return results
+- `executeUpdate(builder, params, db)` - Execute UPDATE and return affected rows
+- `executeDelete(builder, params, db)` - Execute DELETE and return affected rows
+
+### 8.4 `toSql`
 
 ```typescript
 const queryable = from<User>("users").where((u) => u.age >= 21);
@@ -1120,16 +1532,16 @@ const { text, parameters } = toSql(queryable);
 
 ---
 
-## 8. Adapter-Specific Notes
+## 9. Adapter-Specific Notes
 
-### 8.1 PostgreSQL (pg-promise)
+### 9.1 PostgreSQL (pg-promise)
 
 - Parameters use pg-promise syntax `$(name)`.
 - `executeSelect` uses `db.any` for sequences and `db.one` for scalar aggregates.
 - `last*` operations emit `ORDER BY ... DESC LIMIT 1` when no explicit descending order exists.
 - Parameters are forwarded without mutation.
 
-### 8.2 SQLite (better-sqlite3)
+### 9.2 SQLite (better-sqlite3)
 
 - Parameters use `@name` placeholders.
 - Booleans are converted to `1`/`0`; dates become `YYYY-MM-DD HH:MM:SS` strings.
@@ -1137,7 +1549,7 @@ const { text, parameters } = toSql(queryable);
 
 ---
 
-## 9. Type-Safe Contexts (`createContext`)
+## 10. Type-Safe Contexts (`createContext`)
 
 ```typescript
 import { createContext, from } from "@webpods/tinqer";
@@ -1155,7 +1567,7 @@ const departments = from(ctx, "departments");
 
 ---
 
-## 10. Helper Utilities (`createQueryHelpers`)
+## 11. Helper Utilities (`createQueryHelpers`)
 
 ```typescript
 const helpers = createQueryHelpers();
@@ -1169,7 +1581,7 @@ const caseInsensitive = selectStatement(
 
 ---
 
-## 11. Date and Time Handling
+## 12. Date and Time Handling
 
 - Date literals should be created with `new Date("YYYY-MM-DDTHH:mm:ssZ")` and are treated as parameters.
 - Comparisons (`==`, `!=`, `>`, `>=`, `<`, `<=`) are supported on date/time columns.
@@ -1190,9 +1602,9 @@ const upcoming = selectStatement(
 
 ---
 
-## 12. Limitations and Unsupported Features
+## 13. Limitations and Unsupported Features
 
-- No INSERT, UPDATE, DELETE, MERGE, or transaction APIs.
+- No MERGE operations or built-in transaction APIs (use database driver transactions).
 - Only inner joins are supported. Left/right joins, `DefaultIfEmpty`, and `GroupJoin` are not available.
 - `selectMany`, set operators (`union`, `intersect`, `except`, `concat`), and `longCount` exist on the fluent API but are not implemented; using them throws an error.
 - HAVING clauses are not generated. Filter grouped results with an additional `where` on the grouped projection.
@@ -1215,7 +1627,236 @@ const upcoming = selectStatement(
 
 ---
 
-## 14. Troubleshooting
+## 14. CRUD Operations (INSERT, UPDATE, DELETE)
+
+Tinqer supports CRUD operations with the same type-safety and lambda expression support as SELECT queries.
+
+### 14.1 INSERT Statements
+
+```typescript
+import { insertInto, insertStatement } from "@webpods/tinqer";
+
+// Basic INSERT with values
+const insert = insertStatement(
+  () =>
+    insertInto(db, "users").values(() => ({
+      name: "Alice",
+      age: 30,
+      email: "alice@example.com",
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+INSERT INTO "users" ("name", "age", "email")
+VALUES ($(__p1), $(__p2), $(__p3))
+
+-- SQLite
+INSERT INTO "users" ("name", "age", "email")
+VALUES (@__p1, @__p2, @__p3)
+```
+
+#### INSERT with parameters
+
+```typescript
+const insert = insertStatement(
+  (p: { name: string; age: number }) =>
+    insertInto(db, "users").values(() => ({
+      name: p.name,
+      age: p.age,
+      email: "default@example.com",
+    })),
+  { name: "Bob", age: 25 },
+);
+```
+
+#### INSERT with RETURNING clause
+
+Both PostgreSQL and SQLite (3.35.0+) support the RETURNING clause:
+
+```typescript
+// Return specific columns
+const insertWithReturn = insertStatement(
+  () =>
+    insertInto(db, "users")
+      .values(() => ({ name: "Charlie", age: 35 }))
+      .returning((u) => ({ id: u.id, name: u.name })),
+  {},
+);
+
+// Return all columns
+const insertReturnAll = insertStatement(
+  () =>
+    insertInto(db, "users")
+      .values(() => ({ name: "David", age: 40 }))
+      .returning((u) => u),
+  {},
+);
+```
+
+```sql
+-- Return specific columns
+INSERT INTO "users" ("name", "age")
+VALUES ($(__p1), $(__p2))
+RETURNING "id" AS "id", "name" AS "name"
+
+-- Return all columns
+INSERT INTO "users" ("name", "age")
+VALUES ($(__p1), $(__p2))
+RETURNING *
+```
+
+### 14.2 UPDATE Statements
+
+```typescript
+import { updateTable, updateStatement } from "@webpods/tinqer";
+
+// Basic UPDATE with WHERE clause
+const update = updateStatement(
+  () =>
+    updateTable(db, "users")
+      .set(() => ({ age: 31, email: "newemail@example.com" }))
+      .where((u) => u.id === 1),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+UPDATE "users"
+SET "age" = $(__p1), "email" = $(__p2)
+WHERE "id" = $(__p3)
+
+-- SQLite
+UPDATE "users"
+SET "age" = @__p1, "email" = @__p2
+WHERE "id" = @__p3
+```
+
+#### UPDATE with parameters
+
+```typescript
+const update = updateStatement(
+  (p: { userId: number; newAge: number }) =>
+    updateTable(db, "users")
+      .set(() => ({ age: p.newAge }))
+      .where((u) => u.id === p.userId),
+  { userId: 1, newAge: 35 },
+);
+```
+
+#### UPDATE with RETURNING clause
+
+```typescript
+const updateWithReturn = updateStatement(
+  () =>
+    updateTable(db, "users")
+      .set(() => ({ age: 32 }))
+      .where((u) => u.id === 2)
+      .returning((u) => u.age),
+  {},
+);
+```
+
+#### Full table UPDATE (requires explicit permission)
+
+```typescript
+// Must explicitly allow full table updates
+const updateAll = updateStatement(
+  () =>
+    updateTable(db, "users")
+      .set(() => ({ isActive: true }))
+      .allowFullTableUpdate(), // Required for UPDATE without WHERE
+  {},
+);
+```
+
+### 14.3 DELETE Statements
+
+```typescript
+import { deleteFrom, deleteStatement } from "@webpods/tinqer";
+
+// Basic DELETE with WHERE clause
+const del = deleteStatement(() => deleteFrom(db, "users").where((u) => u.age > 100), {});
+```
+
+```sql
+-- PostgreSQL
+DELETE FROM "users" WHERE "age" > $(__p1)
+
+-- SQLite
+DELETE FROM "users" WHERE "age" > @__p1
+```
+
+#### DELETE with complex conditions
+
+```typescript
+const del = deleteStatement(
+  () =>
+    deleteFrom(db, "users").where(
+      (u) => u.isDeleted === true || (u.age < 18 && u.role !== "Admin"),
+    ),
+  {},
+);
+```
+
+#### Full table DELETE (requires explicit permission)
+
+```typescript
+// Must explicitly allow full table deletes
+const deleteAll = deleteStatement(
+  () => deleteFrom(db, "users").allowFullTableDelete(), // Required for DELETE without WHERE
+  {},
+);
+```
+
+### 14.4 Safety Features
+
+Tinqer includes safety guards for UPDATE and DELETE operations:
+
+1. **Mandatory WHERE clause**: UPDATE and DELETE operations require a WHERE clause by default
+2. **Explicit permission for full table operations**: Use `allowFullTableUpdate()` or `allowFullTableDelete()` to perform operations without WHERE clauses
+3. **Type safety**: All CRUD operations maintain TypeScript type safety throughout the query builder chain
+4. **Parameter sanitization**: All values are automatically parameterized to prevent SQL injection
+
+### 14.5 Executing CRUD Operations
+
+```typescript
+import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
+
+// Execute INSERT
+const insertResult = await executeInsert(
+  () =>
+    insertInto(db, "users")
+      .values(() => ({ name: "Eve", age: 28 }))
+      .returning((u) => u.id),
+  {},
+  pgConnection,
+);
+
+// Execute UPDATE
+const updateResult = await executeUpdate(
+  () =>
+    updateTable(db, "users")
+      .set(() => ({ age: 29 }))
+      .where((u) => u.id === insertResult.id),
+  {},
+  pgConnection,
+);
+
+// Execute DELETE
+const deleteResult = await executeDelete(
+  () => deleteFrom(db, "users").where((u) => u.id === insertResult.id),
+  {},
+  pgConnection,
+);
+```
+
+---
+
+## 15. Troubleshooting
 
 | Symptom                                          | Cause                                                                                                    | Resolution                                                                             |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
