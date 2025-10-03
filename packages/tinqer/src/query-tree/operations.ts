@@ -378,22 +378,6 @@ export interface AggregateOperation extends QueryOperation {
 }
 
 /**
- * TO ARRAY operation
- */
-export interface ToArrayOperation extends QueryOperation {
-  operationType: "toArray";
-  source: QueryOperation;
-}
-
-/**
- * TO LIST operation
- */
-export interface ToListOperation extends QueryOperation {
-  operationType: "toList";
-  source: QueryOperation;
-}
-
-/**
  * TO DICTIONARY operation
  */
 export interface ToDictionaryOperation extends QueryOperation {
@@ -444,8 +428,7 @@ export type TerminalOperation =
   | SumOperation
   | AverageOperation
   | MinOperation
-  | MaxOperation
-  | ToArrayOperation;
+  | MaxOperation;
 
 // ==================== Data Modification Operations ====================
 

@@ -30,7 +30,6 @@ export { Deletable, DeletableComplete } from "./linq/deletable.js";
 // ==================== LINQ Interfaces ====================
 // Type contracts
 
-export type { IQueryable, IOrderedQueryable } from "./linq/iqueryable.js";
 export type { IGrouping } from "./linq/igrouping.js";
 
 // ==================== Expression Types ====================
@@ -132,7 +131,6 @@ export type {
   AverageOperation,
   MinOperation,
   MaxOperation,
-  ToArrayOperation,
 
   // Data modification operations
   InsertOperation,

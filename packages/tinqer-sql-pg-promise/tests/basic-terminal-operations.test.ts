@@ -34,31 +34,4 @@ describe("Basic Terminal Operations", () => {
       expect(result.params).to.deep.equal({});
     });
   });
-
-  describe("TOARRAY operations", () => {
-    it("should generate SQL for toArray()", () => {
-      const result = selectStatement(() => from<User>("users").toArray(), {});
-      // toArray just executes the query without modifications
-      expect(result.sql).to.equal('SELECT * FROM "users"');
-      expect(result.params).to.deep.equal({});
-    });
-
-    it("should generate SQL for toArray() with WHERE", () => {
-      const result = selectStatement(
-        () =>
-          from<User>("users")
-            .where((u) => u.age > 18)
-            .toArray(),
-        {},
-      );
-      expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" > $(__p1)');
-      expect(result.params).to.deep.equal({ __p1: 18 });
-    });
-
-    it("should generate SQL for toList()", () => {
-      const result = selectStatement(() => from<User>("users").toList(), {});
-      expect(result.sql).to.equal('SELECT * FROM "users"');
-      expect(result.params).to.deep.equal({});
-    });
-  });
 });

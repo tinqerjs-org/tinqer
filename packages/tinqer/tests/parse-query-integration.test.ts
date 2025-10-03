@@ -121,10 +121,6 @@ describe("Parse Query Integration Tests", () => {
     const query2 = () => from(db, "users").first();
     const result2 = parseQuery(query2);
     expect(getOperation(result2)?.operationType).to.equal("first");
-
-    const query3 = () => from(db, "users").toArray();
-    const result3 = parseQuery(query3);
-    expect(getOperation(result3)?.operationType).to.equal("toArray");
   });
 
   it("should parse string methods", () => {

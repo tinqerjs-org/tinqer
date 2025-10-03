@@ -42,7 +42,6 @@ import { visitAnyOperation } from "../visitors/boolean-predicates/any.js";
 import { visitAllOperation } from "../visitors/boolean-predicates/all.js";
 import { visitContainsOperation } from "../visitors/contains/index.js";
 import { visitReverseOperation } from "../visitors/reverse/index.js";
-import { visitToArrayOperation } from "../visitors/toarray/index.js";
 
 // Data modification visitors
 import { visitInsertOperation } from "../visitors/insert/index.js";
@@ -530,16 +529,6 @@ function visitCallExpression(
         const result = visitReverseOperation(ast, source, methodName, visitorContext);
         if (result) {
           // No auto-params for reverse
-          return result.operation;
-        }
-        return null;
-      }
-
-      case "toArray":
-      case "toList": {
-        const result = visitToArrayOperation(ast, source, methodName, visitorContext);
-        if (result) {
-          // No auto-params for toArray
           return result.operation;
         }
         return null;
