@@ -43,4 +43,9 @@ export interface IGrouping<TKey, TElement> extends Iterable<TElement> {
    * Returns the maximum value
    */
   max<TResult>(selector: (element: TElement) => TResult): TResult;
+
+  /**
+   * Returns the elements of the group, or a default value if the group is empty
+   */
+  defaultIfEmpty(defaultValue?: TElement): Iterable<TElement>;
 }
