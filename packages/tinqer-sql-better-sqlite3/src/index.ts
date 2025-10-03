@@ -297,9 +297,10 @@ export function executeSelectSimple<
 
 /**
  * Generate INSERT SQL statement
+ * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
  */
-export function insertStatement<TParams, TResult, TReturning = unknown>(
-  queryBuilder: (params: TParams) => Insertable<TResult> | InsertableWithReturning<TReturning>,
+export function insertStatement<TParams, TTable, TReturning = never>(
+  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>> {
   const parseResult = parseQuery(queryBuilder);
@@ -319,11 +320,31 @@ export function insertStatement<TParams, TResult, TReturning = unknown>(
 
 /**
  * Execute INSERT and return row count
- * Note: SQLite does not support RETURNING clause
  */
-export function executeInsert<TParams, TResult, TReturning = unknown>(
+export function executeInsert<TParams, TTable>(
   db: BetterSqlite3Database,
-  queryBuilder: (params: TParams) => Insertable<TResult> | InsertableWithReturning<TReturning>,
+  queryBuilder: (params: TParams) => Insertable<TTable>,
+  params: TParams,
+  options?: ExecuteOptions,
+): number;
+
+/**
+ * Execute INSERT with RETURNING (not supported by SQLite)
+ * Note: SQLite does not support RETURNING clause, throws error
+ */
+// eslint-disable-next-line no-redeclare
+export function executeInsert<TParams, TTable, TReturning>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => InsertableWithReturning<TTable, TReturning>,
+  params: TParams,
+  options?: ExecuteOptions,
+): never;
+
+// Implementation
+// eslint-disable-next-line no-redeclare
+export function executeInsert<TParams, TTable, TReturning = never>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions = {},
 ): number {
@@ -342,11 +363,12 @@ export function executeInsert<TParams, TResult, TReturning = unknown>(
 
 /**
  * Generate UPDATE SQL statement
+ * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
  */
-export function updateStatement<TParams, TResult, TReturning = unknown>(
+export function updateStatement<TParams, TTable, TReturning = never>(
   queryBuilder: (
     params: TParams,
-  ) => UpdatableWithSet<TResult> | UpdatableComplete<TResult> | UpdatableWithReturning<TReturning>,
+  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>> {
   const parseResult = parseQuery(queryBuilder);
@@ -366,13 +388,33 @@ export function updateStatement<TParams, TResult, TReturning = unknown>(
 
 /**
  * Execute UPDATE and return row count
- * Note: SQLite does not support RETURNING clause
  */
-export function executeUpdate<TParams, TResult, TReturning = unknown>(
+export function executeUpdate<TParams, TTable>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
+  params: TParams,
+  options?: ExecuteOptions,
+): number;
+
+/**
+ * Execute UPDATE with RETURNING (not supported by SQLite)
+ * Note: SQLite does not support RETURNING clause, throws error
+ */
+// eslint-disable-next-line no-redeclare
+export function executeUpdate<TParams, TTable, TReturning>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => UpdatableWithReturning<TTable, TReturning>,
+  params: TParams,
+  options?: ExecuteOptions,
+): never;
+
+// Implementation
+// eslint-disable-next-line no-redeclare
+export function executeUpdate<TParams, TTable, TReturning = never>(
   db: BetterSqlite3Database,
   queryBuilder: (
     params: TParams,
-  ) => UpdatableWithSet<TResult> | UpdatableComplete<TResult> | UpdatableWithReturning<TReturning>,
+  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions = {},
 ): number {

@@ -147,7 +147,6 @@ describe("UPDATE Statement Generation", () => {
   describe("UPDATE with RETURNING", () => {
     it("should generate UPDATE with RETURNING single column", () => {
       const result = updateStatement(
-        // @ts-expect-error - TypeScript variance with generics
         () =>
           updateTable(db, "users")
             .set(() => ({ age: 37 }))

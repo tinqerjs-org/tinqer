@@ -77,20 +77,21 @@ export class UpdatableComplete<T> {
    * @param selector Function that returns the columns to return
    * @returns UpdatableWithReturning for type inference
    */
-  returning<TResult>(_selector: (_item: T) => TResult): UpdatableWithReturning<TResult> {
-    return new UpdatableWithReturning<TResult>();
+  returning<TResult>(_selector: (_item: T) => TResult): UpdatableWithReturning<T, TResult> {
+    return new UpdatableWithReturning<T, TResult>();
   }
 }
 
 /**
  * UpdatableWithReturning represents an UPDATE with RETURNING clause
  */
-export class UpdatableWithReturning<TResult> {
+export class UpdatableWithReturning<TTable, TResult> {
   constructor() {
     // Never actually instantiated - used only for type inference
-    // Type parameter TResult is preserved for external type inference
+    // Type parameters TTable and TResult are preserved for external type inference
   }
 
-  // Force TypeScript to keep the type parameter
-  _?: (_: TResult) => void;
+  // Force TypeScript to keep the type parameters
+  _table?: (_: TTable) => void;
+  _result?: (_: TResult) => void;
 }

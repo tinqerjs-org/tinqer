@@ -263,26 +263,10 @@ export async function executeSelectSimple<
 // ==================== INSERT Statement & Execution ====================
 
 /**
- * Generate INSERT SQL statement - without RETURNING
+ * Generate INSERT SQL statement
  */
-export function insertStatement<TParams, TResult>(
-  queryBuilder: (params: TParams) => Insertable<TResult>,
-  params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>>;
-
-/**
- * Generate INSERT SQL statement - with RETURNING
- */
-// eslint-disable-next-line no-redeclare
-export function insertStatement<TParams, TReturning>(
-  queryBuilder: (params: TParams) => InsertableWithReturning<TReturning>,
-  params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>>;
-
-// Implementation
-// eslint-disable-next-line no-redeclare
-export function insertStatement<TParams, TResult>(
-  queryBuilder: (params: TParams) => Insertable<TResult> | InsertableWithReturning<unknown>,
+export function insertStatement<TParams, TTable, TReturning = never>(
+  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>> {
   const parseResult = parseQuery(queryBuilder);
@@ -301,30 +285,34 @@ export function insertStatement<TParams, TResult>(
 }
 
 /**
- * Execute INSERT and return row count or RETURNING results
+ * Execute INSERT and return row count
  */
-export async function executeInsert<TParams, TResult>(
+export async function executeInsert<TParams, TTable>(
   db: PgDatabase,
-  queryBuilder: (params: TParams) => Insertable<TResult>,
+  queryBuilder: (params: TParams) => Insertable<TTable>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<number>;
 
+/**
+ * Execute INSERT with RETURNING
+ */
 // eslint-disable-next-line no-redeclare
-export async function executeInsert<TParams, TReturning>(
+export async function executeInsert<TParams, TTable, TReturning>(
   db: PgDatabase,
-  queryBuilder: (params: TParams) => InsertableWithReturning<TReturning>,
+  queryBuilder: (params: TParams) => InsertableWithReturning<TTable, TReturning>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<TReturning[]>;
 
+// Implementation
 // eslint-disable-next-line no-redeclare
-export async function executeInsert<TParams>(
+export async function executeInsert<TParams, TTable, TReturning = never>(
   db: PgDatabase,
-  queryBuilder: (params: TParams) => Insertable<unknown> | InsertableWithReturning<unknown>,
+  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions = {},
-): Promise<number | unknown[]> {
+): Promise<number | TReturning[]> {
   const { sql, params: sqlParams } = insertStatement(queryBuilder, params);
 
   if (options.onSql) {
@@ -342,7 +330,7 @@ export async function executeInsert<TParams>(
     (parseResult.operation as { returning?: unknown }).returning;
 
   if (hasReturning) {
-    return await db.any(sql, sqlParams);
+    return (await db.any(sql, sqlParams)) as TReturning[];
   } else {
     const result = await db.result(sql, sqlParams);
     return result.rowCount;
@@ -352,30 +340,12 @@ export async function executeInsert<TParams>(
 // ==================== UPDATE Statement & Execution ====================
 
 /**
- * Generate UPDATE SQL statement - without RETURNING
+ * Generate UPDATE SQL statement
  */
-export function updateStatement<TParams, TResult>(
+export function updateStatement<TParams, TTable, TReturning = never>(
   queryBuilder: (
     params: TParams,
-  ) => UpdatableWithSet<TResult> | UpdatableComplete<TResult>,
-  params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>>;
-
-/**
- * Generate UPDATE SQL statement - with RETURNING
- */
-// eslint-disable-next-line no-redeclare
-export function updateStatement<TParams, TReturning>(
-  queryBuilder: (params: TParams) => UpdatableWithReturning<TReturning>,
-  params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>>;
-
-// Implementation
-// eslint-disable-next-line no-redeclare
-export function updateStatement<TParams, TResult>(
-  queryBuilder: (
-    params: TParams,
-  ) => UpdatableWithSet<TResult> | UpdatableComplete<TResult> | UpdatableWithReturning<unknown>,
+  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>> {
   const parseResult = parseQuery(queryBuilder);
@@ -394,32 +364,36 @@ export function updateStatement<TParams, TResult>(
 }
 
 /**
- * Execute UPDATE and return row count or RETURNING results
+ * Execute UPDATE and return row count
  */
-export async function executeUpdate<TParams, TResult>(
+export async function executeUpdate<TParams, TTable>(
   db: PgDatabase,
-  queryBuilder: (params: TParams) => UpdatableWithSet<TResult> | UpdatableComplete<TResult>,
+  queryBuilder: (params: TParams) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<number>;
 
+/**
+ * Execute UPDATE with RETURNING
+ */
 // eslint-disable-next-line no-redeclare
-export async function executeUpdate<TParams, TReturning>(
+export async function executeUpdate<TParams, TTable, TReturning>(
   db: PgDatabase,
-  queryBuilder: (params: TParams) => UpdatableWithReturning<TReturning>,
+  queryBuilder: (params: TParams) => UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<TReturning[]>;
 
+// Implementation
 // eslint-disable-next-line no-redeclare
-export async function executeUpdate<TParams>(
+export async function executeUpdate<TParams, TTable, TReturning = never>(
   db: PgDatabase,
   queryBuilder: (
     params: TParams,
-  ) => UpdatableWithSet<unknown> | UpdatableComplete<unknown> | UpdatableWithReturning<unknown>,
+  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions = {},
-): Promise<number | unknown[]> {
+): Promise<number | TReturning[]> {
   const { sql, params: sqlParams } = updateStatement(queryBuilder, params);
 
   if (options.onSql) {
@@ -437,7 +411,7 @@ export async function executeUpdate<TParams>(
     (parseResult.operation as { returning?: unknown }).returning;
 
   if (hasReturning) {
-    return await db.any(sql, sqlParams);
+    return (await db.any(sql, sqlParams)) as TReturning[];
   } else {
     const result = await db.result(sql, sqlParams);
     return result.rowCount;
