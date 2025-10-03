@@ -943,12 +943,15 @@ The `insertInto` function creates INSERT operations. Values are specified using 
 #### Basic INSERT
 
 ```typescript
-import { insertInto, insertStatement } from "@webpods/tinqer";
+import { createContext, insertInto } from "@webpods/tinqer";
+import { insertStatement } from "@webpods/tinqer-sql-pg-promise";
+
+const ctx = createContext<Schema>();
 
 // Insert with literal values - direct object syntax
 const insert = insertStatement(
   () =>
-    insertInto(db, "users").values({
+    insertInto(ctx, "users").values({
       name: "Alice",
       age: 30,
       email: "alice@example.com",
@@ -976,7 +979,7 @@ External variables must be passed via the params object - closure variables are 
 ```typescript
 const insert = insertStatement(
   (p: { name: string; age: number }) =>
-    insertInto(db, "users").values({
+    insertInto(ctx, "users").values({
       name: p.name,
       age: p.age,
       email: "default@example.com",
@@ -1001,7 +1004,7 @@ Both PostgreSQL and SQLite (3.35.0+) support the RETURNING clause to retrieve va
 // Return specific columns
 const insertWithReturn = insertStatement(
   () =>
-    insertInto(db, "users")
+    insertInto(ctx, "users")
       .values({ name: "Charlie", age: 35 })
       .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
   {},
@@ -1010,7 +1013,7 @@ const insertWithReturn = insertStatement(
 // Return all columns
 const insertReturnAll = insertStatement(
   () =>
-    insertInto(db, "users")
+    insertInto(ctx, "users")
       .values({ name: "David", age: 40 })
       .returning((u) => u), // Returns *
   {},
@@ -1022,7 +1025,7 @@ const insertReturnAll = insertStatement(
 ```typescript
 const insert = insertStatement(
   () =>
-    insertInto(db, "users").values({
+    insertInto(ctx, "users").values({
       name: "Eve",
       email: null, // Generates NULL, not parameterized
       phone: undefined, // Column omitted from INSERT
@@ -1038,11 +1041,14 @@ The `updateTable` function creates UPDATE operations. The `.set()` method uses d
 #### Basic UPDATE
 
 ```typescript
-import { updateTable, updateStatement } from "@webpods/tinqer";
+import { createContext, updateTable } from "@webpods/tinqer";
+import { updateStatement } from "@webpods/tinqer-sql-pg-promise";
+
+const ctx = createContext<Schema>();
 
 const update = updateStatement(
   () =>
-    updateTable(db, "users")
+    updateTable(ctx, "users")
       .set({ age: 31, lastModified: new Date() })
       .where((u) => u.id === 1),
   {},
@@ -1070,7 +1076,7 @@ External variables must be passed via the params object:
 ```typescript
 const update = updateStatement(
   (p: { newAge: number }) =>
-    updateTable(db, "users")
+    updateTable(ctx, "users")
       .set({ age: p.newAge })
       .where((u) => u.id === 1),
   { newAge: 32 },
@@ -1082,7 +1088,7 @@ const update = updateStatement(
 ```typescript
 const update = updateStatement(
   () =>
-    updateTable(db, "users")
+    updateTable(ctx, "users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < new Date("2023-01-01") && u.role !== "admin"),
   {},
@@ -1094,7 +1100,7 @@ const update = updateStatement(
 ```typescript
 const updateWithReturn = updateStatement(
   () =>
-    updateTable(db, "users")
+    updateTable(ctx, "users")
       .set({ age: 32 })
       .where((u) => u.id === 2)
       .returning((u) => ({ id: u.id, age: u.age, updatedAt: u.updatedAt })),
@@ -1107,7 +1113,7 @@ const updateWithReturn = updateStatement(
 ```typescript
 // UPDATE without WHERE requires explicit permission
 const updateAll = updateStatement(
-  () => updateTable(db, "users").set({ isActive: true }).allowFullTableUpdate(), // Required flag
+  () => updateTable(ctx, "users").set({ isActive: true }).allowFullTableUpdate(), // Required flag
   {},
 );
 ```
@@ -1126,9 +1132,12 @@ The `deleteFrom` function creates DELETE operations with optional WHERE conditio
 #### Basic DELETE
 
 ```typescript
-import { deleteFrom, deleteStatement } from "@webpods/tinqer";
+import { createContext, deleteFrom } from "@webpods/tinqer";
+import { deleteStatement } from "@webpods/tinqer-sql-pg-promise";
 
-const del = deleteStatement(() => deleteFrom(db, "users").where((u) => u.age > 100), {});
+const ctx = createContext<Schema>();
+
+const del = deleteStatement(() => deleteFrom(ctx, "users").where((u) => u.age > 100), {});
 ```
 
 Generated SQL:
@@ -1143,7 +1152,7 @@ DELETE FROM "users" WHERE "age" > @__p1    -- SQLite
 ```typescript
 const del = deleteStatement(
   () =>
-    deleteFrom(db, "users").where(
+    deleteFrom(ctx, "users").where(
       (u) => u.isDeleted === true || (u.age < 18 && u.role !== "admin") || u.email === null,
     ),
   {},
@@ -1154,7 +1163,7 @@ const del = deleteStatement(
 
 ```typescript
 const del = deleteStatement(
-  (p: { userIds: number[] }) => deleteFrom(db, "users").where((u) => p.userIds.includes(u.id)),
+  (p: { userIds: number[] }) => deleteFrom(ctx, "users").where((u) => p.userIds.includes(u.id)),
   { userIds: [1, 2, 3, 4, 5] },
 );
 ```
@@ -1229,7 +1238,7 @@ All values are automatically parameterized to prevent SQL injection:
 const maliciousName = "'; DROP TABLE users; --";
 const insert = insertStatement(
   () =>
-    insertInto(db, "users").values({
+    insertInto<User>("users").values({
       name: maliciousName, // Safely parameterized
     }),
   {},
@@ -1290,17 +1299,6 @@ const insertCount = executeInsert(
 );
 // Returns number of inserted rows
 
-// Execute with RETURNING (SQLite 3.35.0+)
-const insertedUsers = executeInsert(
-  db,
-  () =>
-    insertInto(dbContext, "users")
-      .values({ name: "Henry", age: 32 })
-      .returning((u) => u),
-  {},
-);
-// Returns array of inserted rows
-
 // Execute UPDATE - returns row count
 const updateCount = executeUpdate(
   db,
@@ -1318,6 +1316,8 @@ const deleteCount = executeDelete(
   {},
 );
 ```
+
+SQLite helpers always return the number of affected rows. To inspect row data after an insert or update, run a follow-up `selectStatement` query.
 
 #### Transaction Support
 

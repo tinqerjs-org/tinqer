@@ -19,11 +19,10 @@ npm install @webpods/tinqer-sql-better-sqlite3
 ### PostgreSQL Example
 
 ```typescript
-import { Queryable, createContext } from "tinqer";
-import { executeSelectSimple, pgPromiseAdapter } from "tinqer-sql-pg-promise";
+import { createContext, from } from "@webpods/tinqer";
+import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
-// Define your schema
 interface Schema {
   users: {
     id: number;
@@ -33,21 +32,18 @@ interface Schema {
   };
 }
 
-// Setup database
 const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
-
-// Create type-safe context
 const ctx = createContext<Schema>();
 
-// Build and execute query
-const query = ctx
-  .from("users")
-  .where((u) => u.age >= 18)
-  .orderBy((u) => u.name)
-  .select((u) => ({ id: u.id, name: u.name }));
-
-const results = await executeSelectSimple(query, db, pgPromiseAdapter);
+const results = await executeSelectSimple(
+  db,
+  () =>
+    from(ctx, "users")
+      .where((u) => u.age >= 18)
+      .orderBy((u) => u.name)
+      .select((u) => ({ id: u.id, name: u.name })),
+);
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
 ```
 
@@ -55,29 +51,31 @@ const results = await executeSelectSimple(query, db, pgPromiseAdapter);
 
 ```typescript
 import Database from "better-sqlite3";
-import { Queryable, createContext } from "tinqer";
-import { selectStatement, betterSqlite3Adapter } from "tinqer-sql-better-sqlite3";
+import { createContext, from } from "@webpods/tinqer";
+import { selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
   products: {
     id: number;
     name: string;
     price: number;
-    in_stock: number; // SQLite uses INTEGER (0/1) for boolean values
+    inStock: number; // SQLite uses INTEGER (0/1) for boolean values
   };
 }
 
 const db = new Database("./data.db");
 const ctx = createContext<Schema>();
 
-const query = ctx
-  .from("products")
-  .where((p) => p.in_stock === 1 && p.price < 100)
-  .orderByDescending((p) => p.price)
-  .select((p) => p);
+const { sql, params } = selectStatement(
+  () =>
+    from(ctx, "products")
+      .where((p) => p.inStock === 1 && p.price < 100)
+      .orderByDescending((p) => p.price)
+      .select((p) => p),
+  {},
+);
 
-const { sql, params } = selectStatement(query, betterSqlite3Adapter);
-const results = db.prepare(sql).all(...params);
+const results = db.prepare(sql).all(params);
 ```
 
 ## Core Features
@@ -88,14 +86,14 @@ const results = db.prepare(sql).all(...params);
 const ctx = createContext<Schema>();
 
 // Full TypeScript type inference
-const query = ctx
-  .from("users")
-  .where((u) => u.age >= 18 && u.email.includes("@company.com"))
-  .orderBy((u) => u.name)
-  .select((u) => ({ id: u.id, name: u.name, email: u.email }));
+const query = () =>
+  from(ctx, "users")
+    .where((u) => u.age >= 18 && u.email.includes("@company.com"))
+    .orderBy((u) => u.name)
+    .select((u) => ({ id: u.id, name: u.name, email: u.email }));
 
-// Type of results is automatically inferred:
-// { id: number; name: string; email: string }[]
+// query() returns a Queryable whose result type is inferred as
+// { id: number; name: string; email: string }
 ```
 
 ### Joins
@@ -108,10 +106,9 @@ interface Schema {
 
 const ctx = createContext<Schema>();
 
-const query = ctx
-  .from("users")
+const query = from(ctx, "users")
   .join(
-    ctx.from("departments"),
+    from(ctx, "departments"),
     (u) => u.dept_id,
     (d) => d.id,
     (u, d) => ({ userName: u.name, deptName: d.name }),
@@ -122,8 +119,7 @@ const query = ctx
 ### Grouping and Aggregation
 
 ```typescript
-const summary = ctx
-  .from("orders")
+const summary = from(ctx, "orders")
   .groupBy((o) => o.product_id)
   .select((g) => ({
     productId: g.key,
@@ -137,37 +133,39 @@ const summary = ctx
 ### CRUD Operations
 
 ```typescript
-import { insert, update, del } from "tinqer";
-import {
-  executeInsert,
-  executeUpdate,
-  executeDelete,
-  pgPromiseAdapter,
-} from "tinqer-sql-pg-promise";
+import { createContext, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
+
+const ctx = createContext<Schema>();
 
 // INSERT
-const insertStmt = insert<Schema>("users")
-  .values({ name: "Alice", email: "alice@example.com" })
-  .returning((u) => u);
+const insertedRows = await executeInsert(
+  db,
+  () =>
+    insertInto(ctx, "users").values({
+      name: "Alice",
+      email: "alice@example.com",
+    }),
+  {},
+);
 
-const { results } = await executeInsert(insertStmt, db, pgPromiseAdapter);
-
-// UPDATE
-const updateStmt = update<Schema>("users")
-  .set({ status: "inactive" })
-  .where((u) => u.last_login < params.cutoffDate)
-  .returning((u) => u.id);
-
-const { results } = await executeUpdate(updateStmt, db, pgPromiseAdapter, {
-  cutoffDate: new Date("2023-01-01"),
-});
+// UPDATE with RETURNING
+const inactiveUsers = await executeUpdate(
+  db,
+  (params: { cutoffDate: Date }) =>
+    updateTable(ctx, "users")
+      .set({ status: "inactive" })
+      .where((u) => u.lastLogin < params.cutoffDate)
+      .returning((u) => u.id),
+  { cutoffDate: new Date("2023-01-01") },
+);
 
 // DELETE
-const deleteStmt = del<Schema>("users")
-  .where((u) => u.status === "deleted")
-  .returning((u) => ({ id: u.id, name: u.name }));
-
-const { results } = await executeDelete(deleteStmt, db, pgPromiseAdapter);
+const deletedCount = await executeDelete(
+  db,
+  () => deleteFrom(ctx, "users").where((u) => u.status === "deleted"),
+  {},
+);
 ```
 
 ### Parameters and Auto-Parameterisation
@@ -176,31 +174,39 @@ All literal values are automatically parameterized to prevent SQL injection:
 
 ```typescript
 // External parameters via params object
-const query = ctx
-  .from("users")
-  .where((u, params: { minAge: number }) => u.age >= params.minAge)
-  .select((u) => u);
+const ctx = createContext<Schema>();
 
-const { sql, params } = selectStatement(query, pgPromiseAdapter);
-// SQL: SELECT u.* FROM users AS u WHERE u.age >= $1
-// params: [18] (passed when executing)
+const sample = selectStatement(
+  (p: { minAge: number }) =>
+    from(ctx, "users")
+      .where((u) => u.age >= p.minAge)
+      .select((u) => u),
+  { minAge: 18 },
+);
+// SQL (PostgreSQL): SELECT * FROM "users" WHERE "age" >= $(minAge)
+// params: { minAge: 18 }
 
-// Literals auto-parameterized
-const query2 = ctx
-  .from("users")
-  .where((u) => u.age >= 18) // 18 becomes a parameter automatically
-  .select((u) => u);
+// Literals auto-parameterized automatically
+const literals = selectStatement(
+  () =>
+    from(ctx, "users")
+      .where((u) => u.age >= 18)
+      .select((u) => u),
+  {},
+);
+// params: { __p1: 18 }
 ```
 
 ### Case-Insensitive String Operations
 
 ```typescript
-import { createQueryHelpers } from "tinqer";
+import { createQueryHelpers } from "@webpods/tinqer";
 
 const { ilike, contains, startsWith, endsWith } = createQueryHelpers<Schema>();
 
-const query = ctx
-  .from("users")
+const ctx = createContext<Schema>();
+
+const query = from(ctx, "users")
   .where((u) => contains(u.name, "alice")) // Case-insensitive substring match
   .select((u) => u);
 
