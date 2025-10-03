@@ -124,6 +124,14 @@ export interface ReferenceExpression {
 }
 
 /**
+ * All columns expression - represents * in SELECT or RETURNING
+ * Used when an identity function like (u) => u is encountered
+ */
+export interface AllColumnsExpression {
+  type: "allColumns";
+}
+
+/**
  * Union type for all value-producing expressions
  */
 export type ValueExpression =
@@ -137,7 +145,8 @@ export type ValueExpression =
   | CoalesceExpression
   | CastExpression
   | AggregateExpression
-  | ReferenceExpression;
+  | ReferenceExpression
+  | AllColumnsExpression;
 
 // ==================== Boolean Expressions ====================
 

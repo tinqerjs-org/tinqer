@@ -14,6 +14,19 @@ export { DatabaseContext, createContext } from "./linq/database-context.js";
 export { functions, createQueryHelpers } from "./linq/functions.js";
 export type { QueryHelpers } from "./linq/functions.js";
 
+// Data modification builders
+export { insertInto } from "./linq/insert-into.js";
+export { Insertable, InsertableWithReturning } from "./linq/insertable.js";
+export { updateTable } from "./linq/update-table.js";
+export {
+  Updatable,
+  UpdatableWithSet,
+  UpdatableComplete,
+  UpdatableWithReturning,
+} from "./linq/updatable.js";
+export { deleteFrom } from "./linq/delete-from.js";
+export { Deletable, DeletableComplete } from "./linq/deletable.js";
+
 // ==================== LINQ Interfaces ====================
 // Type contracts
 
@@ -42,6 +55,7 @@ export type {
   CastExpression,
   AggregateExpression,
   ReferenceExpression,
+  AllColumnsExpression,
 
   // Boolean expressions
   ComparisonExpression,
@@ -119,6 +133,11 @@ export type {
   MinOperation,
   MaxOperation,
   ToArrayOperation,
+
+  // Data modification operations
+  InsertOperation,
+  UpdateOperation,
+  DeleteOperation,
 
   // Union types
   ChainableOperation,

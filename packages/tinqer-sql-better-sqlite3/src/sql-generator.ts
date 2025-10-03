@@ -27,6 +27,9 @@ import type {
   JoinOperation,
   AnyOperation,
   AllOperation,
+  InsertOperation,
+  UpdateOperation,
+  DeleteOperation,
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 import { generateFrom } from "./generators/from.js";
@@ -47,6 +50,9 @@ import { generateFirst } from "./generators/first.js";
 import { generateSingle } from "./generators/single.js";
 import { generateLast } from "./generators/last.js";
 import { generateJoin } from "./generators/join.js";
+import { generateInsert } from "./generators/insert.js";
+import { generateUpdate } from "./generators/update.js";
+import { generateDelete } from "./generators/delete.js";
 
 /**
  * Generate SQL from a QueryOperation tree
@@ -61,6 +67,22 @@ export function generateSql(operation: QueryOperation, params: unknown): string 
 
   // Collect all operations in the chain
   const operations = collectOperations(operation);
+
+  // Check if this is a CRUD operation chain (may have WHERE, etc.)
+  // Find INSERT, UPDATE, or DELETE in the chain
+  const insertOp = operations.find((op) => op.operationType === "insert") as InsertOperation;
+  const updateOp = operations.find((op) => op.operationType === "update") as UpdateOperation;
+  const deleteOp = operations.find((op) => op.operationType === "delete") as DeleteOperation;
+
+  if (insertOp) {
+    return generateInsert(insertOp, context);
+  }
+  if (updateOp) {
+    return generateUpdate(updateOp, context);
+  }
+  if (deleteOp) {
+    return generateDelete(deleteOp, context);
+  }
 
   // Check for ANY or ALL operations - they need special handling
   const anyOp = operations.find((op) => op.operationType === "any") as AnyOperation;

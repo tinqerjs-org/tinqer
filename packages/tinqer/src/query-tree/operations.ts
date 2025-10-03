@@ -447,7 +447,49 @@ export type TerminalOperation =
   | MaxOperation
   | ToArrayOperation;
 
+// ==================== Data Modification Operations ====================
+
+/**
+ * INSERT operation
+ */
+export interface InsertOperation extends QueryOperation {
+  operationType: "insert";
+  table: string;
+  schema?: string;
+  values: ObjectExpression; // Column-value mapping
+  returning?: ValueExpression | ObjectExpression; // For PostgreSQL RETURNING clause
+}
+
+/**
+ * UPDATE operation
+ */
+export interface UpdateOperation extends QueryOperation {
+  operationType: "update";
+  table: string;
+  schema?: string;
+  assignments: ObjectExpression; // Column-value assignments from .set()
+  predicate?: BooleanExpression; // WHERE clause
+  allowFullTableUpdate?: boolean; // Explicit opt-in for updates without WHERE
+  returning?: ValueExpression | ObjectExpression; // For PostgreSQL RETURNING clause
+}
+
+/**
+ * DELETE operation
+ */
+export interface DeleteOperation extends QueryOperation {
+  operationType: "delete";
+  table: string;
+  schema?: string;
+  predicate?: BooleanExpression; // WHERE clause
+  allowFullTableDelete?: boolean; // Explicit opt-in for deletes without WHERE
+}
+
 /**
  * Union type for all operations
  */
-export type AnyQueryOperation = ChainableOperation | TerminalOperation;
+export type AnyQueryOperation =
+  | ChainableOperation
+  | TerminalOperation
+  | InsertOperation
+  | UpdateOperation
+  | DeleteOperation;

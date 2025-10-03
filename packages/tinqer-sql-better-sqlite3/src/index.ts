@@ -8,6 +8,13 @@ import {
   type OrderedQueryable,
   type TerminalQuery,
   type QueryHelpers,
+  type Insertable,
+  type InsertableWithReturning,
+  type UpdatableWithSet,
+  type UpdatableComplete,
+  type UpdatableWithReturning,
+  type Deletable,
+  type DeletableComplete,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
 import type { SqlResult, ExecuteOptions } from "./types.js";
@@ -102,6 +109,7 @@ interface BetterSqlite3Database {
   prepare(sql: string): {
     all(params?: Record<string, unknown>): unknown[];
     get(params?: Record<string, unknown>): unknown;
+    run(params?: Record<string, unknown>): { changes: number };
   };
 }
 
@@ -283,6 +291,186 @@ export function executeSelectSimple<
       ? T
       : never {
   return executeSelect(db, queryBuilder, {}, options);
+}
+
+// ==================== INSERT Statement & Execution ====================
+
+/**
+ * Generate INSERT SQL statement
+ * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
+ */
+export function insertStatement<TParams, TTable, TReturning = never>(
+  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+  const parseResult = parseQuery(queryBuilder);
+
+  if (!parseResult) {
+    throw new Error("Failed to parse INSERT query");
+  }
+
+  const mergedParams = { ...parseResult.autoParams, ...params };
+  const sql = generateSql(parseResult.operation, mergedParams);
+
+  return {
+    sql,
+    params: mergedParams as TParams & Record<string, string | number | boolean | null>,
+  };
+}
+
+/**
+ * Execute INSERT and return row count
+ */
+export function executeInsert<TParams, TTable>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => Insertable<TTable>,
+  params: TParams,
+  options?: ExecuteOptions,
+): number;
+
+/**
+ * Execute INSERT with RETURNING (not supported by SQLite)
+ * Note: SQLite does not support RETURNING clause, throws error
+ */
+// eslint-disable-next-line no-redeclare
+export function executeInsert<TParams, TTable, TReturning>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => InsertableWithReturning<TTable, TReturning>,
+  params: TParams,
+  options?: ExecuteOptions,
+): never;
+
+// Implementation
+// eslint-disable-next-line no-redeclare
+export function executeInsert<TParams, TTable, TReturning = never>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
+  params: TParams,
+  options: ExecuteOptions = {},
+): number {
+  const { sql, params: sqlParams } = insertStatement(queryBuilder, params);
+
+  if (options.onSql) {
+    options.onSql({ sql, params: sqlParams });
+  }
+
+  const stmt = db.prepare(sql);
+  const result = stmt.run(sqlParams);
+  return result.changes;
+}
+
+// ==================== UPDATE Statement & Execution ====================
+
+/**
+ * Generate UPDATE SQL statement
+ * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
+ */
+export function updateStatement<TParams, TTable, TReturning = never>(
+  queryBuilder: (
+    params: TParams,
+  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+  const parseResult = parseQuery(queryBuilder);
+
+  if (!parseResult) {
+    throw new Error("Failed to parse UPDATE query");
+  }
+
+  const mergedParams = { ...parseResult.autoParams, ...params };
+  const sql = generateSql(parseResult.operation, mergedParams);
+
+  return {
+    sql,
+    params: mergedParams as TParams & Record<string, string | number | boolean | null>,
+  };
+}
+
+/**
+ * Execute UPDATE and return row count
+ */
+export function executeUpdate<TParams, TTable>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
+  params: TParams,
+  options?: ExecuteOptions,
+): number;
+
+/**
+ * Execute UPDATE with RETURNING (not supported by SQLite)
+ * Note: SQLite does not support RETURNING clause, throws error
+ */
+// eslint-disable-next-line no-redeclare
+export function executeUpdate<TParams, TTable, TReturning>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => UpdatableWithReturning<TTable, TReturning>,
+  params: TParams,
+  options?: ExecuteOptions,
+): never;
+
+// Implementation
+// eslint-disable-next-line no-redeclare
+export function executeUpdate<TParams, TTable, TReturning = never>(
+  db: BetterSqlite3Database,
+  queryBuilder: (
+    params: TParams,
+  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
+  params: TParams,
+  options: ExecuteOptions = {},
+): number {
+  const { sql, params: sqlParams } = updateStatement(queryBuilder, params);
+
+  if (options.onSql) {
+    options.onSql({ sql, params: sqlParams });
+  }
+
+  const stmt = db.prepare(sql);
+  const result = stmt.run(sqlParams);
+  return result.changes;
+}
+
+// ==================== DELETE Statement & Execution ====================
+
+/**
+ * Generate DELETE SQL statement
+ */
+export function deleteStatement<TParams, TResult>(
+  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+  const parseResult = parseQuery(queryBuilder);
+
+  if (!parseResult) {
+    throw new Error("Failed to parse DELETE query");
+  }
+
+  const mergedParams = { ...parseResult.autoParams, ...params };
+  const sql = generateSql(parseResult.operation, mergedParams);
+
+  return {
+    sql,
+    params: mergedParams as TParams & Record<string, string | number | boolean | null>,
+  };
+}
+
+/**
+ * Execute DELETE and return row count
+ */
+export function executeDelete<TParams, TResult>(
+  db: BetterSqlite3Database,
+  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+  params: TParams,
+  options: ExecuteOptions = {},
+): number {
+  const { sql, params: sqlParams } = deleteStatement(queryBuilder, params);
+
+  if (options.onSql) {
+    options.onSql({ sql, params: sqlParams });
+  }
+
+  const stmt = db.prepare(sql);
+  const result = stmt.run(sqlParams);
+  return result.changes;
 }
 
 // Export types

@@ -242,7 +242,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(capturedSql).to.exist;
-      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "id" = ANY(${targetIds})');
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "id" = ANY($(targetIds))');
       expect(capturedSql!.params).to.deep.equal({ targetIds: [1, 3, 5, 7] });
 
       expect(results).to.be.an("array");
@@ -272,7 +272,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal(
-        'SELECT * FROM "products" WHERE ("category" IS NOT NULL AND "category" <> ALL(${excludedCategories}))',
+        'SELECT * FROM "products" WHERE ("category" IS NOT NULL AND "category" <> ALL($(excludedCategories)))',
       );
       expect(capturedSql!.params).to.deep.equal({
         excludedCategories: ["Furniture", "Stationery"],
@@ -301,7 +301,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       expect(capturedSql).to.exist;
-      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "id" = ANY(${emptyList})');
+      expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "id" = ANY($(emptyList))');
       expect(capturedSql!.params).to.deep.equal({ emptyList: [] });
 
       expect(results).to.be.an("array");

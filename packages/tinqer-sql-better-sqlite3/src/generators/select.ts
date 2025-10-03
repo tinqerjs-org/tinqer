@@ -10,8 +10,13 @@ import { generateExpression, generateValueExpression } from "../expression-gener
  * Generate SELECT clause
  */
 export function generateSelect(operation: SelectOperation, context: SqlContext): string {
-  // Handle null selector (identity function like .select(u => u))
+  // Handle null selector (legacy support, should not happen with new code)
   if (!operation.selector) {
+    return "SELECT *";
+  }
+
+  // Handle AllColumnsExpression (identity function like .select(u => u))
+  if (operation.selector.type === "allColumns") {
     return "SELECT *";
   }
 
