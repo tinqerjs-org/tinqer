@@ -459,4 +459,40 @@ describe("PostgreSQL Integration - JOINs", () => {
       });
     });
   });
+
+  describe("LINQ-style outer joins", () => {
+    it("should convert groupJoin/selectMany/defaultIfEmpty into LEFT OUTER JOIN", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSelectSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .groupJoin(
+              from(dbContext, "departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, deptGroup) => ({ user: u, deptGroup }),
+            )
+            .selectMany(
+              (g) => g.deptGroup.defaultIfEmpty(),
+              (g, dept) => ({ user: g.user, dept }),
+            )
+            .select((row) => ({
+              userId: row.user.id,
+              departmentName: row.dept ? row.dept.name : null,
+            })),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.contain("LEFT OUTER JOIN");
+      expect(capturedSql!.sql).to.contain('"t0"."department_id" = "t1"."id"');
+      expect(results.length).to.be.greaterThan(0);
+    });
+  });
 });

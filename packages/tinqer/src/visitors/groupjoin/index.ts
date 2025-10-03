@@ -70,12 +70,11 @@ function parseResultSelector(
   for (const prop of astObject.properties) {
     const property = prop as ASTProperty;
     if (property.type !== "Property" || property.key.type !== "Identifier") {
-    return null;
+      return null;
     }
 
     const propName = property.key.name;
     const value = property.value;
-
 
     if (value.type === "Identifier") {
       const identName = (value as Identifier).name;
@@ -129,7 +128,6 @@ export function visitGroupJoinOperation(
   visitorContext: VisitorContext,
 ): { operation: GroupJoinOperation; autoParams: Record<string, unknown> } | null {
   if (!ast.arguments || ast.arguments.length < 4) {
-    console.warn("groupJoin: insufficient arguments");
     return null;
   }
 
@@ -147,7 +145,6 @@ export function visitGroupJoinOperation(
 
   const inner = innerResult?.operation || null;
   if (!inner) {
-    console.warn("groupJoin: failed to parse inner source");
     return null;
   }
 
@@ -199,8 +196,6 @@ export function visitGroupJoinOperation(
         outerKey = result.expression.name;
         Object.assign(autoParams, result.autoParams);
         visitorContext.autoParamCounter = result.counter;
-      } else {
-        console.warn("groupJoin: outer key not column", result?.expression?.type);
       }
     }
   }
@@ -233,21 +228,17 @@ export function visitGroupJoinOperation(
         innerKey = result.expression.name;
         Object.assign(autoParams, result.autoParams);
         visitorContext.autoParamCounter = result.counter;
-      } else {
-        console.warn("groupJoin: inner key not column", result?.expression?.type);
       }
     }
   }
 
   if (!outerKey || !innerKey || resultSelectorAst.type !== "ArrowFunctionExpression") {
-    console.warn("groupJoin: missing keys or result selector", outerKey, innerKey);
     return null;
   }
 
   const parsedResult = parseResultSelector(resultSelectorAst as ArrowFunctionExpression);
 
   if (!parsedResult) {
-    console.warn("groupJoin: result selector parse failed");
     return null;
   }
 

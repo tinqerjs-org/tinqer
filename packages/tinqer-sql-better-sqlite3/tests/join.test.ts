@@ -359,4 +359,28 @@ describe("Join SQL Generation", () => {
       expect(result.params).to.deep.equal({ page: 2, pageSize: 10 });
     });
   });
+
+  describe("LINQ-style joins", () => {
+    it("should translate groupJoin/selectMany/defaultIfEmpty into LEFT OUTER JOIN", () => {
+      const result = selectStatement(
+        () =>
+          from<User>("users")
+            .groupJoin(
+              from<Department>("departments"),
+              (u) => u.departmentId,
+              (d) => d.id,
+              (u, deptGroup) => ({ user: u, deptGroup }),
+            )
+            .selectMany(
+              (g) => g.deptGroup.defaultIfEmpty(),
+              (g, dept) => ({ user: g.user, dept }),
+            )
+            .select((row) => ({ userId: row.user.id, deptId: row.dept.id })),
+        {},
+      );
+
+      expect(result.sql).to.contain("LEFT OUTER JOIN");
+      expect(result.sql).to.contain('"t0"."departmentId" = "t1"."id"');
+    });
+  });
 });
