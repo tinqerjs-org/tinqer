@@ -33,7 +33,7 @@ export function selectStatement<TParams, TResult>(
         helpers: QueryHelpers,
       ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
   params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
   // Parse the query to get the operation tree and auto-params
   const parseResult = parseQuery(queryBuilder);
 
@@ -77,11 +77,12 @@ export function selectStatement<TParams, TResult>(
 /**
  * Simpler API for generating SQL with auto-parameterization
  * @param queryable A Queryable or TerminalQuery object
- * @returns Object with text (SQL string) and parameters
+ * @returns Object with text (SQL string), parameters, and preserved result type
  */
 export function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>): {
   text: string;
   parameters: Record<string, unknown>;
+  _resultType?: T;
 } {
   // Create a dummy function that returns the queryable
   const queryBuilder = () => queryable;
@@ -300,9 +301,14 @@ export function executeSelectSimple<
  * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
  */
 export function insertStatement<TParams, TTable, TReturning = never>(
-  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
+  queryBuilder: (
+    params: TParams,
+  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+): SqlResult<
+  TParams & Record<string, string | number | boolean | null>,
+  TReturning extends never ? void : TReturning
+> {
   const parseResult = parseQuery(queryBuilder);
 
   if (!parseResult) {
@@ -344,7 +350,9 @@ export function executeInsert<TParams, TTable, TReturning>(
 // eslint-disable-next-line no-redeclare
 export function executeInsert<TParams, TTable, TReturning = never>(
   db: BetterSqlite3Database,
-  queryBuilder: (params: TParams) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
+  queryBuilder: (
+    params: TParams,
+  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions = {},
 ): number {
@@ -368,9 +376,15 @@ export function executeInsert<TParams, TTable, TReturning = never>(
 export function updateStatement<TParams, TTable, TReturning = never>(
   queryBuilder: (
     params: TParams,
-  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
+  ) =>
+    | UpdatableWithSet<TTable>
+    | UpdatableComplete<TTable>
+    | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+): SqlResult<
+  TParams & Record<string, string | number | boolean | null>,
+  TReturning extends never ? void : TReturning
+> {
   const parseResult = parseQuery(queryBuilder);
 
   if (!parseResult) {
@@ -414,7 +428,10 @@ export function executeUpdate<TParams, TTable, TReturning = never>(
   db: BetterSqlite3Database,
   queryBuilder: (
     params: TParams,
-  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable> | UpdatableWithReturning<TTable, TReturning>,
+  ) =>
+    | UpdatableWithSet<TTable>
+    | UpdatableComplete<TTable>
+    | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions = {},
 ): number {
@@ -437,7 +454,7 @@ export function executeUpdate<TParams, TTable, TReturning = never>(
 export function deleteStatement<TParams, TResult>(
   queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
   params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>> {
+): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
   const parseResult = parseQuery(queryBuilder);
 
   if (!parseResult) {
