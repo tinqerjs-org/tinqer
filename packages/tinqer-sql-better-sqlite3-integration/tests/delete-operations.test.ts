@@ -6,16 +6,20 @@ import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { deleteFrom, createContext } from "@webpods/tinqer";
 import { executeDelete, deleteStatement } from "@webpods/tinqer-sql-better-sqlite3";
-import { db, closeDatabase } from "./shared-db.js";
+import Database from "better-sqlite3";
+
+// Use isolated in-memory database for DELETE tests
+const db: Database.Database = new Database(":memory:");
 
 // Define types for test tables
+// Note: SQLite doesn't have a boolean type, it uses INTEGER (0/1)
 interface TestSchema {
   test_products: {
     id?: number;
     name: string;
     category?: string;
     price?: number;
-    in_stock?: boolean;
+    in_stock?: number; // SQLite uses INTEGER (0/1) for boolean values
     created_date?: string;
     last_modified?: string;
   };
@@ -24,7 +28,7 @@ interface TestSchema {
     username: string;
     email: string;
     age?: number;
-    is_active?: boolean;
+    is_active?: number; // SQLite uses INTEGER (0/1) for boolean values
     role?: string;
     joined_date?: string;
     last_login?: string;
@@ -52,9 +56,18 @@ const dbContext = createContext<TestSchema>();
 
 describe("DELETE Operations - SQLite Integration", () => {
   before(() => {
+    // Enable foreign key constraints in SQLite (must be set before creating tables)
+    db.exec("PRAGMA foreign_keys = ON");
+
+    // Drop existing tables to ensure fresh schema
+    db.exec("DROP TABLE IF EXISTS test_orders");
+    db.exec("DROP TABLE IF EXISTS test_logs");
+    db.exec("DROP TABLE IF EXISTS test_users");
+    db.exec("DROP TABLE IF EXISTS test_products");
+
     // Create test tables for DELETE operations
     db.exec(`
-      CREATE TABLE IF NOT EXISTS test_products (
+      CREATE TABLE test_products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         category TEXT,
@@ -66,7 +79,7 @@ describe("DELETE Operations - SQLite Integration", () => {
     `);
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS test_users (
+      CREATE TABLE test_users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         email TEXT UNIQUE NOT NULL,
@@ -79,7 +92,7 @@ describe("DELETE Operations - SQLite Integration", () => {
     `);
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS test_orders (
+      CREATE TABLE test_orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER REFERENCES test_users(id) ON DELETE CASCADE,
         product_id INTEGER REFERENCES test_products(id) ON DELETE CASCADE,
@@ -90,7 +103,7 @@ describe("DELETE Operations - SQLite Integration", () => {
     `);
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS test_logs (
+      CREATE TABLE test_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         level TEXT NOT NULL,
         message TEXT,
@@ -98,9 +111,6 @@ describe("DELETE Operations - SQLite Integration", () => {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `);
-
-    // Enable foreign key constraints in SQLite
-    db.exec("PRAGMA foreign_keys = ON");
   });
 
   after(() => {
@@ -109,7 +119,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     db.exec("DROP TABLE IF EXISTS test_logs");
     db.exec("DROP TABLE IF EXISTS test_users");
     db.exec("DROP TABLE IF EXISTS test_products");
-    closeDatabase();
+    // Close isolated database
+    db.close();
   });
 
   beforeEach(() => {
@@ -118,6 +129,10 @@ describe("DELETE Operations - SQLite Integration", () => {
     db.exec("DELETE FROM test_logs");
     db.exec("DELETE FROM test_users");
     db.exec("DELETE FROM test_products");
+    // Reset auto-increment counters
+    db.exec(
+      "DELETE FROM sqlite_sequence WHERE name IN ('test_orders', 'test_logs', 'test_users', 'test_products')",
+    );
 
     // Seed products
     db.exec(`
@@ -225,7 +240,7 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with boolean condition", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_users").where((u) => u.is_active === false),
+        () => deleteFrom(dbContext, "test_users").where((u) => u.is_active === 0), // SQLite uses 0 for false
         {},
       );
 
@@ -255,7 +270,7 @@ describe("DELETE Operations - SQLite Integration", () => {
         db,
         () =>
           deleteFrom(dbContext, "test_products").where(
-            (p) => p.category === "Electronics" && p.in_stock === false,
+            (p) => p.category === "Electronics" && p.in_stock === 0, // SQLite uses 0 for false
           ),
         {},
       );
@@ -278,7 +293,7 @@ describe("DELETE Operations - SQLite Integration", () => {
         {},
       );
 
-      assert.equal(rowCount, 3); // Notebook, Pen Set (Stationery) and Standing Desk (599.99)
+      assert.equal(rowCount, 4); // Notebook, Pen Set (Stationery), Standing Desk (599.99), and Laptop (999.99)
 
       const stationery = db
         .prepare("SELECT * FROM test_products WHERE category = ?")
@@ -294,8 +309,7 @@ describe("DELETE Operations - SQLite Integration", () => {
         db,
         () =>
           deleteFrom(dbContext, "test_users").where(
-            (u) =>
-              (u.role === "user" && u.age! < 30) || (u.is_active === false && u.role !== "admin"),
+            (u) => (u.role === "user" && u.age! < 30) || (u.is_active === 0 && u.role !== "admin"), // SQLite uses 0 for false
           ),
         {},
       );
@@ -332,8 +346,8 @@ describe("DELETE Operations - SQLite Integration", () => {
         {},
       );
 
-      assert.equal(rowCount, 3); // Monitor (299.99), Desk Chair (249.99 - actually < 250), Standing Desk (599.99)
-      // Actually should be 2: Monitor and Standing Desk
+      assert.equal(rowCount, 2); // Monitor (299.99) and Standing Desk (599.99)
+      // Desk Chair (249.99) doesn't match because 249.99 < 250
 
       const remaining = db.prepare("SELECT name, price FROM test_products ORDER BY price").all();
       // Should have deleted Monitor (299.99) and Standing Desk (599.99)
@@ -375,7 +389,7 @@ describe("DELETE Operations - SQLite Integration", () => {
         {},
       );
 
-      assert.equal(rowCount, 2); // "User logged in" and "Failed login attempt"
+      assert.equal(rowCount, 1); // Only "Failed login attempt" (contains "login" as substring)
 
       const loginLogs = db.prepare("SELECT * FROM test_logs WHERE message LIKE ?").all("%login%");
       assert.equal(loginLogs.length, 0);
@@ -556,15 +570,16 @@ describe("DELETE Operations - SQLite Integration", () => {
       // SQLite stores booleans as integers
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_products").where((p) => p.in_stock === true),
+        () => deleteFrom(dbContext, "test_products").where((p) => p.in_stock === 1), // SQLite uses 1 for true
         {},
       );
 
       // Should delete all products where in_stock = 1
-      assert.equal(rowCount, 5);
+      // Products: Laptop, Mouse, Monitor, Desk Chair, Notebook, Pen Set = 6 products
+      assert.equal(rowCount, 6);
 
       const remaining = db.prepare("SELECT * FROM test_products").all() as any[];
-      assert.equal(remaining.length, 3);
+      assert.equal(remaining.length, 2); // Only Keyboard and Standing Desk remain (in_stock = 0)
       remaining.forEach((p) => assert.equal(p.in_stock, 0));
     });
 
@@ -603,7 +618,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const result = deleteStatement(
         () =>
           deleteFrom(dbContext, "test_users").where(
-            (u) => u.age! > 25 && (u.role === "admin" || u.is_active === false),
+            (u) => u.age! > 25 && (u.role === "admin" || u.is_active === 0), // SQLite uses 0 for false
           ),
         {},
       );

@@ -6,9 +6,13 @@ import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { updateTable, createContext } from "@webpods/tinqer";
 import { executeUpdate, updateStatement } from "@webpods/tinqer-sql-better-sqlite3";
-import { db, closeDatabase } from "./shared-db.js";
+import Database from "better-sqlite3";
+
+// Use isolated in-memory database for UPDATE tests
+const db: Database.Database = new Database(":memory:");
 
 // Define types for test tables
+// Note: SQLite doesn't have a boolean type, it uses INTEGER (0/1)
 interface TestSchema {
   inventory: {
     id?: number;
@@ -18,7 +22,7 @@ interface TestSchema {
     last_updated?: string;
     status?: string;
     warehouse_location?: string;
-    is_active?: boolean;
+    is_active?: number; // SQLite uses INTEGER (0/1) for boolean values
     notes?: string;
   };
   user_profiles: {
@@ -28,7 +32,7 @@ interface TestSchema {
     full_name?: string;
     age?: number | null;
     bio?: string | null;
-    is_verified?: boolean;
+    is_verified?: number; // SQLite uses INTEGER (0/1) for boolean values
     last_login?: string;
     settings?: string;
     created_at?: string;
@@ -40,7 +44,7 @@ interface TestSchema {
     user_id: number;
     rating: number;
     review_text?: string;
-    is_verified_purchase?: boolean;
+    is_verified_purchase?: number; // SQLite uses INTEGER (0/1) for boolean values
     helpful_count?: number;
     created_at?: string;
     updated_at?: string;
@@ -51,9 +55,17 @@ const dbContext = createContext<TestSchema>();
 
 describe("UPDATE Operations - SQLite Integration", () => {
   before(() => {
+    // Enable foreign key constraints in SQLite
+    db.exec("PRAGMA foreign_keys = ON");
+
+    // Drop existing tables to ensure fresh schema
+    db.exec("DROP TABLE IF EXISTS product_reviews");
+    db.exec("DROP TABLE IF EXISTS user_profiles");
+    db.exec("DROP TABLE IF EXISTS inventory");
+
     // Create test tables for UPDATE operations
     db.exec(`
-      CREATE TABLE IF NOT EXISTS inventory (
+      CREATE TABLE inventory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_name TEXT NOT NULL,
         quantity INTEGER NOT NULL DEFAULT 0,
@@ -67,7 +79,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     `);
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS user_profiles (
+      CREATE TABLE user_profiles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         email TEXT UNIQUE NOT NULL,
@@ -83,7 +95,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     `);
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS product_reviews (
+      CREATE TABLE product_reviews (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
@@ -102,7 +114,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
     db.exec("DROP TABLE IF EXISTS inventory");
     db.exec("DROP TABLE IF EXISTS user_profiles");
     db.exec("DROP TABLE IF EXISTS product_reviews");
-    closeDatabase();
+    // Close isolated database
+    db.close();
   });
 
   beforeEach(() => {
@@ -110,6 +123,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
     db.exec("DELETE FROM inventory");
     db.exec("DELETE FROM user_profiles");
     db.exec("DELETE FROM product_reviews");
+    // Reset auto-increment counters
+    db.exec(
+      "DELETE FROM sqlite_sequence WHERE name IN ('inventory', 'user_profiles', 'product_reviews')",
+    );
 
     // Seed inventory data
     db.exec(`
@@ -219,7 +236,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({ is_verified: true }))
+            .set(() => ({ is_verified: 1 })) // SQLite uses 0/1 for boolean values
             .where((u) => u.username === "jane_smith"),
         {},
       );
@@ -299,7 +316,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ is_active: false }))
+            .set(() => ({ is_active: 0 })) // SQLite uses 0/1 for boolean values
             .where(
               (i) =>
                 (i.quantity === 0 && i.status === "out_of_stock") ||
@@ -387,8 +404,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({ is_verified: true }))
-            .where((u) => u.is_verified === false),
+            .set(() => ({ is_verified: 1 })) // SQLite uses 0/1 for boolean values
+            .where((u) => u.is_verified === 0), // SQLite uses 0 for false
         {},
       );
 
@@ -440,11 +457,11 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const rowCount = executeUpdate(
         db,
-        () =>
+        (params: { newDate: string }) =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({ last_login: newDate }))
+            .set(() => ({ last_login: params.newDate }))
             .where((u) => u.username === "bob_wilson"),
-        {},
+        { newDate },
       );
 
       assert.equal(rowCount, 1);
@@ -459,17 +476,18 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should update with current timestamp", () => {
       const beforeUpdate = new Date();
+      const currentTime = new Date().toISOString();
 
       const rowCount = executeUpdate(
         db,
-        () =>
+        (params: { currentTime: string }) =>
           updateTable(dbContext, "inventory")
             .set(() => ({
               quantity: 50,
-              last_updated: new Date().toISOString(),
+              last_updated: params.currentTime,
             }))
             .where((i) => i.product_name === "Headphones"),
-        {},
+        { currentTime },
       );
 
       assert.equal(rowCount, 1);
@@ -498,11 +516,11 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const rowCount = executeUpdate(
         db,
-        () =>
+        (params: { settingsJson: string }) =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({ settings: JSON.stringify(newSettings) }))
+            .set(() => ({ settings: params.settingsJson }))
             .where((u) => u.username === "alice_jones"),
-        {},
+        { settingsJson: JSON.stringify(newSettings) },
       );
 
       assert.equal(rowCount, 1);
@@ -601,7 +619,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ is_active: true }))
+            .set(() => ({ is_active: 1 })) // SQLite uses 0/1 for boolean values
             .where((i) => i.id === 1),
         {},
       );

@@ -274,7 +274,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
         {},
       );
 
-      assert.equal(rowCount, 3); // Notebook, Pen Set (Stationery) and Standing Desk (599.99)
+      assert.equal(rowCount, 4); // Notebook, Pen Set (Stationery), Standing Desk (599.99), and Laptop (999.99)
 
       const stationery = await db.any("SELECT * FROM test_products WHERE category = $1", [
         "Stationery",
@@ -326,12 +326,12 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
         {},
       );
 
-      assert.equal(rowCount, 3); // Monitor (299.99), Desk Chair (249.99), Standing Desk (599.99)
-      // Actually Desk Chair is 249.99 which is < 250, so only 2 items
+      assert.equal(rowCount, 2); // Monitor (299.99), Standing Desk (599.99)
+      // Desk Chair is 249.99 which is < 250, so not deleted
 
       const remaining = await db.many("SELECT name, price FROM test_products ORDER BY price");
-      // Should have: Pen Set (12.99), Mouse (29.99), Keyboard (79.99), Desk Chair (249.99), Laptop (999.99)
-      assert.equal(remaining.length, 5);
+      // Should have: Notebook (5.99), Pen Set (12.99), Mouse (29.99), Keyboard (79.99), Desk Chair (249.99), Laptop (999.99)
+      assert.equal(remaining.length, 6);
     });
   });
 
@@ -369,7 +369,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
         {},
       );
 
-      assert.equal(rowCount, 2); // "User logged in" and "Failed login attempt"
+      assert.equal(rowCount, 1); // Only "Failed login attempt" (contains "login" as substring)
 
       const loginLogs = await db.any("SELECT * FROM test_logs WHERE message LIKE $1", ["%login%"]);
       assert.equal(loginLogs.length, 0);

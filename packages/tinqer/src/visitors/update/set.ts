@@ -9,6 +9,8 @@ import type {
   ArrowFunctionExpression,
   ObjectExpression as ASTObjectExpression,
   Expression,
+  Statement,
+  ReturnStatement,
 } from "../../parser/ast-types.js";
 import type { VisitorContext } from "../types.js";
 import { visitExpression } from "../index.js";
@@ -50,13 +52,13 @@ export function visitSetOperation(
   // If it's a lambda (for backward compatibility or when using parameters), extract the body
   if (firstArg.type === "ArrowFunctionExpression") {
     const arrowFn = firstArg as ArrowFunctionExpression;
-    let lambdaBody = arrowFn.body;
+    const lambdaBody = arrowFn.body;
 
     // Handle block statement with return
     if (lambdaBody.type === "BlockStatement") {
       const returnStmt = lambdaBody.body?.find(
-        (stmt: any) => stmt.type === "ReturnStatement",
-      ) as any;
+        (stmt: Statement) => stmt.type === "ReturnStatement",
+      ) as ReturnStatement | undefined;
       if (!returnStmt || !returnStmt.argument) {
         throw new Error("set() lambda must return an object");
       }

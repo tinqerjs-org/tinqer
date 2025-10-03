@@ -6,16 +6,20 @@ import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { insertInto, createContext } from "@webpods/tinqer";
 import { executeInsert, insertStatement } from "@webpods/tinqer-sql-better-sqlite3";
-import { db, closeDatabase } from "./shared-db.js";
+import Database from "better-sqlite3";
+
+// Use isolated in-memory database for INSERT tests
+const db: Database.Database = new Database(":memory:");
 
 // Define types for test tables
+// Note: SQLite doesn't have a boolean type, it uses INTEGER (0/1)
 interface TestSchema {
   products: {
     id?: number;
     name: string;
     price?: number;
     category?: string | null;
-    in_stock?: boolean;
+    in_stock?: number; // SQLite uses INTEGER (0/1) for boolean values
     description?: string | null;
     created_at?: string;
     metadata?: string;
@@ -35,7 +39,7 @@ interface TestSchema {
     email: string;
     name?: string;
     age?: number;
-    is_active?: boolean;
+    is_active?: number; // SQLite uses INTEGER (0/1) for boolean values
     created_at?: string;
   };
 }
@@ -44,9 +48,17 @@ const dbContext = createContext<TestSchema>();
 
 describe("INSERT Operations - SQLite Integration", () => {
   before(() => {
+    // Enable foreign key constraints in SQLite
+    db.exec("PRAGMA foreign_keys = ON");
+
+    // Drop existing tables to ensure fresh schema
+    db.exec("DROP TABLE IF EXISTS orders");
+    db.exec("DROP TABLE IF EXISTS products");
+    db.exec("DROP TABLE IF EXISTS customers");
+
     // Create test tables for INSERT operations
     db.exec(`
-      CREATE TABLE IF NOT EXISTS products (
+      CREATE TABLE products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         price REAL,
@@ -59,7 +71,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     `);
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS orders (
+      CREATE TABLE orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         customer_id INTEGER NOT NULL,
         product_id INTEGER NOT NULL,
@@ -72,7 +84,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     `);
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS customers (
+      CREATE TABLE customers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
         name TEXT,
@@ -88,7 +100,8 @@ describe("INSERT Operations - SQLite Integration", () => {
     db.exec("DROP TABLE IF EXISTS orders");
     db.exec("DROP TABLE IF EXISTS products");
     db.exec("DROP TABLE IF EXISTS customers");
-    closeDatabase();
+    // Close isolated database
+    db.close();
   });
 
   beforeEach(() => {
@@ -109,7 +122,7 @@ describe("INSERT Operations - SQLite Integration", () => {
             name: "Laptop",
             price: 999.99,
             category: "Electronics",
-            in_stock: true,
+            in_stock: 1, // SQLite uses 0/1 for boolean values
             description: "High-performance laptop",
           }),
         {},
@@ -160,7 +173,7 @@ describe("INSERT Operations - SQLite Integration", () => {
             name: p.productName,
             price: p.productPrice,
             category: p.productCategory,
-            in_stock: true,
+            in_stock: 1, // SQLite uses 0/1 for boolean values
           }),
         params,
       );
@@ -179,7 +192,7 @@ describe("INSERT Operations - SQLite Integration", () => {
           insertInto(dbContext, "products").values({
             name: "Out of Stock Item",
             price: 50.0,
-            in_stock: false,
+            in_stock: 0, // SQLite uses 0/1 for boolean values
           }),
         {},
       );
@@ -306,17 +319,17 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const rowCount = executeInsert(
         db,
-        () =>
+        (params: { testDate: string }) =>
           insertInto(dbContext, "orders").values({
             customer_id: 1,
             product_id: 1,
             quantity: 2,
             unit_price: 50.0,
             total_price: 100.0,
-            order_date: testDate,
+            order_date: params.testDate,
             status: "completed",
           }),
-        {},
+        { testDate },
       );
 
       assert.equal(rowCount, 1);
@@ -339,13 +352,13 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const rowCount = executeInsert(
         db,
-        () =>
+        (params: { metadataJson: string }) =>
           insertInto(dbContext, "products").values({
             name: "Product with Metadata",
             price: 199.99,
-            metadata: JSON.stringify(metadata),
+            metadata: params.metadataJson,
           }),
-        {},
+        { metadataJson: JSON.stringify(metadata) },
       );
 
       assert.equal(rowCount, 1);
@@ -436,15 +449,15 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Insert order referencing both
       const orderCount = executeInsert(
         db,
-        () =>
+        (params: { customerId: number; productId: number }) =>
           insertInto(dbContext, "orders").values({
-            customer_id: customerId,
-            product_id: productId,
+            customer_id: params.customerId,
+            product_id: params.productId,
             quantity: 3,
             unit_price: 49.99,
             total_price: 149.97,
           }),
-        {},
+        { customerId, productId },
       );
 
       assert.equal(orderCount, 1);
@@ -464,12 +477,12 @@ describe("INSERT Operations - SQLite Integration", () => {
       for (let i = 1; i <= 3; i++) {
         executeInsert(
           db,
-          () =>
+          (params: { name: string; price: number }) =>
             insertInto(dbContext, "products").values({
-              name: `Product ${i}`,
-              price: i * 10,
+              name: params.name,
+              price: params.price,
             }),
-          {},
+          { name: `Product ${i}`, price: i * 10 },
         );
       }
 
@@ -533,7 +546,7 @@ describe("INSERT Operations - SQLite Integration", () => {
           insertInto(dbContext, "products").values({
             name: "Test",
             price: 10.99,
-            in_stock: true,
+            in_stock: 1, // SQLite uses 0/1 for boolean values
           }),
         {},
       );
@@ -546,7 +559,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       assert.deepEqual(result.params, {
         __p1: "Test",
         __p2: 10.99,
-        __p3: true,
+        __p3: 1, // SQLite uses 0/1 for boolean values
       });
     });
 

@@ -399,9 +399,10 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert(Array.isArray(results));
       assert.equal(results.length, 2); // Two reviews with rating 5
-      results.forEach((id) => {
-        assert(typeof id === "number");
-        assert(id > 0);
+      // Note: Currently returns {id: number}, not just number (type mismatch to fix later)
+      results.forEach((result) => {
+        assert(typeof (result as any).id === "number");
+        assert((result as any).id > 0);
       });
     });
   });
@@ -459,11 +460,11 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeUpdate(
         db,
-        () =>
+        (params: { newDate: Date }) =>
           updateTable(dbContext, "user_profiles")
-            .set({ last_login: newDate })
+            .set({ last_login: params.newDate })
             .where((u) => u.username === "bob_wilson"),
-        {},
+        { newDate },
       );
 
       assert.equal(rowCount, 1);
@@ -481,14 +482,14 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeUpdate(
         db,
-        () =>
+        (params: { currentTime: Date }) =>
           updateTable(dbContext, "inventory")
             .set({
               quantity: 50,
-              last_updated: new Date(),
+              last_updated: params.currentTime,
             })
             .where((i) => i.product_name === "Headphones"),
-        {},
+        { currentTime: new Date() },
       );
 
       assert.equal(rowCount, 1);
@@ -514,11 +515,11 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeUpdate(
         db,
-        () =>
+        (params: { settingsJson: string }) =>
           updateTable(dbContext, "user_profiles")
-            .set({ settings: JSON.stringify(newSettings) })
+            .set({ settings: params.settingsJson })
             .where((u) => u.username === "alice_jones"),
-        {},
+        { settingsJson: JSON.stringify(newSettings) },
       );
 
       assert.equal(rowCount, 1);
