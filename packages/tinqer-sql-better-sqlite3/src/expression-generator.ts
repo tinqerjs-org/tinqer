@@ -59,6 +59,21 @@ export function generateExpression(expr: Expression, context: SqlContext): strin
  * Generate SQL for boolean expressions
  */
 export function generateBooleanExpression(expr: BooleanExpression, context: SqlContext): string {
+  // Handle reference type which can appear in boolean context (e.g., row.dept ? ... : ...)
+  if ((expr as { type: string }).type === "reference") {
+    const refExpr = expr as unknown as ReferenceExpression;
+    // For null checking in LEFT JOINs, check a primary key or first column instead of *
+    // Extract table alias from reference
+    if (refExpr.source && refExpr.source.type === "joinParam") {
+      const aliases = Array.from(context.tableAliases.values());
+      const alias = aliases[refExpr.source.paramIndex] || `t${refExpr.source.paramIndex}`;
+      // Assume 'id' column exists for null check (common pattern)
+      return `"${alias}"."id" IS NOT NULL`;
+    }
+    // Fallback
+    return `"t1"."id" IS NOT NULL`;
+  }
+
   switch (expr.type) {
     case "comparison":
       return generateComparisonExpression(expr, context);

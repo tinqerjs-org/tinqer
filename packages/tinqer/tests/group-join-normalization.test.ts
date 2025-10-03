@@ -29,9 +29,10 @@ describe("GroupJoin normalization", () => {
     );
 
     expect(result).to.not.equal(null);
-    const operation = (result as any).operation as { operationType: string; source: unknown };
+    const operation = (result as { operation: { operationType: string; source: unknown } })
+      .operation as { operationType: string; source: unknown };
     expect(operation.operationType).to.equal("select");
-    const selectSource = (operation as any).source as {
+    const selectSource = (operation as { source: unknown }).source as {
       operationType: string;
       joinType?: string;
       outerKey?: string;
