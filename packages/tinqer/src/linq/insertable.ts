@@ -12,10 +12,10 @@ export class Insertable<T> {
 
   /**
    * Specifies the values to insert
-   * @param valuesSelector Function that returns an object mapping columns to values
+   * @param valuesSelector Object mapping columns to values, or function that returns such an object
    * @returns Insertable for further chaining
    */
-  values(_valuesSelector: () => Partial<T>): Insertable<T> {
+  values(_valuesSelector: Partial<T> | (() => Partial<T>)): Insertable<T> {
     return this;
   }
 

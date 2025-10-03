@@ -1,0 +1,522 @@
+/**
+ * Integration tests for INSERT operations with PostgreSQL
+ */
+
+import { describe, it, before, after, beforeEach } from "mocha";
+import { strict as assert } from "assert";
+import { insertInto, createContext } from "@webpods/tinqer";
+import { executeInsert, insertStatement } from "@webpods/tinqer-sql-pg-promise";
+import { db } from "./shared-db.js";
+
+// Define types for test tables
+interface TestSchema {
+  products: {
+    id?: number;
+    name: string;
+    price?: number;
+    category?: string | null;
+    in_stock?: boolean;
+    description?: string | null;
+    created_at?: Date;
+    metadata?: string;
+  };
+  orders: {
+    id?: number;
+    customer_id: number;
+    product_id: number;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    order_date?: Date;
+    status?: string;
+  };
+  customers: {
+    id?: number;
+    email: string;
+    name?: string;
+    age?: number;
+    is_active?: boolean;
+    created_at?: Date;
+  };
+}
+
+const dbContext = createContext<TestSchema>();
+
+describe("INSERT Operations - PostgreSQL Integration", () => {
+  before(async () => {
+    // Create test tables for INSERT operations
+    await db.none(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2),
+        category VARCHAR(50),
+        in_stock BOOLEAN DEFAULT true,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        metadata JSONB
+      )
+    `);
+
+    await db.none(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        customer_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        total_price DECIMAL(10, 2) NOT NULL,
+        order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        status VARCHAR(20) DEFAULT 'pending'
+      )
+    `);
+
+    await db.none(`
+      CREATE TABLE IF NOT EXISTS customers (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        name VARCHAR(100),
+        age INTEGER,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  });
+
+  after(async () => {
+    // Drop test tables
+    await db.none("DROP TABLE IF EXISTS orders CASCADE");
+    await db.none("DROP TABLE IF EXISTS products CASCADE");
+    await db.none("DROP TABLE IF EXISTS customers CASCADE");
+  });
+
+  beforeEach(async () => {
+    // Clear tables before each test
+    await db.none("TRUNCATE TABLE orders, products, customers RESTART IDENTITY CASCADE");
+  });
+
+  describe("Basic INSERT operations", () => {
+    it("should insert a single row with all columns", async () => {
+      const rowCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products").values({
+            name: "Laptop",
+            price: 999.99,
+            category: "Electronics",
+            in_stock: true,
+            description: "High-performance laptop",
+          }),
+        {},
+      );
+
+      assert.equal(rowCount, 1);
+
+      // Verify the insert
+      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Laptop"]);
+      assert.equal(product.name, "Laptop");
+      assert.equal(parseFloat(product.price), 999.99);
+      assert.equal(product.category, "Electronics");
+      assert.equal(product.in_stock, true);
+      assert.equal(product.description, "High-performance laptop");
+    });
+
+    it("should insert with partial columns (nullable columns)", async () => {
+      const rowCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products").values({
+            name: "Basic Item",
+            price: 10.0,
+          }),
+        {},
+      );
+
+      assert.equal(rowCount, 1);
+
+      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Basic Item"]);
+      assert.equal(product.name, "Basic Item");
+      assert.equal(parseFloat(product.price), 10.0);
+      assert.equal(product.category, null); // Should be null
+      assert.equal(product.in_stock, true); // Should use default
+    });
+
+    it("should insert with parameters", async () => {
+      const params = {
+        productName: "Tablet",
+        productPrice: 599.99,
+        productCategory: "Electronics",
+      };
+
+      const rowCount = await executeInsert(
+        db,
+        (p: typeof params) =>
+          insertInto(dbContext, "products").values(() => ({
+            name: p.productName,
+            price: p.productPrice,
+            category: p.productCategory,
+            in_stock: true,
+          })),
+        params,
+      );
+
+      assert.equal(rowCount, 1);
+
+      const product = await db.one("SELECT * FROM products WHERE name = $1", [params.productName]);
+      assert.equal(product.name, "Tablet");
+      assert.equal(parseFloat(product.price), 599.99);
+    });
+
+    it("should handle boolean values correctly", async () => {
+      const rowCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products").values({
+            name: "Out of Stock Item",
+            price: 50.0,
+            in_stock: false,
+          }),
+        {},
+      );
+
+      assert.equal(rowCount, 1);
+
+      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Out of Stock Item"]);
+      assert.equal(product.in_stock, false);
+    });
+
+    it("should handle NULL values explicitly", async () => {
+      const rowCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products").values({
+            name: "Minimal Product",
+            price: 25.0,
+            category: null,
+            description: null,
+          }),
+        {},
+      );
+
+      assert.equal(rowCount, 1);
+
+      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Minimal Product"]);
+      assert.equal(product.category, null);
+      assert.equal(product.description, null);
+    });
+  });
+
+  describe("INSERT with RETURNING clause", () => {
+    it("should return inserted row with RETURNING *", async () => {
+      const results = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products")
+            .values({
+              name: "Smartphone",
+              price: 799.99,
+              category: "Electronics",
+            })
+            .returning((p) => p),
+        {},
+      );
+
+      assert(Array.isArray(results));
+      assert.equal(results.length, 1);
+      assert.equal(results[0]!.name, "Smartphone");
+      assert.equal(parseFloat(String(results[0]!.price!)), 799.99);
+      assert(results[0]!.id! > 0); // Auto-generated ID
+    });
+
+    it("should return specific columns with RETURNING", async () => {
+      const results = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products")
+            .values({
+              name: "Monitor",
+              price: 299.99,
+              category: "Electronics",
+            })
+            .returning((p) => ({ id: p.id, name: p.name })),
+        {},
+      );
+
+      assert(Array.isArray(results));
+      assert.equal(results.length, 1);
+      assert.equal(results[0]!.name, "Monitor");
+      assert(results[0]!.id! > 0);
+      // Should not have other columns
+      assert(!("price" in results[0]!));
+      assert(!("category" in results[0]!));
+    });
+
+    it("should return single column with RETURNING", async () => {
+      const results = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products")
+            .values({
+              name: "Keyboard",
+              price: 79.99,
+            })
+            .returning((p) => p.id),
+        {},
+      );
+
+      assert(Array.isArray(results));
+      assert.equal(results.length, 1);
+      assert(typeof results[0]! === "number");
+      assert(results[0]! > 0);
+    });
+  });
+
+  describe("Complex INSERT scenarios", () => {
+    it("should handle special characters in strings", async () => {
+      const rowCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products").values({
+            name: "Product with 'quotes' and \"double quotes\"",
+            price: 100.0,
+            description: "Description with\nnewlines\tand\ttabs",
+          }),
+        {},
+      );
+
+      assert.equal(rowCount, 1);
+
+      const product = await db.one("SELECT * FROM products WHERE price = $1", [100.0]);
+      assert(product.name.includes("'quotes'"));
+      assert(product.name.includes('"double quotes"'));
+      assert(product.description.includes("\n"));
+      assert(product.description.includes("\t"));
+    });
+
+    it("should handle Unicode characters", async () => {
+      const rowCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products").values({
+            name: "Product with émoji 🚀 and 中文",
+            price: 88.88,
+            category: "Special ñ категория",
+          }),
+        {},
+      );
+
+      assert.equal(rowCount, 1);
+
+      const product = await db.one("SELECT * FROM products WHERE price = $1", [88.88]);
+      assert(product.name.includes("🚀"));
+      assert(product.name.includes("中文"));
+      assert(product.category.includes("ñ"));
+    });
+
+    it("should handle numeric edge cases", async () => {
+      const rowCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products").values({
+            name: "Edge Case Product",
+            price: 0.01, // Very small
+          }),
+        {},
+      );
+
+      assert.equal(rowCount, 1);
+
+      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Edge Case Product"]);
+      assert.equal(parseFloat(product.price), 0.01);
+    });
+
+    it("should handle timestamp values", async () => {
+      const testDate = new Date("2024-01-15T10:30:00Z");
+
+      const rowCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "orders").values({
+            customer_id: 1,
+            product_id: 1,
+            quantity: 2,
+            unit_price: 50.0,
+            total_price: 100.0,
+            order_date: testDate,
+            status: "completed",
+          }),
+        {},
+      );
+
+      assert.equal(rowCount, 1);
+
+      const order = await db.one("SELECT * FROM orders WHERE customer_id = $1", [1]);
+      assert.equal(order.status, "completed");
+      // Date comparison might need timezone handling
+      assert(order.order_date instanceof Date);
+    });
+
+    it("should handle JSONB columns", async () => {
+      const metadata = {
+        tags: ["featured", "bestseller"],
+        specifications: {
+          weight: "1.5kg",
+          dimensions: { width: 30, height: 20, depth: 2 },
+        },
+      };
+
+      const rowCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products").values({
+            name: "Product with Metadata",
+            price: 199.99,
+            metadata: JSON.stringify(metadata),
+          }),
+        {},
+      );
+
+      assert.equal(rowCount, 1);
+
+      const product = await db.one("SELECT * FROM products WHERE name = $1", [
+        "Product with Metadata",
+      ]);
+      assert.deepEqual(product.metadata, metadata);
+    });
+  });
+
+  describe("INSERT with unique constraints", () => {
+    it("should handle unique constraint violations gracefully", async () => {
+      // First insert
+      await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "customers").values({
+            email: "test@example.com",
+            name: "Test User",
+            age: 30,
+          }),
+        {},
+      );
+
+      // Second insert with same email should fail
+      try {
+        await executeInsert(
+          db,
+          () =>
+            insertInto(dbContext, "customers").values({
+              email: "test@example.com",
+              name: "Another User",
+              age: 25,
+            }),
+          {},
+        );
+        assert.fail("Should have thrown unique constraint error");
+      } catch (error: any) {
+        assert(error.message.includes("duplicate key") || error.message.includes("unique"));
+      }
+    });
+  });
+
+  describe("Multiple related INSERTs", () => {
+    it("should handle multiple inserts in sequence", async () => {
+      // Insert customer
+      const customerResults = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "customers")
+            .values({
+              email: "john@example.com",
+              name: "John Doe",
+              age: 35,
+            })
+            .returning((c) => c.id),
+        {},
+      );
+
+      const customerId = customerResults[0]!;
+
+      // Insert product
+      const productResults = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "products")
+            .values({
+              name: "Test Product",
+              price: 49.99,
+              category: "Test",
+            })
+            .returning((p) => p.id),
+        {},
+      );
+
+      const productId = productResults[0]!;
+
+      // Insert order referencing both
+      const orderCount = await executeInsert(
+        db,
+        () =>
+          insertInto(dbContext, "orders").values({
+            customer_id: customerId,
+            product_id: productId,
+            quantity: 3,
+            unit_price: 49.99,
+            total_price: 149.97,
+          }),
+        {},
+      );
+
+      assert.equal(orderCount, 1);
+
+      // Verify all inserts
+      const order = await db.one(
+        "SELECT * FROM orders WHERE customer_id = $1 AND product_id = $2",
+        [customerId, productId],
+      );
+      assert.equal(order.quantity, 3);
+      assert.equal(parseFloat(order.total_price), 149.97);
+    });
+  });
+
+  describe("SQL generation verification", () => {
+    it("should generate correct INSERT SQL", () => {
+      const result = insertStatement(
+        () =>
+          insertInto(dbContext, "products").values({
+            name: "Test",
+            price: 10.99,
+            in_stock: true,
+          }),
+        {},
+      );
+
+      assert(result.sql.includes('INSERT INTO "products"'));
+      assert(result.sql.includes('"name", "price", "in_stock"'));
+      assert(result.sql.includes("VALUES"));
+      assert(result.sql.includes("$(__p1)"));
+      assert.deepEqual(result.params, {
+        __p1: "Test",
+        __p2: 10.99,
+        __p3: true,
+      });
+    });
+
+    it("should generate correct INSERT with RETURNING SQL", () => {
+      const result = insertStatement(
+        () =>
+          insertInto(dbContext, "products")
+            .values({
+              name: "Test",
+              price: 10.99,
+            })
+            .returning((p) => ({ id: p.id, name: p.name })),
+        {},
+      );
+
+      assert(result.sql.includes('INSERT INTO "products"'));
+      assert(result.sql.includes("RETURNING"));
+      assert(result.sql.includes('"id" AS "id"'));
+      assert(result.sql.includes('"name" AS "name"'));
+    });
+  });
+});
