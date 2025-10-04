@@ -490,8 +490,9 @@ describe("PostgreSQL Integration - JOINs", () => {
       );
 
       expect(capturedSql).to.exist;
-      expect(capturedSql!.sql).to.contain("LEFT OUTER JOIN");
-      expect(capturedSql!.sql).to.contain('"t0"."department_id" = "t1"."id"');
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "t0"."id" AS "userId", CASE WHEN "t1"."id" IS NOT NULL THEN "t1"."name" ELSE NULL END AS "departmentName" FROM "users" AS "t0" LEFT OUTER JOIN "departments" AS "t1" ON "t0"."department_id" = "t1"."id"',
+      );
       expect(results.length).to.be.greaterThan(0);
     });
   });

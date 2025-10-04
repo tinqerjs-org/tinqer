@@ -379,8 +379,9 @@ describe("Join SQL Generation", () => {
         {},
       );
 
-      expect(result.sql).to.contain("LEFT OUTER JOIN");
-      expect(result.sql).to.contain('"t0"."departmentId" = "t1"."id"');
+      expect(result.sql).to.equal(
+        'SELECT "t0"."id" AS "userId", "t1"."id" AS "deptId" FROM "users" AS "t0" LEFT OUTER JOIN "departments" AS "t1" ON "t0"."departmentId" = "t1"."id"',
+      );
     });
   });
 });
