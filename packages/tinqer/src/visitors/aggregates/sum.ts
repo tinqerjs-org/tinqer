@@ -3,7 +3,7 @@
  */
 
 import type { SumOperation, QueryOperation } from "../../query-tree/operations.js";
-import type { ColumnExpression, ValueExpression } from "../../expressions/expression.js";
+import type { ValueExpression } from "../../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
@@ -19,7 +19,6 @@ export function visitSumOperation(
   _methodName: string,
   visitorContext: VisitorContext,
 ): { operation: SumOperation; autoParams: Record<string, unknown> } | null {
-  let selector: string | undefined;
   const autoParams: Record<string, unknown> = {};
 
   if (ast.arguments && ast.arguments.length > 0) {
@@ -56,21 +55,14 @@ export function visitSumOperation(
 
         if (result.value) {
           const expr = result.value;
-          // Store both selector (for backward compatibility) and full expression
-          if (expr.type === "column") {
-            selector = (expr as ColumnExpression).name;
-          }
-          // Store the full expression for complex cases
           Object.assign(autoParams, result.autoParams);
           visitorContext.autoParamCounter = result.counter;
 
-          // Return with the expression
           return {
             operation: {
               type: "queryOperation",
               operationType: "sum",
               source,
-              selector,
               selectorExpression: expr as ValueExpression,
             },
             autoParams,
@@ -85,7 +77,6 @@ export function visitSumOperation(
       type: "queryOperation",
       operationType: "sum",
       source,
-      selector,
     },
     autoParams,
   };

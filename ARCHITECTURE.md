@@ -452,7 +452,7 @@ Sum, Average, Min, Max operations.
 export interface SumOperation extends QueryOperation {
   operationType: "sum";
   source: QueryOperation;
-  selector: ValueExpression;
+  selectorExpression?: ValueExpression;
 }
 ```
 
@@ -463,7 +463,7 @@ export interface SumOperation extends QueryOperation {
 {
   operationType: "sum",
   source: { /* previous operation */ },
-  selector: { type: "column", name: "amount" }
+  selectorExpression: { type: "column", name: "amount" }
 }
 ```
 
