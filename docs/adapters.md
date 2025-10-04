@@ -179,6 +179,7 @@ const removed = executeDelete(
   { cutoff: 18 },
 );
 
+// Need the SQL text for custom execution?
 const { sql, params } = selectStatement(
   () => from(ctx, "users").where((u) => u.name.startsWith("S")),
   {},

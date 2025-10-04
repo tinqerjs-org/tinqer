@@ -50,7 +50,7 @@ const results = await executeSelectSimple(db, () =>
 ```typescript
 import Database from "better-sqlite3";
 import { createContext, from } from "@webpods/tinqer";
-import { selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelectSimple, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
   products: {
@@ -64,16 +64,15 @@ interface Schema {
 const db = new Database("./data.db");
 const ctx = createContext<Schema>();
 
-const { sql, params } = selectStatement(
-  () =>
-    from(ctx, "products")
-      .where((p) => p.inStock === 1 && p.price < 100)
-      .orderByDescending((p) => p.price)
-      .select((p) => p),
-  {},
+const results = executeSelectSimple(db, () =>
+  from(ctx, "products")
+    .where((p) => p.inStock === 1 && p.price < 100)
+    .orderByDescending((p) => p.price)
+    .select((p) => p),
 );
 
-const results = db.prepare(sql).all(params);
+// Need the raw SQL for logging or prepared statements? selectStatement is still available:
+const { sql, params } = selectStatement(() => from(ctx, "products").select((p) => p.name), {});
 ```
 
 ## Core Features
@@ -210,6 +209,8 @@ const deletedCount = await executeDelete(
   () => deleteFrom(ctx, "users").where((u) => u.status === "deleted"),
   {},
 );
+
+// SQLite note: executeInsert/executeUpdate ignore RETURNING clauses at runtime; run a follow-up SELECT if you need the affected rows.
 ```
 
 ### Parameters and Auto-Parameterisation
