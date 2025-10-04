@@ -7,6 +7,7 @@ import type { Expression as ASTExpression } from "./ast-types.js";
 import { parseJavaScript } from "./oxc-parser.js";
 import { convertAstToQueryOperationWithParams } from "./ast-visitor.js";
 import { normalizeJoins } from "./normalize-joins.js";
+import { wrapWindowFilters } from "./normalize-window-filters.js";
 import type { createQueryHelpers } from "../linq/functions.js";
 
 /**
@@ -62,13 +63,17 @@ export function parseQuery<TParams, TQuery>(
       return null;
     }
 
-    const normalizedOperation: QueryOperation | null = result.operation
+    // Apply normalization passes
+    let normalizedOperation: QueryOperation | null = result.operation
       ? normalizeJoins(result.operation)
       : null;
 
     if (!normalizedOperation) {
       return null;
     }
+
+    // Apply window filter wrapping normalization
+    normalizedOperation = wrapWindowFilters(normalizedOperation);
 
     return {
       operation: normalizedOperation,

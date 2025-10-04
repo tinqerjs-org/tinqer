@@ -302,6 +302,12 @@ function collectOperations(operation: QueryOperation): QueryOperation[] {
 
   while (current) {
     operations.push(current);
+
+    // Stop if we hit a FROM with a subquery - the subquery will be handled separately
+    if (current.operationType === "from" && (current as FromOperation).subquery) {
+      break;
+    }
+
     current = (current as QueryOperation & { source?: QueryOperation }).source;
   }
 
