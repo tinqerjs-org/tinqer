@@ -1,0 +1,2942 @@
+# Tinqer Documentation
+
+This file contains the complete documentation for Tinqer, a runtime LINQ-to-SQL query builder for TypeScript.
+
+---
+
+## README
+
+# Tinqer
+
+Runtime LINQ-to-SQL query builder for TypeScript. Queries are expressed as inline arrow functions, parsed into an expression tree, and compiled into SQL for PostgreSQL or SQLite.
+
+## Installation
+
+Install the adapter for your database:
+
+```bash
+# PostgreSQL (pg-promise)
+npm install @webpods/tinqer-sql-pg-promise
+
+# SQLite (better-sqlite3)
+npm install @webpods/tinqer-sql-better-sqlite3
+```
+
+## Quick Start
+
+### PostgreSQL Example
+
+```typescript
+import { createContext, from } from "@webpods/tinqer";
+import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
+import pgPromise from "pg-promise";
+
+interface Schema {
+  users: {
+    id: number;
+    name: string;
+    email: string;
+    age: number;
+  };
+}
+
+const pgp = pgPromise();
+const db = pgp("postgresql://user:pass@localhost:5432/mydb");
+const ctx = createContext<Schema>();
+
+const results = await executeSelectSimple(db, () =>
+  from(ctx, "users")
+    .where((u) => u.age >= 18)
+    .orderBy((u) => u.name)
+    .select((u) => ({ id: u.id, name: u.name })),
+);
+// results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
+```
+
+### SQLite Example
+
+```typescript
+import Database from "better-sqlite3";
+import { createContext, from } from "@webpods/tinqer";
+import { executeSelect, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
+
+interface Schema {
+  products: {
+    id: number;
+    name: string;
+    price: number;
+    inStock: number; // SQLite uses INTEGER (0/1) for boolean values
+  };
+}
+
+const db = new Database("./data.db");
+const ctx = createContext<Schema>();
+
+const results = executeSelect(
+  db,
+  (params: { maxPrice: number }) =>
+    from(ctx, "products")
+      .where((p) => p.inStock === 1 && p.price < params.maxPrice)
+      .orderByDescending((p) => p.price)
+      .select((p) => p),
+  { maxPrice: 100 },
+);
+
+// Need the raw SQL for logging or prepared statements? selectStatement is still available:
+const { sql, params } = selectStatement(() => from(ctx, "products").select((p) => p.name), {});
+```
+
+## Core Features
+
+### Type-Safe Query Building
+
+```typescript
+const ctx = createContext<Schema>();
+
+// Full TypeScript type inference
+const query = () =>
+  from(ctx, "users")
+    .where((u) => u.age >= 18 && u.email.includes("@company.com"))
+    .orderBy((u) => u.name)
+    .select((u) => ({ id: u.id, name: u.name, email: u.email }));
+
+// query() returns a Queryable whose result type is inferred as
+// { id: number; name: string; email: string }
+```
+
+### Joins
+
+Tinqer mirrors LINQ semantics. Inner joins have a dedicated operator; left outer and cross joins follow the familiar `groupJoin`/`selectMany` patterns from C#.
+
+#### Inner Join
+
+```typescript
+interface Schema {
+  users: { id: number; name: string; deptId: number };
+  departments: { id: number; name: string };
+}
+
+const ctx = createContext<Schema>();
+
+const inner = from(ctx, "users")
+  .join(
+    from(ctx, "departments"),
+    (user) => user.deptId,
+    (department) => department.id,
+    (user, department) => ({
+      userName: user.name,
+      departmentName: department.name,
+    }),
+  )
+  .orderBy((row) => row.userName);
+```
+
+#### Left Outer Join
+
+```typescript
+const leftOuter = from(ctx, "users")
+  .groupJoin(
+    from(ctx, "departments"),
+    (user) => user.deptId,
+    (department) => department.id,
+    (user, deptGroup) => ({ user, deptGroup }),
+  )
+  .selectMany(
+    (group) => group.deptGroup.defaultIfEmpty(),
+    (group, department) => ({
+      user: group.user,
+      department,
+    }),
+  )
+  .select((row) => ({
+    userId: row.user.id,
+    departmentName: row.department ? row.department.name : null,
+  }));
+```
+
+#### Cross Join
+
+```typescript
+const cross = from(ctx, "departments")
+  .selectMany(
+    () => from(ctx, "users"),
+    (department, user) => ({ department, user }),
+  )
+  .select((row) => ({
+    departmentId: row.department.id,
+    userId: row.user.id,
+  }));
+```
+
+Right and full outer joins still require manual SQL, just as in LINQ-to-Objects.
+
+### Grouping and Aggregation
+
+```typescript
+const summary = from(ctx, "orders")
+  .groupBy((o) => o.product_id)
+  .select((g) => ({
+    productId: g.key,
+    totalQuantity: g.sum((o) => o.quantity),
+    avgPrice: g.avg((o) => o.price),
+    orderCount: g.count(),
+  }))
+  .orderByDescending((row) => row.totalQuantity);
+```
+
+### CRUD Operations
+
+```typescript
+import { createContext, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
+
+const ctx = createContext<Schema>();
+
+// INSERT
+const insertedRows = await executeInsert(
+  db,
+  () =>
+    insertInto(ctx, "users").values({
+      name: "Alice",
+      email: "alice@example.com",
+    }),
+  {},
+);
+
+// UPDATE with RETURNING
+const inactiveUsers = await executeUpdate(
+  db,
+  (params: { cutoffDate: Date }) =>
+    updateTable(ctx, "users")
+      .set({ status: "inactive" })
+      .where((u) => u.lastLogin < params.cutoffDate)
+      .returning((u) => u.id),
+  { cutoffDate: new Date("2023-01-01") },
+);
+
+// DELETE
+const deletedCount = await executeDelete(
+  db,
+  () => deleteFrom(ctx, "users").where((u) => u.status === "deleted"),
+  {},
+);
+
+// SQLite note: executeInsert/executeUpdate ignore RETURNING clauses at runtime; run a follow-up SELECT if you need the affected rows.
+```
+
+### Parameters and Auto-Parameterisation
+
+All literal values are automatically parameterized to prevent SQL injection:
+
+```typescript
+// External parameters via params object
+const ctx = createContext<Schema>();
+
+const sample = selectStatement(
+  (p: { minAge: number }) =>
+    from(ctx, "users")
+      .where((u) => u.age >= p.minAge)
+      .select((u) => u),
+  { minAge: 18 },
+);
+// SQL (PostgreSQL): SELECT * FROM "users" WHERE "age" >= $(minAge)
+// params: { minAge: 18 }
+
+// Literals auto-parameterized automatically
+const literals = selectStatement(
+  () =>
+    from(ctx, "users")
+      .where((u) => u.age >= 18)
+      .select((u) => u),
+  {},
+);
+// params: { __p1: 18 }
+```
+
+### Case-Insensitive String Operations
+
+```typescript
+import { createQueryHelpers } from "@webpods/tinqer";
+
+const { ilike, contains, startsWith, endsWith } = createQueryHelpers<Schema>();
+
+const ctx = createContext<Schema>();
+
+const query = from(ctx, "users")
+  .where((u) => contains(u.name, "alice")) // Case-insensitive substring match
+  .select((u) => u);
+
+// PostgreSQL: WHERE u.name ILIKE $1 (param: "%alice%")
+// SQLite: WHERE LOWER(u.name) LIKE LOWER(?) (param: "%alice%")
+```
+
+## Key Concepts
+
+### Query Lifecycle
+
+1. **Build Query** - Construct fluent chain using `Queryable` API
+2. **Parse Lambda** - Lambda expressions are parsed into expression tree (never executed)
+3. **Auto-Parameterize** - Literal values extracted as parameters
+4. **Generate SQL** - Adapter converts expression tree to database-specific SQL
+
+### Expression Support
+
+Tinqer supports a focused set of JavaScript/TypeScript expressions:
+
+- **Comparison**: `===`, `!==`, `>`, `>=`, `<`, `<=`
+- **Logical**: `&&`, `||`, `!`
+- **Arithmetic**: `+`, `-`, `*`, `/`, `%`
+- **String**: `.includes()`, `.startsWith()`, `.endsWith()`, `.toLowerCase()`, `.toUpperCase()`
+- **Null handling**: `??` (null coalescing), `?.` (optional chaining)
+- **Arrays**: `.includes()` for IN queries
+- **Helper functions**: `ilike()`, `contains()`, `startsWith()`, `endsWith()` (case-insensitive)
+
+## Database Support
+
+### PostgreSQL
+
+- Native boolean type (`true`/`false`)
+- Case-insensitive matching with `ILIKE`
+- Full JSONB support
+- Parameter placeholders: `$1`, `$2`, etc.
+
+### SQLite
+
+- Boolean values use INTEGER (0/1)
+- Case-insensitive via `LOWER()` function
+- JSON functions support
+- Parameter placeholders: `?`, `?`, etc.
+
+See [Database Adapters](docs/adapters.md) for detailed comparison.
+
+## Differences from .NET LINQ to SQL
+
+- Lambdas cannot capture external variables; use params object
+- Limited method set (no `SelectMany`, `GroupJoin`, `DefaultIfEmpty`)
+- Left outer joins and cross joins supported via LINQ patterns (right/full joins still require manual SQL)
+- No deferred execution; SQL generated on demand
+- Grouping supports `count`, `sum`, `avg`, `min`, `max`
+
+## Documentation
+
+- **[Query Operations Guide](docs/guide.md)** - Complete reference for all query operations, parameters, and CRUD
+- **[API Reference](docs/api-reference.md)** - Execution functions, type utilities, and helper APIs
+- **[Database Adapters](docs/adapters.md)** - PostgreSQL and SQLite specifics, differences, limitations
+- **[Development Guide](docs/development.md)** - Contributing, testing, troubleshooting
+
+## Packages
+
+| Package                              | Purpose                                                  |
+| ------------------------------------ | -------------------------------------------------------- |
+| `@webpods/tinqer`                    | Core expression tree and types (re-exported by adapters) |
+| `@webpods/tinqer-sql-pg-promise`     | PostgreSQL adapter with pg-promise                       |
+| `@webpods/tinqer-sql-better-sqlite3` | SQLite adapter with better-sqlite3                       |
+
+## License
+
+MIT
+
+---
+
+## Adapters
+
+
+# Database Adapters
+
+Tinqer ships dedicated adapters for PostgreSQL (`@webpods/tinqer-sql-pg-promise`) and SQLite (`@webpods/tinqer-sql-better-sqlite3`). Both share the same builder APIs while handling dialect-specific SQL generation and parameter formatting.
+
+## Table of Contents
+
+- [1. PostgreSQL Adapter](#1-postgresql-adapter)
+  - [1.1 Installation](#11-installation)
+  - [1.2 Setup & Query Execution](#12-setup--query-execution)
+  - [1.3 PostgreSQL Dialect Notes](#13-postgresql-dialect-notes)
+- [2. SQLite Adapter](#2-sqlite-adapter)
+  - [2.1 Installation](#21-installation)
+  - [2.2 Setup & Query Execution](#22-setup--query-execution)
+  - [2.3 SQLite Dialect Notes](#23-sqlite-dialect-notes)
+- [3. Key Differences](#3-key-differences)
+  - [3.1 Parameter Placeholders](#31-parameter-placeholders)
+  - [3.2 Data Types](#32-data-types)
+  - [3.3 Case-Insensitive Matching](#33-case-insensitive-matching)
+  - [3.4 RETURNING Behaviour](#34-returning-behaviour)
+
+---
+
+## 1. PostgreSQL Adapter
+
+### 1.1 Installation
+
+```bash
+npm install @webpods/tinqer-sql-pg-promise pg-promise
+```
+
+### 1.2 Setup & Query Execution
+
+```typescript
+import pgPromise from "pg-promise";
+import { createContext, from, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import {
+  executeSelect,
+  executeSelectSimple,
+  executeInsert,
+  executeUpdate,
+  executeDelete,
+  selectStatement,
+} from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; email: string; age: number; active: boolean };
+}
+
+const pgp = pgPromise();
+const db = pgp("postgresql://user:pass@localhost:5432/mydb");
+const ctx = createContext<Schema>();
+
+// Execute without external params
+const activeUsers = await executeSelectSimple(db, () =>
+  from(ctx, "users")
+    .where((u) => u.active)
+    .orderBy((u) => u.name),
+);
+
+// Execute with params
+const matchingUsers = await executeSelect(
+  db,
+  (p: { minAge: number }) =>
+    from(ctx, "users")
+      .where((u) => u.age >= p.minAge)
+      .select((u) => ({ id: u.id, name: u.name })),
+  { minAge: 21 },
+);
+
+// INSERT with RETURNING
+const createdUsers = await executeInsert(
+  db,
+  () =>
+    insertInto(ctx, "users")
+      .values({ name: "Alice", email: "alice@example.com", age: 30, active: true })
+      .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
+  {},
+);
+
+// UPDATE
+const updatedCount = await executeUpdate(
+  db,
+  () =>
+    updateTable(ctx, "users")
+      .set({ active: false })
+      .where((u) => u.age > 65),
+  {},
+);
+
+// DELETE
+const deletedCount = await executeDelete(
+  db,
+  () => deleteFrom(ctx, "users").where((u) => !u.active),
+  {},
+);
+
+// Generate SQL without executing
+const { sql, params } = selectStatement(
+  () => from(ctx, "users").where((u) => u.email.endsWith("@example.com")),
+  {},
+);
+```
+
+### 1.3 PostgreSQL Dialect Notes
+
+- Booleans map to `BOOLEAN` values (`true`/`false`).
+- Case-insensitive comparisons use `ILIKE` when you call helper functions such as `contains`.
+- RETURNING clauses are fully supported on INSERT, UPDATE, and DELETE through the execution helpers.
+- Parameter placeholders use the `$()` syntax expected by pg-promise (e.g., `$(minAge)`).
+
+---
+
+## 2. SQLite Adapter
+
+### 2.1 Installation
+
+```bash
+npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
+```
+
+### 2.2 Setup & Query Execution
+
+```typescript
+import Database from "better-sqlite3";
+import { createContext, from, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import {
+  executeSelect,
+  executeInsert,
+  executeUpdate,
+  executeDelete,
+  selectStatement,
+} from "@webpods/tinqer-sql-better-sqlite3";
+
+interface Schema {
+  users: { id: number; name: string; email: string; age: number; isActive: number };
+}
+
+const db = new Database(":memory:");
+const ctx = createContext<Schema>();
+
+db.exec(`
+  CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT,
+    age INTEGER,
+    isActive INTEGER NOT NULL DEFAULT 1
+  );
+`);
+
+const inserted = executeInsert(
+  db,
+  () => insertInto(ctx, "users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
+  {},
+);
+// inserted === 1
+
+const users = executeSelect(
+  db,
+  (params: { active: number }) =>
+    from(ctx, "users")
+      .where((u) => u.isActive === params.active)
+      .orderBy((u) => u.name),
+  { active: 1 },
+);
+
+const updated = executeUpdate(
+  db,
+  () =>
+    updateTable(ctx, "users")
+      .set({ isActive: 0 })
+      .where((u) => u.age > 60),
+  {},
+);
+
+const removed = executeDelete(
+  db,
+  (p: { cutoff: number }) => deleteFrom(ctx, "users").where((u) => u.age < p.cutoff),
+  { cutoff: 18 },
+);
+
+// Need the SQL text for custom execution?
+const { sql, params } = selectStatement(
+  () => from(ctx, "users").where((u) => u.name.startsWith("S")),
+  {},
+);
+const rows = db.prepare(sql).all(params);
+```
+
+### 2.3 SQLite Dialect Notes
+
+- SQLite has no native boolean type; represent booleans as `INTEGER` 0/1 in your schema.
+- All parameters are passed as named values (e.g., `@__p1`, `@minAge`). The adapter converts booleans and dates to SQLite-friendly values automatically.
+- The execution helpers return row counts. SQLite currently ignores RETURNING clauses when running through the helpers; use a follow-up SELECT if you need inserted rows.
+
+---
+
+## 3. Key Differences
+
+### 3.1 Parameter Placeholders
+
+| Database   | Placeholder Format    | Example                    |
+| ---------- | --------------------- | -------------------------- |
+| PostgreSQL | `$(name)` / `$(__p1)` | `WHERE "age" >= $(minAge)` |
+| SQLite     | `@name` / `@__p1`     | `WHERE "age" >= @minAge`   |
+
+### 3.2 Data Types
+
+| Type      | PostgreSQL                 | SQLite                           | Schema Recommendation                 |
+| --------- | -------------------------- | -------------------------------- | ------------------------------------- |
+| Boolean   | `BOOLEAN` (`true`/`false`) | `INTEGER` (0/1)                  | `boolean` for PG, `number` for SQLite |
+| Integer   | `INTEGER`, `BIGINT`        | `INTEGER`                        | `number` or `bigint`                  |
+| Decimal   | `NUMERIC`, `DECIMAL`       | `REAL`                           | `number`                              |
+| String    | `TEXT`, `VARCHAR`          | `TEXT`                           | `string`                              |
+| Date/Time | `TIMESTAMP`, `DATE`        | `TEXT` / `INTEGER` (ISO strings) | `Date` or `string`                    |
+| JSON      | `JSONB`, `JSON`            | `TEXT` (with JSON functions)     | `unknown` / structured type           |
+
+### 3.3 Case-Insensitive Matching
+
+Use `createQueryHelpers` for portable case-insensitive comparisons:
+
+```typescript
+import { createContext, createQueryHelpers, from } from "@webpods/tinqer";
+import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
+
+const ctx = createContext<Schema>();
+const helpers = createQueryHelpers<Schema>();
+
+const { sql } = selectStatement(
+  (_params, h = helpers) => from(ctx, "users").where((u) => h.functions.icontains(u.name, "alice")),
+  {},
+);
+// PostgreSQL: WHERE "name" ILIKE $(__p1)
+// SQLite: WHERE LOWER("name") LIKE '%' || LOWER(@__p1) || '%'
+```
+
+### 3.4 RETURNING Behaviour
+
+- **PostgreSQL**: `executeInsert`, `executeUpdate`, and `executeDelete` return the projected values when a `.returning()` clause is present.
+- **SQLite**: `executeInsert`, `executeUpdate`, and `executeDelete` return the row count. To inspect affected rows, issue a follow-up SELECT.
+
+---
+
+## Api Reference
+
+
+# Tinqer API Reference
+
+Reference for adapter execution helpers, typed contexts, and query utilities.
+
+## Table of Contents
+
+- [1. Execution APIs](#1-execution-apis)
+  - [1.1 selectStatement](#11-selectstatement)
+  - [1.2 executeSelect](#12-executeselect)
+  - [1.3 executeSelectSimple](#13-executeselectsimple)
+  - [1.4 insertStatement & executeInsert](#14-insertstatement--executeinsert)
+  - [1.5 updateStatement & executeUpdate](#15-updatestatement--executeupdate)
+  - [1.6 deleteStatement & executeDelete](#16-deletestatement--executedelete)
+  - [1.7 toSql](#17-tosql)
+  - [1.8 ExecuteOptions & SqlResult](#18-executeoptions--sqlresult)
+- [2. Type-Safe Contexts](#2-type-safe-contexts)
+  - [2.1 createContext](#21-createcontext)
+- [3. Helper Utilities](#3-helper-utilities)
+  - [3.1 createQueryHelpers](#31-createqueryhelpers)
+
+---
+
+## 1. Execution APIs
+
+Adapter packages export the runtime helpers that turn expression trees into SQL and execute them. PostgreSQL helpers live in `@webpods/tinqer-sql-pg-promise`; SQLite helpers live in `@webpods/tinqer-sql-better-sqlite3` and expose the same signatures.
+
+### 1.1 selectStatement
+
+Converts a query builder function into SQL and named parameters without executing it.
+
+**Signature**
+
+```typescript
+function selectStatement<TParams, TResult>(
+  queryBuilder:
+    | ((params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
+    | ((
+        params: TParams,
+        helpers: QueryHelpers,
+      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult>;
+```
+
+**Example (PostgreSQL)**
+
+```typescript
+import { createContext, from } from "@webpods/tinqer";
+import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; age: number };
+}
+
+const ctx = createContext<Schema>();
+
+const { sql, params } = selectStatement(
+  (p: { minAge: number }) =>
+    from(ctx, "users")
+      .where((u) => u.age >= p.minAge)
+      .select((u) => ({ id: u.id, name: u.name })),
+  { minAge: 18 },
+);
+// sql: SELECT "id" AS "id", "name" AS "name" FROM "users" WHERE "age" >= $(minAge)
+// params: { minAge: 18 }
+```
+
+### 1.2 executeSelect
+
+Executes a query builder against the database and returns typed results. Accepts external parameters and optional execution options.
+
+```typescript
+async function executeSelect<
+  TParams,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+>(
+  db: PgDatabase | BetterSqlite3Database,
+  queryBuilder: (params: TParams) => TQuery,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<
+  TQuery extends Queryable<infer T>
+    ? T[]
+    : TQuery extends OrderedQueryable<infer T>
+      ? T[]
+      : TQuery extends TerminalQuery<infer T>
+        ? T
+        : never
+>;
+```
+
+**Example (PostgreSQL)**
+
+```typescript
+const users = await executeSelect(
+  db,
+  (p: { minAge: number }) =>
+    from(ctx, "users")
+      .where((u) => u.age >= p.minAge)
+      .orderBy((u) => u.name),
+  { minAge: 21 },
+);
+```
+
+### 1.3 executeSelectSimple
+
+Convenience wrapper for queries that do not need external params.
+
+```typescript
+async function executeSelectSimple<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+>(
+  db: PgDatabase | BetterSqlite3Database,
+  queryBuilder: () => TQuery,
+  options?: ExecuteOptions,
+): Promise<
+  TQuery extends Queryable<infer T>
+    ? T[]
+    : TQuery extends OrderedQueryable<infer T>
+      ? T[]
+      : TQuery extends TerminalQuery<infer T>
+        ? T
+        : never
+>;
+```
+
+### 1.4 insertStatement & executeInsert
+
+Generate and execute INSERT statements with optional RETURNING clauses. Available in both adapter packages.
+
+```typescript
+function insertStatement<TParams, TTable, TReturning = never>(
+  queryBuilder: (
+    params: TParams,
+  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
+  params: TParams,
+): SqlResult<
+  TParams & Record<string, string | number | boolean | null>,
+  TReturning extends never ? void : TReturning
+>;
+
+async function executeInsert<TParams, TTable>(
+  db: PgDatabase | BetterSqlite3Database,
+  queryBuilder: (params: TParams) => Insertable<TTable>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<number>;
+
+async function executeInsert<TParams, TTable, TReturning>(
+  db: PgDatabase | BetterSqlite3Database,
+  queryBuilder: (params: TParams) => InsertableWithReturning<TTable, TReturning>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<TReturning[]>;
+```
+
+**Example**
+
+```typescript
+import { createContext, insertInto } from "@webpods/tinqer";
+
+const ctx = createContext<Schema>();
+
+const inserted = await executeInsert(
+  db,
+  () => insertInto(ctx, "users").values({ name: "Alice" }),
+  {},
+);
+
+const createdUsers = await executeInsert(
+  db,
+  () =>
+    insertInto(ctx, "users")
+      .values({ name: "Bob" })
+      .returning((u) => ({ id: u.id, name: u.name })),
+  {},
+);
+```
+
+### 1.5 updateStatement & executeUpdate
+
+```typescript
+function updateStatement<TParams, TTable, TReturning = never>(
+  queryBuilder: (
+    params: TParams,
+  ) =>
+    | UpdatableWithSet<TTable>
+    | UpdatableComplete<TTable>
+    | UpdatableWithReturning<TTable, TReturning>,
+  params: TParams,
+): SqlResult<
+  TParams & Record<string, string | number | boolean | null>,
+  TReturning extends never ? void : TReturning
+>;
+
+async function executeUpdate<TParams, TTable>(
+  db: PgDatabase | BetterSqlite3Database,
+  queryBuilder: (params: TParams) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<number>;
+
+async function executeUpdate<TParams, TTable, TReturning>(
+  db: PgDatabase | BetterSqlite3Database,
+  queryBuilder: (params: TParams) => UpdatableWithReturning<TTable, TReturning>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<TReturning[]>;
+```
+
+**Example**
+
+```typescript
+import { createContext, updateTable } from "@webpods/tinqer";
+
+const ctx = createContext<Schema>();
+
+const updatedRows = await executeUpdate(
+  db,
+  (p: { cutoff: Date }) =>
+    updateTable(ctx, "users")
+      .set({ status: "inactive" })
+      .where((u) => u.lastLogin < p.cutoff),
+  { cutoff: new Date("2024-01-01") },
+);
+```
+
+### 1.6 deleteStatement & executeDelete
+
+```typescript
+function deleteStatement<TParams, TResult>(
+  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+  params: TParams,
+): SqlResult<TParams & Record<string, string | number | boolean | null>, void>;
+
+async function executeDelete<TParams, TResult>(
+  db: PgDatabase | BetterSqlite3Database,
+  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<number>;
+```
+
+**Example**
+
+```typescript
+import { createContext, deleteFrom } from "@webpods/tinqer";
+
+const ctx = createContext<Schema>();
+
+const deletedCount = await executeDelete(
+  db,
+  () => deleteFrom(ctx, "users").where((u) => u.status === "inactive"),
+  {},
+);
+```
+
+### 1.7 toSql
+
+Generates SQL and parameters from a pre-built queryable without executing it.
+
+```typescript
+function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>): {
+  text: string;
+  parameters: Record<string, unknown>;
+  _resultType?: T;
+};
+```
+
+**Example (SQLite)**
+
+```typescript
+const { text, parameters } = toSql(
+  from(ctx, "products")
+    .where((p) => p.inStock === 1)
+    .orderByDescending((p) => p.price),
+);
+```
+
+### 1.8 ExecuteOptions & SqlResult
+
+Both adapters expose `ExecuteOptions` and `SqlResult` for inspection and typing.
+
+```typescript
+interface ExecuteOptions {
+  onSql?: (result: SqlResult<Record<string, unknown>, unknown>) => void;
+}
+
+interface SqlResult<TParams, TResult> {
+  sql: string;
+  params: TParams;
+  _resultType?: TResult; // phantom type information
+}
+```
+
+Use `onSql` for logging, testing, or debugging without changing execution flow.
+
+---
+
+## 2. Type-Safe Contexts
+
+### 2.1 createContext
+
+Creates a phantom-typed `DatabaseContext` that ties table names to row types. Combine it with the `from` overload that accepts a context to get strongly typed queryables.
+
+```typescript
+import { createContext, from } from "@webpods/tinqer";
+
+interface Schema {
+  users: { id: number; name: string; email: string };
+  posts: { id: number; userId: number; title: string };
+}
+
+const ctx = createContext<Schema>();
+
+const query = () =>
+  from(ctx, "users")
+    .where((u) => u.email.endsWith("@example.com"))
+    .select((u) => ({ id: u.id, name: u.name }));
+```
+
+The overload `from<Table>()` without a context remains available when you want to specify the row type manually.
+
+---
+
+## 3. Helper Utilities
+
+### 3.1 createQueryHelpers
+
+Provides helper functions for case-insensitive comparisons and string searches. Helpers can be passed into query builders through the optional `helpers` argument provided by the adapters.
+
+```typescript
+import { createContext, createQueryHelpers, from } from "@webpods/tinqer";
+import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string };
+}
+
+const ctx = createContext<Schema>();
+const helpers = createQueryHelpers<Schema>();
+
+const result = selectStatement(
+  (_params, h = helpers) => from(ctx, "users").where((u) => h.functions.icontains(u.name, "alice")),
+  {},
+);
+```
+
+Helpers expose `ilike`, `contains`, `startsWith`, `endsWith`, and related boolean helpers (prefixed with `i`) that adapt per database dialect.
+
+---
+
+## Development
+
+
+# Development Guide
+
+Guide for contributing to Tinqer, running tests, and troubleshooting.
+
+## Table of Contents
+
+- [1. Getting Started](#1-getting-started)
+  - [1.1 Prerequisites](#11-prerequisites)
+  - [1.2 Installation](#12-installation)
+  - [1.3 Project Structure](#13-project-structure)
+- [2. Building](#2-building)
+  - [2.1 Build Commands](#21-build-commands)
+  - [2.2 Clean Build](#22-clean-build)
+- [3. Testing](#3-testing)
+  - [3.1 Running Tests](#31-running-tests)
+  - [3.2 Test Organization](#32-test-organization)
+  - [3.3 Writing Tests](#33-writing-tests)
+- [4. Code Quality](#4-code-quality)
+  - [4.1 Linting](#41-linting)
+  - [4.2 Formatting](#42-formatting)
+- [5. Contributing](#5-contributing)
+  - [5.1 Coding Standards](#51-coding-standards)
+  - [5.2 Commit Guidelines](#52-commit-guidelines)
+  - [5.3 Pull Requests](#53-pull-requests)
+- [6. Troubleshooting](#6-troubleshooting)
+  - [6.1 Common Issues](#61-common-issues)
+  - [6.2 Parser Errors](#62-parser-errors)
+  - [6.3 Type Errors](#63-type-errors)
+
+---
+
+## 1. Getting Started
+
+### 1.1 Prerequisites
+
+- Node.js 18+ (for ESM support)
+- npm 8+
+- TypeScript 5.3+
+- PostgreSQL 12+ (for PostgreSQL adapter development)
+- SQLite 3.35+ (for SQLite adapter development)
+
+### 1.2 Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/webpods-org/tinqer.git
+cd tinqer
+
+# Install dependencies
+npm install
+
+# Build all packages
+./scripts/build.sh
+```
+
+### 1.3 Project Structure
+
+```
+tinqer/
+├── packages/
+│   ├── tinqer/                          # Core library
+│   │   ├── src/
+│   │   │   ├── parser/                  # Lambda expression parser (OXC)
+│   │   │   ├── converter/               # AST to expression tree converter
+│   │   │   ├── queryable/               # Queryable API
+│   │   │   ├── visitors/                # SQL generation visitors
+│   │   │   └── types/                   # TypeScript type definitions
+│   │   └── tests/                       # Core library tests
+│   │
+│   ├── tinqer-sql-pg-promise/           # PostgreSQL adapter
+│   │   ├── src/
+│   │   │   ├── adapter.ts               # PostgreSQL SQL adapter
+│   │   │   ├── execute.ts               # Execution functions
+│   │   │   └── visitors/                # PostgreSQL-specific visitors
+│   │   └── tests/                       # Integration tests
+│   │
+│   ├── tinqer-sql-better-sqlite3/       # SQLite adapter
+│   │   ├── src/
+│   │   │   ├── adapter.ts               # SQLite SQL adapter
+│   │   │   ├── execute.ts               # Execution functions
+│   │   │   └── visitors/                # SQLite-specific visitors
+│   │   └── tests/                       # Integration tests
+│   │
+│   └── tinqer-sql-*/                    # Integration test packages
+│
+├── scripts/                             # Build and utility scripts
+│   ├── build.sh                         # Main build script
+│   ├── clean.sh                         # Clean build artifacts
+│   ├── lint-all.sh                      # Lint all packages
+│   └── format-all.sh                    # Format with Prettier
+│
+└── docs/                                # Documentation
+```
+
+---
+
+## 2. Building
+
+### 2.1 Build Commands
+
+```bash
+# Standard build with formatting
+./scripts/build.sh
+
+# Build without formatting (faster during development)
+./scripts/build.sh --no-format
+
+# Build specific package
+cd packages/tinqer
+npm run build
+```
+
+**Build Process:**
+
+1. Runs TypeScript compiler for each package
+2. Generates ES modules with `.js` extensions
+3. Runs Prettier formatting (unless `--no-format` is used)
+4. Outputs to `dist/` directories
+
+### 2.2 Clean Build
+
+```bash
+# Remove build artifacts
+./scripts/clean.sh
+
+# Remove build artifacts and node_modules
+./scripts/clean.sh --all
+```
+
+---
+
+## 3. Testing
+
+### 3.1 Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run specific tests by pattern
+npm run test:grep -- "WHERE operations"
+npm run test:grep -- "INSERT"
+npm run test:grep -- "JOIN"
+
+# Run tests for specific package
+cd packages/tinqer
+npm test
+```
+
+### 3.2 Test Organization
+
+**Core Library Tests** (`packages/tinqer/tests/`):
+
+- Parser tests: Lambda expression parsing
+- Converter tests: AST to expression tree conversion
+- Queryable tests: Query builder API
+- Type tests: TypeScript type inference
+
+**Integration Tests** (`packages/tinqer-sql-*/tests/`):
+
+- PostgreSQL integration: `tinqer-sql-pg-promise-integration/tests/`
+- SQLite integration: `tinqer-sql-better-sqlite3-integration/tests/`
+- Full end-to-end query execution tests
+- Database-specific feature tests
+
+### 3.3 Writing Tests
+
+**Unit Test Example:**
+
+```typescript
+import { describe, it } from "mocha";
+import { strict as assert } from "assert";
+import { createContext, from } from "@webpods/tinqer";
+
+describe("Queryable", () => {
+  it("should filter with WHERE clause", () => {
+    interface Schema {
+      users: { id: number; name: string; age: number };
+    }
+
+    const ctx = createContext<Schema>();
+    const query = from(ctx, "users")
+      .where((u) => u.age >= 18)
+      .select((u) => u);
+
+    // Assert expression tree structure (simplified example)
+    assert.ok(query);
+  });
+});
+```
+
+**Integration Test Example:**
+
+```typescript
+import { describe, it, beforeEach } from "mocha";
+import { strict as assert } from "assert";
+import { createContext, from } from "@webpods/tinqer";
+import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
+import { db } from "./shared-db.js";
+
+const ctx = createContext<Schema>();
+
+describe("PostgreSQL Integration", () => {
+  beforeEach(async () => {
+    await db.none("TRUNCATE TABLE users RESTART IDENTITY CASCADE");
+    await db.none("INSERT INTO users (name, age) VALUES ('Alice', 30), ('Bob', 25)");
+  });
+
+  it("should execute SELECT query", async () => {
+    const results = await executeSelectSimple(db, () =>
+      from(ctx, "users")
+        .where((u) => u.age >= 25)
+        .select((u) => u.name),
+    );
+
+    assert.deepEqual(results, ["Alice", "Bob"]);
+  });
+});
+```
+
+**Test Database Setup:**
+
+PostgreSQL tests use shared connection (`packages/tinqer-sql-pg-promise-integration/tests/shared-db.ts`):
+
+```typescript
+import pgPromise from "pg-promise";
+
+const pgp = pgPromise();
+export const db = pgp({
+  host: "localhost",
+  port: 5432,
+  database: "tinqer_test",
+  user: "tinqer_test",
+  password: "tinqer_test",
+});
+```
+
+SQLite tests use isolated in-memory databases:
+
+```typescript
+import Database from "better-sqlite3";
+
+describe("SQLite Tests", () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    // Create schema and seed data
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+});
+```
+
+---
+
+## 4. Code Quality
+
+### 4.1 Linting
+
+```bash
+# Lint all packages
+./scripts/lint-all.sh
+
+# Lint with auto-fix
+./scripts/lint-all.sh --fix
+
+# Lint specific package
+cd packages/tinqer
+npm run lint
+npm run lint:fix
+```
+
+**ESLint Configuration:**
+
+- `@typescript-eslint/no-explicit-any`: error (no `any` types allowed)
+- `@typescript-eslint/prefer-const`: error
+- Strict type checking enabled
+
+### 4.2 Formatting
+
+```bash
+# Format all files with Prettier
+./scripts/format-all.sh
+
+# Check formatting without changes
+./scripts/format-all.sh --check
+
+# Format specific package
+cd packages/tinqer
+npm run format
+```
+
+**IMPORTANT:** Always run `./scripts/format-all.sh` before committing.
+
+---
+
+## 5. Contributing
+
+### 5.1 Coding Standards
+
+**TypeScript Guidelines:**
+
+- **No `any` types**: All code must be strictly typed
+- **Prefer `type` over `interface`**: Use `interface` only for extensible contracts
+- **ESM imports**: Always include `.js` extension in imports
+
+  ```typescript
+  // Correct
+  import { Queryable } from "./queryable/queryable.js";
+
+  // Incorrect
+  import { Queryable } from "./queryable/queryable";
+  ```
+
+- **Pure functions**: Prefer stateless functions with explicit dependency injection
+- **No dynamic imports**: Always use static imports
+
+**Code Organization:**
+
+- Export functions from modules when possible
+- Use classes only for stateful connections or complex state management
+- Keep files focused and single-purpose
+- Write comprehensive JSDoc comments for public APIs
+
+### 5.2 Commit Guidelines
+
+```bash
+# Before committing:
+./scripts/format-all.sh  # Format code
+./scripts/lint-all.sh    # Check linting
+./scripts/build.sh       # Build all packages
+npm test                 # Run all tests
+
+# Commit with descriptive message
+git add .
+git commit -m "feat: add support for window functions"
+```
+
+**Commit Message Format:**
+
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `refactor:` - Code refactoring
+- `test:` - Test additions or changes
+- `docs:` - Documentation changes
+- `chore:` - Build process or tooling changes
+
+### 5.3 Pull Requests
+
+1. **Create feature branch:**
+
+   ```bash
+   git checkout -b feat/my-feature
+   ```
+
+2. **Make changes and test:**
+
+   ```bash
+   ./scripts/format-all.sh
+   ./scripts/lint-all.sh
+   ./scripts/build.sh
+   npm test
+   ```
+
+3. **Push and create PR:**
+
+   ```bash
+   git push -u origin feat/my-feature
+   # Create PR on GitHub
+   ```
+
+4. **PR Requirements:**
+   - All tests passing
+   - Code formatted and linted
+   - Documentation updated
+   - Clear description of changes
+   - Type safety maintained
+
+---
+
+## 6. Troubleshooting
+
+### 6.1 Common Issues
+
+**Issue: Build Fails with Module Resolution Errors**
+
+```
+Error: Cannot find module './queryable.js'
+```
+
+**Solution:** Ensure all imports include `.js` extension:
+
+```typescript
+// Incorrect
+import { Queryable } from "./queryable";
+
+// Correct
+import { Queryable } from "./queryable.js";
+```
+
+**Issue: Tests Fail with Connection Pool Destroyed**
+
+```
+Error: Connection pool has been destroyed
+```
+
+**Solution:** Use shared database connection, don't call `pgp.end()` in tests:
+
+```typescript
+// Correct
+import { db } from "./shared-db.js";
+
+// Incorrect - don't create new pgp instances in tests
+const pgp = pgPromise();
+const db = pgp({...});
+pgp.end(); // This destroys the global pool!
+```
+
+**Issue: SQLite Boolean Type Errors**
+
+```
+TypeError: SQLite3 can only bind numbers, strings, bigints, buffers, and null
+```
+
+**Solution:** Use `number` type (0/1) for boolean columns in SQLite schemas:
+
+```typescript
+// Correct for SQLite
+interface Schema {
+  users: {
+    is_active: number; // Use 0 for false, 1 for true
+  };
+}
+
+// Incorrect for SQLite
+interface Schema {
+  users: {
+    is_active: boolean; // SQLite doesn't have boolean type
+  };
+}
+```
+
+### 6.2 Parser Errors
+
+**Issue: Unsupported AST Node Type**
+
+```
+Error: Unsupported AST node type: TemplateLiteral
+```
+
+**Solution:** Use params pattern for dynamic values:
+
+```typescript
+// Incorrect - template literal in lambda
+.where(u => u.name === `User ${userId}`)
+
+// Correct - use params
+.where((u, params: { name: string }) => u.name === params.name)
+// Pass: { name: `User ${userId}` }
+```
+
+**Issue: Unknown Identifier**
+
+```
+Error: Unknown identifier 'externalVar'
+```
+
+**Solution:** Pass external variables via params object:
+
+```typescript
+// Incorrect - closure variable
+const minAge = 18;
+.where(u => u.age >= minAge)
+
+// Correct - params pattern
+.where((u, params: { minAge: number }) => u.age >= params.minAge)
+// Pass: { minAge: 18 }
+```
+
+### 6.3 Type Errors
+
+**Issue: Type Inference Not Working**
+
+```typescript
+const query = from("users"); // Type is Queryable<unknown>
+```
+
+**Solution:** Provide explicit schema type:
+
+```typescript
+interface Schema {
+  users: { id: number; name: string };
+}
+
+const query = from<Schema["users"]>("users"); // Fully typed
+```
+
+**Issue: Property Does Not Exist**
+
+```
+Property 'email' does not exist on type '{ id: number; name: string }'
+```
+
+**Solution:** Ensure schema definition includes all columns:
+
+```typescript
+interface Schema {
+  users: {
+    id: number;
+    name: string;
+    email: string; // Add missing column
+  };
+}
+```
+
+---
+
+## Development Workflow
+
+**Typical Development Cycle:**
+
+1. **Make changes** to source files
+2. **Run linter**: `./scripts/lint-all.sh --fix`
+3. **Build**: `./scripts/build.sh --no-format` (skip formatting for speed)
+4. **Run specific tests**: `npm run test:grep -- "your feature"`
+5. **Iterate** until tests pass
+6. **Run full test suite**: `npm test`
+7. **Format code**: `./scripts/format-all.sh`
+8. **Final build**: `./scripts/build.sh`
+9. **Commit changes**
+
+**Debugging Tips:**
+
+- Use `npm run test:grep -- "pattern"` to focus on specific tests
+- Check `.tests/` directory for saved test output (gitignored)
+- Use TypeScript's `tsc --noEmit` to check types without building
+- Enable verbose logging in tests with `DEBUG=* npm test`
+
+---
+
+
+---
+
+## Guide
+
+
+# Tinqer Query Operations Guide
+
+Complete reference for all query operations, parameters, and CRUD functionality in Tinqer.
+
+## Table of Contents
+
+- [1. Filtering Operations](#1-filtering-operations)
+  - [1.1 Basic Comparison](#11-basic-comparison)
+  - [1.2 Multiple Predicates](#12-multiple-predicates)
+  - [1.3 Logical Nesting and Arithmetic](#13-logical-nesting-and-arithmetic)
+  - [1.4 Null Checks and Null Coalescing](#14-null-checks-and-null-coalescing)
+  - [1.5 String Operations](#15-string-operations)
+  - [1.6 Case-Insensitive Helpers](#16-case-insensitive-helpers)
+  - [1.7 Array Membership (IN)](#17-array-membership-in)
+  - [1.8 Combined Filter Example](#18-combined-filter-example)
+- [2. Projections](#2-projections)
+  - [2.1 Full Row Projection](#21-full-row-projection)
+  - [2.2 Object Projection](#22-object-projection)
+  - [2.3 Projection with Null Coalescing and Arithmetic](#23-projection-with-null-coalescing-and-arithmetic)
+- [3. Ordering](#3-ordering)
+  - [3.1 Single Key Ascending](#31-single-key-ascending)
+  - [3.2 Mixed Ordering](#32-mixed-ordering)
+- [4. Distinct Operations](#4-distinct-operations)
+- [5. Pagination](#5-pagination)
+  - [5.1 Offset/Limit Pattern](#51-offsetlimit-pattern)
+  - [5.2 Pagination with Filtering](#52-pagination-with-filtering)
+- [6. Joins](#6-joins)
+  - [6.1 Simple Inner Join](#61-simple-inner-join)
+  - [6.2 Join with Additional Filter](#62-join-with-additional-filter)
+  - [6.3 Join with Grouped Results](#63-join-with-grouped-results)
+  - [6.4 Left Outer Join](#64-left-outer-join)
+  - [6.5 Cross Join](#65-cross-join)
+- [7. Grouping and Aggregation](#7-grouping-and-aggregation)
+  - [7.1 Basic Grouping](#71-basic-grouping)
+  - [7.2 Group with Multiple Aggregates](#72-group-with-multiple-aggregates)
+  - [7.3 Group with Post-Filter](#73-group-with-post-filter)
+- [8. Scalar Aggregates on Root Queries](#8-scalar-aggregates-on-root-queries)
+- [9. Quantifiers](#9-quantifiers)
+  - [9.1 Any Operation](#91-any-operation)
+  - [9.2 All Operation](#92-all-operation)
+- [10. Element Retrieval](#10-element-retrieval)
+- [11. Materialisation](#11-materialisation)
+- [12. Parameters and Auto-Parameterisation](#12-parameters-and-auto-parameterisation)
+  - [12.1 External Parameter Objects](#121-external-parameter-objects)
+  - [12.2 Literal Auto-Parameterisation](#122-literal-auto-parameterisation)
+  - [12.3 Array Membership](#123-array-membership)
+  - [12.4 Case-Insensitive Helper Functions](#124-case-insensitive-helper-functions)
+- [13. CRUD Operations](#13-crud-operations)
+  - [13.1 INSERT Statements](#131-insert-statements)
+  - [13.2 UPDATE Statements](#132-update-statements)
+  - [13.3 DELETE Statements](#133-delete-statements)
+  - [13.4 Safety Features](#134-safety-features)
+  - [13.5 Executing CRUD Operations](#135-executing-crud-operations)
+
+---
+
+## 1. Filtering Operations
+
+The `where` method applies predicates to filter query results. Multiple `where` calls are combined with AND logic.
+
+### 1.1 Basic Comparison
+
+```typescript
+const adults = selectStatement(() => from<User>("users").where((u) => u.age >= 18), {});
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" WHERE "age" >= $(__p1)
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" WHERE "age" >= @__p1
+```
+
+```json
+{ "__p1": 18 }
+```
+
+### 1.2 Multiple Predicates
+
+```typescript
+const activeRange = selectStatement(
+  () =>
+    from<User>("users")
+      .where((u) => u.age >= 21)
+      .where((u) => u.age <= 60)
+      .where((u) => u.active === true),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users"
+WHERE "age" >= $(__p1) AND "age" <= $(__p2) AND "active" = $(__p3)
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users"
+WHERE "age" >= @__p1 AND "age" <= @__p2 AND "active" = @__p3
+```
+
+```json
+{ "__p1": 21, "__p2": 60, "__p3": true }
+```
+
+### 1.3 Logical Nesting and Arithmetic
+
+```typescript
+const premium = selectStatement(
+  () =>
+    from<User>("users").where(
+      (u) => (u.salary * 0.9 > 150_000 && u.age < 55) || u.active === false,
+    ),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users"
+WHERE ((("salary" * $(__p1)) > $(__p2) AND "age" < $(__p3)) OR "active" = $(__p4))
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users"
+WHERE ((("salary" * @__p1) > @__p2 AND "age" < @__p3) OR "active" = @__p4)
+```
+
+```json
+{ "__p1": 0.9, "__p2": 150000, "__p3": 55, "__p4": false }
+```
+
+### 1.4 Null Checks and Null Coalescing
+
+```typescript
+const preferredName = selectStatement(
+  () => from<User>("users").where((u) => (u.nickname ?? u.name) === "anonymous"),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" WHERE COALESCE("nickname", "name") = $(__p1)
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" WHERE COALESCE("nickname", "name") = @__p1
+```
+
+```json
+{ "__p1": "anonymous" }
+```
+
+### 1.5 String Operations
+
+```typescript
+const emailFilters = selectStatement(
+  () =>
+    from<User>("users")
+      .where((u) => u.email.startsWith("admin"))
+      .where((u) => u.email.endsWith("@example.com"))
+      .where((u) => u.name.toLowerCase() === "john"),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users"
+WHERE "email" LIKE $(__p1) || '%'
+  AND "email" LIKE '%' || $(__p2)
+  AND LOWER("name") = $(__p3)
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users"
+WHERE "email" LIKE @__p1 || '%'
+  AND "email" LIKE '%' || @__p2
+  AND LOWER("name") = @__p3
+```
+
+```json
+{ "__p1": "admin", "__p2": "@example.com", "__p3": "john" }
+```
+
+### 1.6 Case-Insensitive Helpers
+
+```typescript
+import { createQueryHelpers } from "@webpods/tinqer";
+
+const helpers = createQueryHelpers();
+
+const insensitive = selectStatement(
+  (_: unknown, h = helpers) =>
+    from<User>("users").where((u) => h.functions.iequals(u.name, "ALICE")),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" WHERE LOWER("name") = LOWER($(__p1))
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" WHERE LOWER("name") = LOWER(@__p1)
+```
+
+```json
+{ "__p1": "ALICE" }
+```
+
+### 1.7 Array Membership (IN)
+
+```typescript
+const allowed = selectStatement(
+  () => from<User>("users").where((u) => ["admin", "support", "auditor"].includes(u.role)),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" WHERE "role" IN ($(__p1), $(__p2), $(__p3))
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" WHERE "role" IN (@__p1, @__p2, @__p3)
+```
+
+```json
+{ "__p1": "admin", "__p2": "support", "__p3": "auditor" }
+```
+
+Negating the predicate (`!array.includes(...)`) yields `NOT IN`.
+
+### 1.8 Combined Filter Example
+
+```typescript
+const helpers = createQueryHelpers();
+
+const advancedFilter = selectStatement(
+  (params: { minAge: number; categories: string[] }, h = helpers) =>
+    from<User>("users")
+      .where((u) => u.age >= params.minAge)
+      .where((u) => params.categories.includes(u.departmentId.toString()))
+      .where((u) => h.functions.icontains(u.email, "company")),
+  { minAge: 25, categories: ["10", "11"] },
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users"
+WHERE "age" >= $(minAge)
+  AND "departmentId" IN ($(categories[0]), $(categories[1]))
+  AND LOWER("email") LIKE '%' || LOWER($(__p1)) || '%'
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users"
+WHERE "age" >= @minAge
+  AND "departmentId" IN (@categories[0], @categories[1])
+  AND LOWER("email") LIKE '%' || LOWER(@__p1) || '%'
+```
+
+```json
+{ "minAge": 25, "categories[0]": "10", "categories[1]": "11", "__p1": "company" }
+```
+
+---
+
+## 2. Projections
+
+The `select` method transforms query results by projecting columns or computed expressions.
+
+### 2.1 Full Row Projection
+
+```typescript
+const fullRow = selectStatement(() => from<User>("users").select((u) => u), {});
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users"
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users"
+```
+
+### 2.2 Object Projection
+
+```typescript
+const summary = selectStatement(
+  () =>
+    from<User>("users")
+      .where((u) => u.active)
+      .select((u) => ({
+        id: u.id,
+        name: u.name,
+        contact: {
+          email: u.email,
+        },
+      })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "id" AS "id", "name" AS "name", "email" AS "contact.email" FROM "users" WHERE "active"
+```
+
+```sql
+-- SQLite
+SELECT "id" AS "id", "name" AS "name", "email" AS "contact.email" FROM "users" WHERE "active"
+```
+
+### 2.3 Projection with Null Coalescing and Arithmetic
+
+```typescript
+const pricing = selectStatement(
+  () =>
+    from<Product>("products").select((p) => ({
+      id: p.id,
+      name: p.name,
+      effectivePrice: p.price - (p.discount ?? 0),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "id" AS "id", "name" AS "name", ("price" - COALESCE("discount", $(__p1))) AS "effectivePrice" FROM "products"
+```
+
+```sql
+-- SQLite
+SELECT "id" AS "id", "name" AS "name", ("price" - COALESCE("discount", @__p1)) AS "effectivePrice" FROM "products"
+```
+
+```json
+{ "__p1": 0 }
+```
+
+---
+
+## 3. Ordering
+
+Methods `orderBy`, `orderByDescending`, `thenBy`, and `thenByDescending` control result ordering.
+
+### 3.1 Single Key Ascending
+
+```typescript
+const alphabetical = selectStatement(() => from<User>("users").orderBy((u) => u.name), {});
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" ORDER BY "name" ASC
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" ORDER BY "name" ASC
+```
+
+### 3.2 Mixed Ordering
+
+```typescript
+const ordered = selectStatement(
+  () =>
+    from<User>("users")
+      .orderBy((u) => u.departmentId)
+      .thenByDescending((u) => u.salary)
+      .thenBy((u) => u.name),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" ORDER BY "departmentId" ASC, "salary" DESC, "name" ASC
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" ORDER BY "departmentId" ASC, "salary" DESC, "name" ASC
+```
+
+---
+
+## 4. Distinct Operations
+
+```typescript
+const departments = selectStatement(
+  () =>
+    from<User>("users")
+      .select((u) => u.departmentId)
+      .distinct(),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT DISTINCT "departmentId" AS "departmentId" FROM "users"
+```
+
+```sql
+-- SQLite
+SELECT DISTINCT "departmentId" AS "departmentId" FROM "users"
+```
+
+---
+
+## 5. Pagination
+
+Methods `skip` and `take` implement OFFSET and LIMIT clauses.
+
+### 5.1 Offset/Limit Pattern
+
+```typescript
+const page = selectStatement(
+  () =>
+    from<User>("users")
+      .orderBy((u) => u.id)
+      .skip(30)
+      .take(15),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" ORDER BY "id" ASC LIMIT $(__p2) OFFSET $(__p1)
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" ORDER BY "id" ASC LIMIT @__p2 OFFSET @__p1
+```
+
+```json
+{ "__p1": 30, "__p2": 15 }
+```
+
+### 5.2 Pagination with Filtering
+
+```typescript
+const filteredPage = selectStatement(
+  () =>
+    from<User>("users")
+      .where((u) => u.active)
+      .orderBy((u) => u.name)
+      .skip(50)
+      .take(25),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" WHERE "active" ORDER BY "name" ASC LIMIT $(__p3) OFFSET $(__p2)
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" WHERE "active" ORDER BY "name" ASC LIMIT @__p3 OFFSET @__p2
+```
+
+```json
+{ "__p1": true, "__p2": 50, "__p3": 25 }
+```
+
+---
+
+## 6. Joins
+
+The `join` method creates INNER JOIN operations. Left outer joins and cross joins follow the same LINQ patterns used in .NET: `groupJoin` + `selectMany(...defaultIfEmpty())` for left joins, and `selectMany` with a query-returning collection selector for cross joins.
+
+### 6.1 Simple Inner Join
+
+```typescript
+const userDepartments = selectStatement(
+  () =>
+    from<User>("users").join(
+      from<Department>("departments"),
+      (u) => u.departmentId,
+      (d) => d.id,
+      (u, d) => ({ userName: u.name, departmentName: d.name }),
+    ),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "t0"."name" AS "userName", "t1"."name" AS "departmentName"
+FROM "users" AS "t0"
+INNER JOIN "departments" AS "t1" ON "t0"."departmentId" = "t1"."id"
+```
+
+```sql
+-- SQLite
+SELECT "t0"."name" AS "userName", "t1"."name" AS "departmentName"
+FROM "users" AS "t0"
+INNER JOIN "departments" AS "t1" ON "t0"."departmentId" = "t1"."id"
+```
+
+### 6.2 Join with Additional Filter
+
+```typescript
+const regionOrders = selectStatement(
+  () =>
+    from<User>("users")
+      .where((u) => u.id > 100)
+      .join(
+        from<Order>("orders"),
+        (u) => u.id,
+        (o) => o.userId,
+        (u, o) => ({ userName: u.name, total: o.total }),
+      )
+      .where((row) => row.total > 500),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "t0"."name" AS "userName", "t1"."total" AS "total"
+FROM "users" AS "t0"
+INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId"
+WHERE "t0"."id" > $(__p1) AND "t1"."total" > $(__p2)
+```
+
+```sql
+-- SQLite
+SELECT "t0"."name" AS "userName", "t1"."total" AS "total"
+FROM "users" AS "t0"
+INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId"
+WHERE "t0"."id" > @__p1 AND "t1"."total" > @__p2
+```
+
+```json
+{ "__p1": 100, "__p2": 500 }
+```
+
+### 6.3 Join with Grouped Results
+
+```typescript
+const totalsByDepartment = selectStatement(
+  () =>
+    from<User>("users")
+      .join(
+        from<Order>("orders"),
+        (u) => u.id,
+        (o) => o.userId,
+        (u, o) => ({ u, o }),
+      )
+      .groupBy((joined) => joined.u.departmentId)
+      .select((g) => ({
+        departmentId: g.key,
+        totalOrders: g.count(),
+        revenue: g.sum((row) => row.o.total),
+      })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "t0"."departmentId" AS "departmentId", COUNT(*) AS "totalOrders", SUM("t1"."total") AS "revenue"
+FROM "users" AS "t0"
+INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId"
+GROUP BY "t0"."departmentId"
+```
+
+```sql
+-- SQLite
+SELECT "t0"."departmentId" AS "departmentId", COUNT(*) AS "totalOrders", SUM("t1"."total") AS "revenue"
+FROM "users" AS "t0"
+INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId"
+GROUP BY "t0"."departmentId"
+```
+
+### 6.4 Left Outer Join
+
+Model the classic LINQ pattern: start with `groupJoin`, then expand the grouped results with `selectMany(...defaultIfEmpty())`. Any missing matches appear as `null` in the projection.
+
+```typescript
+const usersWithDepartments = selectStatement(
+  () =>
+    from<User>("users")
+      .groupJoin(
+        from<Department>("departments"),
+        (user) => user.departmentId,
+        (department) => department.id,
+        (user, deptGroup) => ({ user, deptGroup }),
+      )
+      .selectMany(
+        (g) => g.deptGroup.defaultIfEmpty(),
+        (g, department) => ({ user: g.user, department }),
+      )
+      .select((row) => ({
+        userId: row.user.id,
+        departmentName: row.department ? row.department.name : null,
+      })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "t0"."id" AS "userId", CASE WHEN "t1"."id" IS NOT NULL THEN "t1"."name" ELSE NULL END AS "departmentName"
+FROM "users" AS "t0"
+LEFT OUTER JOIN "departments" AS "t1" ON "t0"."departmentId" = "t1"."id"
+```
+
+```sql
+-- SQLite
+SELECT "t0"."id" AS "userId", CASE WHEN "t1"."id" IS NOT NULL THEN "t1"."name" ELSE NULL END AS "departmentName"
+FROM "users" AS "t0"
+LEFT OUTER JOIN "departments" AS "t1" ON "t0"."departmentId" = "t1"."id"
+```
+
+### 6.5 Cross Join
+
+Return a `Queryable` from the collection selector passed to `selectMany`. Because we skip `defaultIfEmpty`, the parser normalizes the operation into a `CROSS JOIN`.
+
+```typescript
+const departmentUsers = selectStatement(
+  () =>
+    from<Department>("departments")
+      .selectMany(
+        () => from<User>("users"),
+        (department, user) => ({ department, user }),
+      )
+      .select((row) => ({
+        departmentId: row.department.id,
+        userId: row.user.id,
+      })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "t0"."id" AS "departmentId", "t1"."id" AS "userId"
+FROM "departments" AS "t0"
+CROSS JOIN "users" AS "t1"
+```
+
+```sql
+-- SQLite
+SELECT "t0"."id" AS "departmentId", "t1"."id" AS "userId"
+FROM "departments" AS "t0"
+CROSS JOIN "users" AS "t1"
+```
+
+Right and full outer joins still require manual SQL, mirroring the .NET APIs.
+
+---
+
+## 7. Grouping and Aggregation
+
+The `groupBy` method groups results and enables aggregate functions: `count`, `sum`, `avg`, `min`, `max`.
+
+### 7.1 Basic Grouping
+
+```typescript
+const byDepartment = selectStatement(() => from<User>("users").groupBy((u) => u.departmentId), {});
+```
+
+```sql
+-- PostgreSQL
+SELECT "departmentId" FROM "users" GROUP BY "departmentId"
+```
+
+```sql
+-- SQLite
+SELECT "departmentId" FROM "users" GROUP BY "departmentId"
+```
+
+### 7.2 Group with Multiple Aggregates
+
+```typescript
+const departmentStats = selectStatement(
+  () =>
+    from<User>("users")
+      .groupBy((u) => u.departmentId)
+      .select((g) => ({
+        departmentId: g.key,
+        headcount: g.count(),
+        totalSalary: g.sum((u) => u.salary),
+        averageSalary: g.avg((u) => u.salary),
+        maxSalary: g.max((u) => u.salary),
+      }))
+      .orderByDescending((row) => row.totalSalary),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "departmentId" AS "departmentId", COUNT(*) AS "headcount", SUM("salary") AS "totalSalary", AVG("salary") AS "averageSalary", MAX("salary") AS "maxSalary"
+FROM "users"
+GROUP BY "departmentId"
+ORDER BY "totalSalary" DESC
+```
+
+```sql
+-- SQLite
+SELECT "departmentId" AS "departmentId", COUNT(*) AS "headcount", SUM("salary") AS "totalSalary", AVG("salary") AS "averageSalary", MAX("salary") AS "maxSalary"
+FROM "users"
+GROUP BY "departmentId"
+ORDER BY "totalSalary" DESC
+```
+
+### 7.3 Group with Post-Filter
+
+```typescript
+const largeDepartments = await executeSelect(
+  db,
+  () =>
+    from<User>("users")
+      .groupBy((u) => u.departmentId)
+      .select((g) => ({ departmentId: g.key, headcount: g.count() }))
+      .where((row) => row.headcount > 5),
+  {},
+);
+```
+
+The adapter emits the `WHERE` on the grouped projection; explicit HAVING clauses are not generated.
+
+---
+
+## 8. Scalar Aggregates on Root Queries
+
+Aggregate methods can be called directly on queries to return single values.
+
+```typescript
+const totals = selectStatement(
+  () =>
+    from<User>("users")
+      .where((u) => u.active === true)
+      .sum((u) => u.salary),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT SUM("salary") FROM "users" WHERE "active" = $(__p1)
+```
+
+```sql
+-- SQLite
+SELECT SUM("salary") FROM "users" WHERE "active" = @__p1
+```
+
+```json
+{ "__p1": true }
+```
+
+Methods `count`, `average`, `min`, and `max` follow the same structure. The `count` method also accepts a predicate:
+
+```typescript
+const activeCount = selectStatement(() => from<User>("users").count((u) => u.active), {});
+```
+
+```sql
+-- PostgreSQL
+SELECT COUNT(*) FROM "users" WHERE "active"
+```
+
+```sql
+-- SQLite
+SELECT COUNT(*) FROM "users" WHERE "active"
+```
+
+---
+
+## 9. Quantifiers
+
+Methods `any` and `all` test whether elements satisfy conditions.
+
+### 9.1 Any Operation
+
+```typescript
+const hasAdults = selectStatement(() => from<User>("users").any((u) => u.age >= 18), {});
+```
+
+```sql
+-- PostgreSQL
+SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "age" >= $(__p1)) THEN 1 ELSE 0 END
+```
+
+```sql
+-- SQLite
+SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "age" >= @__p1) THEN 1 ELSE 0 END
+```
+
+```json
+{ "__p1": 18 }
+```
+
+### 9.2 All Operation
+
+The `all` method emits a `NOT EXISTS` check:
+
+```typescript
+const allActive = selectStatement(() => from<User>("users").all((u) => u.active === true), {});
+```
+
+```sql
+-- PostgreSQL
+SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("active" = $(__p1))) THEN 1 ELSE 0 END
+```
+
+```sql
+-- SQLite
+SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("active" = @__p1)) THEN 1 ELSE 0 END
+```
+
+---
+
+## 10. Element Retrieval
+
+Methods `first`, `firstOrDefault`, `single`, `singleOrDefault`, `last`, and `lastOrDefault` retrieve single elements.
+
+```typescript
+const newestUser = selectStatement(
+  () =>
+    from<User>("users")
+      .orderBy((u) => u.createdAt)
+      .last(),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" ORDER BY "createdAt" ASC LIMIT 1
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" ORDER BY "createdAt" ASC LIMIT 1
+```
+
+- `single` ensures at most one result
+- `firstOrDefault` / `singleOrDefault` return `NULL` when no rows match
+- `last` and `lastOrDefault` automatically reverse ordering when no explicit `orderBy` exists
+
+---
+
+## 11. Materialisation
+
+Queries are executed directly without requiring a materialization method. The query builder returns results as arrays by default.
+
+```typescript
+const activeUsers = await executeSelect(
+  db,
+  () =>
+    from<User>("users")
+      .where((u) => u.active)
+      .orderBy((u) => u.name),
+  {},
+);
+```
+
+The generated SQL matches the entire query chain.
+
+---
+
+## 12. Parameters and Auto-Parameterisation
+
+Tinqer automatically parameterizes all values to prevent SQL injection and enable prepared statements.
+
+### 12.1 External Parameter Objects
+
+```typescript
+const filtered = selectStatement(
+  (params: { minAge: number; role: string }) =>
+    from<User>("users")
+      .where((u) => u.age >= params.minAge)
+      .where((u) => u.role === params.role),
+  { minAge: 30, role: "manager" },
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" WHERE "age" >= $(minAge) AND "role" = $(role)
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" WHERE "age" >= @minAge AND "role" = @role
+```
+
+```json
+{ "minAge": 30, "role": "manager" }
+```
+
+Nested properties and array indices are preserved (`params.filters.departments[0]`).
+
+### 12.2 Literal Auto-Parameterisation
+
+```typescript
+const autoParams = selectStatement(
+  () => from<User>("users").where((u) => u.departmentId === 7 && u.name.startsWith("A")),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" WHERE "departmentId" = $(__p1) AND "name" LIKE $(__p2) || '%'
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" WHERE "departmentId" = @__p1 AND "name" LIKE @__p2 || '%'
+```
+
+```json
+{ "__p1": 7, "__p2": "A" }
+```
+
+### 12.3 Array Membership
+
+```typescript
+const membership = selectStatement(
+  () => from<User>("users").where((u) => [1, 2, 3].includes(u.id)),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" WHERE "id" IN ($(__p1), $(__p2), $(__p3))
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" WHERE "id" IN (@__p1, @__p2, @__p3)
+```
+
+```json
+{ "__p1": 1, "__p2": 2, "__p3": 3 }
+```
+
+Parameterized array example:
+
+```typescript
+const dynamicMembership = selectStatement(
+  (params: { allowed: readonly number[] }) =>
+    from<User>("users").where((u) => params.allowed.includes(u.id)),
+  { allowed: [5, 8] },
+);
+```
+
+```json
+{ "allowed[0]": 5, "allowed[1]": 8 }
+```
+
+### 12.4 Case-Insensitive Helper Functions
+
+```typescript
+const helpers = createQueryHelpers();
+
+const ic = selectStatement(
+  (_: unknown, h = helpers) =>
+    from<User>("users").where((u) => h.functions.icontains(u.email, "support")),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT * FROM "users" WHERE LOWER("email") LIKE '%' || LOWER($(__p1)) || '%'
+```
+
+```sql
+-- SQLite
+SELECT * FROM "users" WHERE LOWER("email") LIKE '%' || LOWER(@__p1) || '%'
+```
+
+```json
+{ "__p1": "support" }
+```
+
+---
+
+## 13. CRUD Operations
+
+Tinqer provides full CRUD support with the same type-safety and lambda expression support as SELECT queries. All CRUD operations follow the same pattern: builder functions return operation chains, statement functions generate SQL, and execute functions run the queries.
+
+### 13.1 INSERT Statements
+
+The `insertInto` function creates INSERT operations. Values are specified using direct object syntax (no lambda wrapping required).
+
+#### Basic INSERT
+
+```typescript
+import { createContext, insertInto } from "@webpods/tinqer";
+import { insertStatement } from "@webpods/tinqer-sql-pg-promise";
+
+const ctx = createContext<Schema>();
+
+// Insert with literal values - direct object syntax
+const insert = insertStatement(
+  () =>
+    insertInto(ctx, "users").values({
+      name: "Alice",
+      age: 30,
+      email: "alice@example.com",
+    }),
+  {},
+);
+```
+
+Generated SQL:
+
+```sql
+-- PostgreSQL
+INSERT INTO "users" ("name", "age", "email")
+VALUES ($(__p1), $(__p2), $(__p3))
+
+-- SQLite
+INSERT INTO "users" ("name", "age", "email")
+VALUES (@__p1, @__p2, @__p3)
+```
+
+#### INSERT with External Parameters
+
+External variables must be passed via the params object - closure variables are not supported:
+
+```typescript
+const insert = insertStatement(
+  (p: { name: string; age: number }) =>
+    insertInto(ctx, "users").values({
+      name: p.name,
+      age: p.age,
+      email: "default@example.com",
+    }),
+  { name: "Bob", age: 25 },
+);
+```
+
+Generated SQL uses external parameters directly:
+
+```sql
+INSERT INTO "users" ("name", "age", "email")
+VALUES ($(name), $(age), $(__p1))  -- PostgreSQL
+VALUES (@name, @age, @__p1)        -- SQLite
+```
+
+#### INSERT with RETURNING Clause
+
+Both PostgreSQL and SQLite (3.35.0+) support the RETURNING clause to retrieve values from inserted rows:
+
+```typescript
+// Return specific columns
+const insertWithReturn = insertStatement(
+  () =>
+    insertInto(ctx, "users")
+      .values({ name: "Charlie", age: 35 })
+      .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
+  {},
+);
+
+// Return all columns
+const insertReturnAll = insertStatement(
+  () =>
+    insertInto(ctx, "users")
+      .values({ name: "David", age: 40 })
+      .returning((u) => u), // Returns *
+  {},
+);
+```
+
+#### NULL Values in INSERT
+
+```typescript
+const insert = insertStatement(
+  () =>
+    insertInto(ctx, "users").values({
+      name: "Eve",
+      email: null, // Generates NULL, not parameterized
+      phone: undefined, // Column omitted from INSERT
+    }),
+  {},
+);
+```
+
+### 13.2 UPDATE Statements
+
+The `updateTable` function creates UPDATE operations. The `.set()` method uses direct object syntax (no lambda wrapping required).
+
+#### Basic UPDATE
+
+```typescript
+import { createContext, updateTable } from "@webpods/tinqer";
+import { updateStatement } from "@webpods/tinqer-sql-pg-promise";
+
+const ctx = createContext<Schema>();
+
+const update = updateStatement(
+  () =>
+    updateTable(ctx, "users")
+      .set({ age: 31, lastModified: new Date() })
+      .where((u) => u.id === 1),
+  {},
+);
+```
+
+Generated SQL:
+
+```sql
+-- PostgreSQL
+UPDATE "users"
+SET "age" = $(__p1), "lastModified" = $(__p2)
+WHERE "id" = $(__p3)
+
+-- SQLite
+UPDATE "users"
+SET "age" = @__p1, "lastModified" = @__p2
+WHERE "id" = @__p3
+```
+
+#### UPDATE with External Parameters
+
+External variables must be passed via the params object:
+
+```typescript
+const update = updateStatement(
+  (p: { newAge: number }) =>
+    updateTable(ctx, "users")
+      .set({ age: p.newAge })
+      .where((u) => u.id === 1),
+  { newAge: 32 },
+);
+```
+
+#### UPDATE with Complex WHERE
+
+```typescript
+const update = updateStatement(
+  () =>
+    updateTable(ctx, "users")
+      .set({ status: "inactive" })
+      .where((u) => u.lastLogin < new Date("2023-01-01") && u.role !== "admin"),
+  {},
+);
+```
+
+#### UPDATE with RETURNING Clause
+
+```typescript
+const updateWithReturn = updateStatement(
+  () =>
+    updateTable(ctx, "users")
+      .set({ age: 32 })
+      .where((u) => u.id === 2)
+      .returning((u) => ({ id: u.id, age: u.age, updatedAt: u.updatedAt })),
+  {},
+);
+```
+
+#### Full Table UPDATE (Requires Explicit Permission)
+
+```typescript
+// UPDATE without WHERE requires explicit permission
+const updateAll = updateStatement(
+  () => updateTable(ctx, "users").set({ isActive: true }).allowFullTableUpdate(), // Required flag
+  {},
+);
+```
+
+Without the flag, attempting an UPDATE without WHERE throws an error:
+
+```
+Error: UPDATE requires a WHERE clause or explicit allowFullTableUpdate().
+Full table updates are dangerous and must be explicitly allowed.
+```
+
+### 13.3 DELETE Statements
+
+The `deleteFrom` function creates DELETE operations with optional WHERE conditions.
+
+#### Basic DELETE
+
+```typescript
+import { createContext, deleteFrom } from "@webpods/tinqer";
+import { deleteStatement } from "@webpods/tinqer-sql-pg-promise";
+
+const ctx = createContext<Schema>();
+
+const del = deleteStatement(() => deleteFrom(ctx, "users").where((u) => u.age > 100), {});
+```
+
+Generated SQL:
+
+```sql
+DELETE FROM "users" WHERE "age" > $(__p1)  -- PostgreSQL
+DELETE FROM "users" WHERE "age" > @__p1    -- SQLite
+```
+
+#### DELETE with Complex Conditions
+
+```typescript
+const del = deleteStatement(
+  () =>
+    deleteFrom(ctx, "users").where(
+      (u) => u.isDeleted === true || (u.age < 18 && u.role !== "admin") || u.email === null,
+    ),
+  {},
+);
+```
+
+#### DELETE with IN Clause
+
+```typescript
+const del = deleteStatement(
+  (p: { userIds: number[] }) => deleteFrom(ctx, "users").where((u) => p.userIds.includes(u.id)),
+  { userIds: [1, 2, 3, 4, 5] },
+);
+```
+
+Generated SQL:
+
+```sql
+-- PostgreSQL
+DELETE FROM "users"
+WHERE "id" IN ($(userIds[0]), $(userIds[1]), $(userIds[2]), $(userIds[3]), $(userIds[4]))
+
+-- SQLite
+DELETE FROM "users"
+WHERE "id" IN (@userIds[0], @userIds[1], @userIds[2], @userIds[3], @userIds[4])
+```
+
+#### Full Table DELETE (Requires Explicit Permission)
+
+```typescript
+// DELETE without WHERE requires explicit permission
+const deleteAll = deleteStatement(
+  () => deleteFrom(db, "users").allowFullTableDelete(), // Required flag
+  {},
+);
+```
+
+### 13.4 Safety Features
+
+Tinqer includes multiple safety guards for CRUD operations:
+
+#### Mandatory WHERE Clauses
+
+UPDATE and DELETE operations require WHERE clauses by default to prevent accidental full-table operations:
+
+```typescript
+// This throws an error
+deleteStatement(() => deleteFrom(db, "users"), {});
+// Error: DELETE requires a WHERE clause or explicit allowFullTableDelete()
+
+// This works
+deleteStatement(() => deleteFrom(db, "users").allowFullTableDelete(), {});
+```
+
+#### Type Safety
+
+All CRUD operations maintain full TypeScript type safety:
+
+```typescript
+interface User {
+  id: number;
+  name: string;
+  email: string | null;
+  age: number;
+}
+
+// Type error: 'username' doesn't exist on User
+insertInto<User>("users").values({
+  username: "Alice", // ❌ Type error
+});
+
+// Type error: age must be number
+updateTable<User>("users").set({
+  age: "30", // ❌ Type error - must be number
+});
+```
+
+#### Parameter Sanitization
+
+All values are automatically parameterized to prevent SQL injection:
+
+```typescript
+const maliciousName = "'; DROP TABLE users; --";
+const insert = insertStatement(
+  () =>
+    insertInto<User>("users").values({
+      name: maliciousName, // Safely parameterized
+    }),
+  {},
+);
+// Generates: INSERT INTO "users" ("name") VALUES ($(__p1))
+// Parameters: { __p1: "'; DROP TABLE users; --" }
+```
+
+### 13.5 Executing CRUD Operations
+
+The adapter packages provide execution functions for all CRUD operations:
+
+#### PostgreSQL (pg-promise)
+
+```typescript
+import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
+
+// Execute INSERT with RETURNING
+const insertedUsers = await executeInsert(
+  db,
+  () =>
+    insertInto(dbContext, "users")
+      .values({ name: "Frank", age: 28 })
+      .returning((u) => ({ id: u.id, name: u.name })),
+  {},
+);
+// Returns: [{ id: 123, name: "Frank" }]
+
+// Execute UPDATE - returns affected row count
+const updateCount = await executeUpdate(
+  db,
+  () =>
+    updateTable(dbContext, "users")
+      .set({ age: 29 })
+      .where((u) => u.id === 123),
+  {},
+);
+// Returns number of affected rows
+
+// Execute DELETE - returns affected row count
+const deleteCount = await executeDelete(
+  db,
+  () => deleteFrom(dbContext, "users").where((u) => u.id === 123),
+  {},
+);
+```
+
+#### SQLite (better-sqlite3)
+
+```typescript
+import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-better-sqlite3";
+
+// Execute INSERT - returns row count
+const insertCount = executeInsert(
+  db,
+  () => insertInto(dbContext, "users").values({ name: "Grace", age: 30 }),
+  {},
+);
+// Returns number of inserted rows
+
+// Execute UPDATE - returns row count
+const updateCount = executeUpdate(
+  db,
+  () =>
+    updateTable(dbContext, "users")
+      .set({ age: 33 })
+      .where((u) => u.name === "Henry"),
+  {},
+);
+
+// Execute DELETE - returns row count
+const deleteCount = executeDelete(
+  db,
+  () => deleteFrom(dbContext, "users").where((u) => u.age > 100),
+  {},
+);
+```
+
+SQLite helpers always return the number of affected rows. To inspect row data after an insert or update, run a follow-up `selectStatement` query.
+
+#### Transaction Support
+
+Both adapters support transactions through their respective database drivers:
+
+```typescript
+// PostgreSQL transactions
+await db.tx(async (t) => {
+  const users = await executeInsert(
+    t,
+    () =>
+      insertInto(dbContext, "users")
+        .values({ name: "Ivy" })
+        .returning((u) => u.id),
+    {},
+  );
+
+  await executeInsert(
+    t,
+    () =>
+      insertInto(dbContext, "user_logs").values({
+        userId: users[0]!.id,
+        action: "created",
+      }),
+    {},
+  );
+});
+
+// SQLite transactions
+const transaction = sqliteDb.transaction(() => {
+  executeInsert(db, () => insertInto(dbContext, "users").values({ name: "Jack" }), {});
+  executeUpdate(
+    db,
+    () =>
+      updateTable(dbContext, "users")
+        .set({ lastLogin: new Date() })
+        .where((u) => u.name === "Jack"),
+    {},
+  );
+});
+transaction();
+```
+
+---
+
+
+---
+
