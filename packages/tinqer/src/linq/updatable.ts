@@ -15,10 +15,10 @@ export class Updatable<T> {
   /**
    * Specifies the columns to update and their new values
    * Can only be called once per query
-   * @param setSelector Object mapping columns to new values, or function that returns such an object
+   * @param setSelector Object mapping columns to new values
    * @returns UpdatableWithSet for further chaining
    */
-  set(_setSelector: Partial<T> | (() => Partial<T>)): UpdatableWithSet<T> {
+  set(_setSelector: Partial<T>): UpdatableWithSet<T> {
     if (this.__hasSet) {
       throw new Error("set() can only be called once per UPDATE query");
     }

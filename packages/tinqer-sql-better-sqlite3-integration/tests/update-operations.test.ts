@@ -166,7 +166,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ quantity: 20 }))
+            .set({ quantity: 20 })
             .where((i) => i.product_name === "Laptop"),
         {},
       );
@@ -184,11 +184,11 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({
+            .set({
               quantity: 15,
               price: 89.99,
               status: "available",
-            }))
+            })
             .where((i) => i.product_name === "Keyboard"),
         {},
       );
@@ -214,10 +214,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         (p: typeof params) =>
           updateTable(dbContext, "inventory")
-            .set(() => ({
+            .set({
               quantity: p.newQuantity,
               price: p.newPrice,
-            }))
+            })
             .where((i) => i.product_name === p.productName),
         params,
       );
@@ -236,7 +236,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({ is_verified: 1 })) // SQLite uses 0/1 for boolean values
+            .set({ is_verified: 1 }) // SQLite uses 0/1 for boolean values
             .where((u) => u.username === "jane_smith"),
         {},
       );
@@ -254,7 +254,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({ bio: null, age: null }))
+            .set({ bio: null, age: null })
             .where((u) => u.username === "john_doe"),
         {},
       );
@@ -275,7 +275,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ status: "reorder_needed" }))
+            .set({ status: "reorder_needed" })
             .where((i) => i.quantity < 10 && i.status === "low_stock"),
         {},
       );
@@ -293,7 +293,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ warehouse_location: "Warehouse D" }))
+            .set({ warehouse_location: "Warehouse D" })
             .where((i) => i.status === "out_of_stock" || i.quantity < 6),
         {},
       );
@@ -316,7 +316,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ is_active: 0 })) // SQLite uses 0/1 for boolean values
+            .set({ is_active: 0 }) // SQLite uses 0/1 for boolean values
             .where(
               (i) =>
                 (i.quantity === 0 && i.status === "out_of_stock") ||
@@ -339,7 +339,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ notes: "Premium product" }))
+            .set({ notes: "Premium product" })
             .where((i) => i.product_name.startsWith("L")),
         {},
       );
@@ -359,7 +359,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         (p: { products: string[] }) =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ warehouse_location: "Warehouse E" }))
+            .set({ warehouse_location: "Warehouse E" })
             .where((i) => p.products.includes(i.product_name)),
         { products: targetProducts },
       );
@@ -384,7 +384,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const result = updateStatement(
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ quantity: 30 }))
+            .set({ quantity: 30 })
             .where((i) => i.id === 1)
             .returning((i) => i.quantity),
         {},
@@ -404,7 +404,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({ is_verified: 1 })) // SQLite uses 0/1 for boolean values
+            .set({ is_verified: 1 }) // SQLite uses 0/1 for boolean values
             .where((u) => u.is_verified === 0), // SQLite uses 0 for false
         {},
       );
@@ -422,7 +422,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "product_reviews")
-            .set(() => ({ helpful_count: 0 }))
+            .set({ helpful_count: 0 })
             .allowFullTableUpdate(),
         {},
       );
@@ -437,11 +437,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", () => {
       try {
-        executeUpdate(
-          db,
-          () => updateTable(dbContext, "inventory").set(() => ({ quantity: 0 })),
-          {},
-        );
+        executeUpdate(db, () => updateTable(dbContext, "inventory").set({ quantity: 0 }), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -460,7 +456,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         (params: { newDate: string }) =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({ last_login: params.newDate }))
+            .set({ last_login: params.newDate })
             .where((u) => u.username === "bob_wilson"),
         { newDate },
       );
@@ -483,10 +479,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         (params: { currentTime: string }) =>
           updateTable(dbContext, "inventory")
-            .set(() => ({
+            .set({
               quantity: 50,
               last_updated: params.currentTime,
-            }))
+            })
             .where((i) => i.product_name === "Headphones"),
         { currentTime },
       );
@@ -519,7 +515,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         (params: { settingsJson: string }) =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({ settings: params.settingsJson }))
+            .set({ settings: params.settingsJson })
             .where((u) => u.username === "alice_jones"),
         { settingsJson: JSON.stringify(newSettings) },
       );
@@ -540,9 +536,9 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({
+            .set({
               notes: "Special chars: 'quotes' \"double\" \n newline \t tab",
-            }))
+            })
             .where((i) => i.id === 1),
         {},
       );
@@ -563,9 +559,9 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "user_profiles")
-            .set(() => ({
+            .set({
               bio: "Unicode test: 你好 🎉 Здравствуйте émoji",
-            }))
+            })
             .where((u) => u.id === 2),
         {},
       );
@@ -588,10 +584,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({
+            .set({
               quantity: "50" as unknown as number, // String that will be coerced to number
               price: 99, // Integer that will be stored as REAL
-            }))
+            })
             .where((i) => i.id === 1),
         {},
       );
@@ -612,7 +608,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ is_active: 0 }))
+            .set({ is_active: 0 })
             .where((i) => i.id === 1),
         {},
       );
@@ -628,7 +624,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
         db,
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ is_active: 1 })) // SQLite uses 0/1 for boolean values
+            .set({ is_active: 1 }) // SQLite uses 0/1 for boolean values
             .where((i) => i.id === 1),
         {},
       );
@@ -647,7 +643,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const result = updateStatement(
         () =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ quantity: 100, status: "available" }))
+            .set({ quantity: 100, status: "available" })
             .where((i) => i.id === 1),
         {},
       );
@@ -668,7 +664,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const result = updateStatement(
         (p: typeof params) =>
           updateTable(dbContext, "inventory")
-            .set(() => ({ quantity: p.newQty }))
+            .set({ quantity: p.newQty })
             .where((i) => i.id === p.prodId),
         params,
       );

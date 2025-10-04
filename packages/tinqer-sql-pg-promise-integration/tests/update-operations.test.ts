@@ -192,10 +192,10 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
         db,
         (p: typeof params) =>
           updateTable(dbContext, "inventory")
-            .set(() => ({
+            .set({
               quantity: p.newQuantity,
               price: p.newPrice,
-            }))
+            })
             .where((i) => i.product_name === p.productName),
         params,
       );
