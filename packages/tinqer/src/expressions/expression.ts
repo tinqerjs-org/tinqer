@@ -106,6 +106,17 @@ export interface AggregateExpression {
 }
 
 /**
+ * Window function expression - for ROW_NUMBER, RANK, DENSE_RANK
+ * Supports PARTITION BY and ORDER BY clauses
+ */
+export interface WindowFunctionExpression {
+  type: "windowFunction";
+  function: "rowNumber" | "rank" | "denseRank";
+  partitionBy: ValueExpression[];
+  orderBy: Array<{ expression: ValueExpression; direction: "asc" | "desc" }>;
+}
+
+/**
  * Reference to an entire table/object (for JOIN result selectors)
  */
 export interface ReferenceExpression {
@@ -135,6 +146,7 @@ export type ValueExpression =
   | CaseExpression
   | CoalesceExpression
   | AggregateExpression
+  | WindowFunctionExpression
   | ReferenceExpression
   | AllColumnsExpression;
 
@@ -364,6 +376,9 @@ export function isValueExpression(expr: Expression): expr is ValueExpression {
     "case",
     "coalesce",
     "aggregate",
+    "windowFunction",
+    "reference",
+    "allColumns",
   ].includes(expr.type);
 }
 

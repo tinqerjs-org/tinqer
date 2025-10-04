@@ -131,6 +131,7 @@ function extractParameters(ast: ASTExpression): {
   // For queries like: () => from(...).where(...)
   // Or: (p) => from(...).where(x => x.id == p.minId)
   // Or: (p, _) => from(...).where(x => _.functions.iequals(x.name, "john"))
+  // Or: (p, h = createQueryHelpers()) => ... (with default parameter)
   if (ast.type === "ArrowFunctionExpression") {
     const arrow = ast as ArrowFunctionExpression;
     if (arrow.params && arrow.params.length > 0) {
@@ -138,6 +139,12 @@ function extractParameters(ast: ASTExpression): {
       const firstParam = arrow.params[0];
       if (firstParam && firstParam.type === "Identifier") {
         queryParams.add((firstParam as Identifier).name);
+      } else if (firstParam && (firstParam as { type?: string }).type === "AssignmentPattern") {
+        // Handle default parameters: (p = {})
+        const assignPattern = firstParam as { left?: { type?: string; name?: string } };
+        if (assignPattern.left?.type === "Identifier" && assignPattern.left.name) {
+          queryParams.add(assignPattern.left.name);
+        }
       }
 
       // Second param is helpers
@@ -145,6 +152,12 @@ function extractParameters(ast: ASTExpression): {
         const secondParam = arrow.params[1];
         if (secondParam && secondParam.type === "Identifier") {
           helpersParam = (secondParam as Identifier).name;
+        } else if (secondParam && (secondParam as { type?: string }).type === "AssignmentPattern") {
+          // Handle default parameters: (p, h = createQueryHelpers())
+          const assignPattern = secondParam as { left?: { type?: string; name?: string } };
+          if (assignPattern.left?.type === "Identifier" && assignPattern.left.name) {
+            helpersParam = assignPattern.left.name;
+          }
         }
       }
     }

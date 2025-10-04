@@ -36,6 +36,7 @@ export async function setupTestDatabase(db: IDatabase<any>) {
       name VARCHAR(100) NOT NULL,
       email VARCHAR(100) UNIQUE NOT NULL,
       age INTEGER,
+      salary DECIMAL(10, 2) NOT NULL,
       department_id INTEGER,
       manager_id INTEGER,
       is_active BOOLEAN DEFAULT true,
@@ -97,22 +98,22 @@ export async function setupTestDatabase(db: IDatabase<any>) {
   // Insert users with manager relationships
   // First insert managers (no manager_id)
   await db.none(`
-    INSERT INTO users (name, email, age, department_id, manager_id, is_active) VALUES
-    ('John Doe', 'john@example.com', 30, 1, NULL, true),
-    ('Jane Smith', 'jane@example.com', 25, 2, NULL, true),
-    ('Charlie Wilson', 'charlie@example.com', 45, 4, NULL, false),
-    ('Henry Ford', 'henry@example.com', 55, 4, NULL, true);
+    INSERT INTO users (name, email, age, salary, department_id, manager_id, is_active) VALUES
+    ('John Doe', 'john@example.com', 30, 120000, 1, NULL, true),
+    ('Jane Smith', 'jane@example.com', 25, 95000, 2, NULL, true),
+    ('Charlie Wilson', 'charlie@example.com', 45, 85000, 4, NULL, false),
+    ('Henry Ford', 'henry@example.com', 55, 92000, 4, NULL, true);
   `);
 
   // Then insert employees with managers
   await db.none(`
-    INSERT INTO users (name, email, age, department_id, manager_id, is_active) VALUES
-    ('Bob Johnson', 'bob@example.com', 35, 1, 1, true),        -- Reports to John Doe
-    ('Alice Brown', 'alice@example.com', 28, 3, 2, true),      -- Reports to Jane Smith
-    ('Diana Prince', 'diana@example.com', 33, 1, 1, true),     -- Reports to John Doe
-    ('Eva Green', 'eva@example.com', 27, 2, 2, true),          -- Reports to Jane Smith
-    ('Frank Castle', 'frank@example.com', 40, 1, 1, false),    -- Reports to John Doe
-    ('Grace Hopper', 'grace@example.com', 38, 1, 1, true);     -- Reports to John Doe
+    INSERT INTO users (name, email, age, salary, department_id, manager_id, is_active) VALUES
+    ('Bob Johnson', 'bob@example.com', 35, 95000, 1, 1, true),        -- Reports to John Doe
+    ('Alice Brown', 'alice@example.com', 28, 72000, 3, 2, true),      -- Reports to Jane Smith
+    ('Diana Prince', 'diana@example.com', 33, 110000, 1, 1, true),     -- Reports to John Doe
+    ('Eva Green', 'eva@example.com', 27, 78000, 2, 2, true),          -- Reports to Jane Smith
+    ('Frank Castle', 'frank@example.com', 40, 88000, 1, 1, false),    -- Reports to John Doe
+    ('Grace Hopper', 'grace@example.com', 38, 105000, 1, 1, true);     -- Reports to John Doe
   `);
 
   // Insert products

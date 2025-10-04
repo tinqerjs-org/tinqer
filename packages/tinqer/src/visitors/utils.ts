@@ -40,6 +40,7 @@ export function isValueExpression(expr: Expression | unknown): boolean {
     "case",
     "coalesce",
     "aggregate",
+    "windowFunction",
     "groupKey",
   ].includes(type);
 }

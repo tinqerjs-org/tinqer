@@ -36,23 +36,28 @@ Complete reference for all query operations, parameters, and CRUD functionality 
   - [7.1 Basic Grouping](#71-basic-grouping)
   - [7.2 Group with Multiple Aggregates](#72-group-with-multiple-aggregates)
   - [7.3 Group with Post-Filter](#73-group-with-post-filter)
-- [8. Scalar Aggregates on Root Queries](#8-scalar-aggregates-on-root-queries)
-- [9. Quantifiers](#9-quantifiers)
-  - [9.1 Any Operation](#91-any-operation)
-  - [9.2 All Operation](#92-all-operation)
-- [10. Element Retrieval](#10-element-retrieval)
-- [11. Materialisation](#11-materialisation)
-- [12. Parameters and Auto-Parameterisation](#12-parameters-and-auto-parameterisation)
-  - [12.1 External Parameter Objects](#121-external-parameter-objects)
-  - [12.2 Literal Auto-Parameterisation](#122-literal-auto-parameterisation)
-  - [12.3 Array Membership](#123-array-membership)
-  - [12.4 Case-Insensitive Helper Functions](#124-case-insensitive-helper-functions)
-- [13. CRUD Operations](#13-crud-operations)
-  - [13.1 INSERT Statements](#131-insert-statements)
-  - [13.2 UPDATE Statements](#132-update-statements)
-  - [13.3 DELETE Statements](#133-delete-statements)
-  - [13.4 Safety Features](#134-safety-features)
-  - [13.5 Executing CRUD Operations](#135-executing-crud-operations)
+- [8. Window Functions](#8-window-functions)
+  - [8.1 ROW_NUMBER](#81-row_number)
+  - [8.2 RANK](#82-rank)
+  - [8.3 DENSE_RANK](#83-dense_rank)
+  - [8.4 Multiple Window Functions](#84-multiple-window-functions)
+- [9. Scalar Aggregates on Root Queries](#9-scalar-aggregates-on-root-queries)
+- [10. Quantifiers](#10-quantifiers)
+  - [10.1 Any Operation](#101-any-operation)
+  - [10.2 All Operation](#102-all-operation)
+- [11. Element Retrieval](#11-element-retrieval)
+- [12. Materialisation](#12-materialisation)
+- [13. Parameters and Auto-Parameterisation](#13-parameters-and-auto-parameterisation)
+  - [13.1 External Parameter Objects](#131-external-parameter-objects)
+  - [13.2 Literal Auto-Parameterisation](#132-literal-auto-parameterisation)
+  - [13.3 Array Membership](#133-array-membership)
+  - [13.4 Case-Insensitive Helper Functions](#134-case-insensitive-helper-functions)
+- [14. CRUD Operations](#14-crud-operations)
+  - [14.1 INSERT Statements](#141-insert-statements)
+  - [14.2 UPDATE Statements](#142-update-statements)
+  - [14.3 DELETE Statements](#143-delete-statements)
+  - [14.4 Safety Features](#144-safety-features)
+  - [14.5 Executing CRUD Operations](#145-executing-crud-operations)
 
 ---
 
@@ -757,7 +762,327 @@ The adapter emits the `WHERE` on the grouped projection; explicit HAVING clauses
 
 ---
 
-## 8. Scalar Aggregates on Root Queries
+## 8. Window Functions
+
+Window functions perform calculations across rows related to the current row without collapsing the result set. Tinqer supports `ROW_NUMBER()`, `RANK()`, and `DENSE_RANK()` for ranking operations with optional partitioning and required ordering.
+
+All window functions are accessed via `createQueryHelpers()` and support:
+
+- **`partitionBy(...selectors)`**: Optional partitioning (0 or more selectors)
+- **`orderBy(selector)`** / **`orderByDescending(selector)`**: Required ordering (at least one)
+- **`thenBy(selector)`** / **`thenByDescending(selector)`**: Additional ordering
+
+### 8.1 ROW_NUMBER
+
+`ROW_NUMBER()` assigns sequential numbers to rows within a partition, starting from 1. The numbering resets for each partition.
+
+```typescript
+import { createQueryHelpers } from "@webpods/tinqer";
+
+const h = createQueryHelpers<{ department: string; salary: number; name: string }>();
+
+const rankedEmployees = selectStatement(
+  () =>
+    from<Employee>("employees").select((e) => ({
+      name: e.name,
+      department: e.department,
+      salary: e.salary,
+      rank: h.window
+        .rowNumber()
+        .partitionBy((r) => r.department)
+        .orderByDescending((r) => r.salary),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "name", "department", "salary",
+  ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank"
+FROM "employees"
+```
+
+```sql
+-- SQLite
+SELECT "name", "department", "salary",
+  ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank"
+FROM "employees"
+```
+
+#### Without Partition
+
+```typescript
+const h = createQueryHelpers<{ createdAt: Date }>();
+
+const chronological = selectStatement(
+  () =>
+    from<Order>("orders").select((o) => ({
+      orderId: o.id,
+      rowNum: h.window.rowNumber().orderBy((r) => r.createdAt),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL and SQLite
+SELECT "id" AS "orderId", ROW_NUMBER() OVER (ORDER BY "createdAt" ASC) AS "rowNum"
+FROM "orders"
+```
+
+#### Multiple Partitions
+
+```typescript
+const h = createQueryHelpers<{ region: string; department: string; salary: number }>();
+
+const multiPartition = selectStatement(
+  () =>
+    from<Employee>("employees").select((e) => ({
+      name: e.name,
+      rank: h.window
+        .rowNumber()
+        .partitionBy(
+          (r) => r.region,
+          (r) => r.department,
+        )
+        .orderByDescending((r) => r.salary),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL and SQLite
+SELECT "name",
+  ROW_NUMBER() OVER (PARTITION BY "region", "department" ORDER BY "salary" DESC) AS "rank"
+FROM "employees"
+```
+
+#### Secondary Ordering with thenBy
+
+```typescript
+const h = createQueryHelpers<{ department: string; salary: number; name: string }>();
+
+const ranked = selectStatement(
+  () =>
+    from<Employee>("employees").select((e) => ({
+      name: e.name,
+      rank: h.window
+        .rowNumber()
+        .partitionBy((r) => r.department)
+        .orderByDescending((r) => r.salary)
+        .thenBy((r) => r.name),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL and SQLite
+SELECT "name",
+  ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC, "name" ASC) AS "rank"
+FROM "employees"
+```
+
+### 8.2 RANK
+
+`RANK()` assigns ranks with gaps for tied values. If two rows have the same rank, the next rank skips numbers.
+
+```typescript
+const h = createQueryHelpers<{ department: string; salary: number }>();
+
+const rankedSalaries = selectStatement(
+  () =>
+    from<Employee>("employees").select((e) => ({
+      name: e.name,
+      salary: e.salary,
+      rank: h.window
+        .rank()
+        .partitionBy((r) => r.department)
+        .orderByDescending((r) => r.salary),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "name", "salary",
+  RANK() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank"
+FROM "employees"
+```
+
+```sql
+-- SQLite
+SELECT "name", "salary",
+  RANK() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank"
+FROM "employees"
+```
+
+Example result with gaps:
+
+| name  | salary | rank |
+| ----- | ------ | ---- |
+| Alice | 90000  | 1    |
+| Bob   | 90000  | 1    |
+| Carol | 85000  | 3    |
+
+Notice rank 2 is skipped because two employees share rank 1.
+
+#### RANK Without Partition
+
+```typescript
+const h = createQueryHelpers<{ score: number }>();
+
+const globalRank = selectStatement(
+  () =>
+    from<Player>("players").select((p) => ({
+      player: p.name,
+      score: p.score,
+      rank: h.window.rank().orderByDescending((r) => r.score),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL and SQLite
+SELECT "name" AS "player", "score", RANK() OVER (ORDER BY "score" DESC) AS "rank"
+FROM "players"
+```
+
+### 8.3 DENSE_RANK
+
+`DENSE_RANK()` assigns ranks without gaps. Tied values receive the same rank, and the next rank is consecutive.
+
+```typescript
+const h = createQueryHelpers<{ department: string; salary: number }>();
+
+const denseRanked = selectStatement(
+  () =>
+    from<Employee>("employees").select((e) => ({
+      name: e.name,
+      salary: e.salary,
+      rank: h.window
+        .denseRank()
+        .partitionBy((r) => r.department)
+        .orderByDescending((r) => r.salary),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "name", "salary",
+  DENSE_RANK() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank"
+FROM "employees"
+```
+
+```sql
+-- SQLite
+SELECT "name", "salary",
+  DENSE_RANK() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank"
+FROM "employees"
+```
+
+Example result without gaps:
+
+| name  | salary | rank |
+| ----- | ------ | ---- |
+| Alice | 90000  | 1    |
+| Bob   | 90000  | 1    |
+| Carol | 85000  | 2    |
+
+#### Complex thenBy Chain
+
+```typescript
+const h = createQueryHelpers<{
+  department: string;
+  salary: number;
+  age: number;
+  name: string;
+}>();
+
+const complexRanking = selectStatement(
+  () =>
+    from<Employee>("employees").select((e) => ({
+      name: e.name,
+      rank: h.window
+        .denseRank()
+        .partitionBy((r) => r.department)
+        .orderByDescending((r) => r.salary)
+        .thenByDescending((r) => r.age)
+        .thenBy((r) => r.name),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL and SQLite
+SELECT "name",
+  DENSE_RANK() OVER (
+    PARTITION BY "department"
+    ORDER BY "salary" DESC, "age" DESC, "name" ASC
+  ) AS "rank"
+FROM "employees"
+```
+
+### 8.4 Multiple Window Functions
+
+Combine multiple window functions in a single SELECT:
+
+```typescript
+const h = createQueryHelpers<{ department: string; salary: number }>();
+
+const allRankings = selectStatement(
+  () =>
+    from<Employee>("employees").select((e) => ({
+      name: e.name,
+      department: e.department,
+      salary: e.salary,
+      rowNum: h.window
+        .rowNumber()
+        .partitionBy((r) => r.department)
+        .orderByDescending((r) => r.salary),
+      rank: h.window
+        .rank()
+        .partitionBy((r) => r.department)
+        .orderByDescending((r) => r.salary),
+      denseRank: h.window
+        .denseRank()
+        .partitionBy((r) => r.department)
+        .orderByDescending((r) => r.salary),
+    })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "name", "department", "salary",
+  ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rowNum",
+  RANK() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank",
+  DENSE_RANK() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "denseRank"
+FROM "employees"
+```
+
+```sql
+-- SQLite
+SELECT "name", "department", "salary",
+  ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rowNum",
+  RANK() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank",
+  DENSE_RANK() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "denseRank"
+FROM "employees"
+```
+
+**Note**: SQLite window function support requires SQLite 3.25 or later.
+
+---
+
+## 9. Scalar Aggregates on Root Queries
 
 Aggregate methods can be called directly on queries to return single values.
 
@@ -803,11 +1128,11 @@ SELECT COUNT(*) FROM "users" WHERE "active"
 
 ---
 
-## 9. Quantifiers
+## 10. Quantifiers
 
 Methods `any` and `all` test whether elements satisfy conditions.
 
-### 9.1 Any Operation
+### 10.1 Any Operation
 
 ```typescript
 const hasAdults = selectStatement(() => from<User>("users").any((u) => u.age >= 18), {});
@@ -827,7 +1152,7 @@ SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "age" >= @__p1) THEN 1 ELSE 
 { "__p1": 18 }
 ```
 
-### 9.2 All Operation
+### 10.2 All Operation
 
 The `all` method emits a `NOT EXISTS` check:
 
@@ -847,7 +1172,7 @@ SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("active" = @__p1)) 
 
 ---
 
-## 10. Element Retrieval
+## 11. Element Retrieval
 
 Methods `first`, `firstOrDefault`, `single`, `singleOrDefault`, `last`, and `lastOrDefault` retrieve single elements.
 
@@ -877,7 +1202,7 @@ SELECT * FROM "users" ORDER BY "createdAt" ASC LIMIT 1
 
 ---
 
-## 11. Materialisation
+## 12. Materialisation
 
 Queries are executed directly without requiring a materialization method. The query builder returns results as arrays by default.
 
@@ -896,11 +1221,11 @@ The generated SQL matches the entire query chain.
 
 ---
 
-## 12. Parameters and Auto-Parameterisation
+## 13. Parameters and Auto-Parameterisation
 
 Tinqer automatically parameterizes all values to prevent SQL injection and enable prepared statements.
 
-### 12.1 External Parameter Objects
+### 13.1 External Parameter Objects
 
 ```typescript
 const filtered = selectStatement(
@@ -928,7 +1253,7 @@ SELECT * FROM "users" WHERE "age" >= @minAge AND "role" = @role
 
 Nested properties and array indices are preserved (`params.filters.departments[0]`).
 
-### 12.2 Literal Auto-Parameterisation
+### 13.2 Literal Auto-Parameterisation
 
 ```typescript
 const autoParams = selectStatement(
@@ -951,7 +1276,7 @@ SELECT * FROM "users" WHERE "departmentId" = @__p1 AND "name" LIKE @__p2 || '%'
 { "__p1": 7, "__p2": "A" }
 ```
 
-### 12.3 Array Membership
+### 13.3 Array Membership
 
 ```typescript
 const membership = selectStatement(
@@ -988,7 +1313,7 @@ const dynamicMembership = selectStatement(
 { "allowed[0]": 5, "allowed[1]": 8 }
 ```
 
-### 12.4 Case-Insensitive Helper Functions
+### 13.4 Case-Insensitive Helper Functions
 
 ```typescript
 const helpers = createQueryHelpers();
@@ -1016,11 +1341,11 @@ SELECT * FROM "users" WHERE LOWER("email") LIKE '%' || LOWER(@__p1) || '%'
 
 ---
 
-## 13. CRUD Operations
+## 14. CRUD Operations
 
 Tinqer provides full CRUD support with the same type-safety and lambda expression support as SELECT queries. All CRUD operations follow the same pattern: builder functions return operation chains, statement functions generate SQL, and execute functions run the queries.
 
-### 13.1 INSERT Statements
+### 14.1 INSERT Statements
 
 The `insertInto` function creates INSERT operations. Values are specified using direct object syntax (no lambda wrapping required).
 
@@ -1118,7 +1443,7 @@ const insert = insertStatement(
 );
 ```
 
-### 13.2 UPDATE Statements
+### 14.2 UPDATE Statements
 
 The `updateTable` function creates UPDATE operations. The `.set()` method uses direct object syntax (no lambda wrapping required).
 
@@ -1209,7 +1534,7 @@ Error: UPDATE requires a WHERE clause or explicit allowFullTableUpdate().
 Full table updates are dangerous and must be explicitly allowed.
 ```
 
-### 13.3 DELETE Statements
+### 14.3 DELETE Statements
 
 The `deleteFrom` function creates DELETE operations with optional WHERE conditions.
 
@@ -1285,7 +1610,7 @@ const deleteAll = deleteStatement(
 );
 ```
 
-### 13.4 Safety Features
+### 14.4 Safety Features
 
 Tinqer includes multiple safety guards for CRUD operations:
 
@@ -1342,7 +1667,7 @@ const insert = insertStatement(
 // Parameters: { __p1: "'; DROP TABLE users; --" }
 ```
 
-### 13.5 Executing CRUD Operations
+### 14.5 Executing CRUD Operations
 
 The adapter packages provide execution functions for all CRUD operations:
 

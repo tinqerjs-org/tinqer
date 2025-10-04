@@ -176,6 +176,53 @@ const summary = from(ctx, "orders")
   .orderByDescending((row) => row.totalQuantity);
 ```
 
+### Window Functions
+
+Window functions enable calculations across rows related to the current row. Tinqer supports `ROW_NUMBER()`, `RANK()`, and `DENSE_RANK()` for ranking and partitioning.
+
+```typescript
+import { createQueryHelpers } from "@webpods/tinqer";
+
+// Get top earner per department
+const h = createQueryHelpers<User>();
+const topEarners = from(ctx, "employees")
+  .select((e) => ({
+    ...e,
+    rank: h.window
+      .rowNumber()
+      .partitionBy((r) => r.department)
+      .orderByDescending((r) => r.salary),
+  }))
+  .where((e) => e.rank === 1);
+
+// PostgreSQL: ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC)
+// SQLite: Same syntax (requires SQLite 3.25+)
+```
+
+All three window functions support:
+
+- **`partitionBy(...selectors)`**: Optional partitioning (0 or more selectors)
+- **`orderBy(selector)`** / **`orderByDescending(selector)`**: Required ordering (at least one)
+- **`thenBy(selector)`** / **`thenByDescending(selector)`**: Additional ordering
+
+```typescript
+// RANK example - gaps in ranking for ties
+const h = createQueryHelpers<Score>();
+const ranked = from(ctx, "scores").select((s) => ({
+  player: s.player,
+  score: s.score,
+  rank: h.window.rank().orderByDescending((r) => r.score),
+}));
+
+// DENSE_RANK example - no gaps in ranking
+const h = createQueryHelpers<Score>();
+const denseRanked = from(ctx, "scores").select((s) => ({
+  player: s.player,
+  score: s.score,
+  rank: h.window.denseRank().orderByDescending((r) => r.score),
+}));
+```
+
 ### CRUD Operations
 
 ```typescript
@@ -282,6 +329,7 @@ Tinqer supports a focused set of JavaScript/TypeScript expressions:
 - **Null handling**: `??` (null coalescing), `?.` (optional chaining)
 - **Arrays**: `.includes()` for IN queries
 - **Helper functions**: `ilike()`, `contains()`, `startsWith()`, `endsWith()` (case-insensitive)
+- **Window functions**: `h.window.rowNumber()`, `h.window.rank()`, `h.window.denseRank()`
 
 ## Database Support
 
@@ -290,6 +338,7 @@ Tinqer supports a focused set of JavaScript/TypeScript expressions:
 - Native boolean type (`true`/`false`)
 - Case-insensitive matching with `ILIKE`
 - Full JSONB support
+- Window functions: `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`
 - Parameter placeholders: `$1`, `$2`, etc.
 
 ### SQLite
@@ -297,6 +346,7 @@ Tinqer supports a focused set of JavaScript/TypeScript expressions:
 - Boolean values use INTEGER (0/1)
 - Case-insensitive via `LOWER()` function
 - JSON functions support
+- Window functions: `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()` (requires SQLite 3.25+)
 - Parameter placeholders: `?`, `?`, etc.
 
 See [Database Adapters](docs/adapters.md) for detailed comparison.
