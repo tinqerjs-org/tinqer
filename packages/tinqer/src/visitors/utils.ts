@@ -16,9 +16,7 @@ export function isBooleanExpression(expr: Expression | unknown): boolean {
     "comparison",
     "logical",
     "not",
-    "exists",
     "in",
-    "between",
     "booleanColumn",
     "booleanMethod",
     "booleanConstant",
@@ -41,7 +39,6 @@ export function isValueExpression(expr: Expression | unknown): boolean {
     "stringMethod",
     "case",
     "coalesce",
-    "cast",
     "aggregate",
     "groupKey",
   ].includes(type);
