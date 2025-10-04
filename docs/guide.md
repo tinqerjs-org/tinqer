@@ -30,6 +30,8 @@ Complete reference for all query operations, parameters, and CRUD functionality 
   - [6.1 Simple Inner Join](#61-simple-inner-join)
   - [6.2 Join with Additional Filter](#62-join-with-additional-filter)
   - [6.3 Join with Grouped Results](#63-join-with-grouped-results)
+  - [6.4 Left Outer Join](#64-left-outer-join)
+  - [6.5 Cross Join](#65-cross-join)
 - [7. Grouping and Aggregation](#7-grouping-and-aggregation)
   - [7.1 Basic Grouping](#71-basic-grouping)
   - [7.2 Group with Multiple Aggregates](#72-group-with-multiple-aggregates)
@@ -491,7 +493,7 @@ SELECT * FROM "users" WHERE "active" ORDER BY "name" ASC LIMIT @__p3 OFFSET @__p
 
 ## 6. Joins
 
-The `join` method creates INNER JOIN operations. Only inner joins are supported.
+The `join` method creates INNER JOIN operations. Left outer joins and cross joins follow the same LINQ patterns used in .NET: `groupJoin` + `selectMany(...defaultIfEmpty())` for left joins, and `selectMany` with a query-returning collection selector for cross joins.
 
 ### 6.1 Simple Inner Join
 
@@ -597,6 +599,82 @@ FROM "users" AS "t0"
 INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId"
 GROUP BY "t0"."departmentId"
 ```
+
+### 6.4 Left Outer Join
+
+Model the classic LINQ pattern: start with `groupJoin`, then expand the grouped results with `selectMany(...defaultIfEmpty())`. Any missing matches appear as `null` in the projection.
+
+```typescript
+const usersWithDepartments = selectStatement(
+  () =>
+    from<User>("users")
+      .groupJoin(
+        from<Department>("departments"),
+        (user) => user.departmentId,
+        (department) => department.id,
+        (user, deptGroup) => ({ user, deptGroup }),
+      )
+      .selectMany(
+        (g) => g.deptGroup.defaultIfEmpty(),
+        (g, department) => ({ user: g.user, department }),
+      )
+      .select((row) => ({
+        userId: row.user.id,
+        departmentName: row.department ? row.department.name : null,
+      })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "t0"."id" AS "userId", CASE WHEN "t1"."id" IS NOT NULL THEN "t1"."name" ELSE NULL END AS "departmentName"
+FROM "users" AS "t0"
+LEFT OUTER JOIN "departments" AS "t1" ON "t0"."departmentId" = "t1"."id"
+```
+
+```sql
+-- SQLite
+SELECT "t0"."id" AS "userId", CASE WHEN "t1"."id" IS NOT NULL THEN "t1"."name" ELSE NULL END AS "departmentName"
+FROM "users" AS "t0"
+LEFT OUTER JOIN "departments" AS "t1" ON "t0"."departmentId" = "t1"."id"
+```
+
+### 6.5 Cross Join
+
+Return a `Queryable` from the collection selector passed to `selectMany`. Because we skip `defaultIfEmpty`, the parser normalizes the operation into a `CROSS JOIN`.
+
+```typescript
+const departmentUsers = selectStatement(
+  () =>
+    from<Department>("departments")
+      .selectMany(
+        () => from<User>("users"),
+        (department, user) => ({ department, user }),
+      )
+      .select((row) => ({
+        departmentId: row.department.id,
+        userId: row.user.id,
+      })),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL
+SELECT "t0"."id" AS "departmentId", "t1"."id" AS "userId"
+FROM "departments" AS "t0"
+CROSS JOIN "users" AS "t1"
+```
+
+```sql
+-- SQLite
+SELECT "t0"."id" AS "departmentId", "t1"."id" AS "userId"
+FROM "departments" AS "t0"
+CROSS JOIN "users" AS "t1"
+```
+
+Right and full outer joins still require manual SQL, mirroring the .NET APIs.
 
 ---
 

@@ -459,4 +459,76 @@ describe("Better SQLite3 Integration - JOINs", () => {
       });
     });
   });
+
+  describe("LINQ-style outer joins", () => {
+    it("should convert groupJoin/selectMany/defaultIfEmpty into LEFT OUTER JOIN", () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = executeSelectSimple(
+        db,
+        () =>
+          from(dbContext, "users")
+            .groupJoin(
+              from(dbContext, "departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, deptGroup) => ({ user: u, deptGroup }),
+            )
+            .selectMany(
+              (g) => g.deptGroup.defaultIfEmpty(),
+              (g, dept) => ({ user: g.user, dept }),
+            )
+            .select((row) => ({
+              userId: row.user.id,
+              departmentName: row.dept ? row.dept.name : null,
+            })),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "t0"."id" AS "userId", CASE WHEN "t1"."id" IS NOT NULL THEN "t1"."name" ELSE NULL END AS "departmentName" FROM "users" AS "t0" LEFT OUTER JOIN "departments" AS "t1" ON "t0"."department_id" = "t1"."id"',
+      );
+      expect(results.length).to.be.greaterThan(0);
+    });
+  });
+
+  describe("CROSS JOIN", () => {
+    it("should generate CROSS JOIN for selectMany returning a query", () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = executeSelectSimple(
+        db,
+        () =>
+          from(dbContext, "departments")
+            .selectMany(
+              () => from(dbContext, "users"),
+              (department, user) => ({ department, user }),
+            )
+            .select((row) => ({
+              departmentId: row.department.id,
+              userId: row.user.id,
+            })),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "t0"."id" AS "departmentId", "t1"."id" AS "userId" ' +
+          'FROM "departments" AS "t0" CROSS JOIN "users" AS "t1"',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.equal(40);
+    });
+  });
 });

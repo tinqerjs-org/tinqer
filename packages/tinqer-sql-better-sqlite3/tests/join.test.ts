@@ -359,4 +359,52 @@ describe("Join SQL Generation", () => {
       expect(result.params).to.deep.equal({ page: 2, pageSize: 10 });
     });
   });
+
+  describe("LINQ-style joins", () => {
+    it("should translate groupJoin/selectMany/defaultIfEmpty into LEFT OUTER JOIN", () => {
+      const result = selectStatement(
+        () =>
+          from<User>("users")
+            .groupJoin(
+              from<Department>("departments"),
+              (u) => u.departmentId,
+              (d) => d.id,
+              (u, deptGroup) => ({ user: u, deptGroup }),
+            )
+            .selectMany(
+              (g) => g.deptGroup.defaultIfEmpty(),
+              (g, dept) => ({ user: g.user, dept }),
+            )
+            .select((row) => ({ userId: row.user.id, deptId: row.dept.id })),
+        {},
+      );
+
+      expect(result.sql).to.equal(
+        'SELECT "t0"."id" AS "userId", "t1"."id" AS "deptId" FROM "users" AS "t0" LEFT OUTER JOIN "departments" AS "t1" ON "t0"."departmentId" = "t1"."id"',
+      );
+    });
+  });
+
+  describe("CROSS JOIN", () => {
+    it("should generate CROSS JOIN when collection selector returns a query", () => {
+      const result = selectStatement(
+        () =>
+          from<Department>("departments")
+            .selectMany(
+              () => from<User>("users"),
+              (department, user) => ({ department, user }),
+            )
+            .select((row) => ({
+              departmentId: row.department.id,
+              userId: row.user.id,
+            })),
+        {},
+      );
+
+      expect(result.sql).to.equal(
+        'SELECT "t0"."id" AS "departmentId", "t1"."id" AS "userId" FROM "departments" AS "t0" CROSS JOIN "users" AS "t1"',
+      );
+      expect(result.params).to.deep.equal({});
+    });
+  });
 });

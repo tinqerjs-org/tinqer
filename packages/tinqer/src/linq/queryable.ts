@@ -38,6 +38,31 @@ export class Queryable<T> {
     return new Queryable<TResult>();
   }
 
+  groupJoin<TInner, TKey, TResult>(
+    _inner: Queryable<TInner>,
+    _outerKeySelector: (_outer: T) => TKey,
+    _innerKeySelector: (_inner: TInner) => TKey,
+    _resultSelector: (_outer: T, _innerGroup: IGrouping<TKey, TInner>) => TResult,
+  ): Queryable<TResult> {
+    return new Queryable<TResult>();
+  }
+
+  selectMany<TCollection>(
+    _collectionSelector: (_item: T) => Queryable<TCollection> | Iterable<TCollection>,
+  ): Queryable<TCollection>;
+
+  selectMany<TCollection, TResult>(
+    _collectionSelector: (_item: T) => Queryable<TCollection> | Iterable<TCollection>,
+    _resultSelector: (_item: T, _collectionItem: TCollection) => TResult,
+  ): Queryable<TResult>;
+
+  selectMany<TCollection, TResult = TCollection>(
+    _collectionSelector: (_item: T) => Queryable<TCollection> | Iterable<TCollection>,
+    _resultSelector?: (_item: T, _collectionItem: TCollection) => TResult,
+  ): Queryable<TResult> {
+    return new Queryable<TResult>();
+  }
+
   // ==================== Grouping ====================
 
   groupBy<TKey>(_keySelector: (_item: T) => TKey): Queryable<IGrouping<TKey, T>> {
@@ -88,6 +113,10 @@ export class Queryable<T> {
 
   reverse(): Queryable<T> {
     return this;
+  }
+
+  defaultIfEmpty(_defaultValue?: T): Queryable<T> {
+    return new Queryable<T>();
   }
 
   // ==================== Terminal Operations ====================

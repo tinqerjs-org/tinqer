@@ -54,4 +54,8 @@ export class Grouping<TKey, TElement> implements IGrouping<TKey, TElement> {
   max<TResult>(_selector: (element: TElement) => TResult): TResult {
     throw new Error("IGrouping.max() is handled by SQL generator");
   }
+
+  defaultIfEmpty(_defaultValue?: TElement): Iterable<TElement> {
+    throw new Error("IGrouping.defaultIfEmpty() is handled by SQL generator");
+  }
 }

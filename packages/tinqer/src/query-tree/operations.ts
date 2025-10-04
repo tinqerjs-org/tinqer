@@ -68,6 +68,51 @@ export interface JoinOperation extends QueryOperation {
   outerKeySource?: number; // Which source table the outer key comes from (for chained JOINs)
   resultSelector?: Expression; // The projection expression from the result selector lambda
   resultShape?: ResultShape; // Tracks the shape of the JOIN result for nested property resolution
+  joinType?: "inner" | "left" | "right" | "full" | "cross";
+}
+
+/**
+ * GROUP JOIN operation (LINQ-style)
+ */
+export interface GroupJoinOperation extends QueryOperation {
+  operationType: "groupJoin";
+  source: QueryOperation;
+  inner: QueryOperation;
+  outerKey: string;
+  innerKey: string;
+  outerKeySource?: number;
+  resultSelector?: Expression;
+  resultShape?: ResultShape;
+  outerParam?: string;
+  innerGroupParam?: string;
+  outerBindingName?: string;
+  groupBindingName?: string;
+}
+
+/**
+ * SELECT MANY operation (LINQ-style)
+ */
+export interface SelectManyOperation extends QueryOperation {
+  operationType: "selectMany";
+  source: QueryOperation;
+  collection: QueryOperation | Expression;
+  resultSelector?: Expression;
+  sourceParam?: string;
+  collectionParam?: string;
+  resultParam?: string;
+  collectionPropertyPath?: string[];
+  usesDefaultIfEmpty?: boolean;
+  resultShape?: ResultShape;
+  resultBindings?: Array<{ name: string; source: "outer" | "inner"; path?: string[] }>;
+}
+
+/**
+ * DEFAULT IF EMPTY operation
+ */
+export interface DefaultIfEmptyOperation extends QueryOperation {
+  operationType: "defaultIfEmpty";
+  source: QueryOperation;
+  defaultValue?: Expression;
 }
 
 /**
@@ -177,15 +222,6 @@ export interface SkipOperation extends QueryOperation {
 export interface ReverseOperation extends QueryOperation {
   operationType: "reverse";
   source: QueryOperation;
-}
-
-/**
- * DEFAULT IF EMPTY operation
- */
-export interface DefaultIfEmptyOperation extends QueryOperation {
-  operationType: "defaultIfEmpty";
-  source: QueryOperation;
-  defaultValue?: ValueExpression;
 }
 
 /**
@@ -405,6 +441,9 @@ export type ChainableOperation =
   | WhereOperation
   | SelectOperation
   | JoinOperation
+  | GroupJoinOperation
+  | SelectManyOperation
+  | DefaultIfEmptyOperation
   | GroupByOperation
   | OrderByOperation
   | ThenByOperation

@@ -6,6 +6,7 @@ import type { QueryOperation } from "../query-tree/operations.js";
 import type { Expression as ASTExpression } from "./ast-types.js";
 import { parseJavaScript } from "./oxc-parser.js";
 import { convertAstToQueryOperationWithParams } from "./ast-visitor.js";
+import { normalizeJoins } from "./normalize-joins.js";
 import type { createQueryHelpers } from "../linq/functions.js";
 
 /**
@@ -61,8 +62,16 @@ export function parseQuery<TParams, TQuery>(
       return null;
     }
 
+    const normalizedOperation: QueryOperation | null = result.operation
+      ? normalizeJoins(result.operation)
+      : null;
+
+    if (!normalizedOperation) {
+      return null;
+    }
+
     return {
-      operation: result.operation,
+      operation: normalizedOperation,
       autoParams: result.autoParams as Record<string, string | number | boolean | null>,
       autoParamInfos: result.autoParamInfos,
     };

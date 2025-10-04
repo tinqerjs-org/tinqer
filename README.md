@@ -36,13 +36,11 @@ const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const ctx = createContext<Schema>();
 
-const results = await executeSelectSimple(
-  db,
-  () =>
-    from(ctx, "users")
-      .where((u) => u.age >= 18)
-      .orderBy((u) => u.name)
-      .select((u) => ({ id: u.id, name: u.name })),
+const results = await executeSelectSimple(db, () =>
+  from(ctx, "users")
+    .where((u) => u.age >= 18)
+    .orderBy((u) => u.name)
+    .select((u) => ({ id: u.id, name: u.name })),
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
 ```
@@ -52,7 +50,7 @@ const results = await executeSelectSimple(
 ```typescript
 import Database from "better-sqlite3";
 import { createContext, from } from "@webpods/tinqer";
-import { selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelectSimple, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
   products: {
@@ -66,16 +64,15 @@ interface Schema {
 const db = new Database("./data.db");
 const ctx = createContext<Schema>();
 
-const { sql, params } = selectStatement(
-  () =>
-    from(ctx, "products")
-      .where((p) => p.inStock === 1 && p.price < 100)
-      .orderByDescending((p) => p.price)
-      .select((p) => p),
-  {},
+const results = executeSelectSimple(db, () =>
+  from(ctx, "products")
+    .where((p) => p.inStock === 1 && p.price < 100)
+    .orderByDescending((p) => p.price)
+    .select((p) => p),
 );
 
-const results = db.prepare(sql).all(params);
+// Need the raw SQL for logging or prepared statements? selectStatement is still available:
+const { sql, params } = selectStatement(() => from(ctx, "products").select((p) => p.name), {});
 ```
 
 ## Core Features
@@ -98,23 +95,69 @@ const query = () =>
 
 ### Joins
 
+Tinqer mirrors LINQ semantics. Inner joins have a dedicated operator; left outer and cross joins follow the familiar `groupJoin`/`selectMany` patterns from C#.
+
+#### Inner Join
+
 ```typescript
 interface Schema {
-  users: { id: number; name: string; dept_id: number };
+  users: { id: number; name: string; deptId: number };
   departments: { id: number; name: string };
 }
 
 const ctx = createContext<Schema>();
 
-const query = from(ctx, "users")
+const inner = from(ctx, "users")
   .join(
     from(ctx, "departments"),
-    (u) => u.dept_id,
-    (d) => d.id,
-    (u, d) => ({ userName: u.name, deptName: d.name }),
+    (user) => user.deptId,
+    (department) => department.id,
+    (user, department) => ({
+      userName: user.name,
+      departmentName: department.name,
+    }),
   )
   .orderBy((row) => row.userName);
 ```
+
+#### Left Outer Join
+
+```typescript
+const leftOuter = from(ctx, "users")
+  .groupJoin(
+    from(ctx, "departments"),
+    (user) => user.deptId,
+    (department) => department.id,
+    (user, deptGroup) => ({ user, deptGroup }),
+  )
+  .selectMany(
+    (group) => group.deptGroup.defaultIfEmpty(),
+    (group, department) => ({
+      user: group.user,
+      department,
+    }),
+  )
+  .select((row) => ({
+    userId: row.user.id,
+    departmentName: row.department ? row.department.name : null,
+  }));
+```
+
+#### Cross Join
+
+```typescript
+const cross = from(ctx, "departments")
+  .selectMany(
+    () => from(ctx, "users"),
+    (department, user) => ({ department, user }),
+  )
+  .select((row) => ({
+    departmentId: row.department.id,
+    userId: row.user.id,
+  }));
+```
+
+Right and full outer joins still require manual SQL, just as in LINQ-to-Objects.
 
 ### Grouping and Aggregation
 
@@ -166,6 +209,8 @@ const deletedCount = await executeDelete(
   () => deleteFrom(ctx, "users").where((u) => u.status === "deleted"),
   {},
 );
+
+// SQLite note: executeInsert/executeUpdate ignore RETURNING clauses at runtime; run a follow-up SELECT if you need the affected rows.
 ```
 
 ### Parameters and Auto-Parameterisation
@@ -257,7 +302,7 @@ See [Database Adapters](docs/adapters.md) for detailed comparison.
 
 - Lambdas cannot capture external variables; use params object
 - Limited method set (no `SelectMany`, `GroupJoin`, `DefaultIfEmpty`)
-- Only inner joins (outer joins require manual SQL)
+- Left outer joins and cross joins supported via LINQ patterns (right/full joins still require manual SQL)
 - No deferred execution; SQL generated on demand
 - Grouping supports `count`, `sum`, `avg`, `min`, `max`
 

@@ -296,14 +296,33 @@ export function generateJoin(operation: JoinOperation, context: SqlContext): str
 
   // Check if inner is just a simple FROM operation
   let joinClause: string;
+  const joinKeyword = (() => {
+    switch (operation.joinType) {
+      case "left":
+        return "LEFT OUTER JOIN";
+      case "right":
+        return "RIGHT OUTER JOIN";
+      case "full":
+        return "FULL OUTER JOIN";
+      case "cross":
+        return "CROSS JOIN";
+      default:
+        return "INNER JOIN";
+    }
+  })();
+
   if (operation.inner.operationType === "from") {
     const fromOp = operation.inner as FromOperation;
     const tableName = fromOp.table;
-    joinClause = `INNER JOIN "${tableName}" AS "${innerAlias}"`;
+    joinClause = `${joinKeyword} "${tableName}" AS "${innerAlias}"`;
   } else {
     // Complex inner query - need subquery
     const innerSql = generateSql(operation.inner, {});
-    joinClause = `INNER JOIN (${innerSql}) AS "${innerAlias}"`;
+    joinClause = `${joinKeyword} (${innerSql}) AS "${innerAlias}"`;
+  }
+
+  if (joinKeyword === "CROSS JOIN") {
+    return joinClause;
   }
 
   // Build ON clause - resolve keys through symbol table if available
