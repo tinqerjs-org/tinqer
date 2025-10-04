@@ -119,28 +119,27 @@ interface PgDatabase {
  */
 export async function executeSelect<
   TParams,
-  T,
-  TQuery extends Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>,
+  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase,
   queryBuilder: (params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options: ExecuteOptions = {},
 ): Promise<
-  TQuery extends Queryable<T>
+  TQuery extends Queryable<infer T>
     ? T[]
-    : TQuery extends OrderedQueryable<T>
+    : TQuery extends OrderedQueryable<infer T>
       ? T[]
-      : TQuery extends TerminalQuery<T>
+      : TQuery extends TerminalQuery<infer T>
         ? T
         : never
 > {
   type ReturnType =
-    TQuery extends Queryable<T>
+    TQuery extends Queryable<infer T>
       ? T[]
-      : TQuery extends OrderedQueryable<T>
+      : TQuery extends OrderedQueryable<infer T>
         ? T[]
-        : TQuery extends TerminalQuery<T>
+        : TQuery extends TerminalQuery<infer T>
           ? T
           : never;
   const { sql, params: sqlParams } = selectStatement(queryBuilder, params);
@@ -236,18 +235,17 @@ export async function executeSelect<
  * @returns Promise with query results, properly typed based on the query
  */
 export async function executeSelectSimple<
-  T,
-  TQuery extends Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>,
+  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase,
   queryBuilder: (_params: Record<string, never>, helpers: QueryHelpers) => TQuery,
   options: ExecuteOptions = {},
 ): Promise<
-  TQuery extends Queryable<T>
+  TQuery extends Queryable<infer T>
     ? T[]
-    : TQuery extends OrderedQueryable<T>
+    : TQuery extends OrderedQueryable<infer T>
       ? T[]
-      : TQuery extends TerminalQuery<T>
+      : TQuery extends TerminalQuery<infer T>
         ? T
         : never
 > {
