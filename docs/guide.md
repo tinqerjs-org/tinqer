@@ -265,7 +265,7 @@ const advancedFilter = selectStatement(
 -- PostgreSQL
 SELECT * FROM "users"
 WHERE "age" >= $(minAge)
-  AND "departmentId" IN ($(categories[0]), $(categories[1]))
+  AND "departmentId" IN ($(categories_0), $(categories_1))
   AND LOWER("email") LIKE '%' || LOWER($(__p1)) || '%'
 ```
 
@@ -273,12 +273,18 @@ WHERE "age" >= $(minAge)
 -- SQLite
 SELECT * FROM "users"
 WHERE "age" >= @minAge
-  AND "departmentId" IN (@categories[0], @categories[1])
+  AND "departmentId" IN (@categories_0, @categories_1)
   AND LOWER("email") LIKE '%' || LOWER(@__p1) || '%'
 ```
 
 ```json
-{ "minAge": 25, "categories[0]": "10", "categories[1]": "11", "__p1": "company" }
+{
+  "minAge": 25,
+  "categories": ["10", "11"],
+  "categories_0": "10",
+  "categories_1": "11",
+  "__p1": "company"
+}
 ```
 
 ---
@@ -1251,11 +1257,22 @@ Generated SQL:
 ```sql
 -- PostgreSQL
 DELETE FROM "users"
-WHERE "id" IN ($(userIds[0]), $(userIds[1]), $(userIds[2]), $(userIds[3]), $(userIds[4]))
+WHERE "id" IN ($(userIds_0), $(userIds_1), $(userIds_2), $(userIds_3), $(userIds_4))
 
 -- SQLite
 DELETE FROM "users"
-WHERE "id" IN (@userIds[0], @userIds[1], @userIds[2], @userIds[3], @userIds[4])
+WHERE "id" IN (@userIds_0, @userIds_1, @userIds_2, @userIds_3, @userIds_4)
+```
+
+```json
+{
+  "userIds": [1, 2, 3, 4, 5],
+  "userIds_0": 1,
+  "userIds_1": 2,
+  "userIds_2": 3,
+  "userIds_3": 4,
+  "userIds_4": 5
+}
 ```
 
 #### Full Table DELETE (Requires Explicit Permission)
