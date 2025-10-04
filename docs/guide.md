@@ -766,7 +766,7 @@ The adapter emits the `WHERE` on the grouped projection; explicit HAVING clauses
 
 Window functions perform calculations across rows related to the current row without collapsing the result set. Tinqer supports `ROW_NUMBER()`, `RANK()`, and `DENSE_RANK()` for ranking operations with optional partitioning and required ordering.
 
-All window functions are accessed via `createQueryHelpers()` and support:
+All window functions are accessed via the helpers parameter (second parameter in query builders) and support:
 
 - **`partitionBy(...selectors)`**: Optional partitioning (0 or more selectors)
 - **`orderBy(selector)`** / **`orderByDescending(selector)`**: Required ordering (at least one)
@@ -777,20 +777,17 @@ All window functions are accessed via `createQueryHelpers()` and support:
 `ROW_NUMBER()` assigns sequential numbers to rows within a partition, starting from 1. The numbering resets for each partition.
 
 ```typescript
-import { createQueryHelpers } from "@webpods/tinqer";
-
-const h = createQueryHelpers<{ department: string; salary: number; name: string }>();
-
 const rankedEmployees = selectStatement(
-  () =>
-    from<Employee>("employees").select((e) => ({
+  (_, h) =>
+    from(ctx, "employees").select((e) => ({
       name: e.name,
       department: e.department,
       salary: e.salary,
-      rank: h.window
-        .rowNumber()
+      rank: h
+        .window(e)
         .partitionBy((r) => r.department)
-        .orderByDescending((r) => r.salary),
+        .orderByDescending((r) => r.salary)
+        .rowNumber(),
     })),
   {},
 );
@@ -813,13 +810,14 @@ FROM "employees"
 #### Without Partition
 
 ```typescript
-const h = createQueryHelpers<{ createdAt: Date }>();
-
 const chronological = selectStatement(
-  () =>
-    from<Order>("orders").select((o) => ({
+  (_, h) =>
+    from(ctx, "orders").select((o) => ({
       orderId: o.id,
-      rowNum: h.window.rowNumber().orderBy((r) => r.createdAt),
+      rowNum: h
+        .window(o)
+        .orderBy((r) => r.createdAt)
+        .rowNumber(),
     })),
   {},
 );
@@ -834,19 +832,18 @@ FROM "orders"
 #### Multiple Partitions
 
 ```typescript
-const h = createQueryHelpers<{ region: string; department: string; salary: number }>();
-
 const multiPartition = selectStatement(
-  () =>
-    from<Employee>("employees").select((e) => ({
+  (_, h) =>
+    from(ctx, "employees").select((e) => ({
       name: e.name,
-      rank: h.window
-        .rowNumber()
+      rank: h
+        .window(e)
         .partitionBy(
           (r) => r.region,
           (r) => r.department,
         )
-        .orderByDescending((r) => r.salary),
+        .orderByDescending((r) => r.salary)
+        .rowNumber(),
     })),
   {},
 );
@@ -862,17 +859,16 @@ FROM "employees"
 #### Secondary Ordering with thenBy
 
 ```typescript
-const h = createQueryHelpers<{ department: string; salary: number; name: string }>();
-
 const ranked = selectStatement(
-  () =>
-    from<Employee>("employees").select((e) => ({
+  (_, h) =>
+    from(ctx, "employees").select((e) => ({
       name: e.name,
-      rank: h.window
-        .rowNumber()
+      rank: h
+        .window(e)
         .partitionBy((r) => r.department)
         .orderByDescending((r) => r.salary)
-        .thenBy((r) => r.name),
+        .thenBy((r) => r.name)
+        .rowNumber(),
     })),
   {},
 );
@@ -890,17 +886,16 @@ FROM "employees"
 `RANK()` assigns ranks with gaps for tied values. If two rows have the same rank, the next rank skips numbers.
 
 ```typescript
-const h = createQueryHelpers<{ department: string; salary: number }>();
-
 const rankedSalaries = selectStatement(
-  () =>
-    from<Employee>("employees").select((e) => ({
+  (_, h) =>
+    from(ctx, "employees").select((e) => ({
       name: e.name,
       salary: e.salary,
-      rank: h.window
-        .rank()
+      rank: h
+        .window(e)
         .partitionBy((r) => r.department)
-        .orderByDescending((r) => r.salary),
+        .orderByDescending((r) => r.salary)
+        .rank(),
     })),
   {},
 );
@@ -933,14 +928,15 @@ Notice rank 2 is skipped because two employees share rank 1.
 #### RANK Without Partition
 
 ```typescript
-const h = createQueryHelpers<{ score: number }>();
-
 const globalRank = selectStatement(
-  () =>
-    from<Player>("players").select((p) => ({
+  (_, h) =>
+    from(ctx, "players").select((p) => ({
       player: p.name,
       score: p.score,
-      rank: h.window.rank().orderByDescending((r) => r.score),
+      rank: h
+        .window(p)
+        .orderByDescending((r) => r.score)
+        .rank(),
     })),
   {},
 );
@@ -957,17 +953,16 @@ FROM "players"
 `DENSE_RANK()` assigns ranks without gaps. Tied values receive the same rank, and the next rank is consecutive.
 
 ```typescript
-const h = createQueryHelpers<{ department: string; salary: number }>();
-
 const denseRanked = selectStatement(
-  () =>
-    from<Employee>("employees").select((e) => ({
+  (_, h) =>
+    from(ctx, "employees").select((e) => ({
       name: e.name,
       salary: e.salary,
-      rank: h.window
-        .denseRank()
+      rank: h
+        .window(e)
         .partitionBy((r) => r.department)
-        .orderByDescending((r) => r.salary),
+        .orderByDescending((r) => r.salary)
+        .denseRank(),
     })),
   {},
 );
@@ -998,23 +993,17 @@ Example result without gaps:
 #### Complex thenBy Chain
 
 ```typescript
-const h = createQueryHelpers<{
-  department: string;
-  salary: number;
-  age: number;
-  name: string;
-}>();
-
 const complexRanking = selectStatement(
-  () =>
-    from<Employee>("employees").select((e) => ({
+  (_, h) =>
+    from(ctx, "employees").select((e) => ({
       name: e.name,
-      rank: h.window
-        .denseRank()
+      rank: h
+        .window(e)
         .partitionBy((r) => r.department)
         .orderByDescending((r) => r.salary)
         .thenByDescending((r) => r.age)
-        .thenBy((r) => r.name),
+        .thenBy((r) => r.name)
+        .denseRank(),
     })),
   {},
 );
@@ -1035,26 +1024,27 @@ FROM "employees"
 Combine multiple window functions in a single SELECT:
 
 ```typescript
-const h = createQueryHelpers<{ department: string; salary: number }>();
-
 const allRankings = selectStatement(
-  () =>
-    from<Employee>("employees").select((e) => ({
+  (_, h) =>
+    from(ctx, "employees").select((e) => ({
       name: e.name,
       department: e.department,
       salary: e.salary,
-      rowNum: h.window
-        .rowNumber()
+      rowNum: h
+        .window(e)
         .partitionBy((r) => r.department)
-        .orderByDescending((r) => r.salary),
-      rank: h.window
-        .rank()
+        .orderByDescending((r) => r.salary)
+        .rowNumber(),
+      rank: h
+        .window(e)
         .partitionBy((r) => r.department)
-        .orderByDescending((r) => r.salary),
-      denseRank: h.window
-        .denseRank()
+        .orderByDescending((r) => r.salary)
+        .rank(),
+      denseRank: h
+        .window(e)
         .partitionBy((r) => r.department)
-        .orderByDescending((r) => r.salary),
+        .orderByDescending((r) => r.salary)
+        .denseRank(),
     })),
   {},
 );

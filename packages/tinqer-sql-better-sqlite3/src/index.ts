@@ -44,7 +44,10 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function selectStatement<TParams, TResult>(
-  queryBuilder: (params: TParams, helpers: QueryHelpers) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
+  queryBuilder: (
+    params: TParams,
+    helpers: QueryHelpers,
+  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
   params: TParams,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
   // Parse the query to get the operation tree and auto-params

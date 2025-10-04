@@ -25,16 +25,15 @@ describe("Window Functions - SQLite Integration", () => {
               name: u.name,
               department_id: u.department_id,
               salary: u.salary,
-              row_num: h.window(u)
+              row_num: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .rowNumber(),
             }))
             .where((u) => u.department_id !== null)
-            .orderBy((u) => [
-              { value: u.department_id, direction: "ASC" },
-              { value: u.salary, direction: "DESC" },
-            ]),
+            .orderBy((u) => u.department_id)
+            .thenByDescending((u) => u.salary),
         {},
       );
 
@@ -69,9 +68,12 @@ describe("Window Functions - SQLite Integration", () => {
             .select((u) => ({
               name: u.name,
               salary: u.salary,
-              row_num: h.window(u).orderByDescending((r) => r.salary).rowNumber(),
+              row_num: h
+                .window(u)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
             }))
-            .orderBy((u) => ({ value: u.salary, direction: "DESC" })),
+            .orderByDescending((u) => u.salary),
         {},
       );
 
@@ -96,13 +98,14 @@ describe("Window Functions - SQLite Integration", () => {
               department_id: u.department_id,
               salary: u.salary,
               is_active: u.is_active,
-              row_num: h.window(u)
+              row_num: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .rowNumber(),
             }))
             .where((u) => u.is_active === 1 && u.department_id === 1)
-            .orderBy((u) => ({ value: u.salary, direction: "DESC" })),
+            .orderByDescending((u) => u.salary),
         {},
       );
 
@@ -125,16 +128,15 @@ describe("Window Functions - SQLite Integration", () => {
               name: u.name,
               department_id: u.department_id,
               salary: u.salary,
-              rank: h.window(u)
+              rank: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .rank(),
             }))
             .where((u) => u.department_id === 1)
-            .orderBy((u) => [
-              { value: u.salary, direction: "DESC" },
-              { value: u.name, direction: "ASC" },
-            ]),
+            .orderByDescending((u) => u.salary)
+            .thenBy((u) => u.name),
         {},
       );
 
@@ -161,16 +163,15 @@ describe("Window Functions - SQLite Integration", () => {
               name: u.name,
               salary: u.salary,
               department_id: u.department_id,
-              rank: h.window(u)
+              rank: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .rank(),
             }))
             .where((u) => u.department_id === 1)
-            .orderBy((u) => [
-              { value: u.salary, direction: "DESC" },
-              { value: u.name, direction: "ASC" },
-            ]),
+            .orderByDescending((u) => u.salary)
+            .thenBy((u) => u.name),
         {},
       );
 
@@ -201,16 +202,15 @@ describe("Window Functions - SQLite Integration", () => {
               name: u.name,
               salary: u.salary,
               department_id: u.department_id,
-              dense_rank: h.window(u)
+              dense_rank: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .denseRank(),
             }))
             .where((u) => u.department_id === 1)
-            .orderBy((u) => [
-              { value: u.salary, direction: "DESC" },
-              { value: u.name, direction: "ASC" },
-            ]),
+            .orderByDescending((u) => u.salary)
+            .thenBy((u) => u.name),
         {},
       );
 
@@ -236,10 +236,13 @@ describe("Window Functions - SQLite Integration", () => {
               name: u.name,
               department_id: u.department_id,
               salary: u.salary,
-              dense_rank: h.window(u).orderByDescending((r) => r.salary).denseRank(),
+              dense_rank: h
+                .window(u)
+                .orderByDescending((r) => r.salary)
+                .denseRank(),
             }))
             .where((u) => u.department_id !== null)
-            .orderBy((u) => ({ value: u.salary, direction: "DESC" })),
+            .orderByDescending((u) => u.salary),
         {},
       );
 
@@ -262,21 +265,24 @@ describe("Window Functions - SQLite Integration", () => {
               name: u.name,
               department_id: u.department_id,
               salary: u.salary,
-              row_num: h.window(u)
+              row_num: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .rowNumber(),
-              rank: h.window(u)
+              rank: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .rank(),
-              dense_rank: h.window(u)
+              dense_rank: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .denseRank(),
             }))
             .where((u) => u.department_id === 1)
-            .orderBy((u) => ({ value: u.salary, direction: "DESC" })),
+            .orderByDescending((u) => u.salary),
         {},
       );
 
@@ -306,16 +312,15 @@ describe("Window Functions - SQLite Integration", () => {
               name: u.name,
               department_id: u.department_id,
               salary: u.salary,
-              rank: h.window(u)
+              rank: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .rank(),
             }))
             .where((u) => u.department_id !== null)
-            .orderBy((u) => [
-              { value: u.department_id, direction: "ASC" },
-              { value: u.salary, direction: "DESC" },
-            ]),
+            .orderBy((u) => u.department_id)
+            .thenByDescending((u) => u.salary),
         {},
       );
 
@@ -339,16 +344,15 @@ describe("Window Functions - SQLite Integration", () => {
               age: u.age,
               salary: u.salary,
               department_id: u.department_id,
-              rank: h.window(u)
+              rank: h
+                .window(u)
                 .partitionBy((r) => r.department_id)
                 .orderByDescending((r) => r.salary)
                 .rank(),
             }))
             .where((u) => u.department_id === 1)
-            .orderBy((u) => [
-              { value: u.salary, direction: "DESC" },
-              { value: u.age, direction: "DESC" },
-            ]),
+            .orderByDescending((u) => u.salary)
+            .thenByDescending((u) => u.age),
         {},
       );
 
@@ -365,9 +369,12 @@ describe("Window Functions - SQLite Integration", () => {
             .select((u) => ({
               name: u.name,
               email: u.email,
-              row_num: h.window(u).orderBy((r) => r.name).rowNumber(),
+              row_num: h
+                .window(u)
+                .orderBy((r) => r.name)
+                .rowNumber(),
             }))
-            .orderBy((u) => ({ value: u.name, direction: "ASC" })),
+            .orderBy((u) => u.name),
         {},
       );
 
@@ -389,10 +396,13 @@ describe("Window Functions - SQLite Integration", () => {
               name: u.name,
               age: u.age,
               salary: u.salary,
-              row_num: h.window(u).orderBy((r) => r.age).rowNumber(),
+              row_num: h
+                .window(u)
+                .orderBy((r) => r.age)
+                .rowNumber(),
             }))
             .where((u) => u.age !== null)
-            .orderBy((u) => ({ value: u.age, direction: "ASC" })),
+            .orderBy((u) => u.age),
         {},
       );
 

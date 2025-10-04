@@ -15,11 +15,11 @@ fi
 
 # Run prettier on all files
 if [ -n "$CHECK_FLAG" ]; then
-  npx prettier $CHECK_FLAG \
+  ./node_modules/.bin/prettier $CHECK_FLAG \
     "**/*.{js,jsx,ts,tsx,json,md,yml,yaml}" \
     --ignore-path .prettierignore
 else
-  npx prettier --write \
+  ./node_modules/.bin/prettier --write \
     "**/*.{js,jsx,ts,tsx,json,md,yml,yaml}" \
     --ignore-path .prettierignore
 fi

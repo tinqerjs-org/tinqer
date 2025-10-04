@@ -14,7 +14,8 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rn: h.window(u)
+            rn: h
+              .window(u)
               .partitionBy((r) => r.department)
               .orderBy((r) => r.age)
               .rowNumber(),
@@ -32,7 +33,10 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rn: h.window(u).orderBy((r) => r.salary).rowNumber(),
+            rn: h
+              .window(u)
+              .orderBy((r) => r.salary)
+              .rowNumber(),
           })),
         {},
       );
@@ -48,7 +52,10 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rn: h.window(u).orderByDescending((r) => r.createdAt).rowNumber(),
+            rn: h
+              .window(u)
+              .orderByDescending((r) => r.createdAt)
+              .rowNumber(),
           })),
         {},
       );
@@ -63,7 +70,8 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rn: h.window(u)
+            rn: h
+              .window(u)
               .partitionBy(
                 (r) => r.department,
                 (r) => r.city,
@@ -82,7 +90,8 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rn: h.window(u)
+            rn: h
+              .window(u)
               .partitionBy((r) => r.department)
               .orderByDescending((r) => r.salary)
               .thenBy((r) => r.name)
@@ -101,7 +110,10 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rank: h.window(u).orderByDescending((r) => r.salary).rank(),
+            rank: h
+              .window(u)
+              .orderByDescending((r) => r.salary)
+              .rank(),
           })),
         {},
       );
@@ -116,7 +128,8 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rank: h.window(u)
+            rank: h
+              .window(u)
               .partitionBy((r) => r.department)
               .orderByDescending((r) => r.salary)
               .rank(),
@@ -136,7 +149,8 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rank: h.window(u)
+            rank: h
+              .window(u)
               .partitionBy((r) => r.department)
               .orderByDescending((r) => r.salary)
               .thenBy((r) => r.name)
@@ -155,7 +169,8 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rank: h.window(u)
+            rank: h
+              .window(u)
               .partitionBy((r) => r.department)
               .orderByDescending((r) => r.salary)
               .thenByDescending((r) => r.age)
@@ -175,15 +190,18 @@ describe("Window Functions - SQLite", () => {
         (_, h) =>
           from(db, "users").select((u) => ({
             name: u.name,
-            rowNum: h.window(u)
+            rowNum: h
+              .window(u)
               .partitionBy((r) => r.department)
               .orderBy((r) => r.salary)
               .rowNumber(),
-            rank: h.window(u)
+            rank: h
+              .window(u)
               .partitionBy((r) => r.department)
               .orderBy((r) => r.salary)
               .rank(),
-            denseRank: h.window(u)
+            denseRank: h
+              .window(u)
               .partitionBy((r) => r.department)
               .orderBy((r) => r.salary)
               .denseRank(),

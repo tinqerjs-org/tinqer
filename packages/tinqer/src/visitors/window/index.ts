@@ -196,7 +196,7 @@ export function visitWindowFunction(
   }
 
   return {
-    type: "windowFunction",
+    type: "windowFunction" as const,
     function: functionType,
     partitionBy,
     orderBy,

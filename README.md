@@ -178,50 +178,30 @@ const summary = from(ctx, "orders")
 
 ### Window Functions
 
-Window functions enable calculations across rows related to the current row. Tinqer supports `ROW_NUMBER()`, `RANK()`, and `DENSE_RANK()` for ranking and partitioning.
+Window functions enable calculations across rows related to the current row. Tinqer supports `ROW_NUMBER()`, `RANK()`, and `DENSE_RANK()` with optional partitioning and ordering.
 
 ```typescript
-import { createQueryHelpers } from "@webpods/tinqer";
-
 // Get top earner per department
-const h = createQueryHelpers<User>();
-const topEarners = from(ctx, "employees")
-  .select((e) => ({
-    ...e,
-    rank: h.window
-      .rowNumber()
-      .partitionBy((r) => r.department)
-      .orderByDescending((r) => r.salary),
-  }))
-  .where((e) => e.rank === 1);
+const topEarners = await executeSelect(
+  db,
+  (_, h) =>
+    from(ctx, "employees")
+      .select((e) => ({
+        ...e,
+        rank: h
+          .window(e)
+          .partitionBy((r) => r.department)
+          .orderByDescending((r) => r.salary)
+          .rowNumber(),
+      }))
+      .where((e) => e.rank === 1),
+  {},
+);
 
-// PostgreSQL: ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC)
-// SQLite: Same syntax (requires SQLite 3.25+)
+// SQL: ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC)
 ```
 
-All three window functions support:
-
-- **`partitionBy(...selectors)`**: Optional partitioning (0 or more selectors)
-- **`orderBy(selector)`** / **`orderByDescending(selector)`**: Required ordering (at least one)
-- **`thenBy(selector)`** / **`thenByDescending(selector)`**: Additional ordering
-
-```typescript
-// RANK example - gaps in ranking for ties
-const h = createQueryHelpers<Score>();
-const ranked = from(ctx, "scores").select((s) => ({
-  player: s.player,
-  score: s.score,
-  rank: h.window.rank().orderByDescending((r) => r.score),
-}));
-
-// DENSE_RANK example - no gaps in ranking
-const h = createQueryHelpers<Score>();
-const denseRanked = from(ctx, "scores").select((s) => ({
-  player: s.player,
-  score: s.score,
-  rank: h.window.denseRank().orderByDescending((r) => r.score),
-}));
-```
+See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed examples of `RANK()`, `DENSE_RANK()`, and complex ordering.
 
 ### CRUD Operations
 
@@ -329,7 +309,7 @@ Tinqer supports a focused set of JavaScript/TypeScript expressions:
 - **Null handling**: `??` (null coalescing), `?.` (optional chaining)
 - **Arrays**: `.includes()` for IN queries
 - **Helper functions**: `ilike()`, `contains()`, `startsWith()`, `endsWith()` (case-insensitive)
-- **Window functions**: `h.window.rowNumber()`, `h.window.rank()`, `h.window.denseRank()`
+- **Window functions**: `h.window(row).rowNumber()`, `h.window(row).rank()`, `h.window(row).denseRank()` with `partitionBy()`, `orderBy()`, `orderByDescending()`, `thenBy()`, `thenByDescending()`
 
 ## Database Support
 

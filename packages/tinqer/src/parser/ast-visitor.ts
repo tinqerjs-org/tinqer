@@ -213,7 +213,9 @@ function visitCallExpression(
   visitorContext: VisitorContext,
 ): QueryOperation | null {
   const methodName = getMethodName(ast);
-  if (!methodName) return null;
+  if (!methodName) {
+    return null;
+  }
 
   // Handle root operations
   if (methodName === "from") {

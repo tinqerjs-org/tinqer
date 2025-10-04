@@ -36,7 +36,7 @@ export async function setupTestDatabase(db: IDatabase<any>) {
       name VARCHAR(100) NOT NULL,
       email VARCHAR(100) UNIQUE NOT NULL,
       age INTEGER,
-      salary DECIMAL(10, 2) NOT NULL,
+      salary DECIMAL(10, 2),
       department_id INTEGER,
       manager_id INTEGER,
       is_active BOOLEAN DEFAULT true,
