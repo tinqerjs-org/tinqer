@@ -496,4 +496,39 @@ describe("Better SQLite3 Integration - JOINs", () => {
       expect(results.length).to.be.greaterThan(0);
     });
   });
+
+  describe("CROSS JOIN", () => {
+    it("should generate CROSS JOIN for selectMany returning a query", () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = executeSelectSimple(
+        db,
+        () =>
+          from(dbContext, "departments")
+            .selectMany(
+              () => from(dbContext, "users"),
+              (department, user) => ({ department, user }),
+            )
+            .select((row) => ({
+              departmentId: row.department.id,
+              userId: row.user.id,
+            })),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "t0"."id" AS "departmentId", "t1"."id" AS "userId" ' +
+          'FROM "departments" AS "t0" CROSS JOIN "users" AS "t1"',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.equal(40);
+    });
+  });
 });

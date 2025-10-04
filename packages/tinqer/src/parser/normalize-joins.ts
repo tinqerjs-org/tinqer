@@ -17,6 +17,54 @@ function normalizeSelectMany(operation: SelectManyOperation): QueryOperation {
   const normalizedSource = normalizeJoins(operation.source);
   operation.source = normalizedSource;
 
+  if (isQueryOperation(operation.collection)) {
+    const normalizedInner = normalizeJoins(operation.collection);
+
+    if (operation.resultBindings && operation.resultBindings.length > 0) {
+      const properties: Record<string, Expression> = {};
+      let hasOuterBinding = false;
+      let hasInnerBinding = false;
+
+      for (const binding of operation.resultBindings) {
+        const paramIndex = binding.source === "outer" ? 0 : 1;
+        if (binding.source === "outer") {
+          hasOuterBinding = true;
+        } else {
+          hasInnerBinding = true;
+        }
+        properties[binding.name] = {
+          type: "reference",
+          source: { type: "joinParam", paramIndex },
+        } as Expression;
+      }
+
+      if (hasOuterBinding && hasInnerBinding) {
+        const resultSelector: ObjectExpression = {
+          type: "object",
+          properties,
+        };
+
+        const resultShape = buildResultShape(resultSelector, "__outer", "__inner");
+
+        const joinOperation: JoinOperation = {
+          type: "queryOperation",
+          operationType: "join",
+          source: normalizedSource,
+          inner: normalizedInner,
+          outerKey: "__cross",
+          innerKey: "__cross",
+          resultSelector,
+          resultShape,
+          joinType: "cross",
+        };
+
+        return joinOperation;
+      }
+    }
+
+    return operation;
+  }
+
   if (normalizedSource.operationType !== "groupJoin") {
     return operation;
   }

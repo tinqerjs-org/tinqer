@@ -496,4 +496,43 @@ describe("PostgreSQL Integration - JOINs", () => {
       expect(results.length).to.be.greaterThan(0);
     });
   });
+
+  describe("CROSS JOIN", () => {
+    it("should generate CROSS JOIN for selectMany returning a query", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const results = await executeSelectSimple(
+        db,
+        () =>
+          from(dbContext, "departments")
+            .selectMany(
+              () => from(dbContext, "users"),
+              (department, user) => ({ department, user }),
+            )
+            .select((row) => ({
+              departmentId: row.department.id,
+              userId: row.user.id,
+            })),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT "t0"."id" AS "departmentId", "t1"."id" AS "userId" ' +
+          'FROM "departments" AS "t0" CROSS JOIN "users" AS "t1"',
+      );
+      expect(capturedSql!.params).to.deep.equal({});
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.equal(40); // 4 departments x 10 users
+      results.forEach((r) => {
+        expect(r).to.have.property("departmentId");
+        expect(r).to.have.property("userId");
+      });
+    });
+  });
 });

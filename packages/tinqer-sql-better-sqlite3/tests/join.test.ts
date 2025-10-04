@@ -384,4 +384,27 @@ describe("Join SQL Generation", () => {
       );
     });
   });
+
+  describe("CROSS JOIN", () => {
+    it("should generate CROSS JOIN when collection selector returns a query", () => {
+      const result = selectStatement(
+        () =>
+          from<Department>("departments")
+            .selectMany(
+              () => from<User>("users"),
+              (department, user) => ({ department, user }),
+            )
+            .select((row) => ({
+              departmentId: row.department.id,
+              userId: row.user.id,
+            })),
+        {},
+      );
+
+      expect(result.sql).to.equal(
+        'SELECT "t0"."id" AS "departmentId", "t1"."id" AS "userId" FROM "departments" AS "t0" CROSS JOIN "users" AS "t1"',
+      );
+      expect(result.params).to.deep.equal({});
+    });
+  });
 });

@@ -17,6 +17,7 @@ import type {
   ParenthesizedExpression,
 } from "../../parser/ast-types.js";
 import type { VisitorContext } from "../types.js";
+import { visitAstToQueryOperation } from "../ast-visitor.js";
 import { buildResultShape } from "../join/shape.js";
 
 interface CollectionInfo {
@@ -48,6 +49,7 @@ function extractPathFromMember(expr: MemberExpression, rootName: string): string
 function parseCollectionSelector(arrow: ArrowFunctionExpression): {
   sourceParam: string | undefined;
   info: CollectionInfo | null;
+  bodyExpression: ASTExpression | null;
 } {
   const sourceParam =
     arrow.params && arrow.params[0]?.type === "Identifier"
@@ -61,7 +63,7 @@ function parseCollectionSelector(arrow: ArrowFunctionExpression): {
       | { argument?: ASTExpression }
       | undefined;
     if (!returnStmt || !returnStmt.argument) {
-      return { sourceParam, info: null };
+      return { sourceParam, info: null, bodyExpression: null };
     }
     bodyExpr = returnStmt.argument;
   } else {
@@ -69,7 +71,7 @@ function parseCollectionSelector(arrow: ArrowFunctionExpression): {
   }
 
   if (!sourceParam) {
-    return { sourceParam, info: null };
+    return { sourceParam, info: null, bodyExpression: bodyExpr };
   }
 
   bodyExpr = unwrapParentheses(bodyExpr);
@@ -92,6 +94,7 @@ function parseCollectionSelector(arrow: ArrowFunctionExpression): {
             path,
             usesDefaultIfEmpty: true,
           },
+          bodyExpression: bodyExpr,
         };
       }
     }
@@ -106,11 +109,12 @@ function parseCollectionSelector(arrow: ArrowFunctionExpression): {
           path,
           usesDefaultIfEmpty: false,
         },
+        bodyExpression: bodyExpr,
       };
     }
   }
 
-  return { sourceParam, info: null };
+  return { sourceParam, info: null, bodyExpression: bodyExpr };
 }
 
 interface ResultBinding {
@@ -236,19 +240,52 @@ export function visitSelectManyOperation(
     return null;
   }
 
-  const { sourceParam, info } = parseCollectionSelector(
+  const { sourceParam, info, bodyExpression } = parseCollectionSelector(
     collectionSelectorArg as ArrowFunctionExpression,
   );
-
-  if (!info) {
-    return null;
-  }
 
   let resultBindings: ResultBinding[] = [];
   let resultSelectorExpression: ObjectExpression | undefined;
   let resultShape: ResultShape | undefined;
   let resultOuterParam: string | undefined;
   let resultInnerParam: string | undefined;
+
+  const autoParams: Record<string, unknown> = {};
+  let collectionOperation: QueryOperation | null = null;
+
+  if (!info && bodyExpression) {
+    const collectionContextTables = new Set(_visitorContext.tableParams);
+    const collectionContextParams = new Set(_visitorContext.queryParams);
+    const collectionResult = visitAstToQueryOperation(
+      bodyExpression,
+      collectionContextTables,
+      collectionContextParams,
+      _visitorContext,
+    );
+
+    if (collectionResult?.operation) {
+      collectionOperation = collectionResult.operation;
+
+      if (collectionResult.autoParams) {
+        Object.assign(autoParams, collectionResult.autoParams);
+
+        let maxParamNum = _visitorContext.autoParamCounter;
+        for (const key of Object.keys(collectionResult.autoParams)) {
+          if (key.startsWith("__p")) {
+            const num = parseInt(key.substring(3), 10);
+            if (!Number.isNaN(num) && num > maxParamNum) {
+              maxParamNum = num;
+            }
+          }
+        }
+        _visitorContext.autoParamCounter = maxParamNum;
+      }
+    }
+  }
+
+  if (!info && !collectionOperation) {
+    return null;
+  }
 
   if (ast.arguments.length > 1) {
     const resultSelectorArg = ast.arguments[1];
@@ -270,27 +307,30 @@ export function visitSelectManyOperation(
     resultShape = placeholder.shape;
   }
 
-  const collectionExpression: Expression = {
-    type: "reference",
-    table: sourceParam,
-  } as Expression;
+  let collectionExpression: Expression | undefined;
+  if (info) {
+    collectionExpression = {
+      type: "reference",
+      table: sourceParam,
+    } as Expression;
+  }
 
   const operation: SelectManyOperation = {
     type: "queryOperation",
     operationType: "selectMany",
     source,
-    collection: collectionExpression,
-    collectionPropertyPath: info.path,
-    usesDefaultIfEmpty: info.usesDefaultIfEmpty,
+    collection: collectionOperation ?? collectionExpression!,
+    collectionPropertyPath: info ? info.path : undefined,
+    usesDefaultIfEmpty: info ? info.usesDefaultIfEmpty : false,
     sourceParam,
-    collectionParam: sourceParam,
+    collectionParam: collectionOperation ? resultInnerParam : sourceParam,
     resultSelector: resultSelectorExpression,
     resultShape,
     resultBindings,
     resultParam: resultInnerParam,
   };
 
-  return { operation, autoParams: {} };
+  return { operation, autoParams };
 }
 function unwrapParentheses(expr: ASTExpression): ASTExpression {
   let current: ASTExpression = expr;
