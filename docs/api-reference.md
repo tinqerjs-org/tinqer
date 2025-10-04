@@ -74,8 +74,7 @@ Executes a query builder against the database and returns typed results. Accepts
 ```typescript
 async function executeSelect<
   TParams,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase | BetterSqlite3Database,
   queryBuilder: (params: TParams) => TQuery,
@@ -111,8 +110,7 @@ Convenience wrapper for queries that do not need external params.
 
 ```typescript
 async function executeSelectSimple<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase | BetterSqlite3Database,
   queryBuilder: () => TQuery,

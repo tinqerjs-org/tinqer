@@ -5,8 +5,6 @@
 import { Queryable } from "./queryable.js";
 import type { DatabaseContext } from "./database-context.js";
 
-/* eslint-disable no-redeclare */
-
 /**
  * Creates a new Queryable from a table name with explicit type
  * @param tableName The name of the table to query

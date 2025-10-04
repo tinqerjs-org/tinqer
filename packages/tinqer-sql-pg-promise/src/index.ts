@@ -119,8 +119,7 @@ interface PgDatabase {
  */
 export async function executeSelect<
   TParams,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase,
   queryBuilder: (params: TParams, helpers: QueryHelpers) => TQuery,
@@ -135,6 +134,14 @@ export async function executeSelect<
         ? T
         : never
 > {
+  type ReturnType =
+    TQuery extends Queryable<infer T>
+      ? T[]
+      : TQuery extends OrderedQueryable<infer T>
+        ? T[]
+        : TQuery extends TerminalQuery<infer T>
+          ? T
+          : never;
   const { sql, params: sqlParams } = selectStatement(queryBuilder, params);
 
   // Call onSql callback if provided
@@ -162,24 +169,21 @@ export async function executeSelect<
       const rows = await db.any(sql, sqlParams);
       if (rows.length === 0) {
         if (operationType.includes("OrDefault")) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return null as any; // Return null for OrDefault operations
+          return null as ReturnType;
         }
         throw new Error(`No elements found for ${operationType} operation`);
       }
       if (operationType.startsWith("single") && rows.length > 1) {
         throw new Error(`Multiple elements found for ${operationType} operation`);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return rows[0] as any; // Return single item
+      return rows[0] as ReturnType;
     }
 
     case "count":
     case "longCount": {
       // These return a number - SQL is: SELECT COUNT(*) FROM ...
       const countResult = (await db.one(sql, sqlParams)) as { count: string };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return parseInt(countResult.count, 10) as any;
+      return parseInt(countResult.count, 10) as ReturnType;
     }
 
     case "sum":
@@ -192,11 +196,9 @@ export async function executeSelect<
       // pg-promise returns the aggregate with the function name as key
       const keys = Object.keys(aggResult);
       if (keys.length > 0 && keys[0]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return aggResult[keys[0]] as any;
+        return aggResult[keys[0]] as ReturnType;
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return null as any;
+      return null as ReturnType;
     }
 
     case "any": {
@@ -204,11 +206,9 @@ export async function executeSelect<
       const anyResult = (await db.one(sql, sqlParams)) as Record<string, unknown>;
       const anyKeys = Object.keys(anyResult);
       if (anyKeys.length > 0 && anyKeys[0]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (anyResult[anyKeys[0]] === 1) as any;
+        return (anyResult[anyKeys[0]] === 1) as ReturnType;
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return false as any;
+      return false as ReturnType;
     }
 
     case "all": {
@@ -216,17 +216,14 @@ export async function executeSelect<
       const allResult = (await db.one(sql, sqlParams)) as Record<string, unknown>;
       const allKeys = Object.keys(allResult);
       if (allKeys.length > 0 && allKeys[0]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (allResult[allKeys[0]] === 1) as any;
+        return (allResult[allKeys[0]] === 1) as ReturnType;
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return false as any;
+      return false as ReturnType;
     }
 
     default:
       // Regular query that returns an array
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (await db.any(sql, sqlParams)) as any;
+      return (await db.any(sql, sqlParams)) as ReturnType;
   }
 }
 
@@ -238,8 +235,7 @@ export async function executeSelect<
  * @returns Promise with query results, properly typed based on the query
  */
 export async function executeSelectSimple<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase,
   queryBuilder: (_params: Record<string, never>, helpers: QueryHelpers) => TQuery,
@@ -302,7 +298,6 @@ export async function executeInsert<TParams, TTable>(
 /**
  * Execute INSERT with RETURNING
  */
-// eslint-disable-next-line no-redeclare
 export async function executeInsert<TParams, TTable, TReturning>(
   db: PgDatabase,
   queryBuilder: (params: TParams) => InsertableWithReturning<TTable, TReturning>,
@@ -311,7 +306,6 @@ export async function executeInsert<TParams, TTable, TReturning>(
 ): Promise<TReturning[]>;
 
 // Implementation
-// eslint-disable-next-line no-redeclare
 export async function executeInsert<TParams, TTable, TReturning = never>(
   db: PgDatabase,
   queryBuilder: (
@@ -393,7 +387,6 @@ export async function executeUpdate<TParams, TTable>(
 /**
  * Execute UPDATE with RETURNING
  */
-// eslint-disable-next-line no-redeclare
 export async function executeUpdate<TParams, TTable, TReturning>(
   db: PgDatabase,
   queryBuilder: (params: TParams) => UpdatableWithReturning<TTable, TReturning>,
@@ -402,7 +395,6 @@ export async function executeUpdate<TParams, TTable, TReturning>(
 ): Promise<TReturning[]>;
 
 // Implementation
-// eslint-disable-next-line no-redeclare
 export async function executeUpdate<TParams, TTable, TReturning = never>(
   db: PgDatabase,
   queryBuilder: (
