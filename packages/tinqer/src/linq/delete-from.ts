@@ -5,8 +5,6 @@
 import { Deletable } from "./deletable.js";
 import type { DatabaseContext } from "./database-context.js";
 
-/* eslint-disable no-redeclare */
-
 /**
  * Creates a new Deletable from a table name with explicit type
  * @param tableName The name of the table to delete from

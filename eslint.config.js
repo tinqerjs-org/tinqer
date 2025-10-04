@@ -27,9 +27,13 @@ export default [
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-non-null-assertion": "off",
       "no-console": ["error", { allow: ["warn", "error", "info"] }],
       "prefer-const": "error",
       "no-var": "error",
+      // Note: you must disable the base rule as it can report incorrect errors
+      "no-redeclare": "off",
+      "@typescript-eslint/no-redeclare": "error",
     },
   },
   {
@@ -66,9 +70,13 @@ export default [
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-unused-expressions": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
       "no-console": "off",
       "prefer-const": "error",
       "no-var": "error",
+      // Note: you must disable the base rule as it can report incorrect errors
+      "no-redeclare": "off",
+      "@typescript-eslint/no-redeclare": "error",
     },
   },
   {

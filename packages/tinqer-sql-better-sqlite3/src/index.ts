@@ -122,20 +122,28 @@ interface BetterSqlite3Database {
  */
 export function executeSelect<
   TParams,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+  T,
+  TQuery extends Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>,
 >(
   db: BetterSqlite3Database,
   queryBuilder: (params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options: ExecuteOptions = {},
-): TQuery extends Queryable<infer T>
+): TQuery extends Queryable<T>
   ? T[]
-  : TQuery extends OrderedQueryable<infer T>
+  : TQuery extends OrderedQueryable<T>
     ? T[]
-    : TQuery extends TerminalQuery<infer T>
+    : TQuery extends TerminalQuery<T>
       ? T
       : never {
+  type ReturnType =
+    TQuery extends Queryable<T>
+      ? T[]
+      : TQuery extends OrderedQueryable<T>
+        ? T[]
+        : TQuery extends TerminalQuery<T>
+          ? T
+          : never;
   const { sql, params: sqlParams } = selectStatement(queryBuilder, params);
 
   // Call onSql callback if provided
@@ -193,16 +201,14 @@ export function executeSelect<
       const rows = stmt.all(convertedParams);
       if (rows.length === 0) {
         if (operationType.includes("OrDefault")) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return null as any; // Return null for OrDefault operations
+          return null as ReturnType;
         }
         throw new Error(`No elements found for ${operationType} operation`);
       }
       if (operationType.startsWith("single") && rows.length > 1) {
         throw new Error(`Multiple elements found for ${operationType} operation`);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return rows[0] as any; // Return single item
+      return rows[0] as ReturnType;
     }
 
     case "count":
@@ -212,11 +218,9 @@ export function executeSelect<
       const countResult = stmt.get(convertedParams) as Record<string, unknown>;
       const keys = Object.keys(countResult);
       if (keys.length > 0 && keys[0]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return countResult[keys[0]] as any;
+        return countResult[keys[0]] as ReturnType;
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return 0 as any;
+      return 0 as ReturnType;
     }
 
     case "sum":
@@ -228,11 +232,9 @@ export function executeSelect<
       const aggResult = stmt.get(convertedParams) as Record<string, unknown>;
       const keys = Object.keys(aggResult);
       if (keys.length > 0 && keys[0]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return aggResult[keys[0]] as any;
+        return aggResult[keys[0]] as ReturnType;
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return null as any;
+      return null as ReturnType;
     }
 
     case "any": {
@@ -240,11 +242,9 @@ export function executeSelect<
       const anyResult = stmt.get(convertedParams) as Record<string, unknown>;
       const anyKeys = Object.keys(anyResult);
       if (anyKeys.length > 0 && anyKeys[0]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (anyResult[anyKeys[0]] === 1) as any;
+        return (anyResult[anyKeys[0]] === 1) as ReturnType;
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return false as any;
+      return false as ReturnType;
     }
 
     case "all": {
@@ -252,17 +252,14 @@ export function executeSelect<
       const allResult = stmt.get(convertedParams) as Record<string, unknown>;
       const allKeys = Object.keys(allResult);
       if (allKeys.length > 0 && allKeys[0]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (allResult[allKeys[0]] === 1) as any;
+        return (allResult[allKeys[0]] === 1) as ReturnType;
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return false as any;
+      return false as ReturnType;
     }
 
     default:
       // Regular query that returns an array
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return stmt.all(convertedParams) as any;
+      return stmt.all(convertedParams) as ReturnType;
   }
 }
 
@@ -274,17 +271,17 @@ export function executeSelect<
  * @returns Query results, properly typed based on the query
  */
 export function executeSelectSimple<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+  T,
+  TQuery extends Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>,
 >(
   db: BetterSqlite3Database,
   queryBuilder: (_params: Record<string, never>, helpers: QueryHelpers) => TQuery,
   options: ExecuteOptions = {},
-): TQuery extends Queryable<infer T>
+): TQuery extends Queryable<T>
   ? T[]
-  : TQuery extends OrderedQueryable<infer T>
+  : TQuery extends OrderedQueryable<T>
     ? T[]
-    : TQuery extends TerminalQuery<infer T>
+    : TQuery extends TerminalQuery<T>
       ? T
       : never {
   return executeSelect(db, queryBuilder, {}, options);
@@ -338,7 +335,6 @@ export function executeInsert<TParams, TTable>(
  * Execute INSERT with RETURNING (not supported by SQLite)
  * Note: SQLite does not support RETURNING clause, throws error
  */
-// eslint-disable-next-line no-redeclare
 export function executeInsert<TParams, TTable, TReturning>(
   db: BetterSqlite3Database,
   queryBuilder: (params: TParams) => InsertableWithReturning<TTable, TReturning>,
@@ -347,7 +343,6 @@ export function executeInsert<TParams, TTable, TReturning>(
 ): never;
 
 // Implementation
-// eslint-disable-next-line no-redeclare
 export function executeInsert<TParams, TTable, TReturning = never>(
   db: BetterSqlite3Database,
   queryBuilder: (
@@ -418,7 +413,6 @@ export function executeUpdate<TParams, TTable>(
  * Execute UPDATE with RETURNING (not supported by SQLite)
  * Note: SQLite does not support RETURNING clause, throws error
  */
-// eslint-disable-next-line no-redeclare
 export function executeUpdate<TParams, TTable, TReturning>(
   db: BetterSqlite3Database,
   queryBuilder: (params: TParams) => UpdatableWithReturning<TTable, TReturning>,
@@ -427,7 +421,6 @@ export function executeUpdate<TParams, TTable, TReturning>(
 ): never;
 
 // Implementation
-// eslint-disable-next-line no-redeclare
 export function executeUpdate<TParams, TTable, TReturning = never>(
   db: BetterSqlite3Database,
   queryBuilder: (

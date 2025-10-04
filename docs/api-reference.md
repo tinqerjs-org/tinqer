@@ -74,19 +74,19 @@ Executes a query builder against the database and returns typed results. Accepts
 ```typescript
 async function executeSelect<
   TParams,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+  T,
+  TQuery extends Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>,
 >(
   db: PgDatabase | BetterSqlite3Database,
   queryBuilder: (params: TParams) => TQuery,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<
-  TQuery extends Queryable<infer T>
+  TQuery extends Queryable<T>
     ? T[]
-    : TQuery extends OrderedQueryable<infer T>
+    : TQuery extends OrderedQueryable<T>
       ? T[]
-      : TQuery extends TerminalQuery<infer T>
+      : TQuery extends TerminalQuery<T>
         ? T
         : never
 >;
@@ -111,18 +111,18 @@ Convenience wrapper for queries that do not need external params.
 
 ```typescript
 async function executeSelectSimple<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
+  T,
+  TQuery extends Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>,
 >(
   db: PgDatabase | BetterSqlite3Database,
   queryBuilder: () => TQuery,
   options?: ExecuteOptions,
 ): Promise<
-  TQuery extends Queryable<infer T>
+  TQuery extends Queryable<T>
     ? T[]
-    : TQuery extends OrderedQueryable<infer T>
+    : TQuery extends OrderedQueryable<T>
       ? T[]
-      : TQuery extends TerminalQuery<infer T>
+      : TQuery extends TerminalQuery<T>
         ? T
         : never
 >;
