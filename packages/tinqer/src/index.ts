@@ -51,7 +51,6 @@ export type {
   StringMethodExpression,
   CaseExpression,
   CoalesceExpression,
-  CastExpression,
   AggregateExpression,
   ReferenceExpression,
   AllColumnsExpression,
@@ -66,11 +65,7 @@ export type {
   BooleanMethodExpression,
   CaseInsensitiveFunctionExpression,
   InExpression,
-  BetweenExpression,
   IsNullExpression,
-  ExistsExpression,
-  LikeExpression,
-  RegexExpression,
 
   // Complex expressions
   MemberAccessExpression,

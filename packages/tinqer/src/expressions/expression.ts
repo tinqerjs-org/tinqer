@@ -96,15 +96,6 @@ export interface CoalesceExpression {
 }
 
 /**
- * Cast expression - type conversion
- */
-export interface CastExpression {
-  type: "cast";
-  expression: ValueExpression;
-  targetType: "string" | "number" | "boolean" | "date";
-}
-
-/**
  * Aggregate expression - for GROUP BY aggregations
  * Follows C# LINQ IGrouping pattern
  */
@@ -143,7 +134,6 @@ export type ValueExpression =
   | StringMethodExpression
   | CaseExpression
   | CoalesceExpression
-  | CastExpression
   | AggregateExpression
   | ReferenceExpression
   | AllColumnsExpression;
@@ -233,51 +223,12 @@ export interface InExpression {
 }
 
 /**
- * BETWEEN expression
- */
-export interface BetweenExpression {
-  type: "between";
-  value: ValueExpression;
-  lower: ValueExpression;
-  upper: ValueExpression;
-}
-
-/**
  * IS NULL / IS NOT NULL
  */
 export interface IsNullExpression {
   type: "isNull";
   expression: ValueExpression;
   negated?: boolean;
-}
-
-/**
- * EXISTS expression (for subqueries)
- */
-export interface ExistsExpression {
-  type: "exists";
-  subquery: QueryOperation; // From query-operations.ts
-  negated?: boolean;
-}
-
-/**
- * LIKE expression for pattern matching
- */
-export interface LikeExpression {
-  type: "like";
-  value: ValueExpression;
-  pattern: ValueExpression;
-  escape?: string;
-}
-
-/**
- * Regular expression match
- */
-export interface RegexExpression {
-  type: "regex";
-  value: ValueExpression;
-  pattern: ValueExpression;
-  flags?: string;
 }
 
 /**
@@ -293,11 +244,7 @@ export type BooleanExpression =
   | BooleanMethodExpression
   | CaseInsensitiveFunctionExpression
   | InExpression
-  | BetweenExpression
-  | IsNullExpression
-  | ExistsExpression
-  | LikeExpression
-  | RegexExpression;
+  | IsNullExpression;
 
 // ==================== Complex Expressions ====================
 
@@ -387,11 +334,6 @@ export interface LambdaExpression {
 // ==================== Base Expression Type ====================
 
 /**
- * Import QueryOperation for EXISTS subqueries
- */
-import type { QueryOperation } from "../query-tree/operations.js";
-
-/**
  * Union type for all expressions
  */
 export type Expression =
@@ -421,7 +363,6 @@ export function isValueExpression(expr: Expression): expr is ValueExpression {
     "stringMethod",
     "case",
     "coalesce",
-    "cast",
     "aggregate",
   ].includes(expr.type);
 }
@@ -440,11 +381,7 @@ export function isBooleanExpression(expr: Expression): expr is BooleanExpression
     "booleanMethod",
     "caseInsensitiveFunction",
     "in",
-    "between",
     "isNull",
-    "exists",
-    "like",
-    "regex",
   ].includes(expr.type);
 }
 

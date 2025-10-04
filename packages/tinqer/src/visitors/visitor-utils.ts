@@ -46,11 +46,8 @@ export function isBooleanExpression(expr: Expression): expr is BooleanExpression
     "logical",
     "negation",
     "in",
-    "like",
-    "between",
     "booleanLiteral",
     "booleanColumn",
-    "exists",
     "isNull",
     "isNotNull",
   ];
