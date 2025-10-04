@@ -20,6 +20,24 @@ import { generateSql } from "./sql-generator.js";
 import type { SqlResult, ExecuteOptions } from "./types.js";
 
 /**
+ * Helper function to expand array parameters into indexed parameters
+ * e.g., { ids: [1, 2, 3] } becomes { ids: [1, 2, 3], "ids_0": 1, "ids_1": 2, "ids_2": 3 }
+ */
+function expandArrayParams(params: Record<string, unknown>): Record<string, unknown> {
+  const expanded: Record<string, unknown> = { ...params };
+
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => {
+        expanded[`${key}_${index}`] = item;
+      });
+    }
+  }
+
+  return expanded;
+}
+
+/**
  * Generate SQL from a query builder function
  * @param queryBuilder Function that builds the query using LINQ operations, optionally with helpers
  * @param params Parameters to pass to the query builder
@@ -45,32 +63,14 @@ export function selectStatement<TParams, TResult>(
   // User params take priority over auto-params to avoid collisions
   const mergedParams = { ...parseResult.autoParams, ...params };
 
-  // Process array indexing in parameters
-  // Look for parameters like "roles[0]" and resolve them
-  const processedParams: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(mergedParams)) {
-    const arrayMatch = key.match(/^(\w+)\[(\d+)\]$/);
-    if (arrayMatch && arrayMatch[1] && arrayMatch[2]) {
-      const arrayName = arrayMatch[1];
-      const index = parseInt(arrayMatch[2], 10);
-      if (arrayName in mergedParams) {
-        const arrayValue = mergedParams[arrayName];
-        if (Array.isArray(arrayValue) && index < arrayValue.length) {
-          processedParams[key] = arrayValue[index];
-        }
-      }
-    } else {
-      processedParams[key] = value;
-    }
-  }
-
   // Generate SQL from the operation tree
   const sql = generateSql(parseResult.operation, mergedParams);
 
-  // Return SQL with processed params (pg-promise will handle parameter substitution)
-  // Include both processed and original params
-  const finalParams = { ...mergedParams, ...processedParams } as TParams &
+  // Expand array parameters into indexed parameters for IN clause support
+  // e.g., { ids: [1, 2, 3] } becomes { ids: [1, 2, 3], "ids[0]": 1, "ids[1]": 2, "ids[2]": 3 }
+  const finalParams = expandArrayParams(mergedParams) as TParams &
     Record<string, string | number | boolean | null>;
+
   return { sql, params: finalParams };
 }
 
@@ -281,9 +281,13 @@ export function insertStatement<TParams, TTable, TReturning = never>(
   const mergedParams = { ...parseResult.autoParams, ...params };
   const sql = generateSql(parseResult.operation, mergedParams);
 
+  // Expand array parameters into indexed parameters for IN clause support
+  const finalParams = expandArrayParams(mergedParams) as TParams &
+    Record<string, string | number | boolean | null>;
+
   return {
     sql,
-    params: mergedParams as TParams & Record<string, string | number | boolean | null>,
+    params: finalParams,
   };
 }
 
@@ -368,9 +372,13 @@ export function updateStatement<TParams, TTable, TReturning = never>(
   const mergedParams = { ...parseResult.autoParams, ...params };
   const sql = generateSql(parseResult.operation, mergedParams);
 
+  // Expand array parameters into indexed parameters for IN clause support
+  const finalParams = expandArrayParams(mergedParams) as TParams &
+    Record<string, string | number | boolean | null>;
+
   return {
     sql,
-    params: mergedParams as TParams & Record<string, string | number | boolean | null>,
+    params: finalParams,
   };
 }
 
@@ -450,9 +458,13 @@ export function deleteStatement<TParams, TResult>(
   const mergedParams = { ...parseResult.autoParams, ...params };
   const sql = generateSql(parseResult.operation, mergedParams);
 
+  // Expand array parameters into indexed parameters for IN clause support
+  const finalParams = expandArrayParams(mergedParams) as TParams &
+    Record<string, string | number | boolean | null>;
+
   return {
     sql,
-    params: mergedParams as TParams & Record<string, string | number | boolean | null>,
+    params: finalParams,
   };
 }
 

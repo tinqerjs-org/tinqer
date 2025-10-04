@@ -216,16 +216,32 @@ function generateLogicalExpression(expr: LogicalExpression, context: SqlContext)
  * Generate SQL for NOT expressions
  */
 function generateNotExpression(expr: NotExpression, context: SqlContext): string {
-  // Special handling for NOT (x = ANY(array)) -> x <> ALL(array) for better PostgreSQL performance
+  // Special handling for NOT IN with parameter arrays
   if (expr.expression.type === "in") {
     const inExpr = expr.expression as InExpression;
     if (!Array.isArray(inExpr.list) && inExpr.list.type === "param") {
       const value = generateValueExpression(inExpr.value, context);
       const paramExpr = inExpr.list as ParameterExpression;
-      // Use property if it exists (e.g., params.targetIds), otherwise use param
       const paramName = paramExpr.property || paramExpr.param;
+
+      // Check if this parameter is an array in the runtime params
+      const paramValue = context.params?.[paramName];
+
+      if (Array.isArray(paramValue)) {
+        // Expand array parameters into NOT IN clause with indexed parameters
+        if (paramValue.length === 0) {
+          // Empty NOT IN list always returns true
+          return "TRUE";
+        }
+
+        const listValues = paramValue.map((_, index) =>
+          context.formatParameter(`${paramName}_${index}`),
+        );
+        return `${value} NOT IN (${listValues.join(", ")})`;
+      }
+
+      // Fallback to <> ALL for non-array parameters
       const formattedParam = `$(${paramName})`;
-      // Convert NOT (x = ANY(array)) to x <> ALL(array)
       return `${value} <> ALL(${formattedParam})`;
     }
   }
@@ -600,15 +616,27 @@ function generateInExpression(expr: InExpression, context: SqlContext): string {
     const paramExpr = expr.list as ParameterExpression;
     // Use property if it exists (e.g., params.targetIds), otherwise use param
     const paramName = paramExpr.property || paramExpr.param;
+
+    // Check if this parameter is an array in the runtime params
+    const paramValue = context.params?.[paramName];
+
+    if (Array.isArray(paramValue)) {
+      // Expand array parameters into IN clause with indexed parameters
+      // This avoids pg-promise type inference issues with ANY()
+      // e.g., params.ids = [3,6,4,5] becomes IN ($(ids_0), $(ids_1), $(ids_2), $(ids_3))
+      if (paramValue.length === 0) {
+        // Empty IN list always returns false
+        return "FALSE";
+      }
+
+      const listValues = paramValue.map((_, index) =>
+        context.formatParameter(`${paramName}_${index}`),
+      );
+      return `${value} IN (${listValues.join(", ")})`;
+    }
+
+    // Fallback to ANY for non-array parameters (shouldn't happen in practice)
     const formattedParam = `$(${paramName})`;
-
-    // Check if we need to handle empty array specially
-    // We'll let pg-promise handle the parameter value
-    // If it's empty, pg-promise will pass an empty array
-    // PostgreSQL will correctly return false for = ANY(ARRAY[]::type[])
-
-    // Use ANY for array parameters in PostgreSQL
-    // This converts array.includes(value) to value = ANY(array)
     return `${value} = ANY(${formattedParam})`;
   }
 

@@ -44,6 +44,7 @@ export interface SqlContext {
   currentShape?: unknown; // The current shape of the query result (after JOINs)
   currentAlias?: string; // Current table alias for resolving column references
   hasJoins?: boolean; // Indicates if the query has JOIN operations
+  params?: Record<string, unknown>; // Runtime parameter values for array expansion
 }
 
 /**

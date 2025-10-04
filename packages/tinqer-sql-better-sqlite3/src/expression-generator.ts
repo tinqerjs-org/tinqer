@@ -222,32 +222,26 @@ function generateNotExpression(expr: NotExpression, context: SqlContext): string
     if (!Array.isArray(inExpr.list) && inExpr.list.type === "param") {
       const value = generateValueExpression(inExpr.value, context);
       const paramExpr = inExpr.list as ParameterExpression;
-      // Use property if it exists (e.g., params.targetIds), otherwise use param
       const paramName = paramExpr.property || paramExpr.param;
 
-      // SQLite doesn't support ANY/ALL syntax, so we need to expand array parameters
-      // Get the actual array value from context.params
-      const arrayValue = context.params[paramName];
+      // Check if this parameter is an array in the runtime params
+      const paramValue = context.params?.[paramName];
 
-      if (!Array.isArray(arrayValue)) {
-        throw new Error(`Expected array parameter '${paramName}' but got ${typeof arrayValue}`);
+      if (!Array.isArray(paramValue)) {
+        throw new Error(`Expected array parameter '${paramName}' but got ${typeof paramValue}`);
       }
 
-      if (arrayValue.length === 0) {
-        // Empty array - NOT IN () is always TRUE
+      if (paramValue.length === 0) {
+        // Empty NOT IN list always returns true
         return "TRUE";
       }
 
-      // Expand array into individual parameters: @paramName_0, @paramName_1, ...
-      const expandedParams = arrayValue.map((_, index) => `@${paramName}_${index}`);
-
-      // Add expanded parameters to context
-      arrayValue.forEach((value, index) => {
-        context.params[`${paramName}_${index}`] = value;
-      });
-
-      // Generate NOT IN clause with expanded parameters
-      return `${value} NOT IN (${expandedParams.join(", ")})`;
+      // Expand array parameters into NOT IN clause with indexed parameters
+      // e.g., params.ids = [3,6,4,5] becomes NOT IN (@ids_0, @ids_1, @ids_2, @ids_3)
+      const listValues = paramValue.map((_, index) =>
+        context.formatParameter(`${paramName}_${index}`),
+      );
+      return `${value} NOT IN (${listValues.join(", ")})`;
     }
   }
 
@@ -622,29 +616,24 @@ function generateInExpression(expr: InExpression, context: SqlContext): string {
     // Use property if it exists (e.g., params.targetIds), otherwise use param
     const paramName = paramExpr.property || paramExpr.param;
 
-    // SQLite doesn't support ANY/ALL syntax, so we need to expand array parameters
-    // Get the actual array value from context.params
-    const arrayValue = context.params[paramName];
+    // Check if this parameter is an array in the runtime params
+    const paramValue = context.params?.[paramName];
 
-    if (!Array.isArray(arrayValue)) {
-      throw new Error(`Expected array parameter '${paramName}' but got ${typeof arrayValue}`);
+    if (!Array.isArray(paramValue)) {
+      throw new Error(`Expected array parameter '${paramName}' but got ${typeof paramValue}`);
     }
 
-    if (arrayValue.length === 0) {
-      // Empty array - always returns FALSE for IN
+    if (paramValue.length === 0) {
+      // Empty IN list always returns false
       return "FALSE";
     }
 
-    // Expand array into individual parameters: @paramName_0, @paramName_1, ...
-    const expandedParams = arrayValue.map((_, index) => `@${paramName}_${index}`);
-
-    // Add expanded parameters to context
-    arrayValue.forEach((value, index) => {
-      context.params[`${paramName}_${index}`] = value;
-    });
-
-    // Generate IN clause with expanded parameters
-    return `${value} IN (${expandedParams.join(", ")})`;
+    // Expand array parameters into IN clause with indexed parameters
+    // e.g., params.ids = [3,6,4,5] becomes IN (@ids_0, @ids_1, @ids_2, @ids_3)
+    const listValues = paramValue.map((_, index) =>
+      context.formatParameter(`${paramName}_${index}`),
+    );
+    return `${value} IN (${listValues.join(", ")})`;
   }
 
   let listValues: string[];

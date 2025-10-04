@@ -243,9 +243,12 @@ describe("DELETE Statement Generation", () => {
         { ids: [4, 5, 6] },
       );
 
-      assert.equal(result.sql, `DELETE FROM "users" WHERE "id" = ANY($(ids))`);
+      assert.equal(result.sql, `DELETE FROM "users" WHERE "id" IN ($(ids_0), $(ids_1), $(ids_2))`);
       assert.deepEqual(result.params, {
         ids: [4, 5, 6],
+        ids_0: 4,
+        ids_1: 5,
+        ids_2: 6,
       });
     });
   });
