@@ -13,6 +13,7 @@ export interface TestDatabaseSchema {
     name: string;
     email: string;
     age: number | null;
+    salary: number;
     department_id: number | null;
     manager_id: number | null;
     is_active: boolean;

@@ -51,6 +51,7 @@ export function visitSelectOperation(
     visitorContext.tableParams,
     visitorContext.queryParams,
     visitorContext.autoParamCounter,
+    visitorContext.helpersParam,
   );
   context.inProjection = true;
 

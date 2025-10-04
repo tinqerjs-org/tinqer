@@ -33,6 +33,7 @@ import type {
 
 import type { SelectContext } from "./context.js";
 import { createAutoParam } from "./context.js";
+import { isWindowFunctionCall, visitWindowFunction } from "../window/index.js";
 
 /**
  * Visit a projection expression in SELECT context
@@ -435,6 +436,15 @@ function visitBinaryProjection(node: BinaryExpression, context: SelectContext): 
  * Visit method call in projection
  */
 function visitMethodProjection(node: CallExpression, context: SelectContext): Expression | null {
+  // Check for window function calls first
+  const windowFunctionType = isWindowFunctionCall(node, context);
+  if (windowFunctionType) {
+    // Create a wrapper that adapts visitProjection to the expected signature
+    const expressionVisitor = (node: ASTExpression, ctx: unknown) =>
+      visitProjection(node, ctx as SelectContext);
+    return visitWindowFunction(node, windowFunctionType, context, expressionVisitor);
+  }
+
   if (node.callee.type !== "MemberExpression") return null;
 
   const memberCallee = node.callee as MemberExpression;

@@ -30,6 +30,7 @@ import type {
 import type { VisitorContext } from "../types.js";
 import { visitLiteral } from "../common/literal.js";
 import { isValueExpression, getParameterName, getReturnExpression } from "../utils.js";
+import { isWindowFunctionCall, visitWindowFunction } from "../window/index.js";
 
 /**
  * Visit a call expression
@@ -39,6 +40,12 @@ export function visitCall(
   context: VisitorContext,
   visitExpression: (node: unknown, ctx: VisitorContext) => Expression | null,
 ): Expression | null {
+  // Check for window function calls first
+  const windowFunctionType = isWindowFunctionCall(node, context);
+  if (windowFunctionType) {
+    return visitWindowFunction(node, windowFunctionType, context, visitExpression);
+  }
+
   // Must be a method call
   if (node.callee.type !== "MemberExpression") {
     throw new Error(

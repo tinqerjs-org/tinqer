@@ -9,8 +9,18 @@ cd "$(dirname "$0")/.."
 
 echo "=== Cleaning Tinqer build artifacts ==="
 
+# Define packages
+PACKAGES=(
+  "tinqer"
+  "tinqer-sql-pg-promise"
+  "tinqer-sql-pg-promise-integration"
+  "tinqer-sql-better-sqlite3"
+  "tinqer-sql-better-sqlite3-integration"
+)
+
 # Clean dist directories in all packages
-for pkg in packages/*; do
+for pkg_name in "${PACKAGES[@]}"; do
+  pkg="packages/$pkg_name"
   if [[ -d "$pkg/dist" ]]; then
     echo "Removing $pkg/dist"
     rm -rf "$pkg/dist"
@@ -28,7 +38,8 @@ if [[ "${1:-}" == "--all" ]]; then
   fi
 
   # Clean node_modules from all packages
-  for pkg in packages/*; do
+  for pkg_name in "${PACKAGES[@]}"; do
+    pkg="packages/$pkg_name"
     if [[ -d "$pkg/node_modules" ]]; then
       echo "Removing $pkg/node_modules"
       rm -rf "$pkg/node_modules"

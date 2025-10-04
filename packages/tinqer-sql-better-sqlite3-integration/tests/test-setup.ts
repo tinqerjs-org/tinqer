@@ -35,6 +35,7 @@ export function setupTestDatabase(db: Database.Database) {
       name VARCHAR(100) NOT NULL,
       email VARCHAR(100) UNIQUE NOT NULL,
       age INTEGER,
+      salary DECIMAL(10, 2),
       department_id INTEGER,
       manager_id INTEGER,
       is_active INTEGER DEFAULT 1,
@@ -96,22 +97,22 @@ export function setupTestDatabase(db: Database.Database) {
   // Insert users with manager relationships
   // First insert managers (no manager_id)
   db.exec(`
-    INSERT INTO users (name, email, age, department_id, manager_id, is_active) VALUES
-    ('John Doe', 'john@example.com', 30, 1, NULL, 1),
-    ('Jane Smith', 'jane@example.com', 25, 2, NULL, 1),
-    ('Charlie Wilson', 'charlie@example.com', 45, 4, NULL, 0),
-    ('Henry Ford', 'henry@example.com', 55, 4, NULL, 1);
+    INSERT INTO users (name, email, age, salary, department_id, manager_id, is_active) VALUES
+    ('John Doe', 'john@example.com', 30, 120000, 1, NULL, 1),
+    ('Jane Smith', 'jane@example.com', 25, 95000, 2, NULL, 1),
+    ('Charlie Wilson', 'charlie@example.com', 45, 85000, 4, NULL, 0),
+    ('Henry Ford', 'henry@example.com', 55, 92000, 4, NULL, 1);
   `);
 
   // Then insert employees with managers
   db.exec(`
-    INSERT INTO users (name, email, age, department_id, manager_id, is_active) VALUES
-    ('Bob Johnson', 'bob@example.com', 35, 1, 1, 1),
-    ('Alice Brown', 'alice@example.com', 28, 3, 2, 1),
-    ('Diana Prince', 'diana@example.com', 33, 1, 1, 1),
-    ('Eva Green', 'eva@example.com', 27, 2, 2, 1),
-    ('Frank Castle', 'frank@example.com', 40, 1, 1, 0),
-    ('Grace Hopper', 'grace@example.com', 38, 1, 1, 1);
+    INSERT INTO users (name, email, age, salary, department_id, manager_id, is_active) VALUES
+    ('Bob Johnson', 'bob@example.com', 35, 95000, 1, 1, 1),
+    ('Alice Brown', 'alice@example.com', 28, 72000, 3, 2, 1),
+    ('Diana Prince', 'diana@example.com', 33, 110000, 1, 1, 1),
+    ('Eva Green', 'eva@example.com', 27, 78000, 2, 2, 1),
+    ('Frank Castle', 'frank@example.com', 40, 88000, 1, 1, 0),
+    ('Grace Hopper', 'grace@example.com', 38, 105000, 1, 1, 1);
   `);
 
   // Insert products

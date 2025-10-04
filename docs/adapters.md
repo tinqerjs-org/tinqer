@@ -109,6 +109,7 @@ const { sql, params } = selectStatement(
 - Case-insensitive comparisons use `ILIKE` when you call helper functions such as `contains`.
 - RETURNING clauses are fully supported on INSERT, UPDATE, and DELETE through the execution helpers.
 - Parameter placeholders use the `$()` syntax expected by pg-promise (e.g., `$(minAge)`).
+- Window functions (`ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`) are fully supported.
 
 ---
 
@@ -194,6 +195,7 @@ const rows = db.prepare(sql).all(params);
 - SQLite has no native boolean type; represent booleans as `INTEGER` 0/1 in your schema.
 - All parameters are passed as named values (e.g., `@__p1`, `@minAge`). The adapter converts booleans and dates to SQLite-friendly values automatically.
 - The execution helpers return row counts. SQLite currently ignores RETURNING clauses when running through the helpers; use a follow-up SELECT if you need inserted rows.
+- Window functions (`ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`) require **SQLite 3.25 or later**.
 
 ---
 

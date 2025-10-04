@@ -26,6 +26,7 @@ import type {
   CoalesceExpression,
   CaseExpression,
   ReferenceExpression,
+  WindowFunctionExpression,
 } from "@webpods/tinqer";
 import type { SqlContext } from "./types.js";
 
@@ -119,6 +120,8 @@ export function generateValueExpression(expr: ValueExpression, context: SqlConte
       return generateStringMethodExpression(expr as StringMethodExpression, context);
     case "aggregate":
       return generateAggregateExpression(expr as AggregateExpression, context);
+    case "windowFunction":
+      return generateWindowFunctionExpression(expr as WindowFunctionExpression, context);
     case "coalesce":
       return generateCoalesceExpression(expr as CoalesceExpression, context);
     case "case":
@@ -734,6 +737,50 @@ function generateAggregateExpression(expr: AggregateExpression, context: SqlCont
 }
 
 /**
+ * Generate SQL for window function expressions
+ */
+function generateWindowFunctionExpression(
+  expr: WindowFunctionExpression,
+  context: SqlContext,
+): string {
+  // Map function name to SQL
+  let funcName: string;
+  switch (expr.function) {
+    case "rowNumber":
+      funcName = "ROW_NUMBER";
+      break;
+    case "rank":
+      funcName = "RANK";
+      break;
+    case "denseRank":
+      funcName = "DENSE_RANK";
+      break;
+  }
+
+  // Build OVER clause parts
+  const overParts: string[] = [];
+
+  // PARTITION BY clause (optional)
+  if (expr.partitionBy.length > 0) {
+    const partitions = expr.partitionBy.map((p) => generateValueExpression(p, context));
+    overParts.push(`PARTITION BY ${partitions.join(", ")}`);
+  }
+
+  // ORDER BY clause (required)
+  const orders = expr.orderBy.map((o) => {
+    const orderExpr = generateValueExpression(o.expression, context);
+    const direction = o.direction === "asc" ? "ASC" : "DESC";
+    return `${orderExpr} ${direction}`;
+  });
+  overParts.push(`ORDER BY ${orders.join(", ")}`);
+
+  // Build complete OVER clause
+  const overClause = overParts.join(" ");
+
+  return `${funcName}() OVER (${overClause})`;
+}
+
+/**
  * Generate SQL for coalesce expressions
  */
 function generateCoalesceExpression(expr: CoalesceExpression, context: SqlContext): string {
@@ -823,6 +870,7 @@ function isValueExpression(expr: Expression): expr is ValueExpression {
     "stringMethod",
     "case",
     "aggregate",
+    "windowFunction",
     "coalesce",
   ].includes((expr as Expression & { type: string }).type);
 }

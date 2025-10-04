@@ -12,6 +12,9 @@ export interface SelectContext {
   // External query parameters (p in (p) => ...)
   queryParams: Set<string>;
 
+  // Helpers parameter (h in (p, h) => ...)
+  helpersParam?: string;
+
   // Auto-generated parameters for literals
   autoParams: Map<string, unknown>;
   autoParamCounter: number;
@@ -41,10 +44,12 @@ export function createSelectContext(
   tableParams: Set<string>,
   queryParams: Set<string>,
   startCounter: number = 0,
+  helpersParam?: string,
 ): SelectContext {
   return {
     tableParams: new Set(tableParams),
     queryParams: new Set(queryParams),
+    helpersParam,
     autoParams: new Map(),
     autoParamCounter: startCounter,
     inProjection: false,

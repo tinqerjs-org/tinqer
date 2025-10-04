@@ -11,8 +11,15 @@ export { TerminalQuery } from "./linq/terminal-query.js";
 export { from } from "./linq/from.js";
 export { Grouping } from "./linq/grouping.js";
 export { DatabaseContext, createContext } from "./linq/database-context.js";
-export { functions, createQueryHelpers } from "./linq/functions.js";
-export type { QueryHelpers } from "./linq/functions.js";
+export {
+  functions,
+  createQueryHelpers,
+  WindowBuilder,
+  WindowBuilderWithPartition,
+  WindowBuilderWithOrder,
+  WINDOW_MARKER,
+} from "./linq/functions.js";
+export type { QueryHelpers, WindowFunctionType, WindowOrderSpec } from "./linq/functions.js";
 
 // Data modification builders
 export { insertInto } from "./linq/insert-into.js";
@@ -52,6 +59,7 @@ export type {
   CaseExpression,
   CoalesceExpression,
   AggregateExpression,
+  WindowFunctionExpression,
   ReferenceExpression,
   AllColumnsExpression,
 

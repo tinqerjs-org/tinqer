@@ -176,6 +176,33 @@ const summary = from(ctx, "orders")
   .orderByDescending((row) => row.totalQuantity);
 ```
 
+### Window Functions
+
+Window functions enable calculations across rows related to the current row. Tinqer supports `ROW_NUMBER()`, `RANK()`, and `DENSE_RANK()` with optional partitioning and ordering.
+
+```typescript
+// Get top earner per department
+const topEarners = await executeSelect(
+  db,
+  (_, h) =>
+    from(ctx, "employees")
+      .select((e) => ({
+        ...e,
+        rank: h
+          .window(e)
+          .partitionBy((r) => r.department)
+          .orderByDescending((r) => r.salary)
+          .rowNumber(),
+      }))
+      .where((e) => e.rank === 1),
+  {},
+);
+
+// SQL: ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC)
+```
+
+See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed examples of `RANK()`, `DENSE_RANK()`, and complex ordering.
+
 ### CRUD Operations
 
 ```typescript
@@ -282,6 +309,7 @@ Tinqer supports a focused set of JavaScript/TypeScript expressions:
 - **Null handling**: `??` (null coalescing), `?.` (optional chaining)
 - **Arrays**: `.includes()` for IN queries
 - **Helper functions**: `ilike()`, `contains()`, `startsWith()`, `endsWith()` (case-insensitive)
+- **Window functions**: `h.window(row).rowNumber()`, `h.window(row).rank()`, `h.window(row).denseRank()` with `partitionBy()`, `orderBy()`, `orderByDescending()`, `thenBy()`, `thenByDescending()`
 
 ## Database Support
 
@@ -290,6 +318,7 @@ Tinqer supports a focused set of JavaScript/TypeScript expressions:
 - Native boolean type (`true`/`false`)
 - Case-insensitive matching with `ILIKE`
 - Full JSONB support
+- Window functions: `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`
 - Parameter placeholders: `$1`, `$2`, etc.
 
 ### SQLite
@@ -297,6 +326,7 @@ Tinqer supports a focused set of JavaScript/TypeScript expressions:
 - Boolean values use INTEGER (0/1)
 - Case-insensitive via `LOWER()` function
 - JSON functions support
+- Window functions: `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()` (requires SQLite 3.25+)
 - Parameter placeholders: `?`, `?`, etc.
 
 See [Database Adapters](docs/adapters.md) for detailed comparison.

@@ -39,17 +39,15 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
 
 /**
  * Generate SQL from a query builder function
- * @param queryBuilder Function that builds the query using LINQ operations, optionally with helpers
+ * @param queryBuilder Function that builds the query using LINQ operations with helpers
  * @param params Parameters to pass to the query builder
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function selectStatement<TParams, TResult>(
-  queryBuilder:
-    | ((params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
-    | ((
-        params: TParams,
-        helpers: QueryHelpers,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
+  queryBuilder: (
+    params: TParams,
+    helpers: QueryHelpers,
+  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
   params: TParams,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
   // Parse the query to get the operation tree and auto-params
@@ -117,7 +115,7 @@ interface BetterSqlite3Database {
 /**
  * Execute a query and return typed results
  * @param db Better SQLite3 database instance
- * @param queryBuilder Function that builds the query using LINQ operations
+ * @param queryBuilder Function that builds the query using LINQ operations with helpers
  * @param params Parameters to pass to the query builder
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Query results, properly typed based on the query
@@ -128,7 +126,7 @@ export function executeSelect<
   TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
 >(
   db: BetterSqlite3Database,
-  queryBuilder: (params: TParams) => TQuery,
+  queryBuilder: (params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options: ExecuteOptions = {},
 ): TQuery extends Queryable<infer T>
@@ -271,7 +269,7 @@ export function executeSelect<
 /**
  * Execute a query with no parameters
  * @param db Better SQLite3 database instance
- * @param queryBuilder Function that builds the query using LINQ operations
+ * @param queryBuilder Function that builds the query using LINQ operations with helpers
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Query results, properly typed based on the query
  */
@@ -280,7 +278,7 @@ export function executeSelectSimple<
   TQuery extends Queryable<any> | OrderedQueryable<any> | TerminalQuery<any>,
 >(
   db: BetterSqlite3Database,
-  queryBuilder: () => TQuery,
+  queryBuilder: (_params: Record<string, never>, helpers: QueryHelpers) => TQuery,
   options: ExecuteOptions = {},
 ): TQuery extends Queryable<infer T>
   ? T[]
