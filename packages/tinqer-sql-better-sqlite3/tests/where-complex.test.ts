@@ -349,6 +349,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
         maxAge: 55,
         roles: ["admin", "manager"],
         isActive: true,
+        roles_0: "admin",
+        roles_1: "manager",
       });
     });
 
