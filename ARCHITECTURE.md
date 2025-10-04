@@ -47,8 +47,7 @@ export type BooleanExpression =
   | BooleanMemberExpression // x.isActive
   | BooleanMethodExpression // x.name.startsWith("J")
   | NotExpression // !x.isDeleted
-  | BooleanConstantExpression // true or false
-  | ExistsExpression; // EXISTS (subquery)
+  | BooleanConstantExpression; // true or false
 
 // Value expressions - evaluate to a value
 export type ValueExpression =
