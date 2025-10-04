@@ -50,7 +50,7 @@ const results = await executeSelectSimple(db, () =>
 ```typescript
 import Database from "better-sqlite3";
 import { createContext, from } from "@webpods/tinqer";
-import { executeSelectSimple, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelect, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
   products: {
@@ -64,11 +64,14 @@ interface Schema {
 const db = new Database("./data.db");
 const ctx = createContext<Schema>();
 
-const results = executeSelectSimple(db, () =>
-  from(ctx, "products")
-    .where((p) => p.inStock === 1 && p.price < 100)
-    .orderByDescending((p) => p.price)
-    .select((p) => p),
+const results = executeSelect(
+  db,
+  (params: { maxPrice: number }) =>
+    from(ctx, "products")
+      .where((p) => p.inStock === 1 && p.price < params.maxPrice)
+      .orderByDescending((p) => p.price)
+      .select((p) => p),
+  { maxPrice: 100 },
 );
 
 // Need the raw SQL for logging or prepared statements? selectStatement is still available:
