@@ -1,5 +1,5 @@
 /**
- * Test that both lambda and direct object syntax work for CRUD operations
+ * Test direct object syntax for CRUD operations
  */
 
 import { describe, it } from "mocha";
@@ -9,7 +9,7 @@ import { parseQuery } from "../dist/parser/parse-query.js";
 import type { InsertOperation, UpdateOperation, ParamRef } from "../dist/query-tree/operations.js";
 import type { ComparisonExpression, ConstantExpression } from "../dist/expressions/expression.js";
 
-describe("CRUD Syntax - Direct Objects vs Lambdas", () => {
+describe("CRUD Syntax - Direct Objects", () => {
   // Create a test database context
   interface TestSchema {
     users: {
@@ -49,35 +49,12 @@ describe("CRUD Syntax - Direct Objects vs Lambdas", () => {
       assert.equal(emailParam.param, "__p3");
     });
 
-    it("should accept lambda syntax (for backward compatibility)", () => {
-      const result = parseQuery(() =>
-        insertInto(db, "users").values(() => ({
-          name: "Bob",
-          age: 25,
-          email: "bob@example.com",
-        })),
-      );
-
-      assert(result);
-      assert.equal(result.operation.operationType, "insert");
-      const op = result.operation as InsertOperation;
-      assert.equal(op.table, "users");
-      assert.equal(op.values.type, "object");
-      // Lambda syntax also produces params
-      const nameParam = op.values.properties.name as ParamRef;
-      assert.equal(nameParam.type, "param");
-      assert.equal(nameParam.param, "__p1");
-      const ageParam = op.values.properties.age as ParamRef;
-      assert.equal(ageParam.type, "param");
-      assert.equal(ageParam.param, "__p2");
-    });
-
-    it("should work with parameters in lambda syntax", () => {
+    it("should work with parameters in direct object syntax", () => {
       const result = parseQuery((params: { userName: string; userAge: number }) =>
-        insertInto(db, "users").values(() => ({
+        insertInto(db, "users").values({
           name: params.userName,
           age: params.userAge,
-        })),
+        }),
       );
 
       assert(result);
@@ -117,30 +94,10 @@ describe("CRUD Syntax - Direct Objects vs Lambdas", () => {
       assert.equal(emailParam.param, "__p2");
     });
 
-    it("should accept lambda syntax (for backward compatibility)", () => {
-      const result = parseQuery(() =>
-        updateTable(db, "users")
-          .set(() => ({ age: 32, email: "updated@example.com" }))
-          .where((u) => u.id === 2),
-      );
-
-      assert(result);
-      assert.equal(result.operation.operationType, "update");
-      const op = result.operation as UpdateOperation;
-      assert.equal(op.assignments.type, "object");
-      // Lambda syntax also produces params
-      const ageParam = op.assignments.properties.age as ParamRef;
-      assert.equal(ageParam.type, "param");
-      assert.equal(ageParam.param, "__p1");
-      const emailParam = op.assignments.properties.email as ParamRef;
-      assert.equal(emailParam.type, "param");
-      assert.equal(emailParam.param, "__p2");
-    });
-
-    it("should work with parameters in lambda syntax", () => {
+    it("should work with parameters in direct object syntax", () => {
       const result = parseQuery((params: { newAge: number }) =>
         updateTable(db, "users")
-          .set(() => ({ age: params.newAge }))
+          .set({ age: params.newAge })
           .where((u) => u.id === 3),
       );
 

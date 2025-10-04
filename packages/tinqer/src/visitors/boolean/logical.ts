@@ -45,7 +45,7 @@ export function visitLogical(
   const finalLeft = ensureBoolean(left);
   const finalRight = ensureBoolean(right);
 
-  // Handle || as coalesce when not both boolean (backward compatibility)
+  // Handle || as coalesce when operands are not boolean
   if (node.operator === "||") {
     if (!isBooleanExpression(left) || !isBooleanExpression(right)) {
       if (isValueExpression(left) && isValueExpression(right)) {

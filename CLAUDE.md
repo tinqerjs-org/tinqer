@@ -51,15 +51,27 @@ This applies to ANY question, even if it seems like part of a larger task or dis
 
 **NEVER use the MultiEdit tool.** It has caused issues in multiple projects. Always use individual Edit operations instead, even if it means more edits. This ensures better control and prevents unintended changes.
 
-### NEVER USE AUTOMATED SCRIPTS FOR FIXES
+### ⚠️ NEVER USE AUTOMATED SCRIPTS FOR FIXES ⚠️
 
-**NEVER attempt automated fixes via scripts.** When fixing tests or making repetitive changes:
+**🚨 CRITICAL RULE: NEVER EVER attempt automated fixes via scripts or mass updates. 🚨**
 
-- DO NOT create scripts to automate replacements
-- DO NOT use sed, awk, or other text processing tools
-- DO NOT write JavaScript/Python scripts for bulk changes
-- ALWAYS make changes manually using the Edit tool
-- Even if there are hundreds of similar changes, do them one by one
+This is a **MANDATORY** requirement that you **MUST NEVER** violate:
+
+- **NEVER** create scripts to automate replacements (JS, Python, shell, etc.)
+- **NEVER** use sed, awk, grep, or other text processing tools for bulk changes
+- **NEVER** use xargs, find -exec, or any other batch processing commands
+- **NEVER** write code that modifies multiple files automatically
+- **NEVER** do "mass updates" or "bulk replacements" of any kind
+- **ALWAYS** make changes manually using the Edit tool
+- **Even if there are hundreds of similar changes, do them ONE BY ONE**
+
+**WHY THIS IS CRITICAL:**
+
+- Automated scripts break syntax in unpredictable ways
+- Pattern matching fails on edge cases
+- Mass updates destroy the codebase
+- Manual edits ensure accuracy and preserve context
+- You WILL mess up the code if you violate this rule
 
 This ensures accuracy and prevents cascading errors from incorrect pattern matching.
 

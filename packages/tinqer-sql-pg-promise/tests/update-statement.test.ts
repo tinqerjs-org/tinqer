@@ -14,7 +14,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ age: 31 }))
+            .set({ age: 31 })
             .where((u) => u.id === 1),
         {},
       );
@@ -30,7 +30,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ age: 32, email: "updated@example.com" }))
+            .set({ age: 32, email: "updated@example.com" })
             .where((u) => u.id === 2),
         {},
       );
@@ -50,7 +50,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable<{ id: number; age: number }>("public.users")
-            .set(() => ({ age: 33 }))
+            .set({ age: 33 })
             .where((u) => u.id === 3),
         {},
       );
@@ -64,7 +64,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ age: 34 }))
+            .set({ age: 34 })
             .where((u) => u.id === 4 && u.name === "Alice"),
         {},
       );
@@ -79,7 +79,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ isActive: true }))
+            .set({ isActive: true })
             .where((u) => u.age > 50 || u.department === "Sales"),
         {},
       );
@@ -94,7 +94,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ salary: 75000 }))
+            .set({ salary: 75000 })
             .where((u) => (u.age > 30 && u.department === "IT") || u.role === "Manager"),
         {},
       );
@@ -111,7 +111,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         (p: { newAge: number; userId: number }) =>
           updateTable(db, "users")
-            .set(() => ({ age: p.newAge }))
+            .set({ age: p.newAge })
             .where((u) => u.id === p.userId),
         { newAge: 35, userId: 5 },
       );
@@ -127,7 +127,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         (p: { userId: number }) =>
           updateTable(db, "users")
-            .set(() => ({ age: 36, email: "fixed@example.com" }))
+            .set({ age: 36, email: "fixed@example.com" })
             .where((u) => u.id === p.userId),
         { userId: 6 },
       );
@@ -149,7 +149,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ age: 37 }))
+            .set({ age: 37 })
             .where((u) => u.id === 7)
             .returning((u) => u.age),
         {},
@@ -165,7 +165,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ age: 38, email: "new@example.com" }))
+            .set({ age: 38, email: "new@example.com" })
             .where((u) => u.id === 8)
             .returning((u) => ({ id: u.id, age: u.age, email: u.email })),
         {},
@@ -181,7 +181,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ age: 39 }))
+            .set({ age: 39 })
             .where((u) => u.id === 9)
             .returning((u) => u),
         {},
@@ -197,10 +197,7 @@ describe("UPDATE Statement Generation", () => {
   describe("UPDATE with allowFullTableUpdate", () => {
     it("should generate UPDATE without WHERE when allowed", () => {
       const result = updateStatement(
-        () =>
-          updateTable(db, "users")
-            .set(() => ({ isActive: true }))
-            .allowFullTableUpdate(),
+        () => updateTable(db, "users").set({ isActive: true }).allowFullTableUpdate(),
         {},
       );
 
@@ -209,7 +206,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", () => {
       assert.throws(() => {
-        updateStatement(() => updateTable(db, "users").set(() => ({ isActive: true })), {});
+        updateStatement(() => updateTable(db, "users").set({ isActive: true }), {});
       }, /UPDATE requires a WHERE clause or explicit allowFullTableUpdate/);
     });
   });
@@ -219,7 +216,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ isActive: false }))
+            .set({ isActive: false })
             .where((u) => u.id === 10),
         {},
       );
@@ -234,7 +231,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ email: null }))
+            .set({ email: null })
             .where((u) => u.id === 11),
         {},
       );
@@ -246,7 +243,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ age: 0, salary: -500 }))
+            .set({ age: 0, salary: -500 })
             .where((u) => u.id === 12),
         {},
       );
@@ -264,7 +261,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ department: "Engineering" }))
+            .set({ department: "Engineering" })
             .where((u) => u.name.startsWith("A")),
         {},
       );
@@ -279,7 +276,7 @@ describe("UPDATE Statement Generation", () => {
       const result = updateStatement(
         () =>
           updateTable(db, "users")
-            .set(() => ({ role: "Senior" }))
+            .set({ role: "Senior" })
             .where((u) => u.email !== null && u.email.includes("@company.com")),
         {},
       );

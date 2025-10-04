@@ -3,7 +3,7 @@
  */
 
 import type { MinOperation, QueryOperation } from "../../query-tree/operations.js";
-import type { ColumnExpression, ValueExpression } from "../../expressions/expression.js";
+import type { ValueExpression } from "../../expressions/expression.js";
 import type {
   CallExpression as ASTCallExpression,
   ArrowFunctionExpression,
@@ -19,7 +19,6 @@ export function visitMinOperation(
   _methodName: string,
   visitorContext: VisitorContext,
 ): { operation: MinOperation; autoParams: Record<string, unknown> } | null {
-  let selector: string | undefined;
   const autoParams: Record<string, unknown> = {};
 
   if (ast.arguments && ast.arguments.length > 0) {
@@ -56,20 +55,14 @@ export function visitMinOperation(
 
         if (result.value) {
           const expr = result.value;
-          // Store both selector (for backward compatibility) and full expression
-          if (expr.type === "column") {
-            selector = (expr as ColumnExpression).name;
-          }
           Object.assign(autoParams, result.autoParams);
           visitorContext.autoParamCounter = result.counter;
 
-          // Return with the expression
           return {
             operation: {
               type: "queryOperation",
               operationType: "min",
               source,
-              selector,
               selectorExpression: expr as ValueExpression,
             },
             autoParams,
@@ -84,7 +77,6 @@ export function visitMinOperation(
       type: "queryOperation",
       operationType: "min",
       source,
-      selector,
     },
     autoParams,
   };

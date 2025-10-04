@@ -11,12 +11,8 @@ import { generateExpression } from "../expression-generator.js";
  */
 export function generateAverage(operation: AverageOperation, context: SqlContext): string {
   if (operation.selectorExpression) {
-    // Use the full expression for complex selectors like arithmetic
     const expr = generateExpression(operation.selectorExpression, context);
     return `AVG(${expr})`;
-  } else if (operation.selector) {
-    // Fallback to simple column selector
-    return `AVG("${operation.selector}")`;
   }
   return "AVG(*)";
 }
