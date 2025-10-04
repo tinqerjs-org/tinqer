@@ -127,7 +127,6 @@ import Database from "better-sqlite3";
 import { createContext, from, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
 import {
   executeSelect,
-  executeSelectSimple,
   executeInsert,
   executeUpdate,
   executeDelete,
@@ -158,10 +157,13 @@ const inserted = executeInsert(
 );
 // inserted === 1
 
-const users = executeSelectSimple(db, () =>
-  from(ctx, "users")
-    .where((u) => u.isActive === 1)
-    .orderBy((u) => u.name),
+const users = executeSelect(
+  db,
+  (params: { active: number }) =>
+    from(ctx, "users")
+      .where((u) => u.isActive === params.active)
+      .orderBy((u) => u.name),
+  { active: 1 },
 );
 
 const updated = executeUpdate(
