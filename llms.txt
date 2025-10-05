@@ -221,7 +221,7 @@ See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed 
 ### CRUD Operations
 
 ```typescript
-import { createContext, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import { createContext, insertInto, update, deleteFrom } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 const ctx = createContext<Schema>();
@@ -241,7 +241,7 @@ const insertedRows = await executeInsert(
 const inactiveUsers = await executeUpdate(
   db,
   (params: { cutoffDate: Date }) =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoffDate)
       .returning((u) => u.id),
@@ -412,7 +412,7 @@ npm install @webpods/tinqer-sql-pg-promise pg-promise
 
 ```typescript
 import pgPromise from "pg-promise";
-import { createContext, from, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import { createContext, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
 import {
   executeSelect,
   executeSelectSimple,
@@ -461,7 +461,7 @@ const createdUsers = await executeInsert(
 const updatedCount = await executeUpdate(
   db,
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ active: false })
       .where((u) => u.age > 65),
   {},
@@ -503,7 +503,7 @@ npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
 
 ```typescript
 import Database from "better-sqlite3";
-import { createContext, from, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import { createContext, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
@@ -548,7 +548,7 @@ const users = executeSelect(
 const updated = executeUpdate(
   db,
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ isActive: 0 })
       .where((u) => u.age > 60),
   {},
@@ -839,14 +839,14 @@ async function executeUpdate<TParams, TTable, TReturning>(
 **Example**
 
 ```typescript
-import { createContext, updateTable } from "@webpods/tinqer";
+import { createContext, update } from "@webpods/tinqer";
 
 const ctx = createContext<Schema>();
 
 const updatedRows = await executeUpdate(
   db,
   (p: { cutoff: Date }) =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < p.cutoff),
   { cutoff: new Date("2024-01-01") },
@@ -3121,19 +3121,19 @@ const insert = insertStatement(
 
 ### 14.2 UPDATE Statements
 
-The `updateTable` function creates UPDATE operations. The `.set()` method uses direct object syntax (no lambda wrapping required).
+The `update` function creates UPDATE operations. The `.set()` method uses direct object syntax (no lambda wrapping required).
 
 #### Basic UPDATE
 
 ```typescript
-import { createContext, updateTable } from "@webpods/tinqer";
+import { createContext, update } from "@webpods/tinqer";
 import { updateStatement } from "@webpods/tinqer-sql-pg-promise";
 
 const ctx = createContext<Schema>();
 
 const update = updateStatement(
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ age: 31, lastModified: new Date() })
       .where((u) => u.id === 1),
   {},
@@ -3161,7 +3161,7 @@ External variables must be passed via the params object:
 ```typescript
 const update = updateStatement(
   (p: { newAge: number }) =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ age: p.newAge })
       .where((u) => u.id === 1),
   { newAge: 32 },
@@ -3173,7 +3173,7 @@ const update = updateStatement(
 ```typescript
 const update = updateStatement(
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < new Date("2023-01-01") && u.role !== "admin"),
   {},
@@ -3185,7 +3185,7 @@ const update = updateStatement(
 ```typescript
 const updateWithReturn = updateStatement(
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ age: 32 })
       .where((u) => u.id === 2)
       .returning((u) => ({ id: u.id, age: u.age, updatedAt: u.updatedAt })),
@@ -3198,7 +3198,7 @@ const updateWithReturn = updateStatement(
 ```typescript
 // UPDATE without WHERE requires explicit permission
 const updateAll = updateStatement(
-  () => updateTable(ctx, "users").set({ isActive: true }).allowFullTableUpdate(), // Required flag
+  () => update(ctx, "users").set({ isActive: true }).allowFullTableUpdate(), // Required flag
   {},
 );
 ```
@@ -3321,7 +3321,7 @@ insertInto<User>("users").values({
 });
 
 // Type error: age must be number
-updateTable<User>("users").set({
+update<User>("users").set({
   age: "30", // ❌ Type error - must be number
 });
 ```
@@ -3367,7 +3367,7 @@ const insertedUsers = await executeInsert(
 const updateCount = await executeUpdate(
   db,
   () =>
-    updateTable(dbContext, "users")
+    update(dbContext, "users")
       .set({ age: 29 })
       .where((u) => u.id === 123),
   {},
@@ -3399,7 +3399,7 @@ const insertCount = executeInsert(
 const updateCount = executeUpdate(
   db,
   () =>
-    updateTable(dbContext, "users")
+    update(dbContext, "users")
       .set({ age: 33 })
       .where((u) => u.name === "Henry"),
   {},
@@ -3448,7 +3448,7 @@ const transaction = sqliteDb.transaction(() => {
   executeUpdate(
     db,
     () =>
-      updateTable(dbContext, "users")
+      update(dbContext, "users")
         .set({ lastLogin: new Date() })
         .where((u) => u.name === "Jack"),
     {},

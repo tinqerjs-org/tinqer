@@ -237,7 +237,7 @@ function visitCallExpression(
     return operation;
   }
 
-  if (methodName === "updateTable") {
+  if (methodName === "update") {
     const operation = visitUpdateOperation(ast);
     // Set current table in context for field tracking
     if (operation) {

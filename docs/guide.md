@@ -1588,19 +1588,19 @@ const insert = insertStatement(
 
 ### 14.2 UPDATE Statements
 
-The `updateTable` function creates UPDATE operations. The `.set()` method uses direct object syntax (no lambda wrapping required).
+The `update` function creates UPDATE operations. The `.set()` method uses direct object syntax (no lambda wrapping required).
 
 #### Basic UPDATE
 
 ```typescript
-import { createContext, updateTable } from "@webpods/tinqer";
+import { createContext, update } from "@webpods/tinqer";
 import { updateStatement } from "@webpods/tinqer-sql-pg-promise";
 
 const ctx = createContext<Schema>();
 
 const update = updateStatement(
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ age: 31, lastModified: new Date() })
       .where((u) => u.id === 1),
   {},
@@ -1628,7 +1628,7 @@ External variables must be passed via the params object:
 ```typescript
 const update = updateStatement(
   (p: { newAge: number }) =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ age: p.newAge })
       .where((u) => u.id === 1),
   { newAge: 32 },
@@ -1640,7 +1640,7 @@ const update = updateStatement(
 ```typescript
 const update = updateStatement(
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < new Date("2023-01-01") && u.role !== "admin"),
   {},
@@ -1652,7 +1652,7 @@ const update = updateStatement(
 ```typescript
 const updateWithReturn = updateStatement(
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ age: 32 })
       .where((u) => u.id === 2)
       .returning((u) => ({ id: u.id, age: u.age, updatedAt: u.updatedAt })),
@@ -1665,7 +1665,7 @@ const updateWithReturn = updateStatement(
 ```typescript
 // UPDATE without WHERE requires explicit permission
 const updateAll = updateStatement(
-  () => updateTable(ctx, "users").set({ isActive: true }).allowFullTableUpdate(), // Required flag
+  () => update(ctx, "users").set({ isActive: true }).allowFullTableUpdate(), // Required flag
   {},
 );
 ```
@@ -1788,7 +1788,7 @@ insertInto<User>("users").values({
 });
 
 // Type error: age must be number
-updateTable<User>("users").set({
+update<User>("users").set({
   age: "30", // ❌ Type error - must be number
 });
 ```
@@ -1834,7 +1834,7 @@ const insertedUsers = await executeInsert(
 const updateCount = await executeUpdate(
   db,
   () =>
-    updateTable(dbContext, "users")
+    update(dbContext, "users")
       .set({ age: 29 })
       .where((u) => u.id === 123),
   {},
@@ -1866,7 +1866,7 @@ const insertCount = executeInsert(
 const updateCount = executeUpdate(
   db,
   () =>
-    updateTable(dbContext, "users")
+    update(dbContext, "users")
       .set({ age: 33 })
       .where((u) => u.name === "Henry"),
   {},
@@ -1915,7 +1915,7 @@ const transaction = sqliteDb.transaction(() => {
   executeUpdate(
     db,
     () =>
-      updateTable(dbContext, "users")
+      update(dbContext, "users")
         .set({ lastLogin: new Date() })
         .where((u) => u.name === "Jack"),
     {},

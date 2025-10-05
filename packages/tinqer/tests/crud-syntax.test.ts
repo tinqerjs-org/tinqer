@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { insertInto, updateTable, createContext } from "../dist/index.js";
+import { insertInto, update, createContext } from "../dist/index.js";
 import { parseQuery } from "../dist/parser/parse-query.js";
 import type { InsertOperation, UpdateOperation, ParamRef } from "../dist/query-tree/operations.js";
 import type { ComparisonExpression, ConstantExpression } from "../dist/expressions/expression.js";
@@ -75,7 +75,7 @@ describe("CRUD Syntax - Direct Objects", () => {
   describe("UPDATE set()", () => {
     it("should accept direct object syntax", () => {
       const result = parseQuery(() =>
-        updateTable(db, "users")
+        update(db, "users")
           .set({ age: 31, email: "newemail@example.com" })
           .where((u) => u.id === 1),
       );
@@ -96,7 +96,7 @@ describe("CRUD Syntax - Direct Objects", () => {
 
     it("should work with parameters in direct object syntax", () => {
       const result = parseQuery((params: { newAge: number }) =>
-        updateTable(db, "users")
+        update(db, "users")
           .set({ age: params.newAge })
           .where((u) => u.id === 3),
       );
@@ -136,7 +136,7 @@ describe("CRUD Syntax - Direct Objects", () => {
 
     it("should handle UPDATE with mixed values", () => {
       const result = parseQuery((params: { userId: number }) =>
-        updateTable(db, "users")
+        update(db, "users")
           .set({
             age: 50,
             email: "static@example.com",

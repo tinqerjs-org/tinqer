@@ -6,12 +6,12 @@ import type { UpdateOperation } from "../../query-tree/operations.js";
 import type { CallExpression as ASTCallExpression } from "../../parser/ast-types.js";
 
 /**
- * Visit an updateTable() operation
+ * Visit an update() operation
  */
 export function visitUpdateOperation(ast: ASTCallExpression): UpdateOperation | null {
-  // updateTable can have two forms:
-  // 1. updateTable("tableName") or updateTable("schema.table") - single argument
-  // 2. updateTable(db, "tableName") - two arguments
+  // update can have two forms:
+  // 1. update("tableName") or update("schema.table") - single argument
+  // 2. update(db, "tableName") - two arguments
 
   if (!ast.arguments || ast.arguments.length === 0) {
     return null;
@@ -21,7 +21,7 @@ export function visitUpdateOperation(ast: ASTCallExpression): UpdateOperation | 
   let schema: string | undefined;
 
   if (ast.arguments.length === 1) {
-    // Single argument form: updateTable("tableName") or updateTable("schema.table")
+    // Single argument form: update("tableName") or update("schema.table")
     const tableArg = ast.arguments[0];
 
     if (!tableArg) {
@@ -40,7 +40,7 @@ export function visitUpdateOperation(ast: ASTCallExpression): UpdateOperation | 
     schema = parts.length > 1 ? parts[0] : undefined;
     table = parts.length > 1 ? parts[1]! : tableName;
   } else {
-    // Multiple argument form: updateTable(db, "tableName")
+    // Multiple argument form: update(db, "tableName")
     // First argument is the database object (we don't need to parse it)
     // Second argument is the table name
     const tableArg = ast.arguments[1];
