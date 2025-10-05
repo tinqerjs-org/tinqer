@@ -97,7 +97,7 @@ export interface CoalesceExpression {
 
 /**
  * Aggregate expression - for GROUP BY aggregations
- * Follows C# LINQ IGrouping pattern
+ * Follows C# LINQ Grouping pattern
  */
 export interface AggregateExpression {
   type: "aggregate";
