@@ -154,3 +154,12 @@ export type {
 export { parseQuery } from "./parser/parse-query.js";
 export type { ParseResult } from "./parser/parse-query.js";
 export { parseJavaScript } from "./parser/oxc-parser.js";
+export type { ParseQueryOptions } from "./parser/types.js";
+
+// Parse cache configuration
+export {
+  setParseCacheConfig,
+  getParseCacheConfig,
+  clearParseCache,
+} from "./parser/parse-cache-config.js";
+export type { ParseCacheConfig } from "./parser/parse-cache-config.js";
