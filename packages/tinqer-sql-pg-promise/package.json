@@ -1,6 +1,6 @@
 {
   "name": "@webpods/tinqer-sql-pg-promise",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "pg-promise SQL generator for Tinqer query builder",
   "type": "module",
   "main": "./dist/index.js",
@@ -19,7 +19,7 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@webpods/tinqer": "^0.0.8"
+    "@webpods/tinqer": "^0.0.10"
   },
   "devDependencies": {
     "@types/chai": "5.2.2",
