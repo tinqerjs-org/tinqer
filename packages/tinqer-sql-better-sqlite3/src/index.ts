@@ -15,6 +15,7 @@ import {
   type UpdatableWithReturning,
   type Deletable,
   type DeletableComplete,
+  type ParseQueryOptions,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
 import type { SqlResult, ExecuteOptions } from "./types.js";
@@ -41,6 +42,7 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
  * Generate SQL from a query builder function
  * @param queryBuilder Function that builds the query using LINQ operations with helpers
  * @param params Parameters to pass to the query builder
+ * @param options Parse options including cache control
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function selectStatement<TParams, TResult>(
@@ -49,9 +51,10 @@ export function selectStatement<TParams, TResult>(
     helpers: QueryHelpers,
   ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
   params: TParams,
+  options: ParseQueryOptions = {},
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
   // Parse the query to get the operation tree and auto-params
-  const parseResult = parseQuery(queryBuilder);
+  const parseResult = parseQuery(queryBuilder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse query");
@@ -75,9 +78,13 @@ export function selectStatement<TParams, TResult>(
 /**
  * Simpler API for generating SQL with auto-parameterization
  * @param queryable A Queryable or TerminalQuery object
+ * @param options Parse options including cache control
  * @returns Object with text (SQL string), parameters, and preserved result type
  */
-export function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>): {
+export function toSql<T>(
+  queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>,
+  options: ParseQueryOptions = {},
+): {
   text: string;
   parameters: Record<string, unknown>;
   _resultType?: T;
@@ -86,7 +93,7 @@ export function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | Termina
   const queryBuilder = () => queryable;
 
   // Parse and generate SQL
-  const parseResult = parseQuery(queryBuilder);
+  const parseResult = parseQuery(queryBuilder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse query");
@@ -127,7 +134,7 @@ export function executeSelect<
   db: BetterSqlite3Database,
   queryBuilder: (params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
-  options: ExecuteOptions = {},
+  options: ExecuteOptions & ParseQueryOptions = {},
 ): TQuery extends Queryable<infer T>
   ? T[]
   : TQuery extends OrderedQueryable<infer T>
@@ -143,7 +150,7 @@ export function executeSelect<
         : TQuery extends TerminalQuery<infer T>
           ? T
           : never;
-  const { sql, params: sqlParams } = selectStatement(queryBuilder, params);
+  const { sql, params: sqlParams } = selectStatement(queryBuilder, params, options);
 
   // Call onSql callback if provided
   if (options.onSql) {
@@ -151,7 +158,7 @@ export function executeSelect<
   }
 
   // Check if this is a terminal operation that returns a single value
-  const parseResult = parseQuery(queryBuilder);
+  const parseResult = parseQuery(queryBuilder, options);
   if (!parseResult) {
     throw new Error("Failed to parse query");
   }
@@ -274,7 +281,7 @@ export function executeSelectSimple<
 >(
   db: BetterSqlite3Database,
   queryBuilder: (_params: Record<string, never>, helpers: QueryHelpers) => TQuery,
-  options: ExecuteOptions = {},
+  options: ExecuteOptions & ParseQueryOptions = {},
 ): TQuery extends Queryable<infer T>
   ? T[]
   : TQuery extends OrderedQueryable<infer T>
@@ -296,11 +303,12 @@ export function insertStatement<TParams, TTable, TReturning = never>(
     params: TParams,
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
+  options: ParseQueryOptions = {},
 ): SqlResult<
   TParams & Record<string, string | number | boolean | null>,
   TReturning extends never ? void : TReturning
 > {
-  const parseResult = parseQuery(queryBuilder);
+  const parseResult = parseQuery(queryBuilder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse INSERT query");
@@ -326,7 +334,7 @@ export function executeInsert<TParams, TTable>(
   db: BetterSqlite3Database,
   queryBuilder: (params: TParams) => Insertable<TTable>,
   params: TParams,
-  options?: ExecuteOptions,
+  options?: ExecuteOptions & ParseQueryOptions,
 ): number;
 
 /**
@@ -337,7 +345,7 @@ export function executeInsert<TParams, TTable, TReturning>(
   db: BetterSqlite3Database,
   queryBuilder: (params: TParams) => InsertableWithReturning<TTable, TReturning>,
   params: TParams,
-  options?: ExecuteOptions,
+  options?: ExecuteOptions & ParseQueryOptions,
 ): never;
 
 // Implementation
@@ -347,9 +355,9 @@ export function executeInsert<TParams, TTable, TReturning = never>(
     params: TParams,
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
-  options: ExecuteOptions = {},
+  options: ExecuteOptions & ParseQueryOptions = {},
 ): number {
-  const { sql, params: sqlParams } = insertStatement(queryBuilder, params);
+  const { sql, params: sqlParams } = insertStatement(queryBuilder, params, options);
 
   if (options.onSql) {
     options.onSql({ sql, params: sqlParams });
@@ -374,11 +382,12 @@ export function updateStatement<TParams, TTable, TReturning = never>(
     | UpdatableComplete<TTable>
     | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
+  options: ParseQueryOptions = {},
 ): SqlResult<
   TParams & Record<string, string | number | boolean | null>,
   TReturning extends never ? void : TReturning
 > {
-  const parseResult = parseQuery(queryBuilder);
+  const parseResult = parseQuery(queryBuilder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse UPDATE query");
@@ -404,7 +413,7 @@ export function executeUpdate<TParams, TTable>(
   db: BetterSqlite3Database,
   queryBuilder: (params: TParams) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
   params: TParams,
-  options?: ExecuteOptions,
+  options?: ExecuteOptions & ParseQueryOptions,
 ): number;
 
 /**
@@ -415,7 +424,7 @@ export function executeUpdate<TParams, TTable, TReturning>(
   db: BetterSqlite3Database,
   queryBuilder: (params: TParams) => UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
-  options?: ExecuteOptions,
+  options?: ExecuteOptions & ParseQueryOptions,
 ): never;
 
 // Implementation
@@ -428,9 +437,9 @@ export function executeUpdate<TParams, TTable, TReturning = never>(
     | UpdatableComplete<TTable>
     | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
-  options: ExecuteOptions = {},
+  options: ExecuteOptions & ParseQueryOptions = {},
 ): number {
-  const { sql, params: sqlParams } = updateStatement(queryBuilder, params);
+  const { sql, params: sqlParams } = updateStatement(queryBuilder, params, options);
 
   if (options.onSql) {
     options.onSql({ sql, params: sqlParams });
@@ -449,8 +458,9 @@ export function executeUpdate<TParams, TTable, TReturning = never>(
 export function deleteStatement<TParams, TResult>(
   queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
   params: TParams,
+  options: ParseQueryOptions = {},
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
-  const parseResult = parseQuery(queryBuilder);
+  const parseResult = parseQuery(queryBuilder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse DELETE query");
@@ -476,9 +486,9 @@ export function executeDelete<TParams, TResult>(
   db: BetterSqlite3Database,
   queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
   params: TParams,
-  options: ExecuteOptions = {},
+  options: ExecuteOptions & ParseQueryOptions = {},
 ): number {
-  const { sql, params: sqlParams } = deleteStatement(queryBuilder, params);
+  const { sql, params: sqlParams } = deleteStatement(queryBuilder, params, options);
 
   if (options.onSql) {
     options.onSql({ sql, params: sqlParams });
