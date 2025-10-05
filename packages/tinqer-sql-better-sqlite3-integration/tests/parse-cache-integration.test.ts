@@ -139,23 +139,31 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
           email: p.email,
         });
 
-      executeInsert(db, insert, { name: "Alice", age: 25, email: "alice@example.com" });
+      executeInsert(db, insert, {
+        name: "Alice Cache Test",
+        age: 25,
+        email: "alice-cache-test@example.com",
+      });
       expect(parseCache.size()).to.equal(1);
 
-      executeInsert(db, insert, { name: "Bob", age: 30, email: "bob@example.com" });
+      executeInsert(db, insert, {
+        name: "Bob Cache Test",
+        age: 30,
+        email: "bob-cache-test@example.com",
+      });
       expect(parseCache.size()).to.equal(1);
     });
 
     it("should bypass INSERT cache when cache option is false", () => {
-      const insert = (p: { name: string }) =>
+      const insert = (p: { name: string; suffix: string }) =>
         insertInto(dbContext, "users").values({
           name: p.name,
           age: 25,
-          email: p.name + "@example.com",
+          email: p.name + "-" + p.suffix + "@example.com",
         });
 
-      executeInsert(db, insert, { name: "Alice" });
-      executeInsert(db, insert, { name: "Bob" }, { cache: false });
+      executeInsert(db, insert, { name: "Alice", suffix: "bypass1" });
+      executeInsert(db, insert, { name: "Bob", suffix: "bypass2" }, { cache: false });
 
       expect(parseCache.size()).to.be.at.most(1);
     });
@@ -168,10 +176,11 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
           .set({ age: p.newAge })
           .where((u) => u.id === p.userId);
 
-      executeUpdate(db, updateQuery, { newAge: 26, userId: 1 });
+      // Use existing user IDs - 5 and 6 are employees with no one reporting to them
+      executeUpdate(db, updateQuery, { newAge: 26, userId: 5 });
       expect(parseCache.size()).to.equal(1);
 
-      executeUpdate(db, updateQuery, { newAge: 27, userId: 2 });
+      executeUpdate(db, updateQuery, { newAge: 27, userId: 6 });
       expect(parseCache.size()).to.equal(1);
     });
 
@@ -181,8 +190,8 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
           .set({ age: p.newAge })
           .where((u) => u.id === p.userId);
 
-      executeUpdate(db, updateQuery, { newAge: 26, userId: 1 });
-      executeUpdate(db, updateQuery, { newAge: 27, userId: 2 }, { cache: false });
+      executeUpdate(db, updateQuery, { newAge: 26, userId: 7 });
+      executeUpdate(db, updateQuery, { newAge: 27, userId: 8 }, { cache: false });
 
       expect(parseCache.size()).to.be.at.most(1);
     });
@@ -193,10 +202,11 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       const deleteQuery = (p: { userId: number }) =>
         deleteFrom(dbContext, "users").where((u) => u.id === p.userId);
 
-      executeDelete(db, deleteQuery, { userId: 1 });
+      // Use high user IDs that don't exist to avoid FK constraints
+      executeDelete(db, deleteQuery, { userId: 99999 });
       expect(parseCache.size()).to.equal(1);
 
-      executeDelete(db, deleteQuery, { userId: 2 });
+      executeDelete(db, deleteQuery, { userId: 99998 });
       expect(parseCache.size()).to.equal(1);
     });
 
@@ -204,8 +214,9 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       const deleteQuery = (p: { userId: number }) =>
         deleteFrom(dbContext, "users").where((u) => u.id === p.userId);
 
-      executeDelete(db, deleteQuery, { userId: 1 });
-      executeDelete(db, deleteQuery, { userId: 2 }, { cache: false });
+      // Use high user IDs that don't exist to avoid FK constraints
+      executeDelete(db, deleteQuery, { userId: 99997 });
+      executeDelete(db, deleteQuery, { userId: 99996 }, { cache: false });
 
       expect(parseCache.size()).to.be.at.most(1);
     });
@@ -243,11 +254,11 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     it("should cache different operation types separately", () => {
       const selectQuery = () =>
         from(dbContext, "users").where((u) => u.age !== null && u.age >= 18);
-      const insertQuery = (p: { name: string }) =>
+      const insertQuery = (p: { name: string; suffix: string }) =>
         insertInto(dbContext, "users").values({
           name: p.name,
           age: 25,
-          email: p.name + "@example.com",
+          email: p.name + "-" + p.suffix + "@example.com",
         });
       const updateQuery = (p: { userId: number }) =>
         update(dbContext, "users")
@@ -255,8 +266,8 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
           .where((u) => u.id === p.userId);
 
       executeSelectSimple(db, selectQuery);
-      executeInsert(db, insertQuery, { name: "Test" });
-      executeUpdate(db, updateQuery, { userId: 1 });
+      executeInsert(db, insertQuery, { name: "Test", suffix: "mixed" });
+      executeUpdate(db, updateQuery, { userId: 9 });
 
       expect(parseCache.size()).to.equal(3);
     });
