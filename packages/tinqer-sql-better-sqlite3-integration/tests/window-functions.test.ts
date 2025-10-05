@@ -414,4 +414,153 @@ describe("Window Functions - SQLite Integration", () => {
       }
     });
   });
+
+  describe("Filtering on Window Function Results", () => {
+    it("should filter on ROW_NUMBER to get top 1 per department", () => {
+      const result = executeSelect(
+        db,
+        (_, h) =>
+          from(dbContext, "users")
+            .select((u) => ({
+              ...u,
+              rn: h
+                .window(u)
+                .partitionBy((r) => r.department_id)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((r) => r.rn === 1 && r.department_id !== null)
+            .orderBy((r) => r.department_id),
+        {},
+      );
+
+      // Should get only the top earner from each department
+      expect(result).to.have.length(4); // 4 departments
+      expect(result[0]!.name).to.equal("John Doe"); // Dept 1 top earner
+      expect(result[0]!.rn).to.equal(1);
+      expect(result[1]!.name).to.equal("Jane Smith"); // Dept 2 top earner
+      expect(result[1]!.rn).to.equal(1);
+      // Verify all have rn === 1
+      result.forEach((row) => {
+        expect(row.rn).to.equal(1);
+      });
+    });
+
+    it("should filter on ROW_NUMBER to get top 3 per department", () => {
+      const result = executeSelect(
+        db,
+        (_, h) =>
+          from(dbContext, "users")
+            .select((u) => ({
+              name: u.name,
+              department_id: u.department_id,
+              salary: u.salary,
+              rn: h
+                .window(u)
+                .partitionBy((r) => r.department_id)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((r) => r.rn <= 3 && r.department_id === 1)
+            .orderBy((r) => r.rn),
+        {},
+      );
+
+      // Should get top 3 earners from department 1
+      expect(result).to.have.length(3);
+      expect(result[0]!.name).to.equal("John Doe");
+      expect(result[0]!.rn).to.equal(1);
+      expect(result[1]!.name).to.equal("Diana Prince");
+      expect(result[1]!.rn).to.equal(2);
+      expect(result[2]!.name).to.equal("Grace Hopper");
+      expect(result[2]!.rn).to.equal(3);
+    });
+
+    it("should filter on RANK to get all rank 1 employees", () => {
+      const result = executeSelect(
+        db,
+        (_, h) =>
+          from(dbContext, "users")
+            .select((u) => ({
+              name: u.name,
+              department_id: u.department_id,
+              salary: u.salary,
+              rank: h
+                .window(u)
+                .partitionBy((r) => r.department_id)
+                .orderByDescending((r) => r.salary)
+                .rank(),
+            }))
+            .where((r) => r.rank === 1 && r.department_id !== null)
+            .orderBy((r) => r.department_id),
+        {},
+      );
+
+      // Should get top ranked employee from each department
+      expect(result).to.have.length(4); // 4 departments
+      // Verify all have rank === 1
+      result.forEach((row) => {
+        expect(row.rank).to.equal(1);
+      });
+    });
+
+    it("should combine window filter with regular WHERE conditions", () => {
+      const result = executeSelect(
+        db,
+        (_, h) =>
+          from(dbContext, "users")
+            .select((u) => ({
+              name: u.name,
+              department_id: u.department_id,
+              salary: u.salary,
+              is_active: u.is_active,
+              rn: h
+                .window(u)
+                .partitionBy((r) => r.department_id)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((r) => r.rn <= 2 && r.is_active === 1 && r.department_id === 1)
+            .orderBy((r) => r.rn),
+        {},
+      );
+
+      // Should get top 2 active earners from department 1
+      expect(result.length).to.be.at.most(2);
+      result.forEach((row) => {
+        expect(row.is_active).to.equal(1);
+        expect(row.department_id).to.equal(1);
+        expect(row.rn).to.be.at.most(2);
+      });
+    });
+
+    it("should handle spread operator with window functions", () => {
+      const result = executeSelect(
+        db,
+        (_, h) =>
+          from(dbContext, "users")
+            .select((u) => ({
+              ...u,
+              rn: h
+                .window(u)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((r) => r.rn === 1)
+            .orderBy((r) => r.salary),
+        {},
+      );
+
+      // Should get the highest paid employee
+      expect(result).to.have.length(1);
+      expect(result[0]!.name).to.equal("John Doe");
+      expect(result[0]!.rn).to.equal(1);
+      // Verify all user columns are present (spread operator worked)
+      expect(result[0]!).to.have.property("id");
+      expect(result[0]!).to.have.property("name");
+      expect(result[0]!).to.have.property("email");
+      expect(result[0]!).to.have.property("age");
+      expect(result[0]!).to.have.property("is_active");
+    });
+  });
 });

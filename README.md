@@ -181,7 +181,7 @@ const summary = from(ctx, "orders")
 Window functions enable calculations across rows related to the current row. Tinqer supports `ROW_NUMBER()`, `RANK()`, and `DENSE_RANK()` with optional partitioning and ordering.
 
 ```typescript
-// Get top earner per department
+// Get top earner per department (automatically wrapped in subquery)
 const topEarners = await executeSelect(
   db,
   (_, h) =>
@@ -194,14 +194,21 @@ const topEarners = await executeSelect(
           .orderByDescending((r) => r.salary)
           .rowNumber(),
       }))
-      .where((e) => e.rank === 1),
+      .where((e) => e.rank === 1), // Filtering on window function result
   {},
 );
 
-// SQL: ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC)
+// Generated SQL (automatically wrapped):
+// SELECT * FROM (
+//   SELECT *, ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank"
+//   FROM "employees"
+// ) AS "employees"
+// WHERE "rank" = 1
 ```
 
-See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed examples of `RANK()`, `DENSE_RANK()`, and complex ordering.
+**Automatic Subquery Wrapping**: Tinqer automatically detects when `where()` clauses reference window function columns and wraps the query in a subquery, since SQL doesn't allow filtering on window functions at the same level where they're defined.
+
+See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed examples of `RANK()`, `DENSE_RANK()`, complex ordering, and [filtering on window results](docs/guide.md#85-filtering-on-window-function-results).
 
 ### CRUD Operations
 

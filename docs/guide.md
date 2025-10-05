@@ -41,6 +41,7 @@ Complete reference for all query operations, parameters, and CRUD functionality 
   - [8.2 RANK](#82-rank)
   - [8.3 DENSE_RANK](#83-dense_rank)
   - [8.4 Multiple Window Functions](#84-multiple-window-functions)
+  - [8.5 Filtering on Window Function Results](#85-filtering-on-window-function-results)
 - [9. Scalar Aggregates on Root Queries](#9-scalar-aggregates-on-root-queries)
 - [10. Quantifiers](#10-quantifiers)
   - [10.1 Any Operation](#101-any-operation)
@@ -1067,6 +1068,158 @@ SELECT "name", "department", "salary",
   DENSE_RANK() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "denseRank"
 FROM "employees"
 ```
+
+### 8.5 Filtering on Window Function Results
+
+Window function results can be filtered using `where()` clauses. Tinqer automatically wraps queries in subqueries when window function columns are referenced in WHERE conditions, since SQL does not allow filtering on window functions in the same query level where they're defined.
+
+#### Top-N Per Group
+
+Get the top earner from each department:
+
+```typescript
+const topEarners = await executeSelect(
+  db,
+  (_, h) =>
+    from(ctx, "employees")
+      .select((e) => ({
+        ...e,
+        rank: h
+          .window(e)
+          .partitionBy((r) => r.department)
+          .orderByDescending((r) => r.salary)
+          .rowNumber(),
+      }))
+      .where((r) => r.rank === 1)
+      .orderBy((r) => r.department),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL (automatically wrapped in subquery)
+SELECT * FROM (
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank"
+  FROM "employees"
+) AS "employees"
+WHERE "rank" = 1
+ORDER BY "department" ASC
+```
+
+```sql
+-- SQLite (automatically wrapped in subquery)
+SELECT * FROM (
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "rank"
+  FROM "employees"
+) AS "employees"
+WHERE "rank" = 1
+ORDER BY "department" ASC
+```
+
+#### Top-3 Per Group
+
+Get the top 3 highest-paid employees from a specific department:
+
+```typescript
+const top3Engineering = await executeSelect(
+  db,
+  (params: { deptId: number }) =>
+    from(ctx, "employees")
+      .select((e) => ({
+        name: e.name,
+        salary: e.salary,
+        rank: h
+          .window(e)
+          .partitionBy((r) => r.department_id)
+          .orderByDescending((r) => r.salary)
+          .rowNumber(),
+      }))
+      .where((r) => r.rank <= 3 && r.department_id === params.deptId)
+      .orderBy((r) => r.rank),
+  { deptId: 1 },
+);
+```
+
+```sql
+-- PostgreSQL and SQLite
+SELECT * FROM (
+  SELECT "name", "salary", "department_id",
+    ROW_NUMBER() OVER (PARTITION BY "department_id" ORDER BY "salary" DESC) AS "rank"
+  FROM "employees"
+) AS "employees"
+WHERE "rank" <= 3 AND "department_id" = $(deptId)
+ORDER BY "rank" ASC
+```
+
+#### Filtering with Spread Operator
+
+The spread operator (`...e`) includes all original columns along with window function results:
+
+```typescript
+const topPerformers = await executeSelect(
+  db,
+  (_, h) =>
+    from(ctx, "employees")
+      .select((e) => ({
+        ...e, // All original columns
+        performance_rank: h
+          .window(e)
+          .orderByDescending((r) => r.performance_score)
+          .rowNumber(),
+      }))
+      .where((r) => r.performance_rank <= 10),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL and SQLite
+SELECT * FROM (
+  SELECT *, ROW_NUMBER() OVER (ORDER BY "performance_score" DESC) AS "performance_rank"
+  FROM "employees"
+) AS "employees"
+WHERE "performance_rank" <= 10
+```
+
+#### Combined Filters
+
+Combine window function filters with regular WHERE conditions:
+
+```typescript
+const activeTopEarners = await executeSelect(
+  db,
+  (_, h) =>
+    from(ctx, "employees")
+      .select((e) => ({
+        name: e.name,
+        department: e.department,
+        salary: e.salary,
+        is_active: e.is_active,
+        dept_rank: h
+          .window(e)
+          .partitionBy((r) => r.department)
+          .orderByDescending((r) => r.salary)
+          .rowNumber(),
+      }))
+      .where((r) => r.dept_rank <= 2 && r.is_active === true)
+      .orderBy((r) => r.department)
+      .thenBy((r) => r.dept_rank),
+  {},
+);
+```
+
+```sql
+-- PostgreSQL and SQLite (note: is_active filter can be applied before or after window function)
+SELECT * FROM (
+  SELECT "name", "department", "salary", "is_active",
+    ROW_NUMBER() OVER (PARTITION BY "department" ORDER BY "salary" DESC) AS "dept_rank"
+  FROM "employees"
+) AS "employees"
+WHERE "dept_rank" <= 2 AND "is_active" = TRUE
+ORDER BY "department" ASC, "dept_rank" ASC
+```
+
+**Note**: Tinqer automatically detects when WHERE clauses reference window function columns and wraps the query in a subquery. This transformation is transparent—you write natural TypeScript code, and Tinqer generates the correct SQL structure.
 
 **Note**: SQLite window function support requires SQLite 3.25 or later.
 

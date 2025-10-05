@@ -30,7 +30,10 @@ interface NormalizeResult {
 /**
  * Extract window function column names from a SELECT operation
  */
-function getWindowAliasesFromSelect(selectOp: SelectOperation, parentAliases: Set<string>): Set<string> {
+function getWindowAliasesFromSelect(
+  selectOp: SelectOperation,
+  parentAliases: Set<string>,
+): Set<string> {
   const aliases = new Set<string>();
 
   if (!selectOp.selector) {
@@ -76,7 +79,9 @@ function referencesColumns(expr: BooleanExpression, columnNames: Set<string>): b
       );
 
     case "logical":
-      return referencesColumns(expr.left, columnNames) || referencesColumns(expr.right, columnNames);
+      return (
+        referencesColumns(expr.left, columnNames) || referencesColumns(expr.right, columnNames)
+      );
 
     case "not":
       return referencesColumns(expr.expression, columnNames);
