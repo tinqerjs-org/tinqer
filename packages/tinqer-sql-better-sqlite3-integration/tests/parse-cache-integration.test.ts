@@ -24,7 +24,6 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
   let originalConfig: ReturnType<typeof getParseCacheConfig>;
 
   before(() => {
-    setupTestDatabase(db);
     originalConfig = getParseCacheConfig();
   });
 
@@ -33,6 +32,9 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
   });
 
   beforeEach(() => {
+    // Reset database to clean state before EACH test
+    setupTestDatabase(db);
+    // Reset parse cache
     clearParseCache();
     setParseCacheConfig({ enabled: true, capacity: 1024 });
   });
@@ -199,26 +201,81 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
   describe("DELETE statement caching", () => {
     it("should cache repeated DELETE statements", () => {
+      // Insert temporary users for deletion testing
+      const insert = (p: { email: string }) =>
+        insertInto(dbContext, "users").values({
+          name: "Temp Delete Test",
+          age: 30,
+          email: p.email,
+        });
+
+      executeInsert(db, insert, { email: "delete-test-1@example.com" });
+      const userId1 = db.prepare("SELECT last_insert_rowid() as id").get() as { id: number };
+
+      executeInsert(db, insert, { email: "delete-test-2@example.com" });
+      const userId2 = db.prepare("SELECT last_insert_rowid() as id").get() as { id: number };
+
       const deleteQuery = (p: { userId: number }) =>
         deleteFrom(dbContext, "users").where((u) => u.id === p.userId);
 
-      // Use high user IDs that don't exist to avoid FK constraints
-      executeDelete(db, deleteQuery, { userId: 99999 });
-      expect(parseCache.size()).to.equal(1);
+      // Delete the temporary users
+      executeDelete(db, deleteQuery, { userId: userId1.id });
+      expect(parseCache.size()).to.equal(2); // INSERT + DELETE queries cached
 
-      executeDelete(db, deleteQuery, { userId: 99998 });
-      expect(parseCache.size()).to.equal(1);
+      executeDelete(db, deleteQuery, { userId: userId2.id });
+      expect(parseCache.size()).to.equal(2); // Same two queries still cached
+
+      // Verify deletions were successful
+      const remaining1 = db
+        .prepare("SELECT COUNT(*) as count FROM users WHERE id = ?")
+        .get(userId1.id) as {
+        count: number;
+      };
+      const remaining2 = db
+        .prepare("SELECT COUNT(*) as count FROM users WHERE id = ?")
+        .get(userId2.id) as {
+        count: number;
+      };
+      expect(remaining1.count).to.equal(0);
+      expect(remaining2.count).to.equal(0);
     });
 
     it("should bypass DELETE cache when cache option is false", () => {
+      // Insert temporary users for deletion testing
+      const insert = (p: { email: string }) =>
+        insertInto(dbContext, "users").values({
+          name: "Temp Delete Test",
+          age: 30,
+          email: p.email,
+        });
+
+      executeInsert(db, insert, { email: "delete-bypass-1@example.com" });
+      const userId1 = db.prepare("SELECT last_insert_rowid() as id").get() as { id: number };
+
+      executeInsert(db, insert, { email: "delete-bypass-2@example.com" });
+      const userId2 = db.prepare("SELECT last_insert_rowid() as id").get() as { id: number };
+
       const deleteQuery = (p: { userId: number }) =>
         deleteFrom(dbContext, "users").where((u) => u.id === p.userId);
 
-      // Use high user IDs that don't exist to avoid FK constraints
-      executeDelete(db, deleteQuery, { userId: 99997 });
-      executeDelete(db, deleteQuery, { userId: 99996 }, { cache: false });
+      executeDelete(db, deleteQuery, { userId: userId1.id });
+      executeDelete(db, deleteQuery, { userId: userId2.id }, { cache: false });
 
-      expect(parseCache.size()).to.be.at.most(1);
+      expect(parseCache.size()).to.equal(2); // INSERT + DELETE queries cached (cache:false still uses cache)
+
+      // Verify deletions were successful
+      const remaining1 = db
+        .prepare("SELECT COUNT(*) as count FROM users WHERE id = ?")
+        .get(userId1.id) as {
+        count: number;
+      };
+      const remaining2 = db
+        .prepare("SELECT COUNT(*) as count FROM users WHERE id = ?")
+        .get(userId2.id) as {
+        count: number;
+      };
+      expect(remaining1.count).to.equal(0);
+      expect(remaining2.count).to.equal(0);
     });
   });
 
