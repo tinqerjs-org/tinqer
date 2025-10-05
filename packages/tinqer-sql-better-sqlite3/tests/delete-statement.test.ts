@@ -10,7 +10,11 @@ import { db } from "./test-schema.js";
 describe("DELETE Statement Generation (SQLite)", () => {
   describe("Basic DELETE", () => {
     it("should generate DELETE with simple WHERE clause using @param format", () => {
-      const result = deleteStatement(db, (ctx) => ctx.deleteFrom("users").where((u) => u.id === 1), {});
+      const result = deleteStatement(
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.id === 1),
+        {},
+      );
 
       assert.equal(result.sql, `DELETE FROM "users" WHERE "id" = @__p1`);
       assert.deepEqual(result.params, {
@@ -21,7 +25,8 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should generate DELETE with schema prefix in table name", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom<{ id: number; name: string }>("main.users").where((u) => u.id === 2),
+        (ctx) =>
+          ctx.deleteFrom<{ id: number; name: string }>("main.users").where((u) => u.id === 2),
         {},
       );
 
@@ -58,9 +63,9 @@ describe("DELETE Statement Generation (SQLite)", () => {
       const result = deleteStatement(
         db,
         (ctx) =>
-          ctx.deleteFrom("users").where(
-            (u) => (u.age < 18 && u.role !== "Admin") || u.isDeleted === true,
-          ),
+          ctx
+            .deleteFrom("users")
+            .where((u) => (u.age < 18 && u.role !== "Admin") || u.isDeleted === true),
         {},
       );
 
@@ -116,7 +121,11 @@ describe("DELETE Statement Generation (SQLite)", () => {
 
   describe("DELETE with allowFullTableDelete", () => {
     it("should generate DELETE without WHERE when allowed", () => {
-      const result = deleteStatement(db, (ctx) => ctx.deleteFrom("users").allowFullTableDelete(), {});
+      const result = deleteStatement(
+        db,
+        (ctx) => ctx.deleteFrom("users").allowFullTableDelete(),
+        {},
+      );
 
       assert.equal(result.sql, `DELETE FROM "users"`);
       assert.deepEqual(result.params, {});
@@ -131,7 +140,11 @@ describe("DELETE Statement Generation (SQLite)", () => {
 
   describe("DELETE with comparison operators", () => {
     it("should handle greater than", () => {
-      const result = deleteStatement(db, (ctx) => ctx.deleteFrom("users").where((u) => u.age > 50), {});
+      const result = deleteStatement(
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.age > 50),
+        {},
+      );
 
       assert.equal(result.sql, `DELETE FROM "users" WHERE "age" > @__p1`);
     });

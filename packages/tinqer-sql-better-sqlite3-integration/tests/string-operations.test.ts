@@ -21,7 +21,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.name.startsWith("J")),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.name.startsWith("J")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -45,7 +46,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.email.startsWith("alice")),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.email.startsWith("alice")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -67,7 +69,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.name.startsWith("J") && u.is_active === 1),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.name.startsWith("J") && u.is_active === 1),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -96,7 +99,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.email.endsWith("@example.com")),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.email.endsWith("@example.com")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -120,7 +124,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "products").where((p) => p.name.endsWith("top")),
+        dbContext,
+        (ctx) => ctx.from("products").where((p) => p.name.endsWith("top")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -146,7 +151,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.name.includes("oh")),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.name.includes("oh")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -172,10 +178,11 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products").where(
-            (p) => p.description !== null && p.description.includes("office"),
-          ),
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
+            .where((p) => p.description !== null && p.description.includes("office")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -199,14 +206,17 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products").where(
-            (p) =>
-              p.category !== null &&
-              p.category.startsWith("Electr") &&
-              (p.name.includes("e") ||
-                (p.description !== null && p.description.includes("performance"))),
-          ),
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
+            .where(
+              (p) =>
+                p.category !== null &&
+                p.category.startsWith("Electr") &&
+                (p.name.includes("e") ||
+                  (p.description !== null && p.description.includes("performance"))),
+            ),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -234,10 +244,11 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users").where(
-            (u) => u.email.startsWith("j") && u.email.endsWith("@example.com"),
-          ),
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
+            .where((u) => u.email.startsWith("j") && u.email.endsWith("@example.com")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -263,12 +274,15 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products").where(
-            (p) =>
-              p.name.includes("e") ||
-              (p.description !== null && p.description.includes("wireless")),
-          ),
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
+            .where(
+              (p) =>
+                p.name.includes("e") ||
+                (p.description !== null && p.description.includes("wireless")),
+            ),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -291,10 +305,12 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .join(
-              from(dbContext, "departments"),
+              ctx.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -330,7 +346,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       const upperResults = executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.name.includes("J")),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.name.includes("J")),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -347,7 +364,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
       const lowerResults = executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.name.includes("o")),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.name.includes("o")),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -370,7 +388,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
       let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
       const capitalD = executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.name.includes("D")),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.name.includes("D")),
         {
           onSql: (result) => {
             capturedSql3 = result;
@@ -387,7 +406,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
       let capturedSql4: { sql: string; params: Record<string, unknown> } | undefined;
       const lowercaseD = executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.name.includes("d")),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.name.includes("d")),
         {
           onSql: (result) => {
             capturedSql4 = result;
@@ -414,8 +434,10 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const count = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.email.endsWith("@example.com"))
             .count(),
         {
@@ -441,10 +463,11 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products").where(
-            (p) => p.description !== null && p.description.includes("High"),
-          ),
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
+            .where((p) => p.description !== null && p.description.includes("High")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -468,7 +491,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "products").where((p) => p.description !== null),
+        dbContext,
+        (ctx) => ctx.from("products").where((p) => p.description !== null),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -504,10 +528,9 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelect(
         db,
-        (params: { search: string }) =>
-          from<{ id: number; text: string }>("test_special_chars").where((t) =>
-            t.text.includes(params.search),
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx.from("test_special_chars").where((t) => t.text.includes(params.search)),
         { search: "%" },
         {
           onSql: (result) => {
@@ -549,10 +572,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelect(
         db,
-        (params: { search: string }) =>
-          from<{ id: number; name: string }>("test_underscores").where((n) =>
-            n.name.includes(params.search),
-          ),
+        dbContext,
+        (ctx, params) => ctx.from("test_underscores").where((n) => n.name.includes(params.search)),
         { search: "_" },
         {
           onSql: (result) => {
@@ -593,10 +614,8 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelect(
         db,
-        (params: { search: string }) =>
-          from<{ id: number; path: string }>("test_backslashes").where((p) =>
-            p.path.includes(params.search),
-          ),
+        dbContext,
+        (ctx, params) => ctx.from("test_backslashes").where((p) => p.path.includes(params.search)),
         { search: "\\" },
         {
           onSql: (result) => {
@@ -638,10 +657,9 @@ describe("Better SQLite3 Integration - String Operations", () => {
       // Search for pattern containing both % and _
       const results = executeSelect(
         db,
-        (params: { search: string }) =>
-          from<{ id: number; content: string }>("test_mixed_special").where((c) =>
-            c.content.includes(params.search),
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx.from("test_mixed_special").where((c) => c.content.includes(params.search)),
         { search: "%_" },
         {
           onSql: (result) => {

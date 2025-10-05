@@ -71,7 +71,8 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelectSimple(
         db,
         dbContext,
-        (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.startsWith("J") && u.is_active === true),
+        (ctx, _params, _helpers) =>
+          ctx.from("users").where((u) => u.name.startsWith("J") && u.is_active === true),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -101,7 +102,8 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelectSimple(
         db,
         dbContext,
-        (ctx, _params, _helpers) => ctx.from("users").where((u) => u.email.endsWith("@example.com")),
+        (ctx, _params, _helpers) =>
+          ctx.from("users").where((u) => u.email.endsWith("@example.com")),
         {
           onSql: (result) => {
             capturedSql = result;

@@ -54,13 +54,13 @@ interface Schema {
 const db = createContext<Schema>();
 
 describe("Join SQL Generation", () => {
-
   describe("INNER JOIN", () => {
     it("should generate INNER JOIN with proper syntax", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.departmentId,
@@ -80,7 +80,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .where((u) => u.id > 100)
             .join(
               ctx.from("orders"),
@@ -102,7 +103,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("orders").where((o) => o.amount > 1000),
               (u) => u.id,
@@ -123,7 +125,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("orders"),
               (u) => u.id,
@@ -147,7 +150,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.departmentId,
@@ -168,7 +172,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("orders"),
               (u) => u.id,
@@ -193,7 +198,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.departmentId,
@@ -222,7 +228,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("orders")
+          ctx
+            .from("orders")
             .join(
               ctx.from("users"),
               (o) => o.userId,
@@ -262,7 +269,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("users").where((m) => m.managerId != null),
               (e) => e.managerId,
@@ -284,7 +292,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("orders"),
               (u) => u.id,
@@ -310,7 +319,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("orders"),
               (u) => u.id,
@@ -331,7 +341,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .where((u) => u.id > 50)
             .join(
               ctx.from("orders").where((o) => o.status == "completed"),
@@ -363,7 +374,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx, p: { page: number; pageSize: number }) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.departmentId,
@@ -390,7 +402,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .groupJoin(
               ctx.from("departments"),
               (u) => u.departmentId,
@@ -416,7 +429,8 @@ describe("Join SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("departments")
+          ctx
+            .from("departments")
             .selectMany(
               () => ctx.from("users"),
               (department, user) => ({ department, user }),

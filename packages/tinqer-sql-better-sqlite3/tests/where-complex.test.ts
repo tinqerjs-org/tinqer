@@ -41,11 +41,13 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) =>
-              (u.age >= 18 && u.age <= 65 && u.isActive) ||
-              (u.role == "admin" && u.departmentId == 1),
-          ),
+          ctx
+            .from("users")
+            .where(
+              (u) =>
+                (u.age >= 18 && u.age <= 65 && u.isActive) ||
+                (u.role == "admin" && u.departmentId == 1),
+            ),
         {},
       );
 
@@ -66,12 +68,14 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products").where(
-            (p) =>
-              ((p.price > 100 && p.price < 500) || (p.discount != null && p.discount > 20)) &&
-              p.isAvailable &&
-              p.stock > 0,
-          ),
+          ctx
+            .from("products")
+            .where(
+              (p) =>
+                ((p.price > 100 && p.price < 500) || (p.discount != null && p.discount > 20)) &&
+                p.isAvailable &&
+                p.stock > 0,
+            ),
         {},
       );
 
@@ -93,9 +97,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) => !(u.role == "guest") && !!u.isActive && !(u.age < 18 || u.age > 99),
-          ),
+          ctx
+            .from("users")
+            .where((u) => !(u.role == "guest") && !!u.isActive && !(u.age < 18 || u.age > 99)),
         {},
       );
 
@@ -124,10 +128,12 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) =>
-              u.age >= 25 && u.age <= 35 && (u.salary || 0) >= 50000 && (u.salary || 0) <= 100000,
-          ),
+          ctx
+            .from("users")
+            .where(
+              (u) =>
+                u.age >= 25 && u.age <= 35 && (u.salary || 0) >= 50000 && (u.salary || 0) <= 100000,
+            ),
         {},
       );
 
@@ -156,9 +162,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) => u.role == "admin" || u.role == "manager" || u.role == "supervisor",
-          ),
+          ctx
+            .from("users")
+            .where((u) => u.role == "admin" || u.role == "manager" || u.role == "supervisor"),
         {},
       );
 
@@ -176,9 +182,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) => u.role != "guest" && u.role != "blocked" && u.role != "suspended",
-          ),
+          ctx
+            .from("users")
+            .where((u) => u.role != "guest" && u.role != "blocked" && u.role != "suspended"),
         {},
       );
 
@@ -198,9 +204,11 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) => (u.salary == null && u.role == "intern") || (u.salary != null && u.salary > 0),
-          ),
+          ctx
+            .from("users")
+            .where(
+              (u) => (u.salary == null && u.role == "intern") || (u.salary != null && u.salary > 0),
+            ),
         {},
       );
 
@@ -245,9 +253,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products").where(
-            (p) => p.price - (p.discount || 0) > 50 && p.stock * p.price < 10000,
-          ),
+          ctx
+            .from("products")
+            .where((p) => p.price - (p.discount || 0) > 50 && p.stock * p.price < 10000),
         {},
       );
 
@@ -258,7 +266,11 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle division and modulo", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").where((u) => u.id % 2 == 0), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from("users").where((u) => u.id % 2 == 0),
+        {},
+      );
 
       expect(result.sql).to.contain(`("id" % @__p1) = @__p2`);
       expect(result.params).to.deep.equal({ __p1: 2, __p2: 0 });
@@ -270,10 +282,15 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) =>
-              u.isActive == true && u.age >= 21 && u.name != "Anonymous" && (u.salary || 0) > 30000,
-          ),
+          ctx
+            .from("users")
+            .where(
+              (u) =>
+                u.isActive == true &&
+                u.age >= 21 &&
+                u.name != "Anonymous" &&
+                (u.salary || 0) > 30000,
+            ),
         {},
       );
 
@@ -310,7 +327,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .where((u) => u.age >= 18)
             .where((u) => u.isActive)
             .where((u) => u.role != "guest"),
@@ -327,7 +345,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products")
+          ctx
+            .from("products")
             .where((p) => p.price > 10)
             .where((p) => p.stock > 0)
             .where((p) => p.isAvailable)
@@ -355,13 +374,15 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx, params: { minAge: number; maxAge: number; roles: string[]; isActive: boolean }) =>
-          ctx.from("users").where(
-            (u) =>
-              u.age >= params.minAge &&
-              u.age <= params.maxAge &&
-              u.isActive == params.isActive &&
-              (u.role == params.roles[0] || u.role == params.roles[1]),
-          ),
+          ctx
+            .from("users")
+            .where(
+              (u) =>
+                u.age >= params.minAge &&
+                u.age <= params.maxAge &&
+                u.isActive == params.isActive &&
+                (u.role == params.roles[0] || u.role == params.roles[1]),
+            ),
         { minAge: 25, maxAge: 55, roles: ["admin", "manager"], isActive: true },
       );
 
@@ -382,13 +403,15 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx, params: { threshold: number }) =>
-          ctx.from("products").where(
-            (p) =>
-              p.price > params.threshold &&
-              p.stock > 10 &&
-              p.discount != null &&
-              p.isAvailable == true,
-          ),
+          ctx
+            .from("products")
+            .where(
+              (p) =>
+                p.price > params.threshold &&
+                p.stock > 10 &&
+                p.discount != null &&
+                p.isAvailable == true,
+            ),
         { threshold: 100 },
       );
 
@@ -409,19 +432,21 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) =>
-              u.id > 0 &&
-              u.id < 1000000 &&
-              u.age >= 0 &&
-              u.age <= 150 &&
-              u.name != "" &&
-              u.name != null &&
-              u.role != "deleted" &&
-              u.isActive == true &&
-              (u.salary || 0) >= 0 &&
-              (u.departmentId || 0) > 0,
-          ),
+          ctx
+            .from("users")
+            .where(
+              (u) =>
+                u.id > 0 &&
+                u.id < 1000000 &&
+                u.age >= 0 &&
+                u.age <= 150 &&
+                u.name != "" &&
+                u.name != null &&
+                u.role != "deleted" &&
+                u.isActive == true &&
+                (u.salary || 0) >= 0 &&
+                (u.departmentId || 0) > 0,
+            ),
         {},
       );
 
@@ -432,15 +457,17 @@ describe("Complex WHERE Clause SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products").where(
-            (p) =>
-              p.id == 100 ||
-              p.price != 0 ||
-              p.stock > 10 ||
-              p.stock >= 5 ||
-              (p.discount ?? 0) < 50 ||
-              (p.discount ?? 0) <= 75,
-          ),
+          ctx
+            .from("products")
+            .where(
+              (p) =>
+                p.id == 100 ||
+                p.price != 0 ||
+                p.stock > 10 ||
+                p.stock >= 5 ||
+                (p.discount ?? 0) < 50 ||
+                (p.discount ?? 0) <= 75,
+            ),
         {},
       );
 

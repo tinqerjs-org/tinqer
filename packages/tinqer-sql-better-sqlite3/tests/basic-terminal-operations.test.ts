@@ -18,7 +18,11 @@ describe("Basic Terminal Operations", () => {
     it("should generate SQL for count() with WHERE", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("users").where((u) => u.isActive).count(),
+        (ctx) =>
+          ctx
+            .from("users")
+            .where((u) => u.isActive)
+            .count(),
         {},
       );
       expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" WHERE "isActive"');

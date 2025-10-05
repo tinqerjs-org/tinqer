@@ -17,9 +17,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("ROW_NUMBER()", () => {
     it("should assign unique row numbers within each department ordered by salary DESC", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -61,9 +63,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle ROW_NUMBER without PARTITION BY", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               salary: u.salary,
@@ -89,9 +93,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should work with WHERE clause filtering", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -120,9 +126,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("RANK()", () => {
     it("should handle ties in salary with gaps in rank", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -157,9 +165,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
       );
 
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               salary: u.salary,
@@ -198,9 +208,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
       );
 
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               salary: u.salary,
@@ -232,9 +244,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should work across all departments", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -261,9 +275,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Multiple Window Functions", () => {
     it("should support multiple window functions in the same query", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -308,9 +324,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Real-world Scenarios", () => {
     it("should find the top earner in each department", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -339,9 +357,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should rank employees by salary within department with age as tiebreaker", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               age: u.age,
@@ -366,9 +386,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should assign sequential numbers for pagination-like scenarios", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               email: u.email,
@@ -392,9 +414,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Complex Ordering", () => {
     it("should handle multiple ORDER BY columns in window function", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               age: u.age,
@@ -421,9 +445,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Filtering on Window Function Results", () => {
     it("should filter on ROW_NUMBER to get top 1 per department", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               ...u,
               rn: h
@@ -451,9 +477,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should filter on ROW_NUMBER to get top 3 per department", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -481,9 +509,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should filter on RANK to get all rank 1 employees", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -509,9 +539,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should combine window filter with regular WHERE conditions", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -539,9 +571,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle spread operator with window functions", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               ...u,
               rn: h
@@ -570,9 +604,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Recursive Nesting - Multiple Window Filters", () => {
     it("should handle double nesting: top-3 per department, then top-1 overall", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -608,9 +644,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle triple nesting: salary -> performance -> name", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               ...u,
               rn1: h
@@ -653,9 +691,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle nested filters with different window functions", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               department_id: u.department_id,
@@ -692,9 +732,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle nested filters with spread operator preserving all columns", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               ...u,
               rn1: h
@@ -731,9 +773,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle mixed regular WHERE and nested window filters", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .where((u) => u.is_active === true) // Regular filter
             .select((u) => ({
               name: u.name,
@@ -770,9 +814,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle quadruple nesting (extreme case)", async () => {
       const result = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               name: u.name,
               salary: u.salary,
@@ -822,9 +868,11 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle COUNT after window filter", async () => {
       const count = await executeSelect(
-        db,dbContext,
+        db,
+        dbContext,
         (ctx, _, h) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({
               id: u.id,
               name: u.name,

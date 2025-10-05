@@ -277,7 +277,6 @@ describe("GROUP BY with Composite Keys", () => {
     });
 
     it("should handle nested property access in composite GROUP BY", () => {
-
       interface OrderWithCustomer {
         orderId: number;
         customer: {

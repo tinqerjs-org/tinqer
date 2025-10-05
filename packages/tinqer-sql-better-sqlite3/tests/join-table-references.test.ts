@@ -51,7 +51,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -82,7 +83,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -108,7 +110,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -139,7 +142,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -181,7 +185,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -211,7 +216,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -253,7 +259,8 @@ describe("JOIN with Table References", () => {
         selectStatement(
           db,
           (ctx) =>
-            ctx.from("users")
+            ctx
+              .from("users")
               .join(
                 ctx.from("departments"),
                 (u) => u.department_id,
@@ -279,7 +286,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -308,7 +316,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -353,14 +362,17 @@ describe("JOIN with Table References", () => {
             ),
           {},
         );
-      }).to.throw(/JOIN with result selector requires explicit SELECT projection|Failed to parse query/);
+      }).to.throw(
+        /JOIN with result selector requires explicit SELECT projection|Failed to parse query/,
+      );
     });
 
     it("should handle empty object in result selector with SELECT", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -384,7 +396,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -408,7 +421,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -437,7 +451,8 @@ describe("JOIN with Table References", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,

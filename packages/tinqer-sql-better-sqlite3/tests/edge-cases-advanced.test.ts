@@ -47,7 +47,6 @@ interface Schema {
 const db = createContext<Schema>();
 
 describe("Advanced Edge Cases and Corner Scenarios", () => {
-
   describe("NULL value edge cases", () => {
     it("should handle NULL in arithmetic with COALESCE", () => {
       const result = selectStatement(
@@ -78,9 +77,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("items").where(
-            (i) => i.value === null || (i.text === null && i.flag === true),
-          ),
+          ctx.from("items").where((i) => i.value === null || (i.text === null && i.flag === true)),
         {},
       );
 
@@ -93,9 +90,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("items").where(
-            (i) => i.value !== null && i.value >= 10 && i.value <= 100,
-          ),
+          ctx.from("items").where((i) => i.value !== null && i.value >= 10 && i.value <= 100),
         {},
       );
 
@@ -209,11 +204,13 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("items").where(
-            (i) =>
-              (i.flag && i.value !== null && i.value > 0) ||
-              (!i.flag && i.value !== null && i.value < 0),
-          ),
+          ctx
+            .from("items")
+            .where(
+              (i) =>
+                (i.flag && i.value !== null && i.value > 0) ||
+                (!i.flag && i.value !== null && i.value < 0),
+            ),
         {},
       );
 
@@ -259,9 +256,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("items").where(
-            (i) => i.value !== null && ((i.value + 10) * 2 - 5) / 3 > 10,
-          ),
+          ctx.from("items").where((i) => i.value !== null && ((i.value + 10) * 2 - 5) / 3 > 10),
         {},
       );
 

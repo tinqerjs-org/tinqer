@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { deleteFrom, createContext } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { executeDelete, deleteStatement } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
@@ -194,7 +194,8 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_products").where((p) => p.name === "Notebook"),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_products").where((p) => p.name === "Notebook"),
         {},
       );
 
@@ -215,8 +216,9 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       const rowCount = executeDelete(
         db,
-        (p: typeof params) =>
-          deleteFrom(dbContext, "test_products").where((prod) => prod.name === p.productName),
+        dbContext,
+        (ctx, p: typeof params) =>
+          ctx.deleteFrom("test_products").where((prod) => prod.name === p.productName),
         params,
       );
 
@@ -231,7 +233,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with numeric comparison", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_products").where((p) => p.price! < 10),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! < 10),
         {},
       );
 
@@ -244,7 +247,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with boolean condition", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_users").where((u) => u.is_active === 0), // SQLite uses 0 for false
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_users").where((u) => u.is_active === 0), // SQLite uses 0 for false
         {},
       );
 
@@ -257,7 +261,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with NULL checks", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_logs").where((l) => l.user_id === null),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_logs").where((l) => l.user_id === null),
         {},
       );
 
@@ -272,8 +277,9 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with AND conditions", () => {
       const rowCount = executeDelete(
         db,
-        () =>
-          deleteFrom(dbContext, "test_products").where(
+        dbContext,
+        (ctx) =>
+          ctx.deleteFrom("test_products").where(
             (p) => p.category === "Electronics" && p.in_stock === 0, // SQLite uses 0 for false
           ),
         {},
@@ -290,10 +296,11 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with OR conditions", () => {
       const rowCount = executeDelete(
         db,
-        () =>
-          deleteFrom(dbContext, "test_products").where(
-            (p) => p.category === "Stationery" || p.price! > 500,
-          ),
+        dbContext,
+        (ctx) =>
+          ctx
+            .deleteFrom(dbContext, "test_products")
+            .where((p) => p.category === "Stationery" || p.price! > 500),
         {},
       );
 
@@ -311,8 +318,9 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with complex nested conditions", () => {
       const rowCount = executeDelete(
         db,
-        () =>
-          deleteFrom(dbContext, "test_users").where(
+        dbContext,
+        (ctx) =>
+          ctx.deleteFrom("test_users").where(
             (u) => (u.role === "user" && u.age! < 30) || (u.is_active === 0 && u.role !== "admin"), // SQLite uses 0 for false
           ),
         {},
@@ -331,7 +339,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with NOT conditions", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_logs").where((l) => l.level !== "INFO"),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_logs").where((l) => l.level !== "INFO"),
         {},
       );
 
@@ -347,8 +356,11 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with comparison operators", () => {
       const rowCount = executeDelete(
         db,
-        () =>
-          deleteFrom(dbContext, "test_products").where((p) => p.price! >= 250 && p.price! <= 600),
+        dbContext,
+        (ctx) =>
+          ctx
+            .deleteFrom(dbContext, "test_products")
+            .where((p) => p.price! >= 250 && p.price! <= 600),
         {},
       );
 
@@ -365,7 +377,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with startsWith", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_users").where((u) => u.username.startsWith("john")),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_users").where((u) => u.username.startsWith("john")),
         {},
       );
 
@@ -378,7 +391,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with endsWith", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_users").where((u) => u.email.endsWith("@example.com")),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_users").where((u) => u.email.endsWith("@example.com")),
         {},
       );
 
@@ -391,7 +405,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with contains", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_logs").where((l) => l.message!.includes("login")),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_logs").where((l) => l.message!.includes("login")),
         {},
       );
 
@@ -408,10 +423,11 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       const rowCount = executeDelete(
         db,
-        (p: { categories: string[] }) =>
-          deleteFrom(dbContext, "test_products").where((prod) =>
-            p.categories.includes(prod.category!),
-          ),
+        dbContext,
+        (ctx, p) =>
+          ctx
+            .deleteFrom(dbContext, "test_products")
+            .where((prod) => p.categories.includes(prod.category!)),
         { categories: categoriesToDelete },
       );
 
@@ -429,8 +445,8 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       const rowCount = executeDelete(
         db,
-        (p: { ids: number[] }) =>
-          deleteFrom(dbContext, "test_users").where((u) => p.ids.includes(u.id!)),
+        dbContext,
+        (ctx, p) => ctx.deleteFrom("test_users").where((u) => p.ids.includes(u.id!)),
         { ids: userIds },
       );
 
@@ -452,8 +468,8 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       const rowCount = executeDelete(
         db,
-        (p: { cutoff: string }) =>
-          deleteFrom(dbContext, "test_products").where((prod) => prod.created_date! < p.cutoff),
+        dbContext,
+        (ctx, p) => ctx.deleteFrom("test_products").where((prod) => prod.created_date! < p.cutoff),
         { cutoff: cutoffDate },
       );
 
@@ -478,8 +494,8 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       const rowCount = executeDelete(
         db,
-        (p: { cutoff: string }) =>
-          deleteFrom(dbContext, "test_logs").where((l) => l.created_at! < p.cutoff),
+        dbContext,
+        (ctx, p) => ctx.deleteFrom("test_logs").where((l) => l.created_at! < p.cutoff),
         { cutoff: cutoffTime },
       );
 
@@ -494,7 +510,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete all matching rows", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_orders").where((o) => o.status === "pending"),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_orders").where((o) => o.status === "pending"),
         {},
       );
 
@@ -507,7 +524,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should delete with allowFullTableDelete", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_logs").allowFullTableDelete(),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_logs").allowFullTableDelete(),
         {},
       );
 
@@ -519,7 +537,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
     it("should throw error when DELETE has no WHERE and no allow flag", () => {
       try {
-        executeDelete(db, () => deleteFrom(dbContext, "test_products"), {});
+        executeDelete(db, dbContext, (ctx) => ctx.deleteFrom("test_products"), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -538,7 +556,8 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_users").where((u) => u.username === "john_doe"),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_users").where((u) => u.username === "john_doe"),
         {},
       );
 
@@ -554,7 +573,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should return 0 when no rows match", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_products").where((p) => p.name === "NonExistent"),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_products").where((p) => p.name === "NonExistent"),
         {},
       );
 
@@ -570,7 +590,8 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should handle impossible conditions gracefully", () => {
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_products").where((p) => p.price! < 0),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! < 0),
         {},
       );
 
@@ -583,7 +604,8 @@ describe("DELETE Operations - SQLite Integration", () => {
       // SQLite stores booleans as integers
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_products").where((p) => p.in_stock === 1), // SQLite uses 1 for true
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_products").where((p) => p.in_stock === 1), // SQLite uses 1 for true
         {},
       );
 
@@ -602,7 +624,8 @@ describe("DELETE Operations - SQLite Integration", () => {
       // SQLite allows flexible type comparisons
       const rowCount = executeDelete(
         db,
-        () => deleteFrom(dbContext, "test_products").where((p) => p.price === 299.99),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_products").where((p) => p.price === 299.99),
         {},
       );
 
@@ -617,7 +640,8 @@ describe("DELETE Operations - SQLite Integration", () => {
   describe("SQL generation verification", () => {
     it("should generate correct DELETE SQL for SQLite", () => {
       const result = deleteStatement(
-        () => deleteFrom(dbContext, "test_products").where((p) => p.id === 1),
+        dbContext,
+        (ctx) => ctx.deleteFrom("test_products").where((p) => p.id === 1),
         {},
       );
 
@@ -631,8 +655,9 @@ describe("DELETE Operations - SQLite Integration", () => {
 
     it("should generate DELETE with complex WHERE", () => {
       const result = deleteStatement(
-        () =>
-          deleteFrom(dbContext, "test_users").where(
+        dbContext,
+        (ctx) =>
+          ctx.deleteFrom("test_users").where(
             (u) => u.age! > 25 && (u.role === "admin" || u.is_active === 0), // SQLite uses 0 for false
           ),
         {},
@@ -648,10 +673,11 @@ describe("DELETE Operations - SQLite Integration", () => {
       const params = { minAge: 30, targetRole: "user" };
 
       const result = deleteStatement(
-        (p: typeof params) =>
-          deleteFrom(dbContext, "test_users").where(
-            (u) => u.age! > p.minAge && u.role === p.targetRole,
-          ),
+        dbContext,
+        (ctx, p) =>
+          ctx
+            .deleteFrom(dbContext, "test_users")
+            .where((u) => u.age! > p.minAge && u.role === p.targetRole),
         params,
       );
 

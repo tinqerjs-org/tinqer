@@ -101,7 +101,12 @@ function typeTests() {
   const hasUsers: boolean = executeSelect(mockDb, db, (ctx) => ctx.from("users").any(), {});
 
   // sum() returns number
-  const totalAge: number = executeSelect(mockDb, db, (ctx) => ctx.from("users").sum((u) => u.age), {});
+  const totalAge: number = executeSelect(
+    mockDb,
+    db,
+    (ctx) => ctx.from("users").sum((u) => u.age),
+    {},
+  );
 
   // Use the variables to avoid unused variable warnings
   console.log(users, userNames, firstUser, maybeUser, count, hasUsers, totalAge);

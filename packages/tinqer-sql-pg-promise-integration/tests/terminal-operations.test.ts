@@ -99,7 +99,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         db,
         dbContext,
-        (ctx, _params, _helpers) => ctx.from("users").firstOrDefault((u) => u.age !== null && u.age > 100),
+        (ctx, _params, _helpers) =>
+          ctx.from("users").firstOrDefault((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -217,7 +218,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
         await executeSelectSimple(
           db,
           dbContext,
-          (ctx, _params, _helpers) => ctx.from("users").single((u) => u.email === "nonexistent@example.com"),
+          (ctx, _params, _helpers) =>
+            ctx.from("users").single((u) => u.email === "nonexistent@example.com"),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -263,7 +265,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
         await executeSelectSimple(
           db,
           dbContext,
-          (ctx, _params, _helpers) => ctx.from("users").singleOrDefault((u) => u.department_id === 1),
+          (ctx, _params, _helpers) =>
+            ctx.from("users").singleOrDefault((u) => u.department_id === 1),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -345,7 +348,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         db,
         dbContext,
-        (ctx, _params, _helpers) => ctx.from("users").lastOrDefault((u) => u.age !== null && u.age > 100),
+        (ctx, _params, _helpers) =>
+          ctx.from("users").lastOrDefault((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -504,14 +508,11 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       expect(capturedSql!.params).to.deep.equal({ __p1: 1, __p2: true });
 
       // Check the actual data to verify the result
-      const engineerStatus = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx
-            .from("users")
-            .where((u) => u.department_id === 1)
-            .select((u) => ({ is_active: u.is_active })),
+      const engineerStatus = await executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+        ctx
+          .from("users")
+          .where((u) => u.department_id === 1)
+          .select((u) => ({ is_active: u.is_active })),
       );
 
       const expectedResult = engineerStatus.every((u) => u.is_active === true);

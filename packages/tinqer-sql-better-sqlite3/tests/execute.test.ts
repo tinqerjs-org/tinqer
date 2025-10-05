@@ -94,7 +94,8 @@ describe("Execute Function", () => {
 
     it("should handle last() operation", async () => {
       const queryBuilder = (ctx) =>
-        ctx.from("users")
+        ctx
+          .from("users")
           .orderBy((u) => u.id)
           .last();
 

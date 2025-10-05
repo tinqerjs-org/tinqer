@@ -25,7 +25,11 @@ describe("ANY and ALL Operations", () => {
     });
 
     it("should generate SQL for any() with predicate", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<User>("users").any((u) => u.age >= 18), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from<User>("users").any((u) => u.age >= 18),
+        {},
+      );
       expect(result.sql).to.equal(
         'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "age" >= @__p1) THEN 1 ELSE 0 END',
       );
@@ -33,7 +37,11 @@ describe("ANY and ALL Operations", () => {
     });
 
     it("should generate SQL for any() with boolean column", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<User>("users").any((u) => u.isActive), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from<User>("users").any((u) => u.isActive),
+        {},
+      );
       expect(result.sql).to.equal(
         'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "isActive") THEN 1 ELSE 0 END',
       );
@@ -59,7 +67,11 @@ describe("ANY and ALL Operations", () => {
 
   describe("ALL operations", () => {
     it("should generate SQL for all() with predicate", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<User>("users").all((u) => u.age >= 18), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from<User>("users").all((u) => u.age >= 18),
+        {},
+      );
       expect(result.sql).to.equal(
         'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("age" >= @__p1)) THEN 1 ELSE 0 END',
       );
@@ -67,7 +79,11 @@ describe("ANY and ALL Operations", () => {
     });
 
     it("should generate SQL for all() with boolean column", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<User>("users").all((u) => u.isActive), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from<User>("users").all((u) => u.isActive),
+        {},
+      );
       expect(result.sql).to.equal(
         'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("isActive")) THEN 1 ELSE 0 END',
       );

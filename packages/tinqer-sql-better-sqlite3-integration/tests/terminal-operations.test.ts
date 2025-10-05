@@ -21,8 +21,10 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const user = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .orderBy((u) => u.id)
             .first(),
         {
@@ -47,7 +49,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const user = executeSelectSimple(
         db,
-        () => from(dbContext, "users").first((u) => u.age !== null && u.age > 40),
+        dbContext,
+        (ctx) => ctx.from("users").first((u) => u.age !== null && u.age > 40),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -71,7 +74,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       try {
         executeSelectSimple(
           db,
-          () => from(dbContext, "users").first((u) => u.age !== null && u.age > 100),
+          dbContext,
+          (ctx) => ctx.from("users").first((u) => u.age !== null && u.age > 100),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -95,7 +99,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const user = executeSelectSimple(
         db,
-        () => from(dbContext, "users").firstOrDefault((u) => u.age !== null && u.age > 100),
+        dbContext,
+        (ctx) => ctx.from("users").firstOrDefault((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -117,10 +122,12 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const result = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .join(
-              from(dbContext, "departments"),
+              ctx.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -161,7 +168,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const user = executeSelectSimple(
         db,
-        () => from(dbContext, "users").single((u) => u.email === "john@example.com"),
+        dbContext,
+        (ctx) => ctx.from("users").single((u) => u.email === "john@example.com"),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -183,7 +191,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       try {
         executeSelectSimple(
           db,
-          () => from(dbContext, "users").single((u) => u.department_id === 1),
+          dbContext,
+          (ctx) => ctx.from("users").single((u) => u.department_id === 1),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -208,7 +217,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       try {
         executeSelectSimple(
           db,
-          () => from(dbContext, "users").single((u) => u.email === "nonexistent@example.com"),
+          dbContext,
+          (ctx) => ctx.from("users").single((u) => u.email === "nonexistent@example.com"),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -230,8 +240,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const user = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
+        dbContext,
+        (ctx) => ctx.from("users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -252,7 +262,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       try {
         executeSelectSimple(
           db,
-          () => from(dbContext, "users").singleOrDefault((u) => u.department_id === 1),
+          dbContext,
+          (ctx) => ctx.from("users").singleOrDefault((u) => u.department_id === 1),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -278,8 +289,10 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const user = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .orderBy((u) => u.id)
             .last(),
         {
@@ -302,8 +315,10 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const user = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.department_id === 1)
             .orderBy((u) => u.name)
             .last(),
@@ -329,7 +344,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const user = executeSelectSimple(
         db,
-        () => from(dbContext, "users").lastOrDefault((u) => u.age !== null && u.age > 100),
+        dbContext,
+        (ctx) => ctx.from("users").lastOrDefault((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -353,7 +369,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const hasYoungUsers = executeSelectSimple(
         db,
-        () => from(dbContext, "users").any((u) => u.age !== null && u.age < 30),
+        dbContext,
+        (ctx) => ctx.from("users").any((u) => u.age !== null && u.age < 30),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -375,7 +392,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const hasCentenarians = executeSelectSimple(
         db,
-        () => from(dbContext, "users").any((u) => u.age !== null && u.age > 100),
+        dbContext,
+        (ctx) => ctx.from("users").any((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -395,7 +413,7 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
     it("should return true when any() is called without predicate on non-empty table", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasUsers = executeSelectSimple(db, () => from(dbContext, "users").any(), {
+      const hasUsers = executeSelectSimple(db, dbContext, (ctx) => ctx.from("users").any(), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -415,7 +433,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const allHaveEmail = executeSelectSimple(
         db,
-        () => from(dbContext, "users").all((u) => u.email !== null),
+        dbContext,
+        (ctx) => ctx.from("users").all((u) => u.email !== null),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -437,7 +456,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const allActive = executeSelectSimple(
         db,
-        () => from(dbContext, "users").all((u) => u.is_active === 1),
+        dbContext,
+        (ctx) => ctx.from("users").all((u) => u.is_active === 1),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -459,8 +479,10 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const allEngineersActive = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.department_id === 1)
             .all((u) => u.is_active === 1),
         {
@@ -477,8 +499,9 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       expect(capturedSql!.params).to.deep.equal({ __p1: 1, __p2: 1 });
 
       // Check the actual data to verify the result
-      const engineerStatus = executeSelectSimple(db, () =>
-        from(dbContext, "users")
+      const engineerStatus = executeSelectSimple(db, dbContext, (ctx) =>
+        ctx
+          .from("users")
           .where((u) => u.department_id === 1)
           .select((u) => ({ is_active: u.is_active })),
       );
@@ -494,8 +517,10 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const users = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.is_active === 1)
             .orderBy((u) => u.name),
         {
@@ -523,8 +548,10 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const products = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
             .where((p) => p.stock > 50)
             .orderByDescending((p) => p.price),
         {
@@ -559,7 +586,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
       const targetEmail = "jane@example.com";
       const user = executeSelect(
         db,
-        (params) => from(dbContext, "users").single((u) => u.email === params.email),
+        dbContext,
+        (ctx, params) => ctx.from("users").single((u) => u.email === params.email),
         { email: targetEmail },
         {
           onSql: (result) => {
@@ -582,7 +610,8 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const hasExpensiveElectronics = executeSelectSimple(
         db,
-        () => from(dbContext, "products").any((p) => p.category === "Electronics" && p.price > 500),
+        dbContext,
+        (ctx) => ctx.from("products").any((p) => p.category === "Electronics" && p.price > 500),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -604,8 +633,10 @@ describe("Better SQLite3 Integration - Terminal Operations", () => {
 
       const allPositive = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "orders")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("orders")
             .where((o) => o.status === "completed")
             .all((o) => o.total_amount > 0),
         {

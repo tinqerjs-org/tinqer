@@ -53,9 +53,9 @@ describe("String methods in WHERE clause", () => {
       const result = selectStatement(
         db,
         (ctx, params: { search: string; minAge: number }) =>
-          ctx.from("users").where(
-            (u) => u.name.toLowerCase() == params.search && u.age > params.minAge,
-          ),
+          ctx
+            .from("users")
+            .where((u) => u.name.toLowerCase() == params.search && u.age > params.minAge),
         { search: "john", minAge: 18 },
       );
 
@@ -71,10 +71,12 @@ describe("String methods in WHERE clause", () => {
       const result = selectStatement(
         db,
         (ctx, params: { prefix: string; minAge: number }) =>
-          ctx.from("users").where(
-            (u) =>
-              u.name.toLowerCase().startsWith(params.prefix as string) && u.age >= params.minAge,
-          ),
+          ctx
+            .from("users")
+            .where(
+              (u) =>
+                u.name.toLowerCase().startsWith(params.prefix as string) && u.age >= params.minAge,
+            ),
         { prefix: "j", minAge: 21 },
       );
 
@@ -116,9 +118,11 @@ describe("String methods in WHERE clause", () => {
       const result = selectStatement(
         db,
         (ctx, params: { category: string; excludeName: string }) =>
-          ctx.from("products").where(
-            (p) => p.category.toUpperCase() == params.category && p.name != params.excludeName,
-          ),
+          ctx
+            .from("products")
+            .where(
+              (p) => p.category.toUpperCase() == params.category && p.name != params.excludeName,
+            ),
         { category: "ELECTRONICS", excludeName: "Phone" },
       );
 
@@ -136,9 +140,11 @@ describe("String methods in WHERE clause", () => {
       const result = selectStatement(
         db,
         (ctx, params: { name1: string; name2: string }) =>
-          ctx.from("users").where(
-            (u) => u.name.toLowerCase() == params.name1 || u.name.toLowerCase() == params.name2,
-          ),
+          ctx
+            .from("users")
+            .where(
+              (u) => u.name.toLowerCase() == params.name1 || u.name.toLowerCase() == params.name2,
+            ),
         { name1: "john", name2: "jane" },
       );
 
@@ -155,11 +161,13 @@ describe("String methods in WHERE clause", () => {
       const result = selectStatement(
         db,
         (ctx, params: { searchName: string; searchCategory: string }) =>
-          ctx.from("products").where(
-            (p) =>
-              p.name.toLowerCase() == params.searchName &&
-              p.category.toUpperCase() == params.searchCategory,
-          ),
+          ctx
+            .from("products")
+            .where(
+              (p) =>
+                p.name.toLowerCase() == params.searchName &&
+                p.category.toUpperCase() == params.searchCategory,
+            ),
         { searchName: "laptop", searchCategory: "ELECTRONICS" },
       );
 
@@ -174,9 +182,9 @@ describe("String methods in WHERE clause", () => {
       const result = selectStatement(
         db,
         (ctx, params: { defaultName: string; search: string }) =>
-          ctx.from("users").where(
-            (u) => (u.name ?? params.defaultName).toLowerCase() == params.search,
-          ),
+          ctx
+            .from("users")
+            .where((u) => (u.name ?? params.defaultName).toLowerCase() == params.search),
         { defaultName: "Unknown", search: "unknown" },
       );
 

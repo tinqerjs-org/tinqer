@@ -81,7 +81,11 @@ describe("Edge Cases and Error Handling", () => {
     // Removed: || operator for defaults
 
     it("should handle zero values", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<TestTable>("test").where((t) => t.value == 0), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from<TestTable>("test").where((t) => t.value == 0),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "value" = @__p1');
       expect(result.params).to.deep.equal({ __p1: 0 });
@@ -92,7 +96,11 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("String edge cases", () => {
     it("should handle empty strings", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<TestTable>("test").where((t) => t.name == ""), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from<TestTable>("test").where((t) => t.name == ""),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "name" = @__p1');
       expect(result.params).to.deep.equal({ __p1: "" });
@@ -204,14 +212,22 @@ describe("Edge Cases and Error Handling", () => {
     });
 
     it("should handle boolean field directly", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<TestTable>("test").where((t) => t.flag), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from<TestTable>("test").where((t) => t.flag),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "flag"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should handle negated boolean", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<TestTable>("test").where((t) => !t.flag), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from<TestTable>("test").where((t) => !t.flag),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE NOT "flag"');
       expect(result.params).to.deep.equal({});
@@ -223,11 +239,13 @@ describe("Edge Cases and Error Handling", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("test").where(
-            (t) =>
-              ((t.id > 0 && t.id < 100) || (t.id > 1000 && t.id < 2000)) &&
-              (t.flag == true || (t.name != "" && t.value != null)),
-          ),
+          ctx
+            .from("test")
+            .where(
+              (t) =>
+                ((t.id > 0 && t.id < 100) || (t.id > 1000 && t.id < 2000)) &&
+                (t.flag == true || (t.name != "" && t.value != null)),
+            ),
         {},
       );
 
@@ -244,7 +262,8 @@ describe("Edge Cases and Error Handling", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("test")
+          ctx
+            .from("test")
             .where((t) => t.id > 0)
             .where((t) => t.id < 1000)
             .where((t) => t.name != "")

@@ -59,7 +59,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .groupBy((s) => s.category)
             .select((g) => ({
               category: g.key,
@@ -81,7 +82,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .groupBy((s) => s.region)
             .select((g) => ({
               region: g.key,
@@ -107,7 +109,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .where((s) => s.amount > 1000 && s.discount < 20)
             .groupBy((s) => s.category)
             .select((g) => ({
@@ -128,7 +131,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("employees")
+          ctx
+            .from("employees")
             .where((e) => e.salary > 50000)
             .where((e) => e.hireYear >= 2020)
             .groupBy((e) => e.department)
@@ -151,7 +155,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .groupBy((s) => s.salesperson)
             .select((g) => ({
               salesperson: g.key,
@@ -170,7 +175,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .groupBy((s) => s.category)
             .select((g) => ({
               category: g.key,
@@ -189,7 +195,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .groupBy((s) => s.region)
             .select((g) => ({
               region: g.key,
@@ -210,7 +217,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .groupBy((s) => s.category)
             .select((g) => ({
               category: g.key,
@@ -231,7 +239,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("employees")
+          ctx
+            .from("employees")
             .groupBy((e) => e.department)
             .select((g) => ({
               dept: g.key,
@@ -311,7 +320,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx, params: { targetProfit: number }) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .where((s) => s.profit > params.targetProfit && s.quantity > 10)
             .groupBy((s) => s.productName)
             .select((g) => ({
@@ -340,7 +350,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .where((s) => s.amount > 100)
             .groupBy((s) => s.region)
             .select((g) => ({
@@ -371,7 +382,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .where((s) => s.quantity > 0 && s.discount < 50)
             .groupBy((s) => s.category)
             .select((g) => ({
@@ -404,7 +416,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .groupBy((s) => s.category)
             .select((g) => ({ category: g.key })),
         {},
@@ -419,7 +432,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .groupBy((s) => s.region)
             .select((g) => ({ region: g.key, count: g.count() })),
         {},
@@ -434,7 +448,8 @@ describe("Advanced GROUP BY SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("sales")
+          ctx
+            .from("sales")
             .distinct()
             .groupBy((s) => s.category)
             .select((g) => ({ category: g.key, uniqueCount: g.count() })),

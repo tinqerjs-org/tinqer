@@ -53,7 +53,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update<{ id: number; age: number }>("main.users")
+          ctx
+            .update<{ id: number; age: number }>("main.users")
             .set({ age: 33 })
             .where((u) => u.id === 3),
         {},
@@ -68,7 +69,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ age: 34 })
             .where((u) => u.id === 4 && u.name === "Alice"),
         {},
@@ -84,7 +86,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ isActive: true })
             .where((u) => u.age > 50 || u.department === "Sales"),
         {},
@@ -100,7 +103,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ salary: 75000 })
             .where((u) => (u.age > 30 && u.department === "IT") || u.role === "Manager"),
         {},
@@ -118,7 +122,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx, p: { newAge: number; userId: number }) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ age: p.newAge })
             .where((u) => u.id === p.userId),
         { newAge: 35, userId: 5 },
@@ -135,7 +140,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx, p: { userId: number }) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ age: 36, email: "fixed@example.com" })
             .where((u) => u.id === p.userId),
         { userId: 6 },
@@ -158,7 +164,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ age: 37 })
             .where((u) => u.id === 7)
             .returning((u) => u.age),
@@ -175,7 +182,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ age: 38, email: "new@example.com" })
             .where((u) => u.id === 8)
             .returning((u) => ({ id: u.id, age: u.age, email: u.email })),
@@ -192,7 +200,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ age: 39 })
             .where((u) => u.id === 9)
             .returning((u) => u),
@@ -226,7 +235,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ isActive: false })
             .where((u) => u.id === 10),
         {},
@@ -242,7 +252,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ email: null })
             .where((u) => u.id === 11),
         {},
@@ -255,7 +266,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ age: 0, salary: -500 })
             .where((u) => u.id === 12),
         {},
@@ -274,7 +286,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ department: "Engineering" })
             .where((u) => u.name.startsWith("A")),
         {},
@@ -290,7 +303,8 @@ describe("UPDATE Statement Generation (SQLite)", () => {
       const result = updateStatement(
         db,
         (ctx) =>
-          ctx.update("users")
+          ctx
+            .update("users")
             .set({ role: "Senior" })
             .where((u) => u.email !== null && u.email.includes("@company.com")),
         {},

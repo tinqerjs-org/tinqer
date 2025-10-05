@@ -69,7 +69,8 @@ describe("Terminal Operations", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .where((u) => u.age > 18)
             .first((u) => u.isActive),
         {},
@@ -123,7 +124,8 @@ describe("Terminal Operations", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .orderBy((u) => u.id)
             .last(),
         {},
@@ -163,7 +165,8 @@ describe("Terminal Operations", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({ name: u.name }))
             .first(),
         {},
@@ -177,7 +180,8 @@ describe("Terminal Operations", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("orders"),
               (u) => u.id,
@@ -198,7 +202,8 @@ describe("Terminal Operations", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .select((u) => ({ name: u.name }))
             .distinct()
             .first(),
@@ -212,7 +217,8 @@ describe("Terminal Operations", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .orderBy((u) => u.name)
             .last(),
         {},

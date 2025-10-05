@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { insertInto, createContext } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { executeInsert, insertStatement } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
@@ -117,8 +117,9 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should insert a single row with all columns", () => {
       const rowCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Laptop",
             price: 999.99,
             category: "Electronics",
@@ -144,8 +145,9 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should insert with partial columns (nullable columns)", () => {
       const rowCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Basic Item",
             price: 10.0,
           }),
@@ -172,8 +174,9 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const rowCount = executeInsert(
         db,
-        (p: typeof params) =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, p: typeof params) =>
+          ctx.insertInto("products").values({
             name: p.productName,
             price: p.productPrice,
             category: p.productCategory,
@@ -194,8 +197,9 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle boolean values correctly", () => {
       const rowCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Out of Stock Item",
             price: 50.0,
             in_stock: 0, // SQLite uses 0/1 for boolean values
@@ -214,8 +218,9 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle NULL values explicitly", () => {
       const rowCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Minimal Product",
             price: 25.0,
             category: null,
@@ -241,8 +246,10 @@ describe("INSERT Operations - SQLite Integration", () => {
       // This is documented in the implementation
 
       const result = insertStatement(
-        () =>
-          insertInto(dbContext, "products")
+        dbContext,
+        (ctx, _params) =>
+          ctx
+            .insertInto("products")
             .values({
               name: "Test Product",
               price: 99.99,
@@ -263,8 +270,9 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle special characters in strings", () => {
       const rowCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
             price: 100.0,
             description: "Description with\nnewlines\tand\ttabs",
@@ -286,8 +294,9 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle Unicode characters", () => {
       const rowCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
             price: 88.88,
             category: "Special ñ категория",
@@ -308,8 +317,9 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle numeric edge cases", () => {
       const rowCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Edge Case Product",
             price: 0.01, // Very small
           }),
@@ -329,8 +339,9 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const rowCount = executeInsert(
         db,
-        (params: { testDate: string }) =>
-          insertInto(dbContext, "orders").values({
+        dbContext,
+        (ctx, params: { testDate: string }) =>
+          ctx.insertInto("orders").values({
             customer_id: 1,
             product_id: 1,
             quantity: 2,
@@ -364,8 +375,9 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const rowCount = executeInsert(
         db,
-        (params: { metadataJson: string }) =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, params: { metadataJson: string }) =>
+          ctx.insertInto("products").values({
             name: "Product with Metadata",
             price: 199.99,
             metadata: params.metadataJson,
@@ -388,8 +400,9 @@ describe("INSERT Operations - SQLite Integration", () => {
       // First insert
       executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "customers").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("customers").values({
             email: "test@example.com",
             name: "Test User",
             age: 30,
@@ -401,8 +414,9 @@ describe("INSERT Operations - SQLite Integration", () => {
       try {
         executeInsert(
           db,
-          () =>
-            insertInto(dbContext, "customers").values({
+          dbContext,
+          (ctx, _params) =>
+            ctx.insertInto("customers").values({
               email: "test@example.com",
               name: "Another User",
               age: 25,
@@ -421,8 +435,9 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Insert customer
       const customerCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "customers").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("customers").values({
             email: "john@example.com",
             name: "John Doe",
             age: 35,
@@ -441,8 +456,9 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Insert product
       const productCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Test Product",
             price: 49.99,
             category: "Test",
@@ -461,8 +477,9 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Insert order referencing both
       const orderCount = executeInsert(
         db,
-        (params: { customerId: number; productId: number }) =>
-          insertInto(dbContext, "orders").values({
+        dbContext,
+        (ctx, params: { customerId: number; productId: number }) =>
+          ctx.insertInto("orders").values({
             customer_id: params.customerId,
             product_id: params.productId,
             quantity: 3,
@@ -489,8 +506,9 @@ describe("INSERT Operations - SQLite Integration", () => {
       for (let i = 1; i <= 3; i++) {
         executeInsert(
           db,
-          (params: { name: string; price: number }) =>
-            insertInto(dbContext, "products").values({
+          dbContext,
+          (ctx, params: { name: string; price: number }) =>
+            ctx.insertInto("products").values({
               name: params.name,
               price: params.price,
             }),
@@ -512,8 +530,9 @@ describe("INSERT Operations - SQLite Integration", () => {
       // SQLite allows flexible types
       const rowCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Flexible Type Product",
             price: "99.99" as unknown as number, // String that can be coerced to number
             category: 123 as unknown as string, // Number in text field
@@ -534,8 +553,9 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle CURRENT_TIMESTAMP default", () => {
       const rowCount = executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "customers").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("customers").values({
             email: "timestamp@test.com",
             name: "Timestamp Test",
           }),
@@ -556,8 +576,9 @@ describe("INSERT Operations - SQLite Integration", () => {
   describe("SQL generation verification", () => {
     it("should generate correct INSERT SQL for SQLite", () => {
       const result = insertStatement(
-        () =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, _params) =>
+          ctx.insertInto("products").values({
             name: "Test",
             price: 10.99,
             in_stock: 1, // SQLite uses 0/1 for boolean values
@@ -581,8 +602,9 @@ describe("INSERT Operations - SQLite Integration", () => {
       const params = { productName: "Test Product" };
 
       const result = insertStatement(
-        (p: typeof params) =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, p: typeof params) =>
+          ctx.insertInto("products").values({
             name: p.productName,
             price: 99.99,
           }),

@@ -5,7 +5,6 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
@@ -23,7 +22,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const targetDate = new Date("2024-01-15 09:00:00");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date == params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -50,7 +50,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const targetDate = new Date("2024-01-20 10:00:00");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date != params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date != params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -77,7 +78,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const cutoffDate = new Date("2024-01-18");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date > params.cutoffDate),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date > params.cutoffDate),
         { cutoffDate },
         {
           onSql: (result) => {
@@ -103,7 +105,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const deadline = new Date("2024-01-20");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date <= params.deadline),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date <= params.deadline),
         { deadline },
         {
           onSql: (result) => {
@@ -132,10 +135,11 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const endDate = new Date("2024-01-20");
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").where(
-            (e) => e.start_date >= params.startDate && e.start_date <= params.endDate,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx
+            .from("events")
+            .where((e) => e.start_date >= params.startDate && e.start_date <= params.endDate),
         { startDate, endDate },
         {
           onSql: (result) => {
@@ -167,10 +171,11 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const endDate = new Date("2024-01-25");
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").where(
-            (e) => e.start_date > params.startDate && e.start_date < params.endDate,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx
+            .from("events")
+            .where((e) => e.start_date > params.startDate && e.start_date < params.endDate),
         { startDate, endDate },
         {
           onSql: (result) => {
@@ -199,7 +204,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "events").where((e) => e.updated_at == null),
+        dbContext,
+        (ctx) => ctx.from("events").where((e) => e.updated_at == null),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -222,7 +228,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "events").where((e) => e.updated_at != null),
+        dbContext,
+        (ctx) => ctx.from("events").where((e) => e.updated_at != null),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -247,10 +254,9 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const cutoffDate = new Date("2024-01-15");
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").where(
-            (e) => (e.updated_at ?? params.defaultDate) > params.cutoffDate,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx.from("events").where((e) => (e.updated_at ?? params.defaultDate) > params.cutoffDate),
         { defaultDate, cutoffDate },
         {
           onSql: (result) => {
@@ -275,7 +281,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "events").orderBy((e) => e.start_date),
+        dbContext,
+        (ctx) => ctx.from("events").orderBy((e) => e.start_date),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -306,7 +313,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () => from(dbContext, "events").orderByDescending((e) => e.start_date),
+        dbContext,
+        (ctx) => ctx.from("events").orderByDescending((e) => e.start_date),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -339,8 +347,9 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "events").select((e) => ({
+        dbContext,
+        (ctx) =>
+          ctx.from("events").select((e) => ({
             eventTitle: e.title,
             eventDate: e.start_date,
             lastUpdate: e.updated_at,
@@ -372,8 +381,9 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const defaultDate = new Date("2024-01-01");
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").select((e) => ({
+        dbContext,
+        (ctx, params) =>
+          ctx.from("events").select((e) => ({
             title: e.title,
             lastUpdate: e.updated_at ?? params.defaultDate,
           })),
@@ -407,7 +417,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const targetDate = new Date("2024-01-15T00:00:00");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "orders").where((o) => o.order_date == params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -430,7 +441,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const cutoffDate = new Date("2024-01-20");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "orders").where((o) => o.order_date > params.cutoffDate),
+        dbContext,
+        (ctx, params) => ctx.from("orders").where((o) => o.order_date > params.cutoffDate),
         { cutoffDate },
         {
           onSql: (result) => {
@@ -452,7 +464,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const maxDate = new Date("2024-01-18");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "orders").where((o) => o.order_date <= params.maxDate),
+        dbContext,
+        (ctx, params) => ctx.from("orders").where((o) => o.order_date <= params.maxDate),
         { maxDate },
         {
           onSql: (result) => {
@@ -473,8 +486,10 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "orders")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("orders")
             .orderByDescending((o) => o.order_date)
             .take(3),
         {
@@ -502,8 +517,10 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "orders")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("orders")
             .groupBy((o) => o.order_date)
             .select((g) => ({
               date: g.key,
@@ -536,7 +553,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       // accounts.last_transaction_date can be NULL
       const nullResults = executeSelectSimple(
         db,
-        () => from(dbContext, "accounts").where((a) => a.last_transaction_date == null),
+        dbContext,
+        (ctx) => ctx.from("accounts").where((a) => a.last_transaction_date == null),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -554,7 +572,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const notNullResults = executeSelectSimple(
         db,
-        () => from(dbContext, "accounts").where((a) => a.last_transaction_date != null),
+        dbContext,
+        (ctx) => ctx.from("accounts").where((a) => a.last_transaction_date != null),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -578,10 +597,11 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const defaultDate = new Date("2000-01-01T00:00:00");
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "accounts").where(
-            (a) => (a.last_transaction_date ?? params.defaultDate) < params.cutoff,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx
+            .from("accounts")
+            .where((a) => (a.last_transaction_date ?? params.defaultDate) < params.cutoff),
         { defaultDate, cutoff: new Date("2024-01-18T00:00:00") },
         {
           onSql: (result) => {
@@ -612,10 +632,11 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").where(
-            (e) => e.start_date >= params.today && e.start_date <= params.nextWeek,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx
+            .from("events")
+            .where((e) => e.start_date >= params.today && e.start_date <= params.nextWeek),
         { today, nextWeek },
         {
           onSql: (result) => {
@@ -643,7 +664,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const leapDay = new Date("2024-02-29");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date == params.leapDay),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.leapDay),
         { leapDay },
         {
           onSql: (result) => {
@@ -667,10 +689,11 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const newYearsDay = new Date("2024-01-01T00:00:00.000Z");
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").where(
-            (e) => e.start_date > params.newYearsEve && e.start_date >= params.newYearsDay,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx
+            .from("events")
+            .where((e) => e.start_date > params.newYearsEve && e.start_date >= params.newYearsDay),
         { newYearsEve, newYearsDay },
         {
           onSql: (result) => {
@@ -696,7 +719,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const historicalDate = new Date("1900-01-01");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date >= params.historicalDate),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date >= params.historicalDate),
         { historicalDate },
         {
           onSql: (result) => {
@@ -721,7 +745,8 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const futureDate = new Date("2099-12-31");
       const results = executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date <= params.futureDate),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date <= params.futureDate),
         { futureDate },
         {
           onSql: (result) => {
@@ -748,10 +773,11 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const date2 = new Date("2024-02-01 14:00:00");
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").where(
-            (e) => e.start_date == params.date1 || e.start_date == params.date2,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx
+            .from("events")
+            .where((e) => e.start_date == params.date1 || e.start_date == params.date2),
         { date1, date2 },
         {
           onSql: (result) => {
@@ -779,12 +805,15 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const date3 = new Date("2024-01-25");
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").where(
-            (e) =>
-              (e.start_date >= params.date1 && e.start_date <= params.date2) ||
-              e.start_date > params.date3,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx
+            .from("events")
+            .where(
+              (e) =>
+                (e.start_date >= params.date1 && e.start_date <= params.date2) ||
+                e.start_date > params.date3,
+            ),
         { date1, date2, date3 },
         {
           onSql: (result) => {
@@ -811,10 +840,11 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
       const cutoffDate = new Date("2024-01-16");
       const results = executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").where(
-            (e) => e.start_date >= params.cutoffDate && e.is_recurring === 1,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx
+            .from("events")
+            .where((e) => e.start_date >= params.cutoffDate && e.is_recurring === 1),
         { cutoffDate },
         {
           onSql: (result) => {
@@ -844,8 +874,10 @@ describe("Better SQLite3 Integration - Date/Time Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "orders")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("orders")
             .groupBy((o) => o.order_date)
             .select((g) => ({
               date: g.key,

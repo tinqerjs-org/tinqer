@@ -46,7 +46,6 @@ interface Schema {
 const db = createContext<Schema>();
 
 describe("Advanced SELECT Projection SQL Generation", () => {
-
   describe("Complex object projections", () => {
     // Removed: nested object structures with || operator
 
@@ -96,7 +95,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products")
+          ctx
+            .from("products")
             .where((p) => p.stock > 0 && p.price > 10)
             .select((p) => ({
               id: p.id,
@@ -151,7 +151,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products")
+          ctx
+            .from("products")
             .select((p) => ({
               category: p.categoryId,
               name: p.name,
@@ -231,7 +232,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx, params: { page: number; pageSize: number }) =>
-          ctx.from("products")
+          ctx
+            .from("products")
             .select((p) => ({
               id: p.id,
               name: p.name,

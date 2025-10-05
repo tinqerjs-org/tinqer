@@ -29,7 +29,6 @@ interface Schema {
 const db = createContext<Schema>();
 
 describe("String Operations SQL Generation", () => {
-
   describe("startsWith", () => {
     it("should generate SQL for startsWith", () => {
       const result = selectStatement(
@@ -45,7 +44,8 @@ describe("String Operations SQL Generation", () => {
     it("should handle startsWith with parameter", () => {
       const result = selectStatement(
         db,
-        (ctx, p: { prefix: string }) => ctx.from("users").where((u) => u.email.startsWith(p.prefix)),
+        (ctx, p: { prefix: string }) =>
+          ctx.from("users").where((u) => u.email.startsWith(p.prefix)),
         { prefix: "admin@" },
       );
 
@@ -57,9 +57,7 @@ describe("String Operations SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products").where(
-            (p) => p.name.startsWith("Pro") || p.sku.startsWith("SKU"),
-          ),
+          ctx.from("products").where((p) => p.name.startsWith("Pro") || p.sku.startsWith("SKU")),
         {},
       );
 
@@ -137,9 +135,9 @@ describe("String Operations SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products").where(
-            (p) => p.name.includes("Pro") && p.description.includes("quality"),
-          ),
+          ctx
+            .from("products")
+            .where((p) => p.name.includes("Pro") && p.description.includes("quality")),
         {},
       );
 
@@ -157,7 +155,8 @@ describe("String Operations SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .where((u) => u.name.startsWith("A"))
             .select((u) => ({ id: u.id, name: u.name })),
         {},
@@ -173,7 +172,8 @@ describe("String Operations SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products")
+          ctx
+            .from("products")
             .where((p) => p.sku.startsWith("ELEC"))
             .orderBy((p) => p.name)
             .take(10),
@@ -190,7 +190,8 @@ describe("String Operations SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products")
+          ctx
+            .from("products")
             .where((p) => p.name.includes("Phone"))
             .groupBy((p) => p.name)
             .select((g) => ({ name: g.key, count: g.count() })),
@@ -207,9 +208,9 @@ describe("String Operations SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) => u.email.startsWith("Admin") || u.email.startsWith("admin"),
-          ),
+          ctx
+            .from("users")
+            .where((u) => u.email.startsWith("Admin") || u.email.startsWith("admin")),
         {},
       );
 
@@ -229,7 +230,8 @@ describe("String Operations SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .where((u) => u.name.startsWith("John"))
             .join(
               ctx.from("products").where((p) => p.name.includes("Book")),
@@ -267,7 +269,11 @@ describe("String Operations SQL Generation", () => {
 
   describe("Null string handling", () => {
     it("should handle nullable string comparisons", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").where((u) => u.bio == null), {});
+      const result = selectStatement(
+        db,
+        (ctx) => ctx.from("users").where((u) => u.bio == null),
+        {},
+      );
 
       expect(result.sql).to.equal(`SELECT * FROM "users" WHERE "bio" IS NULL`);
       expect(result.params).to.deep.equal({});

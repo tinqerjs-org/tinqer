@@ -112,9 +112,9 @@ describe("IN Operator", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products").where(
-            (p) => ["electronics", "computers"].includes(p.category) || p.price < 100,
-          ),
+          ctx
+            .from("products")
+            .where((p) => ["electronics", "computers"].includes(p.category) || p.price < 100),
         {},
       );
 
@@ -132,9 +132,9 @@ describe("IN Operator", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users").where(
-            (u) => [1, 2, 3].includes(u.id) && ["admin", "moderator"].includes(u.role),
-          ),
+          ctx
+            .from("users")
+            .where((u) => [1, 2, 3].includes(u.id) && ["admin", "moderator"].includes(u.role)),
         {},
       );
 
@@ -156,7 +156,8 @@ describe("IN Operator", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .where((u) => ["admin", "moderator"].includes(u.role))
             .select((u) => ({ id: u.id, name: u.name }))
             .orderBy((u) => u.name),
@@ -176,7 +177,8 @@ describe("IN Operator", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("products")
+          ctx
+            .from("products")
             .where((p) => ["electronics", "computers", "phones"].includes(p.category))
             .groupBy((p) => p.category)
             .select((g) => ({ category: g.key, count: g.count() })),
@@ -197,7 +199,8 @@ describe("IN Operator", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .where((u) => [1, 2, 3, 4, 5].includes(u.id))
             .orderBy((u) => u.id)
             .skip(10)
@@ -292,7 +295,8 @@ describe("IN Operator", () => {
     it("should handle empty parameterized array", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { ids: number[] }) => ctx.from("users").where((u) => params.ids.includes(u.id)),
+        (ctx, params: { ids: number[] }) =>
+          ctx.from("users").where((u) => params.ids.includes(u.id)),
         { ids: [] },
       );
 

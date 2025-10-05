@@ -193,8 +193,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeDelete(
         db,
         dbContext,
-        (ctx, p) =>
-          ctx.deleteFrom("test_products").where((prod) => prod.name === p.productName),
+        (ctx, p) => ctx.deleteFrom("test_products").where((prod) => prod.name === p.productName),
         params,
       );
 
@@ -255,9 +254,9 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
         db,
         dbContext,
         (ctx) =>
-          ctx.deleteFrom("test_products").where(
-            (p) => p.category === "Electronics" && p.in_stock === false,
-          ),
+          ctx
+            .deleteFrom("test_products")
+            .where((p) => p.category === "Electronics" && p.in_stock === false),
         {},
       );
 
@@ -275,9 +274,9 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
         db,
         dbContext,
         (ctx) =>
-          ctx.deleteFrom("test_products").where(
-            (p) => p.category === "Stationery" || p.price! > 500,
-          ),
+          ctx
+            .deleteFrom("test_products")
+            .where((p) => p.category === "Stationery" || p.price! > 500),
         {},
       );
 
@@ -297,10 +296,12 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
         db,
         dbContext,
         (ctx) =>
-          ctx.deleteFrom("test_users").where(
-            (u) =>
-              (u.role === "user" && u.age! < 30) || (u.is_active === false && u.role !== "admin"),
-          ),
+          ctx
+            .deleteFrom("test_users")
+            .where(
+              (u) =>
+                (u.role === "user" && u.age! < 30) || (u.is_active === false && u.role !== "admin"),
+            ),
         {},
       );
 
@@ -331,8 +332,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeDelete(
         db,
         dbContext,
-        (ctx) =>
-          ctx.deleteFrom("test_products").where((p) => p.price! >= 250 && p.price! <= 600),
+        (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! >= 250 && p.price! <= 600),
         {},
       );
 
@@ -397,9 +397,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
         db,
         dbContext,
         (ctx, p) =>
-          ctx.deleteFrom("test_products").where((prod) =>
-            p.categories.includes(prod.category!),
-          ),
+          ctx.deleteFrom("test_products").where((prod) => p.categories.includes(prod.category!)),
         { categories: categoriesToDelete },
       );
 
@@ -416,8 +414,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeDelete(
         db,
         dbContext,
-        (ctx, p) =>
-          ctx.deleteFrom("test_users").where((u) => p.ids.includes(u.id!)),
+        (ctx, p) => ctx.deleteFrom("test_users").where((u) => p.ids.includes(u.id!)),
         { ids: userIds },
       );
 
@@ -438,8 +435,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeDelete(
         db,
         dbContext,
-        (ctx, p) =>
-          ctx.deleteFrom("test_products").where((prod) => prod.created_date! < p.cutoff),
+        (ctx, p) => ctx.deleteFrom("test_products").where((prod) => prod.created_date! < p.cutoff),
         { cutoff: cutoffDate },
       );
 
@@ -463,8 +459,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeDelete(
         db,
         dbContext,
-        (ctx, p) =>
-          ctx.deleteFrom("test_logs").where((l) => l.created_at! < p.cutoff),
+        (ctx, p) => ctx.deleteFrom("test_logs").where((l) => l.created_at! < p.cutoff),
         { cutoff: cutoffTime },
       );
 
@@ -587,9 +582,9 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const result = deleteStatement(
         dbContext,
         (ctx) =>
-          ctx.deleteFrom("test_users").where(
-            (u) => u.age! > 25 && (u.role === "admin" || u.is_active === false),
-          ),
+          ctx
+            .deleteFrom("test_users")
+            .where((u) => u.age! > 25 && (u.role === "admin" || u.is_active === false)),
         {},
       );
 
@@ -605,9 +600,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const result = deleteStatement(
         dbContext,
         (ctx, p) =>
-          ctx.deleteFrom("test_users").where(
-            (u) => u.age! > p.minAge && u.role === p.targetRole,
-          ),
+          ctx.deleteFrom("test_users").where((u) => u.age! > p.minAge && u.role === p.targetRole),
         params,
       );
 

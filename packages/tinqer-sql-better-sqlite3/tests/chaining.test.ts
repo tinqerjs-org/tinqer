@@ -12,7 +12,8 @@ describe("Complex Query Chaining", () => {
     const result = selectStatement(
       db,
       (ctx, p: { minAge: number }) =>
-        ctx.from("users")
+        ctx
+          .from("users")
           .where((x) => x.age >= p.minAge && x.isActive)
           .select((x) => ({ id: x.id, name: x.name }))
           .orderBy((x) => x.name)
@@ -30,7 +31,8 @@ describe("Complex Query Chaining", () => {
     const result = selectStatement(
       db,
       (ctx, p: { page: number; pageSize: number }) =>
-        ctx.from("products")
+        ctx
+          .from("products")
           .orderBy((x) => x.name)
           .skip(p.page * p.pageSize)
           .take(p.pageSize),
@@ -47,7 +49,8 @@ describe("Complex Query Chaining", () => {
     const result = selectStatement(
       db,
       (ctx) =>
-        ctx.from("users")
+        ctx
+          .from("users")
           .where((x) => x.age >= 18)
           .where((x) => x.role == "admin"),
       {},
@@ -61,7 +64,8 @@ describe("Complex Query Chaining", () => {
     const result = selectStatement(
       db,
       (ctx) =>
-        ctx.from("products")
+        ctx
+          .from("products")
           .select((x) => x.category)
           .distinct(),
       {},
@@ -74,7 +78,8 @@ describe("Complex Query Chaining", () => {
     const result = selectStatement(
       db,
       (ctx) =>
-        ctx.from("employees")
+        ctx
+          .from("employees")
           .groupBy((x) => x.department)
           .select((g) => ({ department: g.key, count: g.count() })),
       {},
