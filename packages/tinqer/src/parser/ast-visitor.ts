@@ -76,6 +76,7 @@ export function convertAstToQueryOperationWithParams(
   ast: ASTExpression,
   startCounter?: number,
   existingAutoParams?: Map<string, unknown>,
+  existingDslParam?: string,
 ): {
   operation: QueryOperation | null;
   autoParams: Record<string, unknown>;
@@ -85,7 +86,12 @@ export function convertAstToQueryOperationWithParams(
   >;
 } {
   // Extract parameter info from the lambda
-  const { dslParam, tableParams, queryParams, helpersParam } = extractParameters(ast);
+  const extracted = extractParameters(ast);
+
+  // If no DSL param was extracted (e.g., for non-lambda expressions like ctx.from()),
+  // use the existing DSL param from parent context
+  const dslParam = extracted.dslParam || existingDslParam;
+  const { tableParams, queryParams, helpersParam } = extracted;
 
   // Create shared visitor context
   const visitorContext: VisitorContext = {
