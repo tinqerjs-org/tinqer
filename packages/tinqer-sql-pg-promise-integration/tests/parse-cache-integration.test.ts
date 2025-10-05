@@ -37,7 +37,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
 
   describe("SELECT query caching", () => {
     it("should cache repeated SELECT queries", async () => {
-      const query = () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 18);
+      const query = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 18);
 
       // First execution - should parse
       const result1 = await executeSelectSimple(db, query);
@@ -53,7 +53,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
 
     it("should cache queries with parameters", async () => {
       const query = (p: { minAge: number }) =>
-        from(dbContext, "users").where((u) => u.age !== null && u.age >= p.minAge);
+        ctx.from("users").where((u) => u.age !== null && u.age >= p.minAge);
 
       // First execution
       await executeSelect(db, query, { minAge: 21 });
@@ -65,7 +65,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     });
 
     it("should bypass cache when cache option is false", async () => {
-      const query = () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 18);
+      const query = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 18);
 
       // First execution with cache
       await executeSelectSimple(db, query);
@@ -78,8 +78,8 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     });
 
     it("should cache different queries separately", async () => {
-      const query1 = () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 18);
-      const query2 = () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 21);
+      const query1 = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 18);
+      const query2 = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 21);
 
       await executeSelectSimple(db, query1);
       await executeSelectSimple(db, query2);
@@ -89,9 +89,9 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
 
     it("should cache complex queries with joins", async () => {
       const query = () =>
-        from(dbContext, "users")
+        ctx.from("users")
           .join(
-            from(dbContext, "departments"),
+            ctx.from("departments"),
             (u) => u.department_id,
             (d) => d.id,
             (u, d) => ({ u, d }),
@@ -109,9 +109,9 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     });
 
     it("should cache terminal operations (count, sum, etc.)", async () => {
-      const countQuery = () => from(dbContext, "users").count();
+      const countQuery = (ctx) => ctx.from("users").count();
       const sumQuery = () =>
-        from(dbContext, "users")
+        ctx.from("users")
           .where((u) => u.age !== null)
           .sum((u) => u.age!);
 
@@ -170,7 +170,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
   describe("UPDATE statement caching", () => {
     it("should cache repeated UPDATE statements", async () => {
       const updateQuery = (p: { newAge: number; userId: number }) =>
-        update(dbContext, "users")
+        ctx.update("users")
           .set({ age: p.newAge })
           .where((u) => u.id === p.userId);
 
@@ -184,7 +184,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
 
     it("should bypass UPDATE cache when cache option is false", async () => {
       const updateQuery = (p: { newAge: number; userId: number }) =>
-        update(dbContext, "users")
+        ctx.update("users")
           .set({ age: p.newAge })
           .where((u) => u.id === p.userId);
 
@@ -216,7 +216,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
       const userId2 = result2[0]!.id;
 
       const deleteQuery = (p: { userId: number }) =>
-        deleteFrom(dbContext, "users").where((u) => u.id === p.userId);
+        ctx.deleteFrom("users").where((u) => u.id === p.userId);
 
       // Delete the temporary users
       await executeDelete(db, deleteQuery, { userId: userId1 });
@@ -256,7 +256,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
       const userId2 = result2[0]!.id;
 
       const deleteQuery = (p: { userId: number }) =>
-        deleteFrom(dbContext, "users").where((u) => u.id === p.userId);
+        ctx.deleteFrom("users").where((u) => u.id === p.userId);
 
       await executeDelete(db, deleteQuery, { userId: userId1 });
       await executeDelete(db, deleteQuery, { userId: userId2 }, { cache: false });
@@ -279,7 +279,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     it("should respect disabled cache in real queries", async () => {
       setParseCacheConfig({ enabled: false });
 
-      const query = () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 18);
+      const query = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 18);
 
       await executeSelectSimple(db, query);
       await executeSelectSimple(db, query);
@@ -290,8 +290,8 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     it("should respect capacity limit in real queries", async () => {
       setParseCacheConfig({ capacity: 2 });
 
-      const query1 = () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 18);
-      const query2 = () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 21);
+      const query1 = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 18);
+      const query2 = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 21);
       const query3 = () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 25);
 
       await executeSelectSimple(db, query1);
@@ -306,7 +306,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
   describe("Mixed operation caching", () => {
     it("should cache different operation types separately", async () => {
       const selectQuery = () =>
-        from(dbContext, "users").where((u) => u.age !== null && u.age >= 18);
+        ctx.from("users").where((u) => u.age !== null && u.age >= 18);
       const insertQuery = (p: { name: string; suffix: string }) =>
         insertInto(dbContext, "users").values({
           name: p.name,
@@ -314,7 +314,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
           email: p.name + "-" + p.suffix + "@example.com",
         });
       const updateQuery = (p: { userId: number }) =>
-        update(dbContext, "users")
+        ctx.update("users")
           .set({ age: 26 })
           .where((u) => u.id === p.userId);
 
@@ -329,7 +329,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
   describe("Performance verification", () => {
     it("should demonstrate cache performance benefit", async () => {
       const query = () =>
-        from(dbContext, "users")
+        ctx.from("users")
           .where((u) => u.age !== null && u.age >= 18)
           .select((u) => ({ id: u.id, name: u.name }))
           .orderBy((u) => u.name)

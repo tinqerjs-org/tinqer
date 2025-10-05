@@ -214,8 +214,8 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "categories")
+        (ctx) =>
+          ctx.from("categories")
             .orderBy((c) => c.level)
             .thenBy((c) => c.name),
         { onSql: (result) => (capturedSql = result) },
@@ -431,10 +431,10 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = await executeSelect(
         db,
-        () =>
-          from(dbContext, "categories")
+        (ctx) =>
+          ctx.from("categories")
             .join(
-              from(dbContext, "categories"),
+              ctx.from("categories"),
               (child) => child.parent_id,
               (parent) => parent.id,
               (child, parent) => ({ child, parent }),
@@ -606,8 +606,8 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "categories")
+        (ctx) =>
+          ctx.from("categories")
             .groupBy((c) => c.level)
             .select((g) => ({
               level: g.key,

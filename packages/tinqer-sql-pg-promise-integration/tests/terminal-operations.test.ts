@@ -20,8 +20,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .orderBy((u) => u.id)
             .first(),
         {
@@ -116,8 +116,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const result = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .join(
               from(dbContext, "departments"),
               (u) => u.department_id,
@@ -229,8 +229,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
+        (ctx) =>
+          ctx.from("users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -277,8 +277,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .orderBy((u) => u.id)
             .last(),
         {
@@ -301,8 +301,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .where((u) => u.department_id === 1)
             .orderBy((u) => u.name)
             .last(),
@@ -458,8 +458,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const allEngineersActive = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .where((u) => u.department_id === 1)
             .all((u) => u.is_active === true),
         {
@@ -493,8 +493,8 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const users = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .where((u) => u.is_active === true)
             .orderBy((u) => u.name),
         {

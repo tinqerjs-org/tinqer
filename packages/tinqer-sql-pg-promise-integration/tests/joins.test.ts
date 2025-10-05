@@ -200,16 +200,16 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "order_items")
+        (ctx) =>
+          ctx.from("order_items")
             .join(
-              from(dbContext, "orders"),
+              ctx.from("orders"),
               (oi) => oi.order_id,
               (o) => o.id,
               (oi, o) => ({ oi, o }),
             )
             .join(
-              from(dbContext, "products"),
+              ctx.from("products"),
               (joined) => joined.oi.product_id,
               (p) => p.id,
               (joined, p) => ({ ...joined, p }),
@@ -265,7 +265,7 @@ describe("PostgreSQL Integration - JOINs", () => {
               (u, d) => ({ u, d }),
             )
             .join(
-              from(dbContext, "orders"),
+              ctx.from("orders"),
               (joined) => joined.u.id,
               (o) => o.user_id,
               (joined, o) => ({ ...joined, o }),
@@ -310,10 +310,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .join(
-              from(dbContext, "users"),
+              ctx.from("users"),
               (e) => e.manager_id,
               (m) => m.id,
               (e, m) => ({ employee: e, manager: m }),
@@ -366,10 +366,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .join(
-              from(dbContext, "users"),
+              ctx.from("users"),
               (e) => e.manager_id,
               (m) => m.id,
               (e, m) => ({ employee: e, manager: m }),
@@ -417,10 +417,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .join(
-              from(dbContext, "orders"),
+              ctx.from("orders"),
               (u) => u.id,
               (o) => o.user_id,
               (u, o) => ({ u, o }),
@@ -465,10 +465,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .groupJoin(
-              from(dbContext, "departments"),
+              ctx.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, deptGroup) => ({ user: u, deptGroup }),
@@ -502,10 +502,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "departments")
+        (ctx) =>
+          ctx.from("departments")
             .selectMany(
-              () => from(dbContext, "users"),
+              () => ctx.from("users"),
               (department, user) => ({ department, user }),
             )
             .select((row) => ({
