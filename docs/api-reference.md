@@ -28,26 +28,26 @@ Adapter packages export the runtime helpers that turn expression trees into SQL 
 
 ### 1.1 selectStatement
 
-Converts a query builder function into SQL and named parameters without executing it.
+Converts a query builder function into SQL and named parameters without executing it. The query builder receives a DSL context, parameters, and helper functions.
 
 **Signature**
 
 ```typescript
-function selectStatement<TParams, TResult>(
-  queryBuilder:
-    | ((params: TParams) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
-    | ((
-        params: TParams,
-        helpers: QueryHelpers,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
+function selectStatement<TSchema, TParams, TResult>(
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    ctx: QueryDSL<TSchema>,
+    params: TParams,
+    helpers: QueryHelpers,
+  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
   params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult>;
+): SqlResult<TParams & Record<string, unknown>, TResult>;
 ```
 
 **Example (PostgreSQL)**
 
 ```typescript
-import { createContext, from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -57,8 +57,10 @@ interface Schema {
 const ctx = createContext<Schema>();
 
 const { sql, params } = selectStatement(
-  (p: { minAge: number }) =>
-    from(ctx, "users")
+  ctx,
+  (dsl, p: { minAge: number }, _helpers) =>
+    dsl
+      .from("users")
       .where((u) => u.age >= p.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
   { minAge: 18 },
@@ -69,15 +71,17 @@ const { sql, params } = selectStatement(
 
 ### 1.2 executeSelect
 
-Executes a query builder against the database and returns typed results. Accepts external parameters and optional execution options.
+Executes a query builder against the database and returns typed results. The query builder receives a DSL context, parameters, and helper functions.
 
 ```typescript
 async function executeSelect<
+  TSchema,
   TParams,
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase | BetterSqlite3Database,
-  queryBuilder: (params: TParams) => TQuery,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (ctx: QueryDSL<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<
@@ -94,10 +98,21 @@ async function executeSelect<
 **Example (PostgreSQL)**
 
 ```typescript
+import { createContext } from "@webpods/tinqer";
+import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; age: number };
+}
+
+const ctx = createContext<Schema>();
+
 const users = await executeSelect(
   db,
-  (p: { minAge: number }) =>
-    from(ctx, "users")
+  ctx,
+  (dsl, p: { minAge: number }, _helpers) =>
+    dsl
+      .from("users")
       .where((u) => u.age >= p.minAge)
       .orderBy((u) => u.name),
   { minAge: 21 },
@@ -106,14 +121,20 @@ const users = await executeSelect(
 
 ### 1.3 executeSelectSimple
 
-Convenience wrapper for queries that do not need external params.
+Convenience wrapper for queries that do not need external parameters. The query builder receives a DSL context, an empty params object, and helper functions.
 
 ```typescript
 async function executeSelectSimple<
+  TSchema,
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase | BetterSqlite3Database,
-  queryBuilder: () => TQuery,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    ctx: QueryDSL<TSchema>,
+    params: Record<string, never>,
+    helpers: QueryHelpers,
+  ) => TQuery,
   options?: ExecuteOptions,
 ): Promise<
   TQuery extends Queryable<infer T>
@@ -126,31 +147,56 @@ async function executeSelectSimple<
 >;
 ```
 
-### 1.4 insertStatement & executeInsert
-
-Generate and execute INSERT statements with optional RETURNING clauses. Available in both adapter packages.
+**Example**
 
 ```typescript
-function insertStatement<TParams, TTable, TReturning = never>(
+import { createContext } from "@webpods/tinqer";
+import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string };
+}
+
+const ctx = createContext<Schema>();
+
+const allUsers = await executeSelectSimple(db, ctx, (dsl, _params, _helpers) => dsl.from("users"));
+```
+
+### 1.4 insertStatement & executeInsert
+
+Generate and execute INSERT statements with optional RETURNING clauses. The query builder receives a DSL context, parameters, and helper functions.
+
+```typescript
+function insertStatement<TSchema, TParams, TTable, TReturning = never>(
+  dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
+    ctx: QueryDSL<TSchema>,
     params: TParams,
+    helpers: QueryHelpers,
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
+): SqlResult<TParams & Record<string, unknown>, TReturning extends never ? void : TReturning>;
 
-async function executeInsert<TParams, TTable>(
+async function executeInsert<TSchema, TParams, TTable>(
   db: PgDatabase | BetterSqlite3Database,
-  queryBuilder: (params: TParams) => Insertable<TTable>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    ctx: QueryDSL<TSchema>,
+    params: TParams,
+    helpers: QueryHelpers,
+  ) => Insertable<TTable>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<number>;
 
-async function executeInsert<TParams, TTable, TReturning>(
+async function executeInsert<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase | BetterSqlite3Database,
-  queryBuilder: (params: TParams) => InsertableWithReturning<TTable, TReturning>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    ctx: QueryDSL<TSchema>,
+    params: TParams,
+    helpers: QueryHelpers,
+  ) => InsertableWithReturning<TTable, TReturning>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<TReturning[]>;
@@ -159,20 +205,28 @@ async function executeInsert<TParams, TTable, TReturning>(
 **Example**
 
 ```typescript
-import { createContext, insertInto } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
+import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string };
+}
 
 const ctx = createContext<Schema>();
 
 const inserted = await executeInsert(
   db,
-  () => insertInto(ctx, "users").values({ name: "Alice" }),
+  ctx,
+  (dsl, _params, _helpers) => dsl.insertInto("users").values({ name: "Alice" }),
   {},
 );
 
 const createdUsers = await executeInsert(
   db,
-  () =>
-    insertInto(ctx, "users")
+  ctx,
+  (dsl, _params, _helpers) =>
+    dsl
+      .insertInto("users")
       .values({ name: "Bob" })
       .returning((u) => ({ id: u.id, name: u.name })),
   {},
@@ -181,30 +235,42 @@ const createdUsers = await executeInsert(
 
 ### 1.5 updateStatement & executeUpdate
 
+Generate and execute UPDATE statements with optional RETURNING clauses. The query builder receives a DSL context, parameters, and helper functions.
+
 ```typescript
-function updateStatement<TParams, TTable, TReturning = never>(
+function updateStatement<TSchema, TParams, TTable, TReturning = never>(
+  dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
+    ctx: QueryDSL<TSchema>,
     params: TParams,
+    helpers: QueryHelpers,
   ) =>
     | UpdatableWithSet<TTable>
     | UpdatableComplete<TTable>
     | UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
+): SqlResult<TParams & Record<string, unknown>, TReturning extends never ? void : TReturning>;
 
-async function executeUpdate<TParams, TTable>(
+async function executeUpdate<TSchema, TParams, TTable>(
   db: PgDatabase | BetterSqlite3Database,
-  queryBuilder: (params: TParams) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    ctx: QueryDSL<TSchema>,
+    params: TParams,
+    helpers: QueryHelpers,
+  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<number>;
 
-async function executeUpdate<TParams, TTable, TReturning>(
+async function executeUpdate<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase | BetterSqlite3Database,
-  queryBuilder: (params: TParams) => UpdatableWithReturning<TTable, TReturning>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    ctx: QueryDSL<TSchema>,
+    params: TParams,
+    helpers: QueryHelpers,
+  ) => UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<TReturning[]>;
@@ -213,14 +279,21 @@ async function executeUpdate<TParams, TTable, TReturning>(
 **Example**
 
 ```typescript
-import { createContext, update } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
+import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; lastLogin: Date; status: string };
+}
 
 const ctx = createContext<Schema>();
 
 const updatedRows = await executeUpdate(
   db,
-  (p: { cutoff: Date }) =>
-    update(ctx, "users")
+  ctx,
+  (dsl, p: { cutoff: Date }, _helpers) =>
+    dsl
+      .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < p.cutoff),
   { cutoff: new Date("2024-01-01") },
@@ -229,15 +302,27 @@ const updatedRows = await executeUpdate(
 
 ### 1.6 deleteStatement & executeDelete
 
-```typescript
-function deleteStatement<TParams, TResult>(
-  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
-  params: TParams,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, void>;
+Generate and execute DELETE statements. The query builder receives a DSL context, parameters, and helper functions.
 
-async function executeDelete<TParams, TResult>(
+```typescript
+function deleteStatement<TSchema, TParams, TResult>(
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    ctx: QueryDSL<TSchema>,
+    params: TParams,
+    helpers: QueryHelpers,
+  ) => Deletable<TResult> | DeletableComplete<TResult>,
+  params: TParams,
+): SqlResult<TParams & Record<string, unknown>, void>;
+
+async function executeDelete<TSchema, TParams, TResult>(
   db: PgDatabase | BetterSqlite3Database,
-  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    ctx: QueryDSL<TSchema>,
+    params: TParams,
+    helpers: QueryHelpers,
+  ) => Deletable<TResult> | DeletableComplete<TResult>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<number>;
@@ -246,20 +331,26 @@ async function executeDelete<TParams, TResult>(
 **Example**
 
 ```typescript
-import { createContext, deleteFrom } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
+import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; status: string };
+}
 
 const ctx = createContext<Schema>();
 
 const deletedCount = await executeDelete(
   db,
-  () => deleteFrom(ctx, "users").where((u) => u.status === "inactive"),
+  ctx,
+  (dsl, _params, _helpers) => dsl.deleteFrom("users").where((u) => u.status === "inactive"),
   {},
 );
 ```
 
 ### 1.7 toSql
 
-Generates SQL and parameters from a pre-built queryable without executing it.
+Generates SQL and parameters from a pre-built queryable without executing it. This function works with queryables created using the DSL pattern.
 
 ```typescript
 function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>): {
@@ -272,11 +363,22 @@ function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<
 **Example (SQLite)**
 
 ```typescript
-const { text, parameters } = toSql(
-  from(ctx, "products")
-    .where((p) => p.inStock === 1)
-    .orderByDescending((p) => p.price),
-);
+import { createContext } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-better-sqlite3";
+
+interface Schema {
+  products: { id: number; name: string; price: number; inStock: number };
+}
+
+const ctx = createContext<Schema>();
+
+// Create a queryable using the DSL
+const queryable = ctx.dsl
+  .from("products")
+  .where((p) => p.inStock === 1)
+  .orderByDescending((p) => p.price);
+
+const { text, parameters } = toSql(queryable);
 ```
 
 ### 1.8 ExecuteOptions & SqlResult
@@ -303,10 +405,10 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 
 ### 2.1 createContext
 
-Creates a phantom-typed `DatabaseContext` that ties table names to row types. Combine it with the `from` overload that accepts a context to get strongly typed queryables.
+Creates a phantom-typed `DatabaseContext` that ties table names to row types and provides a DSL for building queries. The context object includes a `dsl` property that exposes query builder methods.
 
 ```typescript
-import { createContext, from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 
 interface Schema {
   users: { id: number; name: string; email: string };
@@ -315,13 +417,25 @@ interface Schema {
 
 const ctx = createContext<Schema>();
 
-const query = () =>
-  from(ctx, "users")
-    .where((u) => u.email.endsWith("@example.com"))
-    .select((u) => ({ id: u.id, name: u.name }));
+// Access the DSL through ctx.dsl
+const queryable = ctx.dsl
+  .from("users")
+  .where((u) => u.email.endsWith("@example.com"))
+  .select((u) => ({ id: u.id, name: u.name }));
 ```
 
-The overload `from<Table>()` without a context remains available when you want to specify the row type manually.
+**Using with Execution Functions**
+
+When using execution functions like `executeSelect`, the DSL is passed as the first parameter to the query builder:
+
+```typescript
+const results = await executeSelect(
+  db,
+  ctx,
+  (dsl, _params, _helpers) => dsl.from("users").where((u) => u.email.endsWith("@example.com")),
+  {},
+);
+```
 
 ---
 
@@ -329,10 +443,10 @@ The overload `from<Table>()` without a context remains available when you want t
 
 ### 3.1 createQueryHelpers
 
-Provides helper functions for case-insensitive comparisons and string searches. Helpers can be passed into query builders through the optional `helpers` argument provided by the adapters.
+Provides helper functions for case-insensitive comparisons and string searches. Helpers are automatically passed as the third parameter to query builder functions.
 
 ```typescript
-import { createContext, createQueryHelpers, from } from "@webpods/tinqer";
+import { createContext, createQueryHelpers } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -340,12 +454,32 @@ interface Schema {
 }
 
 const ctx = createContext<Schema>();
-const helpers = createQueryHelpers<Schema>();
 
 const result = selectStatement(
-  (_params, h = helpers) => from(ctx, "users").where((u) => h.functions.icontains(u.name, "alice")),
+  ctx,
+  (dsl, _params, helpers) =>
+    dsl.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 ```
 
-Helpers expose `ilike`, `contains`, `startsWith`, `endsWith`, and related boolean helpers (prefixed with `i`) that adapt per database dialect.
+**Available Helper Functions**
+
+Helpers expose the following functions that adapt per database dialect:
+
+- `ilike(field, pattern)` - Case-insensitive LIKE comparison
+- `contains(field, substring)` - Check if field contains substring (case-sensitive)
+- `icontains(field, substring)` - Check if field contains substring (case-insensitive)
+- `startsWith(field, prefix)` - Check if field starts with prefix (case-sensitive)
+- `istartsWith(field, prefix)` - Check if field starts with prefix (case-insensitive)
+- `endsWith(field, suffix)` - Check if field ends with suffix (case-sensitive)
+- `iendsWith(field, suffix)` - Check if field ends with suffix (case-insensitive)
+
+**Creating Custom Helpers**
+
+You can create helpers with custom functions:
+
+```typescript
+const helpers = createQueryHelpers<Schema>();
+// Use helpers in your queries through the third parameter
+```
