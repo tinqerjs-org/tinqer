@@ -1,6 +1,6 @@
 {
   "name": "@webpods/tinqer-sql-better-sqlite3-integration",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "private": true,
   "type": "module",
   "description": "SQLite integration tests for Tinqer using better-sqlite3",
