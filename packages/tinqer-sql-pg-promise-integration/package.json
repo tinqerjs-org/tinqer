@@ -1,6 +1,6 @@
 {
   "name": "@webpods/tinqer-sql-pg-promise-integration",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "PostgreSQL integration tests for Tinqer using pg-promise",
   "type": "module",
   "private": true,
