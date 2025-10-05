@@ -23,8 +23,7 @@ import { dbContext } from "./database-schema.js";
 describe("Parse Cache Integration Tests (PostgreSQL)", () => {
   let originalConfig: ReturnType<typeof getParseCacheConfig>;
 
-  before(async () => {
-    await setupTestDatabase(db);
+  before(() => {
     originalConfig = getParseCacheConfig();
   });
 
@@ -32,7 +31,10 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     setParseCacheConfig(originalConfig);
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Reset database to clean state before EACH test
+    await setupTestDatabase(db);
+    // Reset parse cache
     clearParseCache();
     setParseCacheConfig({ enabled: true, capacity: 1024 });
   });
@@ -199,26 +201,81 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
 
   describe("DELETE statement caching", () => {
     it("should cache repeated DELETE statements", async () => {
+      // Insert temporary users for deletion testing
+      const insert = (p: { email: string }) =>
+        insertInto(dbContext, "users")
+          .values({
+            name: "Temp Delete Test",
+            age: 30,
+            email: p.email,
+          })
+          .returning((u) => ({ id: u.id }));
+
+      const result1 = await executeInsert(db, insert, { email: "delete-test-1@example.com" });
+      expect(result1[0]).to.exist;
+      const userId1 = result1[0]!.id;
+
+      const result2 = await executeInsert(db, insert, { email: "delete-test-2@example.com" });
+      expect(result2[0]).to.exist;
+      const userId2 = result2[0]!.id;
+
       const deleteQuery = (p: { userId: number }) =>
         deleteFrom(dbContext, "users").where((u) => u.id === p.userId);
 
-      // Use high user IDs that don't exist to avoid FK constraints
-      await executeDelete(db, deleteQuery, { userId: 99999 });
-      expect(parseCache.size()).to.equal(1);
+      // Delete the temporary users
+      await executeDelete(db, deleteQuery, { userId: userId1 });
+      expect(parseCache.size()).to.equal(2); // INSERT + DELETE queries cached
 
-      await executeDelete(db, deleteQuery, { userId: 99998 });
-      expect(parseCache.size()).to.equal(1);
+      await executeDelete(db, deleteQuery, { userId: userId2 });
+      expect(parseCache.size()).to.equal(2); // Same two queries still cached
+
+      // Verify deletions were successful
+      const remaining1 = await db.oneOrNone("SELECT COUNT(*) as count FROM users WHERE id = $1", [
+        userId1,
+      ]);
+      const remaining2 = await db.oneOrNone("SELECT COUNT(*) as count FROM users WHERE id = $1", [
+        userId2,
+      ]);
+      expect(parseInt(remaining1?.count || "0")).to.equal(0);
+      expect(parseInt(remaining2?.count || "0")).to.equal(0);
     });
 
     it("should bypass DELETE cache when cache option is false", async () => {
+      // Insert temporary users for deletion testing
+      const insert = (p: { email: string }) =>
+        insertInto(dbContext, "users")
+          .values({
+            name: "Temp Delete Test",
+            age: 30,
+            email: p.email,
+          })
+          .returning((u) => ({ id: u.id }));
+
+      const result1 = await executeInsert(db, insert, { email: "delete-bypass-1@example.com" });
+      expect(result1[0]).to.exist;
+      const userId1 = result1[0]!.id;
+
+      const result2 = await executeInsert(db, insert, { email: "delete-bypass-2@example.com" });
+      expect(result2[0]).to.exist;
+      const userId2 = result2[0]!.id;
+
       const deleteQuery = (p: { userId: number }) =>
         deleteFrom(dbContext, "users").where((u) => u.id === p.userId);
 
-      // Use high user IDs that don't exist to avoid FK constraints
-      await executeDelete(db, deleteQuery, { userId: 99997 });
-      await executeDelete(db, deleteQuery, { userId: 99996 }, { cache: false });
+      await executeDelete(db, deleteQuery, { userId: userId1 });
+      await executeDelete(db, deleteQuery, { userId: userId2 }, { cache: false });
 
-      expect(parseCache.size()).to.be.at.most(1);
+      expect(parseCache.size()).to.equal(2); // INSERT + DELETE queries cached (cache:false still uses cache)
+
+      // Verify deletions were successful
+      const remaining1 = await db.oneOrNone("SELECT COUNT(*) as count FROM users WHERE id = $1", [
+        userId1,
+      ]);
+      const remaining2 = await db.oneOrNone("SELECT COUNT(*) as count FROM users WHERE id = $1", [
+        userId2,
+      ]);
+      expect(parseInt(remaining1?.count || "0")).to.equal(0);
+      expect(parseInt(remaining2?.count || "0")).to.equal(0);
     });
   });
 
