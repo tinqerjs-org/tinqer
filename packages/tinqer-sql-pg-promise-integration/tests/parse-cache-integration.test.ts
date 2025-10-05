@@ -292,7 +292,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
 
       const query1 = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 18);
       const query2 = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 21);
-      const query3 = () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 25);
+      const query3 = (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 25);
 
       await executeSelectSimple(db, query1);
       await executeSelectSimple(db, query2);

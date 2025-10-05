@@ -123,7 +123,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "products").where((p) => p.name.endsWith("top")),
+        (ctx) => ctx.from("products").where((p) => p.name.endsWith("top")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -176,7 +176,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "products").where(
+          ctx.from("products").where(
             (p) => p.description !== null && p.description.includes("office"),
           ),
         {
@@ -203,7 +203,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "products").where(
+          ctx.from("products").where(
             (p) =>
               p.category !== null &&
               p.category.startsWith("Electr") &&
@@ -238,7 +238,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "users").where(
+          ctx.from("users").where(
             (u) => u.email.startsWith("j") && u.email.endsWith("@example.com"),
           ),
         {
@@ -267,7 +267,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "products").where(
+          ctx.from("products").where(
             (p) =>
               p.name.includes("e") ||
               (p.description !== null && p.description.includes("wireless")),
@@ -294,10 +294,10 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .join(
-              from(dbContext, "departments"),
+              ctx.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -418,7 +418,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       const count = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "users")
+          ctx.from("users")
             .where((u) => u.email.endsWith("@example.com"))
             .count(),
         {
@@ -445,7 +445,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "products").where(
+          ctx.from("products").where(
             (p) => p.description !== null && p.description.includes("High"),
           ),
         {
@@ -471,7 +471,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "products").where((p) => p.description !== null),
+        (ctx) => ctx.from("products").where((p) => p.description !== null),
         {
           onSql: (result) => {
             capturedSql = result;

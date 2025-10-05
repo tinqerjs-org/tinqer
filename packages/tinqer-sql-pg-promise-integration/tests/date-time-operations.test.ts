@@ -482,7 +482,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "orders")
+          ctx.from("orders")
             .orderByDescending((o) => o.order_date)
             .take(3),
         {
@@ -511,7 +511,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "orders")
+          ctx.from("orders")
             .groupBy((o) => o.order_date)
             .select((g) => ({
               date: g.key,
@@ -544,7 +544,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       // accounts.last_transaction_date can be NULL
       const nullResults = await executeSelectSimple(
         db,
-        () => from(dbContext, "accounts").where((a) => a.last_transaction_date == null),
+        (ctx) => ctx.from("accounts").where((a) => a.last_transaction_date == null),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -562,7 +562,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
 
       const notNullResults = await executeSelectSimple(
         db,
-        () => from(dbContext, "accounts").where((a) => a.last_transaction_date != null),
+        (ctx) => ctx.from("accounts").where((a) => a.last_transaction_date != null),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -586,7 +586,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "accounts").where(
+          ctx.from("accounts").where(
             (a) => (a.last_transaction_date ?? params.defaultDate) < params.cutoff,
           ),
         { defaultDate, cutoff: new Date("2024-01-18") },
@@ -854,7 +854,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "orders")
+          ctx.from("orders")
             .groupBy((o) => o.order_date)
             .select((g) => ({
               date: g.key,

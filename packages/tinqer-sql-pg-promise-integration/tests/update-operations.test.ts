@@ -191,7 +191,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         (p: typeof params) =>
-          update(dbContext, "inventory")
+          ctx.update("inventory")
             .set({
               quantity: p.newQuantity,
               price: p.newPrice,
@@ -327,7 +327,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         (p: { products: string[] }) =>
-          update(dbContext, "inventory")
+          ctx.update("inventory")
             .set({ warehouse_location: "Warehouse E" })
             .where((i) => p.products.includes(i.product_name)),
         { products: targetProducts },
@@ -390,7 +390,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const results = await executeUpdate(
         db,
         () =>
-          update(dbContext, "product_reviews")
+          ctx.update("product_reviews")
             .set({ helpful_count: 10 })
             .where((r) => r.rating === 5)
             .returning((r) => r.id),
@@ -429,7 +429,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with allowFullTableUpdate", async () => {
       const rowCount = await executeUpdate(
         db,
-        () => update(dbContext, "product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
+        (ctx) => ctx.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
         {},
       );
 
@@ -441,7 +441,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", async () => {
       try {
-        await executeUpdate(db, () => update(dbContext, "inventory").set({ quantity: 0 }), {});
+        await executeUpdate(db, (ctx) => ctx.update("inventory").set({ quantity: 0 }), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -459,7 +459,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         (params: { newDate: Date }) =>
-          update(dbContext, "user_profiles")
+          ctx.update("user_profiles")
             .set({ last_login: params.newDate })
             .where((u) => u.username === "bob_wilson"),
         { newDate },
@@ -481,7 +481,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         (params: { currentTime: Date }) =>
-          update(dbContext, "inventory")
+          ctx.update("inventory")
             .set({
               quantity: 50,
               last_updated: params.currentTime,
@@ -514,7 +514,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         (params: { settingsJson: string }) =>
-          update(dbContext, "user_profiles")
+          ctx.update("user_profiles")
             .set({ settings: params.settingsJson })
             .where((u) => u.username === "alice_jones"),
         { settingsJson: JSON.stringify(newSettings) },

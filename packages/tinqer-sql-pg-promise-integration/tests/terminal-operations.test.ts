@@ -46,7 +46,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").first((u) => u.age !== null && u.age > 40),
+        (ctx) => ctx.from("users").first((u) => u.age !== null && u.age > 40),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -70,7 +70,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       try {
         await executeSelectSimple(
           db,
-          () => from(dbContext, "users").first((u) => u.age !== null && u.age > 100),
+          (ctx) => ctx.from("users").first((u) => u.age !== null && u.age > 100),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -94,7 +94,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").firstOrDefault((u) => u.age !== null && u.age > 100),
+        (ctx) => ctx.from("users").firstOrDefault((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -119,7 +119,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
         (ctx) =>
           ctx.from("users")
             .join(
-              from(dbContext, "departments"),
+              ctx.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -160,7 +160,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").single((u) => u.email === "john@example.com"),
+        (ctx) => ctx.from("users").single((u) => u.email === "john@example.com"),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -182,7 +182,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       try {
         await executeSelectSimple(
           db,
-          () => from(dbContext, "users").single((u) => u.department_id === 1),
+          (ctx) => ctx.from("users").single((u) => u.department_id === 1),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -207,7 +207,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       try {
         await executeSelectSimple(
           db,
-          () => from(dbContext, "users").single((u) => u.email === "nonexistent@example.com"),
+          (ctx) => ctx.from("users").single((u) => u.email === "nonexistent@example.com"),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -251,7 +251,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       try {
         await executeSelectSimple(
           db,
-          () => from(dbContext, "users").singleOrDefault((u) => u.department_id === 1),
+          (ctx) => ctx.from("users").singleOrDefault((u) => u.department_id === 1),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -328,7 +328,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").lastOrDefault((u) => u.age !== null && u.age > 100),
+        (ctx) => ctx.from("users").lastOrDefault((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -352,7 +352,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const hasYoungUsers = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").any((u) => u.age !== null && u.age < 30),
+        (ctx) => ctx.from("users").any((u) => u.age !== null && u.age < 30),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -374,7 +374,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const hasCentenarians = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").any((u) => u.age !== null && u.age > 100),
+        (ctx) => ctx.from("users").any((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -394,7 +394,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return true when any() is called without predicate on non-empty table", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasUsers = await executeSelectSimple(db, () => from(dbContext, "users").any(), {
+      const hasUsers = await executeSelectSimple(db, (ctx) => ctx.from("users").any(), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -414,7 +414,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const allHaveEmail = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").all((u) => u.email !== null),
+        (ctx) => ctx.from("users").all((u) => u.email !== null),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -436,7 +436,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const allActive = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").all((u) => u.is_active === true),
+        (ctx) => ctx.from("users").all((u) => u.is_active === true),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -477,7 +477,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       // Check the actual data to verify the result
       const engineerStatus = await executeSelectSimple(db, () =>
-        from(dbContext, "users")
+        ctx.from("users")
           .where((u) => u.department_id === 1)
           .select((u) => ({ is_active: u.is_active })),
       );
@@ -523,7 +523,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const products = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "products")
+          ctx.from("products")
             .where((p) => p.stock > 50)
             .orderByDescending((p) => p.price),
         {
@@ -558,7 +558,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const targetEmail = "jane@example.com";
       const user = await executeSelect(
         db,
-        (params) => from(dbContext, "users").single((u) => u.email === params.email),
+        (ctx, params) => ctx.from("users").single((u) => u.email === params.email),
         { email: targetEmail },
         {
           onSql: (result) => {
@@ -581,7 +581,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const hasExpensiveElectronics = await executeSelectSimple(
         db,
-        () => from(dbContext, "products").any((p) => p.category === "Electronics" && p.price > 500),
+        (ctx) => ctx.from("products").any((p) => p.category === "Electronics" && p.price > 500),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -604,7 +604,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const allPositive = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "orders")
+          ctx.from("orders")
             .where((o) => o.status === "completed")
             .all((o) => o.total_amount > 0),
         {

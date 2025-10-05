@@ -111,7 +111,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "categories").where((c) => c.path.startsWith(params.pathPrefix)),
+          ctx.from("categories").where((c) => c.path.startsWith(params.pathPrefix)),
         { pathPrefix },
         { onSql: (result) => (capturedSql = result) },
       );
@@ -136,7 +136,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "categories").where((c) =>
+          ctx.from("categories").where((c) =>
             c.path.startsWith(params.ancestorPath + params.pathSuffix),
           ),
         { ancestorPath, pathSuffix },
@@ -189,7 +189,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "categories").where(
+          ctx.from("categories").where(
             (c) => c.level >= params.minLevel && c.level <= params.maxLevel,
           ),
         { minLevel, maxLevel },
@@ -250,7 +250,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.manager_id == null),
+        (ctx) => ctx.from("users").where((u) => u.manager_id == null),
         { onSql: (result) => (capturedSql = result) },
       );
 
@@ -270,7 +270,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const managerId = 1; // John Doe
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "users").where((u) => u.manager_id == params.managerId),
+        (ctx, params) => ctx.from("users").where((u) => u.manager_id == params.managerId),
         { managerId },
         { onSql: (result) => (capturedSql = result) },
       );
@@ -291,7 +291,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "users")
+          ctx.from("users")
             .where((u) => u.manager_id != null)
             .groupBy((u) => u.manager_id!)
             .select((g) => ({
@@ -353,7 +353,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "comments").where((c) => c.parent_comment_id == params.commentId),
+          ctx.from("comments").where((c) => c.parent_comment_id == params.commentId),
         { commentId },
         { onSql: (result) => (capturedSql = result) },
       );
@@ -398,7 +398,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelectSimple(
         db,
         () =>
-          from(dbContext, "comments")
+          ctx.from("comments")
             .orderBy((c) => c.created_at)
             .thenBy((c) => c.depth),
         { onSql: (result) => (capturedSql = result) },
@@ -468,9 +468,9 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         () =>
-          from(dbContext, "users")
+          ctx.from("users")
             .join(
-              from(dbContext, "users"),
+              ctx.from("users"),
               (emp) => emp.manager_id,
               (mgr) => mgr.id,
               (emp, mgr) => ({ emp, mgr }),
@@ -505,7 +505,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "categories")
+          ctx.from("categories")
             .where((c) => c.parent_id == params.parentId)
             .orderBy((c) => c.sort_order),
         { parentId },
@@ -537,7 +537,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "categories").where(
+          ctx.from("categories").where(
             (c) => c.parent_id == params.parentId && c.level == params.level && c.is_leaf == true,
           ),
         { parentId, level },
@@ -567,7 +567,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "categories")
+          ctx.from("categories")
             .where(
               (c) =>
                 c.path.startsWith(params.pathPrefix) &&
@@ -651,7 +651,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "categories")
+          ctx.from("categories")
             .where(
               (c) =>
                 c.path == params.rootPath || c.path.startsWith(params.rootPath + params.pathSuffix),
@@ -685,7 +685,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const results = await executeSelect(
         db,
         (params) =>
-          from(dbContext, "categories").where(
+          ctx.from("categories").where(
             (c) => params.childPath.startsWith(c.path) && c.path != params.childPath,
           ),
         { childPath },
