@@ -34,7 +34,7 @@ npm install @webpods/tinqer-sql-pg-promise pg-promise
 
 ```typescript
 import pgPromise from "pg-promise";
-import { createContext, from, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import { createContext, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
 import {
   executeSelect,
   executeSelectSimple,
@@ -83,7 +83,7 @@ const createdUsers = await executeInsert(
 const updatedCount = await executeUpdate(
   db,
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ active: false })
       .where((u) => u.age > 65),
   {},
@@ -125,7 +125,7 @@ npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
 
 ```typescript
 import Database from "better-sqlite3";
-import { createContext, from, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import { createContext, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
@@ -170,7 +170,7 @@ const users = executeSelect(
 const updated = executeUpdate(
   db,
   () =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ isActive: 0 })
       .where((u) => u.age > 60),
   {},

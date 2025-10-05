@@ -213,7 +213,7 @@ See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed 
 ### CRUD Operations
 
 ```typescript
-import { createContext, insertInto, updateTable, deleteFrom } from "@webpods/tinqer";
+import { createContext, insertInto, update, deleteFrom } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 const ctx = createContext<Schema>();
@@ -233,7 +233,7 @@ const insertedRows = await executeInsert(
 const inactiveUsers = await executeUpdate(
   db,
   (params: { cutoffDate: Date }) =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoffDate)
       .returning((u) => u.id),

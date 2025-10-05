@@ -213,14 +213,14 @@ async function executeUpdate<TParams, TTable, TReturning>(
 **Example**
 
 ```typescript
-import { createContext, updateTable } from "@webpods/tinqer";
+import { createContext, update } from "@webpods/tinqer";
 
 const ctx = createContext<Schema>();
 
 const updatedRows = await executeUpdate(
   db,
   (p: { cutoff: Date }) =>
-    updateTable(ctx, "users")
+    update(ctx, "users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < p.cutoff),
   { cutoff: new Date("2024-01-01") },

@@ -24,7 +24,7 @@ export type { QueryHelpers, WindowFunctionType, WindowOrderSpec } from "./linq/f
 // Data modification builders
 export { insertInto } from "./linq/insert-into.js";
 export { Insertable, InsertableWithReturning } from "./linq/insertable.js";
-export { updateTable } from "./linq/update-table.js";
+export { update } from "./linq/update.js";
 export {
   Updatable,
   UpdatableWithSet,
