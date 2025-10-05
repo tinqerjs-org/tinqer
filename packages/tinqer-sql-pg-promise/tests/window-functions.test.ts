@@ -214,4 +214,135 @@ describe("Window Functions - PostgreSQL", () => {
       expect(result.sql).to.include("DENSE_RANK() OVER");
     });
   });
+
+  describe("Recursive Nesting - Subquery Wrapping", () => {
+    it("should generate double nested subquery for two window filters", () => {
+      const result = selectStatement(
+        (_, h) =>
+          from(db, "users")
+            .select((u) => ({
+              name: u.name,
+              salary: u.salary,
+              rn1: h
+                .window(u)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((u) => u.rn1 <= 10)
+            .select((u) => ({
+              name: u.name,
+              salary: u.salary,
+              rn1: u.rn1,
+              rn2: h
+                .window(u)
+                .orderBy((r) => r.name)
+                .rowNumber(),
+            }))
+            .where((u) => u.rn2 === 1),
+        { __p1: 10, __p2: 1 },
+      );
+
+      // Should have two nested subqueries
+      expect(result.sql).to.include("FROM (");
+      // Count FROM occurrences - should be 3 (outermost + 2 subqueries)
+      const fromCount = (result.sql.match(/FROM/g) || []).length;
+      expect(fromCount).to.equal(3);
+    });
+
+    it("should generate triple nested subquery for three window filters", () => {
+      const result = selectStatement(
+        (_, h) =>
+          from(db, "users")
+            .select((u) => ({
+              name: u.name,
+              age: u.age,
+              salary: u.salary,
+              rn1: h
+                .window(u)
+                .orderBy((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((u) => u.rn1 <= 10)
+            .select((u) => ({
+              name: u.name,
+              age: u.age,
+              rn1: u.rn1,
+              rn2: h
+                .window(u)
+                .orderByDescending((r) => r.age)
+                .rowNumber(),
+            }))
+            .where((u) => u.rn2 <= 5)
+            .select((u) => ({
+              name: u.name,
+              rn1: u.rn1,
+              rn2: u.rn2,
+              rn3: h
+                .window(u)
+                .orderBy((r) => r.name)
+                .rowNumber(),
+            }))
+            .where((u) => u.rn3 === 1),
+        { __p1: 10, __p2: 5, __p3: 1 },
+      );
+
+      // Should have three nested subqueries
+      // Count FROM occurrences - should be 4 (outermost + 3 subqueries)
+      const fromCount = (result.sql.match(/FROM/g) || []).length;
+      expect(fromCount).to.equal(4);
+    });
+
+    it("should handle spread operator in nested subqueries", () => {
+      const result = selectStatement(
+        (_, h) =>
+          from(db, "users")
+            .select((u) => ({
+              ...u,
+              rn1: h
+                .window(u)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((u) => u.rn1 <= 3)
+            .select((u) => ({
+              ...u,
+              rn2: h
+                .window(u)
+                .orderBy((r) => r.name)
+                .rowNumber(),
+            }))
+            .where((u) => u.rn2 === 1),
+        { __p1: 3, __p2: 1 },
+      );
+
+      // Should include * for spread operators
+      expect(result.sql).to.include("*");
+      // Should have nested structure
+      const fromCount = (result.sql.match(/FROM/g) || []).length;
+      expect(fromCount).to.equal(3);
+    });
+
+    it("should handle mixed regular and window filters", () => {
+      const result = selectStatement(
+        (_, h) =>
+          from(db, "users")
+            .where((u) => u.age > 25) // Regular filter first
+            .select((u) => ({
+              name: u.name,
+              age: u.age,
+              rn: h
+                .window(u)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((u) => u.rn <= 5), // Window filter
+        { __p1: 25, __p2: 5 },
+      );
+
+      // Should have subquery for window filter
+      expect(result.sql).to.include("FROM (");
+      // Regular filter should be in innermost query
+      expect(result.sql).to.include("$(__p1)");
+    });
+  });
 });
