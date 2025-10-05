@@ -4,36 +4,44 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { selectStatement } from "../dist/index.js";
 
+interface User {
+  id: number;
+  name: string;
+  age: number;
+  isActive: boolean;
+  role: string;
+  salary?: number;
+  departmentId?: number;
+  createdAt?: Date;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  stock: number;
+  categoryId: number;
+  isAvailable: boolean;
+  discount?: number;
+}
+
+interface Schema {
+  users: User;
+  products: Product;
+}
+
+const db = createContext<Schema>();
+
 describe("Complex WHERE Clause SQL Generation", () => {
-  interface User {
-    id: number;
-    name: string;
-    age: number;
-    isActive: boolean;
-    role: string;
-    salary?: number;
-    departmentId?: number;
-    createdAt?: Date;
-  }
-
-  interface Product {
-    id: number;
-    name: string;
-    price: number;
-    stock: number;
-    categoryId: number;
-    isAvailable: boolean;
-    discount?: number;
-  }
-
   describe("Nested logical conditions", () => {
     it("should handle complex nested AND/OR conditions", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users").where(
+        db,
+        (ctx) =>
+          ctx.from("users").where(
             (u) =>
               (u.age >= 18 && u.age <= 65 && u.isActive) ||
               (u.role == "admin" && u.departmentId == 1),
@@ -56,8 +64,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle deeply nested conditions", () => {
       const result = selectStatement(
-        () =>
-          from<Product>("products").where(
+        db,
+        (ctx) =>
+          ctx.from("products").where(
             (p) =>
               ((p.price > 100 && p.price < 500) || (p.discount != null && p.discount > 20)) &&
               p.isAvailable &&
@@ -82,8 +91,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle multiple NOT conditions", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users").where(
+        db,
+        (ctx) =>
+          ctx.from("users").where(
             (u) => !(u.role == "guest") && !!u.isActive && !(u.age < 18 || u.age > 99),
           ),
         {},
@@ -99,7 +109,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
   describe("Range conditions", () => {
     it("should handle BETWEEN-like conditions", () => {
       const result = selectStatement(
-        () => from<Product>("products").where((p) => p.price >= 50 && p.price <= 200),
+        db,
+        (ctx) => ctx.from("products").where((p) => p.price >= 50 && p.price <= 200),
         {},
       );
 
@@ -111,8 +122,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle multiple range conditions", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users").where(
+        db,
+        (ctx) =>
+          ctx.from("users").where(
             (u) =>
               u.age >= 25 && u.age <= 35 && (u.salary || 0) >= 50000 && (u.salary || 0) <= 100000,
           ),
@@ -127,7 +139,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle exclusive ranges", () => {
       const result = selectStatement(
-        () => from<Product>("products").where((p) => p.stock > 10 && p.stock < 100),
+        db,
+        (ctx) => ctx.from("products").where((p) => p.stock > 10 && p.stock < 100),
         {},
       );
 
@@ -141,8 +154,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
   describe("IN-like conditions", () => {
     it("should handle OR conditions simulating IN", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users").where(
+        db,
+        (ctx) =>
+          ctx.from("users").where(
             (u) => u.role == "admin" || u.role == "manager" || u.role == "supervisor",
           ),
         {},
@@ -160,8 +174,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle NOT IN-like conditions", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users").where(
+        db,
+        (ctx) =>
+          ctx.from("users").where(
             (u) => u.role != "guest" && u.role != "blocked" && u.role != "suspended",
           ),
         {},
@@ -181,8 +196,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
   describe("NULL handling", () => {
     it("should handle complex NULL checks", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users").where(
+        db,
+        (ctx) =>
+          ctx.from("users").where(
             (u) => (u.salary == null && u.role == "intern") || (u.salary != null && u.salary > 0),
           ),
         {},
@@ -200,8 +216,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle nullable field with default values", () => {
       const result = selectStatement(
-        () =>
-          from<Product>("products").where((p) => (p.discount || 0) > 10 && (p.discount || 0) < 50),
+        db,
+        (ctx) =>
+          ctx.from("products").where((p) => (p.discount || 0) > 10 && (p.discount || 0) < 50),
         {},
       );
 
@@ -215,7 +232,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
   describe("Arithmetic expressions in WHERE", () => {
     it("should handle arithmetic comparisons", () => {
       const result = selectStatement(
-        () => from<Product>("products").where((p) => p.price * 0.9 > 100),
+        db,
+        (ctx) => ctx.from("products").where((p) => p.price * 0.9 > 100),
         {},
       );
 
@@ -225,8 +243,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle complex arithmetic expressions", () => {
       const result = selectStatement(
-        () =>
-          from<Product>("products").where(
+        db,
+        (ctx) =>
+          ctx.from("products").where(
             (p) => p.price - (p.discount || 0) > 50 && p.stock * p.price < 10000,
           ),
         {},
@@ -239,7 +258,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle division and modulo", () => {
-      const result = selectStatement(() => from<User>("users").where((u) => u.id % 2 == 0), {});
+      const result = selectStatement(db, (ctx) => ctx.from("users").where((u) => u.id % 2 == 0), {});
 
       expect(result.sql).to.contain(`("id" % @__p1) = @__p2`);
       expect(result.params).to.deep.equal({ __p1: 2, __p2: 0 });
@@ -249,8 +268,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
   describe("Mixed type comparisons", () => {
     it("should handle boolean, number, and string conditions together", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users").where(
+        db,
+        (ctx) =>
+          ctx.from("users").where(
             (u) =>
               u.isActive == true && u.age >= 21 && u.name != "Anonymous" && (u.salary || 0) > 30000,
           ),
@@ -271,7 +291,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle type coercion scenarios", () => {
       const result = selectStatement(
-        () => from<User>("users").where((u) => u.id > 0 && u.isActive && u.age != null),
+        db,
+        (ctx) => ctx.from("users").where((u) => u.id > 0 && u.isActive && u.age != null),
         {},
       );
 
@@ -287,8 +308,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
   describe("Multiple WHERE clauses chained", () => {
     it("should combine 3 WHERE clauses", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users")
+        db,
+        (ctx) =>
+          ctx.from("users")
             .where((u) => u.age >= 18)
             .where((u) => u.isActive)
             .where((u) => u.role != "guest"),
@@ -303,8 +325,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should combine 5 WHERE clauses", () => {
       const result = selectStatement(
-        () =>
-          from<Product>("products")
+        db,
+        (ctx) =>
+          ctx.from("products")
             .where((p) => p.price > 10)
             .where((p) => p.stock > 0)
             .where((p) => p.isAvailable)
@@ -330,8 +353,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
   describe("WHERE with parameters", () => {
     it("should handle complex conditions with external parameters", () => {
       const result = selectStatement(
-        (params: { minAge: number; maxAge: number; roles: string[]; isActive: boolean }) =>
-          from<User>("users").where(
+        db,
+        (ctx, params: { minAge: number; maxAge: number; roles: string[]; isActive: boolean }) =>
+          ctx.from("users").where(
             (u) =>
               u.age >= params.minAge &&
               u.age <= params.maxAge &&
@@ -356,8 +380,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should mix parameters with auto-parameterized constants", () => {
       const result = selectStatement(
-        (params: { threshold: number }) =>
-          from<Product>("products").where(
+        db,
+        (ctx, params: { threshold: number }) =>
+          ctx.from("products").where(
             (p) =>
               p.price > params.threshold &&
               p.stock > 10 &&
@@ -382,8 +407,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
   describe("Edge cases", () => {
     it("should handle very long condition chains", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users").where(
+        db,
+        (ctx) =>
+          ctx.from("users").where(
             (u) =>
               u.id > 0 &&
               u.id < 1000000 &&
@@ -404,8 +430,9 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle conditions with all comparison operators", () => {
       const result = selectStatement(
-        () =>
-          from<Product>("products").where(
+        db,
+        (ctx) =>
+          ctx.from("products").where(
             (p) =>
               p.id == 100 ||
               p.price != 0 ||
@@ -427,7 +454,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should handle false boolean literals correctly", () => {
       const result = selectStatement(
-        () => from<User>("users").where((u) => u.isActive == false),
+        db,
+        (ctx) => ctx.from("users").where((u) => u.isActive == false),
         {},
       );
 

@@ -4,7 +4,6 @@
 
 import {
   parseQuery,
-  createQueryDSL,
   type Queryable,
   type OrderedQueryable,
   type TerminalQuery,
@@ -50,7 +49,7 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function selectStatement<TSchema, TParams, TResult>(
-  dbContext: DatabaseContext<TSchema>,
+  _dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
     dsl: QueryDSL<TSchema>,
     params: TParams,
@@ -59,14 +58,8 @@ export function selectStatement<TSchema, TParams, TResult>(
   params: TParams,
   options: ParseQueryOptions = {},
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
-  // Create DSL instance
-  const dsl = createQueryDSL(dbContext);
-
-  // Create a wrapper that passes dsl to the builder
-  const wrappedBuilder = (p: TParams, h: QueryHelpers) => queryBuilder(dsl, p, h);
-
   // Parse the query to get the operation tree and auto-params
-  const parseResult = parseQuery(wrappedBuilder, options);
+  const parseResult = parseQuery(queryBuilder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse query");
@@ -166,12 +159,6 @@ export function executeSelect<
           ? T
           : never;
 
-  // Create DSL instance
-  const dsl = createQueryDSL(dbContext);
-
-  // Create a wrapper that passes dsl to the builder
-  const wrappedBuilder = (p: TParams, h: QueryHelpers) => queryBuilder(dsl, p, h);
-
   const { sql, params: sqlParams } = selectStatement(dbContext, queryBuilder, params, options);
 
   // Call onSql callback if provided
@@ -180,7 +167,7 @@ export function executeSelect<
   }
 
   // Check if this is a terminal operation that returns a single value
-  const parseResult = parseQuery(wrappedBuilder, options);
+  const parseResult = parseQuery(queryBuilder, options);
   if (!parseResult) {
     throw new Error("Failed to parse query");
   }
@@ -328,7 +315,7 @@ export function executeSelectSimple<
  * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
  */
 export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  dbContext: DatabaseContext<TSchema>,
+  _dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
     dsl: QueryDSL<TSchema>,
     params: TParams,
@@ -339,13 +326,7 @@ export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
   TParams & Record<string, string | number | boolean | null>,
   TReturning extends never ? void : TReturning
 > {
-  // Create DSL instance
-  const dsl = createQueryDSL(dbContext);
-
-  // Create a wrapper that passes dsl to the builder
-  const wrappedBuilder = (p: TParams) => queryBuilder(dsl, p);
-
-  const parseResult = parseQuery(wrappedBuilder, options);
+  const parseResult = parseQuery(queryBuilder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse INSERT query");
@@ -419,7 +400,7 @@ export function executeInsert<TSchema, TParams, TTable, TReturning = never>(
  * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
  */
 export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
-  dbContext: DatabaseContext<TSchema>,
+  _dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
     dsl: QueryDSL<TSchema>,
     params: TParams,
@@ -433,13 +414,7 @@ export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
   TParams & Record<string, string | number | boolean | null>,
   TReturning extends never ? void : TReturning
 > {
-  // Create DSL instance
-  const dsl = createQueryDSL(dbContext);
-
-  // Create a wrapper that passes dsl to the builder
-  const wrappedBuilder = (p: TParams) => queryBuilder(dsl, p);
-
-  const parseResult = parseQuery(wrappedBuilder, options);
+  const parseResult = parseQuery(queryBuilder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse UPDATE query");
@@ -518,7 +493,7 @@ export function executeUpdate<TSchema, TParams, TTable, TReturning = never>(
  * Generate DELETE SQL statement
  */
 export function deleteStatement<TSchema, TParams, TResult>(
-  dbContext: DatabaseContext<TSchema>,
+  _dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
     dsl: QueryDSL<TSchema>,
     params: TParams,
@@ -526,13 +501,7 @@ export function deleteStatement<TSchema, TParams, TResult>(
   params: TParams,
   options: ParseQueryOptions = {},
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
-  // Create DSL instance
-  const dsl = createQueryDSL(dbContext);
-
-  // Create a wrapper that passes dsl to the builder
-  const wrappedBuilder = (p: TParams) => queryBuilder(dsl, p);
-
-  const parseResult = parseQuery(wrappedBuilder, options);
+  const parseResult = parseQuery(queryBuilder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse DELETE query");

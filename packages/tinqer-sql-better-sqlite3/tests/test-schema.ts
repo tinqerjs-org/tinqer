@@ -151,6 +151,30 @@ export interface TestSchema {
     timestamp: Date;
     sensorId: string;
   };
+
+  test: {
+    id: number;
+    name: string;
+    value: number | null;
+    data: unknown | null;
+    flag: boolean;
+    "special-column": string | null;
+    column_with_underscore: string | null;
+    UPPERCASE_COLUMN: string | null;
+  };
+
+  reserved: {
+    select: number;
+    from: string;
+    where: boolean;
+    group: string;
+    order: number;
+    having: string;
+    limit: number;
+    offset: number;
+    join: string;
+    union: string;
+  };
 }
 
 // Create the database context

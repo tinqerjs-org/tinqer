@@ -6,13 +6,14 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db, from } from "./test-schema.js";
+import { db } from "./test-schema.js";
 
 describe("String methods in WHERE clause", () => {
   describe("toLowerCase", () => {
     it("should handle toLowerCase on column", () => {
       const result = selectStatement(
-        () => from(db, "users").where((u) => u.name.toLowerCase() == "john"),
+        db,
+        (ctx) => ctx.from("users").where((u) => u.name.toLowerCase() == "john"),
         {},
       );
 
@@ -23,8 +24,9 @@ describe("String methods in WHERE clause", () => {
 
     it("should handle toLowerCase with params", () => {
       const result = selectStatement(
-        (params: { search: string }) =>
-          from(db, "users").where((u) => u.name.toLowerCase() == params.search),
+        db,
+        (ctx, params: { search: string }) =>
+          ctx.from("users").where((u) => u.name.toLowerCase() == params.search),
         { search: "john" },
       );
 
@@ -35,8 +37,9 @@ describe("String methods in WHERE clause", () => {
 
     it("should handle toLowerCase on both sides", () => {
       const result = selectStatement(
-        (params: { search: string }) =>
-          from(db, "users").where((u) => u.name.toLowerCase() == params.search.toLowerCase()),
+        db,
+        (ctx, params: { search: string }) =>
+          ctx.from("users").where((u) => u.name.toLowerCase() == params.search.toLowerCase()),
         { search: "JOHN" },
       );
 
@@ -48,8 +51,9 @@ describe("String methods in WHERE clause", () => {
 
     it("should combine toLowerCase with other conditions", () => {
       const result = selectStatement(
-        (params: { search: string; minAge: number }) =>
-          from(db, "users").where(
+        db,
+        (ctx, params: { search: string; minAge: number }) =>
+          ctx.from("users").where(
             (u) => u.name.toLowerCase() == params.search && u.age > params.minAge,
           ),
         { search: "john", minAge: 18 },
@@ -65,8 +69,9 @@ describe("String methods in WHERE clause", () => {
 
     it("should work with startsWith and toLowerCase", () => {
       const result = selectStatement(
-        (params: { prefix: string; minAge: number }) =>
-          from(db, "users").where(
+        db,
+        (ctx, params: { prefix: string; minAge: number }) =>
+          ctx.from("users").where(
             (u) =>
               u.name.toLowerCase().startsWith(params.prefix as string) && u.age >= params.minAge,
           ),
@@ -84,7 +89,8 @@ describe("String methods in WHERE clause", () => {
   describe("toUpperCase", () => {
     it("should handle toUpperCase on column", () => {
       const result = selectStatement(
-        () => from(db, "users").where((u) => u.name.toUpperCase() == "JOHN"),
+        db,
+        (ctx) => ctx.from("users").where((u) => u.name.toUpperCase() == "JOHN"),
         {},
       );
 
@@ -95,8 +101,9 @@ describe("String methods in WHERE clause", () => {
 
     it("should handle toUpperCase with params", () => {
       const result = selectStatement(
-        (params: { search: string }) =>
-          from(db, "users").where((u) => u.name.toUpperCase() == params.search),
+        db,
+        (ctx, params: { search: string }) =>
+          ctx.from("users").where((u) => u.name.toUpperCase() == params.search),
         { search: "JOHN" },
       );
 
@@ -107,8 +114,9 @@ describe("String methods in WHERE clause", () => {
 
     it("should combine toUpperCase with other conditions", () => {
       const result = selectStatement(
-        (params: { category: string; excludeName: string }) =>
-          from(db, "products").where(
+        db,
+        (ctx, params: { category: string; excludeName: string }) =>
+          ctx.from("products").where(
             (p) => p.category.toUpperCase() == params.category && p.name != params.excludeName,
           ),
         { category: "ELECTRONICS", excludeName: "Phone" },
@@ -126,8 +134,9 @@ describe("String methods in WHERE clause", () => {
   describe("Complex scenarios", () => {
     it("should handle nested expressions with toLowerCase", () => {
       const result = selectStatement(
-        (params: { name1: string; name2: string }) =>
-          from(db, "users").where(
+        db,
+        (ctx, params: { name1: string; name2: string }) =>
+          ctx.from("users").where(
             (u) => u.name.toLowerCase() == params.name1 || u.name.toLowerCase() == params.name2,
           ),
         { name1: "john", name2: "jane" },
@@ -144,8 +153,9 @@ describe("String methods in WHERE clause", () => {
 
     it("should handle multiple string methods in one query", () => {
       const result = selectStatement(
-        (params: { searchName: string; searchCategory: string }) =>
-          from(db, "products").where(
+        db,
+        (ctx, params: { searchName: string; searchCategory: string }) =>
+          ctx.from("products").where(
             (p) =>
               p.name.toLowerCase() == params.searchName &&
               p.category.toUpperCase() == params.searchCategory,
@@ -162,8 +172,9 @@ describe("String methods in WHERE clause", () => {
 
     it("should handle string methods with NULL coalescing", () => {
       const result = selectStatement(
-        (params: { defaultName: string; search: string }) =>
-          from(db, "users").where(
+        db,
+        (ctx, params: { defaultName: string; search: string }) =>
+          ctx.from("users").where(
             (u) => (u.name ?? params.defaultName).toLowerCase() == params.search,
           ),
         { defaultName: "Unknown", search: "unknown" },
@@ -182,7 +193,8 @@ describe("String methods in WHERE clause", () => {
       // toString() is not supported - this documents the expected behavior
       expect(() =>
         selectStatement(
-          () => from(db, "users").where((u) => u.age.toString().toLowerCase() == "25"),
+          db,
+          (ctx) => ctx.from("users").where((u) => u.age.toString().toLowerCase() == "25"),
           {},
         ),
       ).to.throw("Failed to parse query");

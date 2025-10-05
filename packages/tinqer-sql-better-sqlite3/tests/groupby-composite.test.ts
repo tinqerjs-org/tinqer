@@ -1,25 +1,33 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
+
+interface Sale {
+  id: number;
+  product: string;
+  category: string;
+  region: string;
+  year: number;
+  quarter: number;
+  amount: number;
+  quantity: number;
+}
+
+interface Schema {
+  sales: Sale;
+}
+
+const db = createContext<Schema>();
 
 describe("GROUP BY with Composite Keys", () => {
-  interface Sale {
-    id: number;
-    product: string;
-    category: string;
-    region: string;
-    year: number;
-    quarter: number;
-    amount: number;
-    quantity: number;
-  }
 
   describe("Composite key GROUP BY", () => {
     it("should group by object with two properties", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({ category: s.category, region: s.region }))
             .select((g) => ({
               category: g.key.category,
@@ -36,8 +44,9 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should group by object with three properties", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({ category: s.category, region: s.region, year: s.year }))
             .select((g) => ({
               category: g.key.category,
@@ -56,8 +65,9 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should handle composite key with computed properties", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({
               categoryUpper: s.category.toUpperCase(),
               yearQuarter: s.year * 100 + s.quarter,
@@ -75,8 +85,9 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should group by mixed expressions", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({
               isHighValue: s.amount > 1000,
               region: s.region,
@@ -100,8 +111,9 @@ describe("GROUP BY with Composite Keys", () => {
   describe("GROUP BY with WHERE and composite keys", () => {
     it("should filter before grouping with composite key", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .where((s) => s.year >= 2020)
             .groupBy((s) => ({ category: s.category, quarter: s.quarter }))
             .select((g) => ({
@@ -120,8 +132,9 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should handle multiple WHERE with composite GROUP BY", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .where((s) => s.region === "North")
             .where((s) => s.amount > 100)
             .groupBy((s) => ({ product: s.product, year: s.year }))
@@ -142,8 +155,9 @@ describe("GROUP BY with Composite Keys", () => {
   describe("GROUP BY with ORDER BY and composite keys", () => {
     it("should order by grouped composite key properties", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({ category: s.category, year: s.year }))
             .select((g) => ({
               category: g.key.category,
@@ -160,8 +174,9 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should order by aggregate with composite GROUP BY", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({ product: s.product, region: s.region }))
             .select((g) => ({
               product: g.key.product,
@@ -179,8 +194,9 @@ describe("GROUP BY with Composite Keys", () => {
   describe("GROUP BY with TAKE/SKIP and composite keys", () => {
     it("should limit results with composite GROUP BY", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({ category: s.category, region: s.region }))
             .select((g) => ({
               key: g.key,
@@ -200,8 +216,9 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should paginate grouped results with composite keys", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({ product: s.product, year: s.year, quarter: s.quarter }))
             .select((g) => ({
               product: g.key.product,
@@ -230,8 +247,9 @@ describe("GROUP BY with Composite Keys", () => {
   describe("Complex GROUP BY scenarios", () => {
     it("should handle GROUP BY with method calls in key", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({
               startsWithA: s.product.startsWith("A"),
               hasHighVolume: s.quantity > 100,
@@ -263,8 +281,9 @@ describe("GROUP BY with Composite Keys", () => {
       }
 
       const result = selectStatement(
-        () =>
-          from<OrderWithCustomer>("orders")
+        db,
+        (ctx) =>
+          ctx.from("orders")
             .groupBy((o) => ({
               customerRegion: o.customer.region,
               productCategory: o.product.category,
@@ -284,8 +303,9 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should handle GROUP BY with all aggregate functions", () => {
       const result = selectStatement(
-        () =>
-          from<Sale>("sales")
+        db,
+        (ctx) =>
+          ctx.from("sales")
             .groupBy((s) => ({ category: s.category, year: s.year }))
             .select((g) => ({
               category: g.key.category,

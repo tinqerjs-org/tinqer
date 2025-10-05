@@ -5,14 +5,14 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db, from } from "./test-schema.js";
+import { db } from "./test-schema.js";
 
 describe("Window Functions - SQLite", () => {
   describe("ROW_NUMBER", () => {
     it("should generate ROW_NUMBER with partition and order", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rn: h
               .window(u)
@@ -29,9 +29,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate ROW_NUMBER without partition", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rn: h
               .window(u)
@@ -48,9 +48,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate ROW_NUMBER with descending order", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rn: h
               .window(u)
@@ -66,9 +66,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate ROW_NUMBER with multiple partitions", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rn: h
               .window(u)
@@ -86,9 +86,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate ROW_NUMBER with thenBy", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rn: h
               .window(u)
@@ -106,9 +106,9 @@ describe("Window Functions - SQLite", () => {
 
   describe("RANK", () => {
     it("should generate RANK without partition", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rank: h
               .window(u)
@@ -124,9 +124,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate RANK with partition", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rank: h
               .window(u)
@@ -145,9 +145,9 @@ describe("Window Functions - SQLite", () => {
 
   describe("DENSE_RANK", () => {
     it("should generate DENSE_RANK with partition and multiple orderings", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rank: h
               .window(u)
@@ -165,9 +165,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate DENSE_RANK with complex thenBy chain", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rank: h
               .window(u)
@@ -186,9 +186,9 @@ describe("Window Functions - SQLite", () => {
 
   describe("Multiple window functions", () => {
     it("should generate multiple window functions in same SELECT", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users").select((u) => ({
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users").select((u) => ({
             name: u.name,
             rowNum: h
               .window(u)
@@ -217,9 +217,9 @@ describe("Window Functions - SQLite", () => {
 
   describe("Recursive Nesting - Subquery Wrapping", () => {
     it("should generate double nested subquery for two window filters", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users")
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users")
             .select((u) => ({
               name: u.name,
               salary: u.salary,
@@ -250,9 +250,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate triple nested subquery for three window filters", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users")
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users")
             .select((u) => ({
               name: u.name,
               age: u.age,
@@ -293,9 +293,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should handle spread operator in nested subqueries", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users")
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users")
             .select((u) => ({
               ...u,
               rn1: h
@@ -323,9 +323,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should handle mixed regular and window filters", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users")
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users")
             .where((u) => u.age > 25) // Regular filter first
             .select((u) => ({
               name: u.name,
@@ -346,9 +346,9 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should handle COUNT after window filter", () => {
-      const result = selectStatement(
-        (_, h) =>
-          from(db, "users")
+      const result = selectStatement(db, 
+        (ctx, _, h) =>
+          ctx.from("users")
             .select((u) => ({
               id: u.id,
               name: u.name,

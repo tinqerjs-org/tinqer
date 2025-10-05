@@ -1,27 +1,21 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { from } from "@webpods/tinqer";
+import { db } from "./test-schema.js";
 
 describe("GroupBy SQL Generation", () => {
-  interface Sale {
-    id: number;
-    product: string;
-    category: string;
-    amount: number;
-    quantity: number;
-  }
-
   it("should generate GROUP BY clause", () => {
-    const result = selectStatement(() => from<Sale>("sales").groupBy((s) => s.category), {});
+    const result = selectStatement(db, (ctx) => ctx.from("sales").groupBy((s) => s.category), {});
 
     expect(result.sql).to.equal('SELECT "category" FROM "sales" GROUP BY "category"');
   });
 
   it("should combine GROUP BY with WHERE", () => {
     const result = selectStatement(
-      () =>
-        from<Sale>("sales")
+      db,
+      (ctx) =>
+        ctx
+          .from("sales")
           .where((s) => s.amount > 100)
           .groupBy((s) => s.category),
       {},
@@ -35,8 +29,10 @@ describe("GroupBy SQL Generation", () => {
 
   it("should handle GROUP BY with SELECT projection", () => {
     const result = selectStatement(
-      () =>
-        from<Sale>("sales")
+      db,
+      (ctx) =>
+        ctx
+          .from("sales")
           .groupBy((s) => s.category)
           .select((g) => ({ category: g.key })),
       {},
@@ -47,22 +43,26 @@ describe("GroupBy SQL Generation", () => {
 
   it("should work with GROUP BY and ORDER BY", () => {
     const result = selectStatement(
-      () =>
-        from<Sale>("sales")
-          .groupBy((s) => s.product)
+      db,
+      (ctx) =>
+        ctx
+          .from("sales")
+          .groupBy((s) => s.category)
           .orderBy((g) => g.key),
       {},
     );
 
     expect(result.sql).to.equal(
-      'SELECT "product" FROM "sales" GROUP BY "product" ORDER BY "product" ASC',
+      'SELECT "category" FROM "sales" GROUP BY "category" ORDER BY "category" ASC',
     );
   });
 
   it("should handle GROUP BY with COUNT aggregate", () => {
     const result = selectStatement(
-      () =>
-        from<Sale>("sales")
+      db,
+      (ctx) =>
+        ctx
+          .from("sales")
           .groupBy((s) => s.category)
           .select((g) => ({ category: g.key, count: g.count() })),
       {},
@@ -75,8 +75,10 @@ describe("GroupBy SQL Generation", () => {
 
   it("should handle GROUP BY with SUM aggregate", () => {
     const result = selectStatement(
-      () =>
-        from<Sale>("sales")
+      db,
+      (ctx) =>
+        ctx
+          .from("sales")
           .groupBy((s) => s.category)
           .select((g) => ({
             category: g.key,
@@ -92,8 +94,10 @@ describe("GroupBy SQL Generation", () => {
 
   it("should handle GROUP BY with multiple aggregates", () => {
     const result = selectStatement(
-      () =>
-        from<Sale>("sales")
+      db,
+      (ctx) =>
+        ctx
+          .from("sales")
           .groupBy((s) => s.category)
           .select((g) => ({
             category: g.key,
@@ -111,10 +115,12 @@ describe("GroupBy SQL Generation", () => {
 
   it("should handle GROUP BY with WHERE and aggregates", () => {
     const result = selectStatement(
-      () =>
-        from<Sale>("sales")
+      db,
+      (ctx) =>
+        ctx
+          .from("sales")
           .where((s) => s.quantity > 10)
-          .groupBy((s) => s.product)
+          .groupBy((s) => s.category)
           .select((g) => ({
             product: g.key,
             totalQuantity: g.sum((s) => s.quantity),
@@ -125,7 +131,7 @@ describe("GroupBy SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT "product" AS "product", SUM("quantity") AS "totalQuantity", MAX("amount") AS "maxAmount", MIN("amount") AS "minAmount" FROM "sales" WHERE "quantity" > @__p1 GROUP BY "product"',
+      'SELECT "category" AS "product", SUM("quantity") AS "totalQuantity", MAX("amount") AS "maxAmount", MIN("amount") AS "minAmount" FROM "sales" WHERE "quantity" > @__p1 GROUP BY "category"',
     );
     expect(result.params).to.deep.equal({ __p1: 10 });
   });
