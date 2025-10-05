@@ -106,7 +106,8 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take with external parameter", () => {
-    const query = (ctx: QueryDSL<TestSchema>, p: { limit: number }) => ctx.from("users").take(p.limit);
+    const query = (ctx: QueryDSL<TestSchema>, p: { limit: number }) =>
+      ctx.from("users").take(p.limit);
     const result = parseQuery(query);
 
     const takeOp = asTakeOperation(getOperation(result));

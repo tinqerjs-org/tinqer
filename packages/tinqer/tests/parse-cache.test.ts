@@ -4,8 +4,8 @@ import {
   setParseCacheConfig,
   getParseCacheConfig,
   clearParseCache,
-  from,
 } from "../src/index.js";
+import type { QueryDSL } from "../src/index.js";
 import { parseCache } from "../src/parser/parse-cache.js";
 
 // Test types
@@ -14,6 +14,10 @@ type User = {
   name: string;
   age: number;
 };
+
+interface TestSchema {
+  users: User;
+}
 
 describe("Parse Cache", () => {
   // Save original config
@@ -36,7 +40,8 @@ describe("Parse Cache", () => {
 
   describe("Basic caching behavior", () => {
     it("should cache parse results on second call", () => {
-      const queryBuilder = (p: { id: number }) => from<User>("users").where((u) => u.id === p.id);
+      const queryBuilder = (ctx: QueryDSL<TestSchema>, p: { id: number }) =>
+        ctx.from("users").where((u) => u.id === p.id);
 
       // First call - should parse
       const result1 = parseQuery(queryBuilder);
@@ -58,7 +63,8 @@ describe("Parse Cache", () => {
     });
 
     it("should return cloned autoParams", () => {
-      const queryBuilder = () => from<User>("users").where((u) => u.age >= 18);
+      const queryBuilder = (ctx: QueryDSL<TestSchema>) =>
+        ctx.from("users").where((u) => u.age >= 18);
 
       const result1 = parseQuery(queryBuilder);
       const result2 = parseQuery(queryBuilder);
@@ -73,8 +79,8 @@ describe("Parse Cache", () => {
     });
 
     it("should cache different queries separately", () => {
-      const query1 = () => from<User>("users").where((u) => u.age >= 18);
-      const query2 = () => from<User>("users").where((u) => u.age >= 21);
+      const query1 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 18);
+      const query2 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 21);
 
       parseQuery(query1);
       parseQuery(query2);
@@ -85,7 +91,8 @@ describe("Parse Cache", () => {
 
   describe("Cache bypass with options", () => {
     it("should bypass cache when cache option is false", () => {
-      const queryBuilder = () => from<User>("users").where((u) => u.age >= 18);
+      const queryBuilder = (ctx: QueryDSL<TestSchema>) =>
+        ctx.from("users").where((u) => u.age >= 18);
 
       // First call
       parseQuery(queryBuilder);
@@ -101,7 +108,8 @@ describe("Parse Cache", () => {
     });
 
     it("should not add to cache when cache option is false", () => {
-      const queryBuilder = () => from<User>("users").where((u) => u.age >= 18);
+      const queryBuilder = (ctx: QueryDSL<TestSchema>) =>
+        ctx.from("users").where((u) => u.age >= 18);
 
       clearParseCache();
       parseQuery(queryBuilder, { cache: false });
@@ -115,7 +123,8 @@ describe("Parse Cache", () => {
     it("should disable caching when enabled is false", () => {
       setParseCacheConfig({ enabled: false });
 
-      const queryBuilder = () => from<User>("users").where((u) => u.age >= 18);
+      const queryBuilder = (ctx: QueryDSL<TestSchema>) =>
+        ctx.from("users").where((u) => u.age >= 18);
 
       parseQuery(queryBuilder);
 
@@ -126,7 +135,8 @@ describe("Parse Cache", () => {
     it("should disable caching when capacity is 0", () => {
       setParseCacheConfig({ capacity: 0 });
 
-      const queryBuilder = () => from<User>("users").where((u) => u.age >= 18);
+      const queryBuilder = (ctx: QueryDSL<TestSchema>) =>
+        ctx.from("users").where((u) => u.age >= 18);
 
       parseQuery(queryBuilder);
 
@@ -137,9 +147,9 @@ describe("Parse Cache", () => {
     it("should respect capacity limit", () => {
       setParseCacheConfig({ capacity: 2 });
 
-      const query1 = () => from<User>("users").where((u) => u.age >= 18);
-      const query2 = () => from<User>("users").where((u) => u.age >= 21);
-      const query3 = () => from<User>("users").where((u) => u.age >= 25);
+      const query1 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 18);
+      const query2 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 21);
+      const query3 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 25);
 
       parseQuery(query1);
       parseQuery(query2);
@@ -151,9 +161,9 @@ describe("Parse Cache", () => {
     });
 
     it("should update capacity dynamically", () => {
-      const query1 = () => from<User>("users").where((u) => u.age >= 18);
-      const query2 = () => from<User>("users").where((u) => u.age >= 21);
-      const query3 = () => from<User>("users").where((u) => u.age >= 25);
+      const query1 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 18);
+      const query2 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 21);
+      const query3 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 25);
 
       parseQuery(query1);
       parseQuery(query2);
@@ -168,8 +178,8 @@ describe("Parse Cache", () => {
     });
 
     it("should clear all cached entries", () => {
-      const query1 = () => from<User>("users").where((u) => u.age >= 18);
-      const query2 = () => from<User>("users").where((u) => u.age >= 21);
+      const query1 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 18);
+      const query2 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 21);
 
       parseQuery(query1);
       parseQuery(query2);
@@ -184,9 +194,9 @@ describe("Parse Cache", () => {
     it("should evict least recently used entry when capacity exceeded", () => {
       setParseCacheConfig({ capacity: 2 });
 
-      const query1 = () => from<User>("users").where((u) => u.age >= 18);
-      const query2 = () => from<User>("users").where((u) => u.age >= 21);
-      const query3 = () => from<User>("users").where((u) => u.age >= 25);
+      const query1 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 18);
+      const query2 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 21);
+      const query3 = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((u) => u.age >= 25);
 
       parseQuery(query1);
       parseQuery(query2);
@@ -237,7 +247,8 @@ describe("Parse Cache", () => {
 
   describe("Frozen operation tree", () => {
     it("should freeze operation tree to prevent mutations", () => {
-      const queryBuilder = () => from<User>("users").where((u) => u.age >= 18);
+      const queryBuilder = (ctx: QueryDSL<TestSchema>) =>
+        ctx.from("users").where((u) => u.age >= 18);
 
       const result = parseQuery(queryBuilder);
 

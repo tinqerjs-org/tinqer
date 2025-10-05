@@ -4,13 +4,13 @@
 
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { insertInto, update, createContext } from "../dist/index.js";
 import { parseQuery } from "../dist/parser/parse-query.js";
+import type { QueryDSL } from "../dist/index.js";
 import type { InsertOperation, UpdateOperation, ParamRef } from "../dist/query-tree/operations.js";
 import type { ComparisonExpression, ConstantExpression } from "../dist/expressions/expression.js";
 
 describe("CRUD Syntax - Direct Objects", () => {
-  // Create a test database context
+  // Test schema
   interface TestSchema {
     users: {
       id: number;
@@ -20,12 +20,10 @@ describe("CRUD Syntax - Direct Objects", () => {
     };
   }
 
-  const db = createContext<TestSchema>();
-
   describe("INSERT values()", () => {
     it("should accept direct object syntax", () => {
-      const result = parseQuery(() =>
-        insertInto(db, "users").values({
+      const result = parseQuery((ctx: QueryDSL<TestSchema>) =>
+        ctx.insertInto("users").values({
           name: "Alice",
           age: 30,
           email: "alice@example.com",
@@ -50,11 +48,12 @@ describe("CRUD Syntax - Direct Objects", () => {
     });
 
     it("should work with parameters in direct object syntax", () => {
-      const result = parseQuery((params: { userName: string; userAge: number }) =>
-        insertInto(db, "users").values({
-          name: params.userName,
-          age: params.userAge,
-        }),
+      const result = parseQuery(
+        (ctx: QueryDSL<TestSchema>, params: { userName: string; userAge: number }) =>
+          ctx.insertInto("users").values({
+            name: params.userName,
+            age: params.userAge,
+          }),
       );
 
       assert(result);
@@ -74,8 +73,9 @@ describe("CRUD Syntax - Direct Objects", () => {
 
   describe("UPDATE set()", () => {
     it("should accept direct object syntax", () => {
-      const result = parseQuery(() =>
-        update(db, "users")
+      const result = parseQuery((ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .update("users")
           .set({ age: 31, email: "newemail@example.com" })
           .where((u) => u.id === 1),
       );
@@ -95,8 +95,9 @@ describe("CRUD Syntax - Direct Objects", () => {
     });
 
     it("should work with parameters in direct object syntax", () => {
-      const result = parseQuery((params: { newAge: number }) =>
-        update(db, "users")
+      const result = parseQuery((ctx: QueryDSL<TestSchema>, params: { newAge: number }) =>
+        ctx
+          .update("users")
           .set({ age: params.newAge })
           .where((u) => u.id === 3),
       );
@@ -114,8 +115,9 @@ describe("CRUD Syntax - Direct Objects", () => {
 
   describe("Mixed syntax scenarios", () => {
     it("should handle complex INSERT with direct object", () => {
-      const result = parseQuery(() =>
-        insertInto(db, "users")
+      const result = parseQuery((ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .insertInto("users")
           .values({
             name: "Complex User",
             age: 40,
@@ -135,8 +137,9 @@ describe("CRUD Syntax - Direct Objects", () => {
     });
 
     it("should handle UPDATE with mixed values", () => {
-      const result = parseQuery((params: { userId: number }) =>
-        update(db, "users")
+      const result = parseQuery((ctx: QueryDSL<TestSchema>, params: { userId: number }) =>
+        ctx
+          .update("users")
           .set({
             age: 50,
             email: "static@example.com",

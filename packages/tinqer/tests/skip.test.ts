@@ -4,7 +4,8 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery, from } from "../dist/index.js";
+import { parseQuery } from "../dist/index.js";
+import type { QueryDSL } from "../dist/index.js";
 import {
   asSkipOperation,
   asOrderByOperation,
@@ -13,12 +14,12 @@ import {
 } from "./test-utils/operation-helpers.js";
 import type { ParamRef } from "../dist/query-tree/operations.js";
 import type { ArithmeticExpression } from "../dist/expressions/expression.js";
-import { db } from "./test-schema.js";
+import { type TestSchema } from "./test-schema.js";
 
 describe("SKIP Operations", () => {
   describe("skip()", () => {
     it("should parse skip with constant number", () => {
-      const query = () => from(db, "users").skip(10);
+      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").skip(10);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("skip");
@@ -30,7 +31,7 @@ describe("SKIP Operations", () => {
     });
 
     it("should parse skip(0)", () => {
-      const query = () => from(db, "users").skip(0);
+      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").skip(0);
       const result = parseQuery(query);
 
       const skipOp = asSkipOperation(getOperation(result));
@@ -41,8 +42,9 @@ describe("SKIP Operations", () => {
     });
 
     it("should parse skip after orderBy", () => {
-      const query = () =>
-        from(db, "users")
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .from("users")
           .orderBy((x) => x.name)
           .skip(20);
       const result = parseQuery(query);
@@ -58,7 +60,7 @@ describe("SKIP Operations", () => {
     });
 
     it("should parse skip before take (pagination pattern)", () => {
-      const query = () => from(db, "users").skip(20).take(10);
+      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").skip(20).take(10);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("take");
@@ -75,7 +77,8 @@ describe("SKIP Operations", () => {
     });
 
     it("should parse skip with external parameter", () => {
-      const query = (p: { offset: number }) => from(db, "users").skip(p.offset);
+      const query = (ctx: QueryDSL<TestSchema>, p: { offset: number }) =>
+        ctx.from("users").skip(p.offset);
       const result = parseQuery(query);
 
       const skipOp = asSkipOperation(getOperation(result));
@@ -86,8 +89,8 @@ describe("SKIP Operations", () => {
     });
 
     it("should parse skip with arithmetic expression", () => {
-      const query = (p: { page: number; pageSize: number }) =>
-        from(db, "users").skip((p.page - 1) * p.pageSize);
+      const query = (ctx: QueryDSL<TestSchema>, p: { page: number; pageSize: number }) =>
+        ctx.from("users").skip((p.page - 1) * p.pageSize);
       const result = parseQuery(query);
 
       const skipOp = asSkipOperation(getOperation(result));
@@ -97,8 +100,9 @@ describe("SKIP Operations", () => {
     });
 
     it("should parse complex pagination with ordering", () => {
-      const query = () =>
-        from(db, "users")
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .from("users")
           .orderBy((x) => x.createdAt)
           .skip(10)
           .take(25);
@@ -119,8 +123,9 @@ describe("SKIP Operations", () => {
     });
 
     it("should parse pagination with both external parameters", () => {
-      const query = (p: { page: number; pageSize: number }) =>
-        from(db, "users")
+      const query = (ctx: QueryDSL<TestSchema>, p: { page: number; pageSize: number }) =>
+        ctx
+          .from("users")
           .skip(p.page * p.pageSize)
           .take(p.pageSize);
       const result = parseQuery(query);

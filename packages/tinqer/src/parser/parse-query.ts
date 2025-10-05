@@ -62,14 +62,15 @@ function cloneParseResult(cached: CachedParseResult): ParseResult {
 
 /**
  * Parses a query builder function into a QueryOperation tree with auto-extracted parameters
- * @param queryBuilder The function that builds the query, optionally with helpers as second parameter
+ * @param queryBuilder The function that builds the query with DSL context, params, and optional helpers
  * @param options Parse options including cache control
  * @returns The parsed result containing operation tree and auto-params, or null if parsing fails
  */
-export function parseQuery<TParams, TQuery>(
+export function parseQuery<TContext, TParams, TQuery>(
   queryBuilder:
-    | ((params: TParams) => TQuery)
-    | ((params: TParams, helpers: ReturnType<typeof createQueryHelpers>) => TQuery),
+    | ((ctx: TContext) => TQuery)
+    | ((ctx: TContext, params: TParams) => TQuery)
+    | ((ctx: TContext, params: TParams, helpers: ReturnType<typeof createQueryHelpers>) => TQuery),
   options: ParseQueryOptions = {},
 ): ParseResult | null {
   try {
