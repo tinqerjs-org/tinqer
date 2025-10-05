@@ -4,14 +4,17 @@
 
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { deleteFrom } from "@webpods/tinqer";
 import { deleteStatement } from "../dist/index.js";
 import { db } from "./test-schema.js";
 
 describe("DELETE Statement Generation", () => {
   describe("Basic DELETE", () => {
     it("should generate DELETE with simple WHERE clause", () => {
-      const result = deleteStatement(() => deleteFrom(db, "users").where((u) => u.id === 1), {});
+      const result = deleteStatement(
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.id === 1),
+        {},
+      );
 
       assert.equal(result.sql, `DELETE FROM "users" WHERE "id" = $(__p1)`);
       assert.deepEqual(result.params, {
@@ -21,7 +24,8 @@ describe("DELETE Statement Generation", () => {
 
     it("should generate DELETE with schema prefix in table name", () => {
       const result = deleteStatement(
-        () => deleteFrom<{ id: number; name: string }>("public.users").where((u) => u.id === 2),
+        db,
+        (ctx) => ctx.deleteFrom("public.users").where((u) => u.id === 2),
         {},
       );
 
@@ -32,7 +36,8 @@ describe("DELETE Statement Generation", () => {
   describe("DELETE with complex WHERE clauses", () => {
     it("should handle AND conditions", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => u.id === 3 && u.isDeleted === true),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.id === 3 && u.isDeleted === true),
         {},
       );
 
@@ -48,7 +53,8 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle OR conditions", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => u.age > 100 || u.isDeleted === true),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.age > 100 || u.isDeleted === true),
         {},
       );
 
@@ -60,10 +66,11 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle complex nested conditions", () => {
       const result = deleteStatement(
-        () =>
-          deleteFrom(db, "users").where(
-            (u) => (u.age < 18 && u.role !== "Admin") || u.isDeleted === true,
-          ),
+        db,
+        (ctx) =>
+          ctx
+            .deleteFrom("users")
+            .where((u) => (u.age < 18 && u.role !== "Admin") || u.isDeleted === true),
         {},
       );
 
@@ -75,7 +82,8 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle NOT conditions", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => !(u.isActive === true)),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => !(u.isActive === true)),
         {},
       );
 
@@ -86,7 +94,8 @@ describe("DELETE Statement Generation", () => {
   describe("DELETE with parameters", () => {
     it("should use external parameters", () => {
       const result = deleteStatement(
-        (p: { userId: number }) => deleteFrom(db, "users").where((u) => u.id === p.userId),
+        db,
+        (ctx, p: { userId: number }) => ctx.deleteFrom("users").where((u) => u.id === p.userId),
         { userId: 4 },
       );
 
@@ -98,8 +107,9 @@ describe("DELETE Statement Generation", () => {
 
     it("should mix external parameters with literals", () => {
       const result = deleteStatement(
-        (p: { minAge: number }) =>
-          deleteFrom(db, "users").where((u) => u.age > p.minAge && u.department === "Old"),
+        db,
+        (ctx, p: { minAge: number }) =>
+          ctx.deleteFrom("users").where((u) => u.age > p.minAge && u.department === "Old"),
         { minAge: 65 },
       );
 
@@ -116,7 +126,11 @@ describe("DELETE Statement Generation", () => {
 
   describe("DELETE with allowFullTableDelete", () => {
     it("should generate DELETE without WHERE when allowed", () => {
-      const result = deleteStatement(() => deleteFrom(db, "users").allowFullTableDelete(), {});
+      const result = deleteStatement(
+        db,
+        (ctx) => ctx.deleteFrom("users").allowFullTableDelete(),
+        {},
+      );
 
       assert.equal(result.sql, `DELETE FROM "users"`);
       assert.deepEqual(result.params, {});
@@ -124,21 +138,26 @@ describe("DELETE Statement Generation", () => {
 
     it("should throw error when DELETE has no WHERE and no allow flag", () => {
       assert.throws(() => {
-        deleteStatement(() => deleteFrom(db, "users"), {});
+        deleteStatement(db, (ctx) => ctx.deleteFrom("users"), {});
       }, /DELETE requires a WHERE clause or explicit allowFullTableDelete/);
     });
   });
 
   describe("DELETE with comparison operators", () => {
     it("should handle greater than", () => {
-      const result = deleteStatement(() => deleteFrom(db, "users").where((u) => u.age > 50), {});
+      const result = deleteStatement(
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.age > 50),
+        {},
+      );
 
       assert.equal(result.sql, `DELETE FROM "users" WHERE "age" > $(__p1)`);
     });
 
     it("should handle less than or equal", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => u.salary <= 30000),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.salary <= 30000),
         {},
       );
 
@@ -147,7 +166,8 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle not equal", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => u.role !== "Admin"),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.role !== "Admin"),
         {},
       );
 
@@ -158,7 +178,8 @@ describe("DELETE Statement Generation", () => {
   describe("DELETE with NULL checks", () => {
     it("should handle IS NULL", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => u.email === null),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.email === null),
         {},
       );
 
@@ -168,7 +189,8 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle IS NOT NULL", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => u.email !== null),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.email !== null),
         {},
       );
 
@@ -178,7 +200,8 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle NULL with AND conditions", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => u.email === null && u.phone === null),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.email === null && u.phone === null),
         {},
       );
 
@@ -189,7 +212,8 @@ describe("DELETE Statement Generation", () => {
   describe("DELETE with string operations", () => {
     it("should handle startsWith", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => u.name.startsWith("Test")),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.name.startsWith("Test")),
         {},
       );
 
@@ -201,8 +225,9 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle endsWith", () => {
       const result = deleteStatement(
-        () =>
-          deleteFrom(db, "users").where((u) => u.email !== null && u.email.endsWith("@temp.com")),
+        db,
+        (ctx) =>
+          ctx.deleteFrom("users").where((u) => u.email !== null && u.email.endsWith("@temp.com")),
         {},
       );
 
@@ -214,7 +239,8 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle contains", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => u.name.includes("Spam")),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => u.name.includes("Spam")),
         {},
       );
 
@@ -225,7 +251,8 @@ describe("DELETE Statement Generation", () => {
   describe("DELETE with IN operations", () => {
     it("should handle array includes", () => {
       const result = deleteStatement(
-        () => deleteFrom(db, "users").where((u) => [1, 2, 3].includes(u.id)),
+        db,
+        (ctx) => ctx.deleteFrom("users").where((u) => [1, 2, 3].includes(u.id)),
         {},
       );
 
@@ -239,7 +266,8 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle parameterized array includes", () => {
       const result = deleteStatement(
-        (p: { ids: number[] }) => deleteFrom(db, "users").where((u) => p.ids.includes(u.id)),
+        db,
+        (ctx, p: { ids: number[] }) => ctx.deleteFrom("users").where((u) => p.ids.includes(u.id)),
         { ids: [4, 5, 6] },
       );
 
@@ -256,8 +284,9 @@ describe("DELETE Statement Generation", () => {
   describe("DELETE with date comparisons", () => {
     it("should handle date parameters", () => {
       const result = deleteStatement(
-        (p: { cutoffDate: Date }) =>
-          deleteFrom(db, "users").where((u) => u.createdAt < p.cutoffDate),
+        db,
+        (ctx, p: { cutoffDate: Date }) =>
+          ctx.deleteFrom("users").where((u) => u.createdAt < p.cutoffDate),
         { cutoffDate: new Date("2020-01-01") },
       );
 

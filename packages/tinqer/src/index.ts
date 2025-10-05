@@ -20,6 +20,8 @@ export {
   WINDOW_MARKER,
 } from "./linq/functions.js";
 export type { QueryHelpers, WindowFunctionType, WindowOrderSpec } from "./linq/functions.js";
+export { createQueryDSL } from "./linq/query-dsl.js";
+export type { QueryDSL } from "./linq/query-dsl.js";
 
 // Data modification builders
 export { insertInto } from "./linq/insert-into.js";

@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
 describe("Null Coalescing Operator (??) with query", () => {
@@ -12,8 +12,16 @@ describe("Null Coalescing Operator (??) with query", () => {
     interface User {
       status?: string;
     }
+
+    interface Schema {
+      users: User;
+    }
+
+    const db = createContext<Schema>();
+
     const result = selectStatement(
-      () => from<User>("users").where((u) => (u.status ?? "active") === "active"),
+      db,
+      (ctx) => ctx.from("users").where((u) => (u.status ?? "active") === "active"),
       {},
     );
 
@@ -25,8 +33,16 @@ describe("Null Coalescing Operator (??) with query", () => {
     interface Order {
       priority?: number;
     }
+
+    interface Schema {
+      orders: Order;
+    }
+
+    const db = createContext<Schema>();
+
     const result = selectStatement(
-      () => from<Order>("orders").where((o) => (o.priority ?? 5) < 3),
+      db,
+      (ctx) => ctx.from("orders").where((o) => (o.priority ?? 5) < 3),
       {},
     );
 

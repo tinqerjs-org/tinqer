@@ -151,6 +151,13 @@ export interface TestSchema {
     timestamp: Date;
     sensorId: string;
   };
+
+  // Schema-prefixed table name for testing
+  "public.users": {
+    id: number;
+    name: string;
+    age: number;
+  };
 }
 
 // Create the database context

@@ -85,10 +85,11 @@ export function convertAstToQueryOperationWithParams(
   >;
 } {
   // Extract parameter info from the lambda
-  const { tableParams, queryParams, helpersParam } = extractParameters(ast);
+  const { dslParam, tableParams, queryParams, helpersParam } = extractParameters(ast);
 
   // Create shared visitor context
   const visitorContext: VisitorContext = {
+    dslParam,
     tableParams: new Set(tableParams),
     queryParams: new Set(queryParams),
     helpersParam,
@@ -116,55 +117,73 @@ export function convertAstToQueryOperationWithParams(
 }
 
 /**
- * Extract table, query, and helpers parameters from the root lambda
+ * Extract DSL, table, query, and helpers parameters from the root lambda
  */
 function extractParameters(ast: ASTExpression): {
+  dslParam?: string;
   tableParams: Set<string>;
   queryParams: Set<string>;
   helpersParam?: string;
 } {
   const tableParams = new Set<string>();
   const queryParams = new Set<string>();
+  let dslParam: string | undefined;
   let helpersParam: string | undefined;
 
   // Check if the root is an arrow function with params
-  // For queries like: () => from(...).where(...)
-  // Or: (p) => from(...).where(x => x.id == p.minId)
-  // Or: (p, _) => from(...).where(x => _.functions.iequals(x.name, "john"))
-  // Or: (p, h = createQueryHelpers()) => ... (with default parameter)
+  // New signature: (ctx, p, h) => ctx.from(...).where(x => x.id == p.minId)
+  // Old signature (backward compat): (p, h) => from(...).where(x => x.id == p.minId)
   if (ast.type === "ArrowFunctionExpression") {
     const arrow = ast as ArrowFunctionExpression;
     if (arrow.params && arrow.params.length > 0) {
-      // First param is query params
+      // First param is DSL param (new signature) or query params (old signature)
       const firstParam = arrow.params[0];
       if (firstParam && firstParam.type === "Identifier") {
-        queryParams.add((firstParam as Identifier).name);
+        dslParam = (firstParam as Identifier).name;
       } else if (firstParam && (firstParam as { type?: string }).type === "AssignmentPattern") {
-        // Handle default parameters: (p = {})
+        // Handle default parameters
         const assignPattern = firstParam as { left?: { type?: string; name?: string } };
         if (assignPattern.left?.type === "Identifier" && assignPattern.left.name) {
-          queryParams.add(assignPattern.left.name);
+          dslParam = assignPattern.left.name;
         }
       }
 
-      // Second param is helpers
+      // Second param is query params (new signature) or helpers (old signature)
       if (arrow.params.length > 1) {
         const secondParam = arrow.params[1];
         if (secondParam && secondParam.type === "Identifier") {
-          helpersParam = (secondParam as Identifier).name;
+          queryParams.add((secondParam as Identifier).name);
         } else if (secondParam && (secondParam as { type?: string }).type === "AssignmentPattern") {
-          // Handle default parameters: (p, h = createQueryHelpers())
+          // Handle default parameters
           const assignPattern = secondParam as { left?: { type?: string; name?: string } };
+          if (assignPattern.left?.type === "Identifier" && assignPattern.left.name) {
+            queryParams.add(assignPattern.left.name);
+          }
+        }
+      }
+
+      // Third param is helpers (new signature only)
+      if (arrow.params.length > 2) {
+        const thirdParam = arrow.params[2];
+        if (thirdParam && thirdParam.type === "Identifier") {
+          helpersParam = (thirdParam as Identifier).name;
+        } else if (thirdParam && (thirdParam as { type?: string }).type === "AssignmentPattern") {
+          // Handle default parameters: (ctx, p, h = createQueryHelpers())
+          const assignPattern = thirdParam as { left?: { type?: string; name?: string } };
           if (assignPattern.left?.type === "Identifier" && assignPattern.left.name) {
             helpersParam = assignPattern.left.name;
           }
         }
+      } else if (arrow.params.length === 2) {
+        // Old signature with 2 params: (p, h) => ...
+        // Second param might be helpers if no third param
+        // We'll handle this in visitCallExpression by checking if the first param is used as DSL
       }
     }
     // For parameterless lambdas, no query params or helpers
   }
 
-  return { tableParams, queryParams, helpersParam };
+  return { dslParam, tableParams, queryParams, helpersParam };
 }
 
 /**
@@ -206,6 +225,38 @@ function visitQueryChain(
 }
 
 /**
+ * Check if a call expression is a DSL method call (e.g., ctx.from())
+ */
+function isDSLMethodCall(ast: ASTCallExpression, dslParam: string | undefined): boolean {
+  if (!dslParam) {
+    return false;
+  }
+
+  if (ast.callee.type === "MemberExpression") {
+    const memberExpr = ast.callee as ASTMemberExpression;
+    if (memberExpr.object.type === "Identifier") {
+      const objName = (memberExpr.object as Identifier).name;
+      return objName === dslParam;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Check if a call expression is a bare DSL operation (e.g., from()) for backward compatibility
+ */
+function isBareDSLOperation(ast: ASTCallExpression, methodName: string): boolean {
+  return (
+    ast.callee.type === "Identifier" &&
+    (methodName === "from" ||
+      methodName === "insertInto" ||
+      methodName === "update" ||
+      methodName === "deleteFrom")
+  );
+}
+
+/**
  * Visit a call expression (method call)
  */
 function visitCallExpression(
@@ -217,8 +268,12 @@ function visitCallExpression(
     return null;
   }
 
+  // Check if this is a DSL method call or bare operation
+  const isDSLCall = isDSLMethodCall(ast, visitorContext.dslParam);
+  const isBareCall = isBareDSLOperation(ast, methodName);
+
   // Handle root operations
-  if (methodName === "from") {
+  if (methodName === "from" && (isDSLCall || isBareCall)) {
     const operation = visitFromOperation(ast);
     // Set current table in context for field tracking
     if (operation) {
@@ -228,7 +283,7 @@ function visitCallExpression(
     return operation;
   }
 
-  if (methodName === "insertInto") {
+  if (methodName === "insertInto" && (isDSLCall || isBareCall)) {
     const operation = visitInsertOperation(ast);
     // Set current table in context for field tracking
     if (operation) {
@@ -237,7 +292,7 @@ function visitCallExpression(
     return operation;
   }
 
-  if (methodName === "update") {
+  if (methodName === "update" && (isDSLCall || isBareCall)) {
     const operation = visitUpdateOperation(ast);
     // Set current table in context for field tracking
     if (operation) {
@@ -246,7 +301,7 @@ function visitCallExpression(
     return operation;
   }
 
-  if (methodName === "deleteFrom") {
+  if (methodName === "deleteFrom" && (isDSLCall || isBareCall)) {
     const operation = visitDeleteOperation(ast);
     // Set current table in context for field tracking
     if (operation) {
