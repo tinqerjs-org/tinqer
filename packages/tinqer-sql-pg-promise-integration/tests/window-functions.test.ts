@@ -820,5 +820,29 @@ describe("Window Functions - PostgreSQL Integration", () => {
         expect(row.rn4).to.be.at.most(2);
       });
     });
+
+    it("should handle COUNT after window filter", async () => {
+      const count = await executeSelect(
+        db,
+        (_, h) =>
+          from(dbContext, "users")
+            .select((u) => ({
+              id: u.id,
+              name: u.name,
+              department_id: u.department_id,
+              rn: h
+                .window(u)
+                .partitionBy((r) => r.department_id)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((r) => r.rn === 1 && r.department_id !== null)
+            .count(),
+        {},
+      );
+
+      // Should count top earner from each department
+      expect(count).to.equal(4); // 4 departments
+    });
   });
 });

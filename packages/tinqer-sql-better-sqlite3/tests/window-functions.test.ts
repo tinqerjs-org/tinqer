@@ -344,5 +344,29 @@ describe("Window Functions - SQLite", () => {
       // Regular filter should be in innermost query
       expect(result.sql).to.include("@__p1");
     });
+
+    it("should handle COUNT after window filter", () => {
+      const result = selectStatement(
+        (_, h) =>
+          from(db, "users")
+            .select((u) => ({
+              id: u.id,
+              name: u.name,
+              rn: h
+                .window(u)
+                .partitionBy((r) => r.department)
+                .orderByDescending((r) => r.salary)
+                .rowNumber(),
+            }))
+            .where((u) => u.rn === 1)
+            .count(),
+        { __p1: 1 },
+      );
+
+      // Should wrap in subquery and then COUNT
+      expect(result.sql).to.include("SELECT COUNT(*) FROM (");
+      expect(result.sql).to.include("ROW_NUMBER() OVER");
+      expect(result.sql).to.include('WHERE "rn" = @__p1');
+    });
   });
 });
