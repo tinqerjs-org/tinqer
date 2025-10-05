@@ -251,8 +251,9 @@ describe("JOIN with Table References", () => {
       // This test verifies that mixing table references with field selections is not allowed
       expect(() => {
         selectStatement(
-          () =>
-            from<User>("users")
+          db,
+          (ctx) =>
+            ctx.from("users")
               .join(
                 ctx.from("departments"),
                 (u) => u.department_id,

@@ -104,7 +104,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should insert a single row with all columns", async () => {
       const rowCount = await executeInsert(
         db,
-        (ctx) =>
+        dbContext,
+        (ctx, _) =>
           ctx.insertInto("products").values({
             name: "Laptop",
             price: 999.99,
@@ -129,7 +130,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should insert with partial columns (nullable columns)", async () => {
       const rowCount = await executeInsert(
         db,
-        (ctx) =>
+        dbContext,
+        (ctx, _) =>
           ctx.insertInto("products").values({
             name: "Basic Item",
             price: 10.0,
@@ -155,8 +157,9 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeInsert(
         db,
-        (p: typeof params) =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, p: typeof params) =>
+          ctx.insertInto("products").values({
             name: p.productName,
             price: p.productPrice,
             category: p.productCategory,
@@ -175,7 +178,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle boolean values correctly", async () => {
       const rowCount = await executeInsert(
         db,
-        (ctx) =>
+        dbContext,
+        (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Out of Stock Item",
             price: 50.0,
@@ -193,7 +197,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle NULL values explicitly", async () => {
       const rowCount = await executeInsert(
         db,
-        (ctx) =>
+        dbContext,
+        (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Minimal Product",
             price: 25.0,
@@ -215,8 +220,10 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should return inserted row with RETURNING *", async () => {
       const results = await executeInsert(
         db,
-        (ctx) =>
-          ctx.insertInto("products")
+        dbContext,
+        (ctx, _params) =>
+          ctx
+            .insertInto("products")
             .values({
               name: "Smartphone",
               price: 799.99,
@@ -236,8 +243,10 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should return specific columns with RETURNING", async () => {
       const results = await executeInsert(
         db,
-        (ctx) =>
-          ctx.insertInto("products")
+        dbContext,
+        (ctx, _params) =>
+          ctx
+            .insertInto("products")
             .values({
               name: "Monitor",
               price: 299.99,
@@ -259,8 +268,10 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should return single column with RETURNING", async () => {
       const results = await executeInsert(
         db,
-        (ctx) =>
-          ctx.insertInto("products")
+        dbContext,
+        (ctx, _params) =>
+          ctx
+            .insertInto("products")
             .values({
               name: "Keyboard",
               price: 79.99,
@@ -281,7 +292,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle special characters in strings", async () => {
       const rowCount = await executeInsert(
         db,
-        (ctx) =>
+        dbContext,
+        (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
             price: 100.0,
@@ -302,7 +314,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle Unicode characters", async () => {
       const rowCount = await executeInsert(
         db,
-        (ctx) =>
+        dbContext,
+        (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
             price: 88.88,
@@ -322,7 +335,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle numeric edge cases", async () => {
       const rowCount = await executeInsert(
         db,
-        (ctx) =>
+        dbContext,
+        (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Edge Case Product",
             price: 0.01, // Very small
@@ -341,8 +355,9 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeInsert(
         db,
-        (params: { testDate: Date }) =>
-          insertInto(dbContext, "orders").values({
+        dbContext,
+        (ctx, params: { testDate: Date }) =>
+          ctx.insertInto("orders").values({
             customer_id: 1,
             product_id: 1,
             quantity: 2,
@@ -373,8 +388,9 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeInsert(
         db,
-        (params: { metadataJson: string }) =>
-          insertInto(dbContext, "products").values({
+        dbContext,
+        (ctx, params: { metadataJson: string }) =>
+          ctx.insertInto("products").values({
             name: "Product with Metadata",
             price: 199.99,
             metadata: params.metadataJson,
@@ -396,8 +412,9 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // First insert
       await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "customers").values({
+        dbContext,
+        (ctx) =>
+          ctx.insertInto("customers").values({
             email: "test@example.com",
             name: "Test User",
             age: 30,
@@ -409,8 +426,9 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       try {
         await executeInsert(
           db,
-          () =>
-            insertInto(dbContext, "customers").values({
+          dbContext,
+          (ctx) =>
+            ctx.insertInto("customers").values({
               email: "test@example.com",
               name: "Another User",
               age: 25,
@@ -432,8 +450,10 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // Insert customer
       const customerResults = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "customers")
+        dbContext,
+        (ctx) =>
+          ctx
+            .insertInto("customers")
             .values({
               email: "john@example.com",
               name: "John Doe",
@@ -448,8 +468,10 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // Insert product
       const productResults = await executeInsert(
         db,
-        (ctx) =>
-          ctx.insertInto("products")
+        dbContext,
+        (ctx, _params) =>
+          ctx
+            .insertInto("products")
             .values({
               name: "Test Product",
               price: 49.99,
@@ -464,8 +486,9 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // Insert order referencing both
       const orderCount = await executeInsert(
         db,
-        (params: { customerId: number; productId: number }) =>
-          insertInto(dbContext, "orders").values({
+        dbContext,
+        (ctx, params: { customerId: number; productId: number }) =>
+          ctx.insertInto("orders").values({
             customer_id: params.customerId,
             product_id: params.productId,
             quantity: 3,
@@ -490,6 +513,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
   describe("SQL generation verification", () => {
     it("should generate correct INSERT SQL", () => {
       const result = insertStatement(
+        dbContext,
         (ctx) =>
           ctx.insertInto("products").values({
             name: "Test",
@@ -512,8 +536,10 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
     it("should generate correct INSERT with RETURNING SQL", () => {
       const result = insertStatement(
+        dbContext,
         (ctx) =>
-          ctx.insertInto("products")
+          ctx
+            .insertInto("products")
             .values({
               name: "Test",
               price: 10.99,

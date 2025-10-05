@@ -20,8 +20,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -66,8 +68,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("orders")
+          ctx
+            .from("orders")
             .join(
               ctx.from("users"),
               (o) => o.user_id,
@@ -110,8 +114,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("orders")
+          ctx
+            .from("orders")
             .join(
               ctx.from("users"),
               (o) => o.user_id,
@@ -153,8 +159,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("orders")
+          ctx
+            .from("orders")
             .join(
               ctx.from("users"),
               (o) => o.user_id,
@@ -200,8 +208,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("order_items")
+          ctx
+            .from("order_items")
             .join(
               ctx.from("orders"),
               (oi) => oi.order_id,
@@ -256,8 +266,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -310,8 +322,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("users"),
               (e) => e.manager_id,
@@ -366,8 +380,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("users"),
               (e) => e.manager_id,
@@ -417,8 +433,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .join(
               ctx.from("orders"),
               (u) => u.id,
@@ -465,8 +483,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("users")
+          ctx
+            .from("users")
             .groupJoin(
               ctx.from("departments"),
               (u) => u.department_id,
@@ -502,8 +522,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
+        dbContext,
         (ctx) =>
-          ctx.from("departments")
+          ctx
+            .from("departments")
             .selectMany(
               () => ctx.from("users"),
               (department, user) => ({ department, user }),
