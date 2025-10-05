@@ -1,9 +1,5 @@
 import { expect } from "chai";
 import {
-  from,
-  insertInto,
-  update,
-  deleteFrom,
   clearParseCache,
   setParseCacheConfig,
   getParseCacheConfig,

@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { deleteFrom, createContext } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { executeDelete, deleteStatement } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -248,8 +248,8 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with AND conditions", async () => {
       const rowCount = await executeDelete(
         db,
-        () =>
-          deleteFrom(dbContext, "test_products").where(
+        (ctx) =>
+          ctx.deleteFrom("test_products").where(
             (p) => p.category === "Electronics" && p.in_stock === false,
           ),
         {},
@@ -267,8 +267,8 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with OR conditions", async () => {
       const rowCount = await executeDelete(
         db,
-        () =>
-          deleteFrom(dbContext, "test_products").where(
+        (ctx) =>
+          ctx.deleteFrom("test_products").where(
             (p) => p.category === "Stationery" || p.price! > 500,
           ),
         {},
@@ -288,8 +288,8 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with complex nested conditions", async () => {
       const rowCount = await executeDelete(
         db,
-        () =>
-          deleteFrom(dbContext, "test_users").where(
+        (ctx) =>
+          ctx.deleteFrom("test_users").where(
             (u) =>
               (u.role === "user" && u.age! < 30) || (u.is_active === false && u.role !== "admin"),
           ),
@@ -321,8 +321,8 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with comparison operators", async () => {
       const rowCount = await executeDelete(
         db,
-        () =>
-          deleteFrom(dbContext, "test_products").where((p) => p.price! >= 250 && p.price! <= 600),
+        (ctx) =>
+          ctx.deleteFrom("test_products").where((p) => p.price! >= 250 && p.price! <= 600),
         {},
       );
 
@@ -562,8 +562,8 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
     it("should generate DELETE with complex WHERE", () => {
       const result = deleteStatement(
-        () =>
-          deleteFrom(dbContext, "test_users").where(
+        (ctx) =>
+          ctx.deleteFrom("test_users").where(
             (u) => u.age! > 25 && (u.role === "admin" || u.is_active === false),
           ),
         {},

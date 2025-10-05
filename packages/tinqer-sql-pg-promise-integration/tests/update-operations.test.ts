@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { update, createContext } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { executeUpdate, updateStatement } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -146,8 +146,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update single column with WHERE clause", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({ quantity: 20 })
             .where((i) => i.product_name === "Laptop"),
         {},
@@ -162,8 +162,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update multiple columns", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({
               quantity: 15,
               price: 89.99,
@@ -212,8 +212,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update boolean values", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "user_profiles")
+        (ctx) =>
+          ctx.update("user_profiles")
             .set({ is_verified: true })
             .where((u) => u.username === "jane_smith"),
         {},
@@ -228,8 +228,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with NULL values", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "user_profiles")
+        (ctx) =>
+          ctx.update("user_profiles")
             .set({ bio: null, age: null })
             .where((u) => u.username === "john_doe"),
         {},
@@ -247,8 +247,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with AND conditions", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({ status: "reorder_needed" })
             .where((i) => i.quantity < 10 && i.status === "low_stock"),
         {},
@@ -263,8 +263,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with OR conditions", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({ warehouse_location: "Warehouse D" })
             .where((i) => i.status === "out_of_stock" || i.quantity < 6),
         {},
@@ -284,8 +284,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with complex nested conditions", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({ is_active: false })
             .where(
               (i) =>
@@ -308,8 +308,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with string operations", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({ notes: "Premium product" })
             .where((i) => i.product_name.startsWith("L")),
         {},
@@ -349,8 +349,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should return updated rows with RETURNING *", async () => {
       const results = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({ quantity: 30, status: "available" })
             .where((i) => i.product_name === "Monitor")
             .returning((i) => i),
@@ -367,8 +367,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should return specific columns with RETURNING", async () => {
       const results = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "user_profiles")
+        (ctx) =>
+          ctx.update("user_profiles")
             .set({ age: 31, bio: "Updated bio" })
             .where((u) => u.username === "john_doe")
             .returning((u) => ({
@@ -411,8 +411,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update all matching rows", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "user_profiles")
+        (ctx) =>
+          ctx.update("user_profiles")
             .set({ is_verified: true })
             .where((u) => u.is_verified === false),
         {},
@@ -531,8 +531,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should handle special characters in strings", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({
               notes: "Special chars: 'quotes' \"double\" \n newline \t tab",
             })
@@ -552,8 +552,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should handle Unicode characters", async () => {
       const rowCount = await executeUpdate(
         db,
-        () =>
-          update(dbContext, "user_profiles")
+        (ctx) =>
+          ctx.update("user_profiles")
             .set({
               bio: "Unicode test: 你好 🎉 Здравствуйте émoji",
             })
@@ -573,8 +573,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
   describe("SQL generation verification", () => {
     it("should generate correct UPDATE SQL", () => {
       const result = updateStatement(
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({ quantity: 100, status: "available" })
             .where((i) => i.id === 1),
         {},
@@ -590,8 +590,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should generate correct UPDATE with RETURNING SQL", () => {
       const result = updateStatement(
-        () =>
-          update(dbContext, "inventory")
+        (ctx) =>
+          ctx.update("inventory")
             .set({ quantity: 50 })
             .where((i) => i.id === 1)
             .returning((i) => ({ id: i.id, quantity: i.quantity })),

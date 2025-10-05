@@ -4,7 +4,6 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
@@ -19,7 +18,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
     it("should count all users", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = await executeSelectSimple(db, () => from(dbContext, "users").count(), {
+      const count = await executeSelectSimple(db, (ctx) => ctx.from("users").count(), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -38,7 +37,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const count = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").count((u) => u.is_active === true),
+        (ctx) => ctx.from("users").count((u) => u.is_active === true),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -59,8 +58,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const count = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .where((u) => u.age !== null && u.age >= 30)
             .count(),
         {
@@ -87,7 +86,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        () => from(dbContext, "products").sum((p) => p.price),
+        (ctx) => ctx.from("products").sum((p) => p.price),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -108,8 +107,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        (ctx) =>
+          ctx.from("products")
             .where((p) => p.category === "Electronics")
             .sum((p) => p.price),
         {
@@ -134,7 +133,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        () => from(dbContext, "orders").sum((o) => o.total_amount),
+        (ctx) => ctx.from("orders").sum((o) => o.total_amount),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -157,8 +156,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avg = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .where((u) => u.age !== null)
             .average((u) => u.age!),
         {
@@ -183,8 +182,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avgElectronics = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        (ctx) =>
+          ctx.from("products")
             .where((p) => p.category === "Electronics")
             .average((p) => p.price),
         {
@@ -196,8 +195,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avgFurniture = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        (ctx) =>
+          ctx.from("products")
             .where((p) => p.category === "Furniture")
             .average((p) => p.price),
         {
@@ -232,8 +231,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const minAge = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .where((u) => u.age !== null)
             .min((u) => u.age!),
         {
@@ -245,8 +244,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const maxAge = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .where((u) => u.age !== null)
             .max((u) => u.age!),
         {
@@ -277,7 +276,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const minPrice = await executeSelectSimple(
         db,
-        () => from(dbContext, "products").min((p) => p.price),
+        (ctx) => ctx.from("products").min((p) => p.price),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -287,7 +286,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const maxPrice = await executeSelectSimple(
         db,
-        () => from(dbContext, "products").max((p) => p.price),
+        (ctx) => ctx.from("products").max((p) => p.price),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -314,8 +313,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const maxElectronicsPrice = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        (ctx) =>
+          ctx.from("products")
             .where((p) => p.category === "Electronics")
             .max((p) => p.price),
         {
@@ -341,8 +340,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .groupBy((u) => u.department_id)
             .select((g) => ({
               department: g.key,
@@ -371,8 +370,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        (ctx) =>
+          ctx.from("products")
             .groupBy((p) => p.category)
             .select((g) => ({
               category: g.key,
@@ -409,8 +408,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .where((u) => u.is_active === true && u.age !== null)
             .groupBy((u) => u.department_id)
             .select((g) => ({
@@ -444,8 +443,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "orders")
+        (ctx) =>
+          ctx.from("orders")
             .groupBy((o) => o.status)
             .select((g) => ({
               status: g.key,

@@ -5,7 +5,6 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
@@ -42,8 +41,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "users").where((u) => u.name.toLowerCase() == params.searchName),
+        (ctx, params) =>
+          ctx.from("users").where((u) => u.name.toLowerCase() == params.searchName),
         { searchName },
         {
           onSql: (result) => {
@@ -66,8 +65,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "users").where((u) => u.name.toLowerCase().startsWith(params.prefix)),
+        (ctx, params) =>
+          ctx.from("users").where((u) => u.name.toLowerCase().startsWith(params.prefix)),
         { prefix: "j" },
         {
           onSql: (result) => {
@@ -92,8 +91,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "users").where((u) => u.email.toLowerCase() == params.searchEmail),
+        (ctx, params) =>
+          ctx.from("users").where((u) => u.email.toLowerCase() == params.searchEmail),
         { searchEmail },
         {
           onSql: (result) => {
@@ -116,8 +115,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "users").where(
+        (ctx, params) =>
+          ctx.from("users").where(
             (u) => u.name.toLowerCase().startsWith(params.prefix) && u.age! >= params.minAge,
           ),
         { prefix: "j", minAge: 29 },
@@ -146,8 +145,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products").where(
+        (ctx, params) =>
+          ctx.from("products").where(
             (p) => p.category!.toUpperCase() == params.searchCategory,
           ),
         { searchCategory },
@@ -175,8 +174,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products").where((p) => p.name.toUpperCase() == params.searchName),
+        (ctx, params) =>
+          ctx.from("products").where((p) => p.name.toUpperCase() == params.searchName),
         { searchName },
         {
           onSql: (result) => {
@@ -202,8 +201,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products").where(
+        (ctx, params) =>
+          ctx.from("products").where(
             (p) => p.category!.toUpperCase() == params.category && p.price < params.maxPrice,
           ),
         { category: "ELECTRONICS", maxPrice: 50 },
@@ -232,7 +231,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       // Test toLowerCase on users table
       const userResults = await executeSelect(
         db,
-        (params) => from(dbContext, "users").where((u) => u.name.toLowerCase() == params.userName),
+        (ctx, params) => ctx.from("users").where((u) => u.name.toLowerCase() == params.userName),
         { userName: "john smith" },
         {
           onSql: (result) => {
@@ -251,8 +250,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       capturedSql = undefined;
       const productResults = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products").where(
+        (ctx, params) =>
+          ctx.from("products").where(
             (p) => p.category!.toUpperCase() == params.productCategory,
           ),
         { productCategory: "ELECTRONICS" },
@@ -279,8 +278,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "users").where(
+        (ctx, params) =>
+          ctx.from("users").where(
             (u) => u.name.toLowerCase() == params.name1 || u.name.toLowerCase() == params.name2,
           ),
         { name1: "john smith", name2: "bob johnson" },
@@ -306,8 +305,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products").where((p) =>
+        (ctx, params) =>
+          ctx.from("products").where((p) =>
             p.name.toLowerCase().includes(params.searchTerm),
           ),
         { searchTerm: "usb" },
@@ -333,8 +332,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       // Test toLowerCase in WHERE directly
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "users")
+        (ctx, params) =>
+          ctx.from("users")
             .where((u) => u.name.toLowerCase() == params.searchName)
             .select((u) => ({
               id: u.id,
@@ -369,8 +368,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "users")
+        (ctx, params) =>
+          ctx.from("users")
             .where((u) => u.name.toLowerCase() == params.search)
             .select((u) => ({ id: u.id, name: u.name })),
         { search: "jane doe" },
@@ -398,8 +397,8 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .where((p) => p.category!.toUpperCase() == params.category)
             .orderBy((p) => p.price)
             .thenBy((p) => p.id) // Add stable ordering for ties

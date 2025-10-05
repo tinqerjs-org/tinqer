@@ -5,7 +5,6 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
@@ -25,8 +24,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .orderBy((p) => p.id)
             .skip(params.offset)
             .take(params.pageSize),
@@ -58,8 +57,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .orderByDescending((p) => p.created_at)
             .skip(params.offset)
             .take(params.pageSize),
@@ -86,8 +85,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .orderBy((p) => p.name)
             .take(params.pageSize),
         { pageSize },
@@ -118,8 +117,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .orderBy((p) => p.id)
             .skip(params.offset)
             .take(params.pageSize),
@@ -149,8 +148,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .where((p) => p.category == params.category)
             .orderByDescending((p) => p.price)
             .skip(params.offset)
@@ -184,8 +183,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .where((p) => p.id > params.lastId)
             .orderBy((p) => p.id)
             .take(params.pageSize),
@@ -220,8 +219,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .where((p) => p.id < params.firstId)
             .orderByDescending((p) => p.id)
             .take(params.pageSize),
@@ -258,8 +257,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "articles")
+        (ctx, params) =>
+          ctx.from("articles")
             .where(
               (a) =>
                 a.published_at > params.lastDate ||
@@ -295,8 +294,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .where((p) => p.price > params.lastPrice)
             .orderBy((p) => p.price)
             .take(params.pageSize),
@@ -328,8 +327,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "articles")
+        (ctx, params) =>
+          ctx.from("articles")
             .where(
               (a) =>
                 a.views < params.lastViews || (a.views == params.lastViews && a.id > params.lastId),
@@ -364,8 +363,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .groupBy((p) => p.category)
             .select((g) => ({
               category: g.key,
@@ -405,8 +404,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       // Note: having clause not directly supported, filter after grouping
       const allResults = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        (ctx) =>
+          ctx.from("products")
             .groupBy((p) => p.category)
             .select((g) => ({
               category: g.key,
@@ -452,10 +451,10 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "orders")
+        (ctx, params) =>
+          ctx.from("orders")
             .join(
-              from(dbContext, "users"),
+              ctx.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -498,8 +497,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .select((p) => ({ category: p.category }))
             .distinct()
             .orderBy((r) => r.category)
@@ -535,8 +534,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .orderByDescending((p) => p.created_at)
             .take(params.actualSize),
         { actualSize },
@@ -564,8 +563,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .orderBy((p) => p.id)
             .skip(params.skipCount)
             .take(params.takePlusOne),
@@ -599,8 +598,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       // Select only indexed columns for better performance
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .select((p) => ({
               id: p.id,
               name: p.name,
@@ -641,8 +640,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .where((p) => p.id > params.lastSeenId)
             .orderBy((p) => p.id)
             .take(params.pageSize),
@@ -676,8 +675,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       // Forward
       const forwardResults = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .where((p) => p.id > params.currentId)
             .orderBy((p) => p.id)
             .take(params.pageSize),
@@ -706,8 +705,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       capturedSql = undefined;
       const backwardResults = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .where((p) => p.id < params.currentId)
             .orderByDescending((p) => p.id)
             .take(params.pageSize),
@@ -748,8 +747,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "products")
+        (ctx, params) =>
+          ctx.from("products")
             .where(
               (p) =>
                 (p.category == params.category || p.category == params.furniture) &&
@@ -797,8 +796,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "articles")
+        (ctx, params) =>
+          ctx.from("articles")
             .orderByDescending((a) => a.is_featured) // Featured first
             .thenByDescending((a) => a.views) // Then by views
             .thenBy((a) => a.published_at) // Then by date
@@ -832,8 +831,8 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       const results = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "articles")
+        (ctx, params) =>
+          ctx.from("articles")
             .where(
               (a) =>
                 a.title.toLowerCase().includes(params.searchTerm) ||

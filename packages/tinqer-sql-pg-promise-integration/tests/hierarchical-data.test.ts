@@ -5,7 +5,6 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
@@ -21,7 +20,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "categories").where((c) => c.parent_id == null),
+        (ctx) => ctx.from("categories").where((c) => c.parent_id == null),
         { onSql: (result) => (capturedSql = result) },
       );
 
@@ -42,7 +41,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const parentId = 1; // Electronics
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "categories").where((c) => c.parent_id == params.parentId),
+        (ctx, params) => ctx.from("categories").where((c) => c.parent_id == params.parentId),
         { parentId },
         { onSql: (result) => (capturedSql = result) },
       );
@@ -65,7 +64,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "categories").where((c) => c.is_leaf == true),
+        (ctx) => ctx.from("categories").where((c) => c.is_leaf == true),
         { onSql: (result) => (capturedSql = result) },
       );
 
@@ -86,7 +85,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const targetLevel = 1;
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "categories").where((c) => c.level == params.targetLevel),
+        (ctx, params) => ctx.from("categories").where((c) => c.level == params.targetLevel),
         { targetLevel },
         { onSql: (result) => (capturedSql = result) },
       );
@@ -165,7 +164,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const exactPath = "/electronics/phones/smartphones";
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "categories").where((c) => c.path == params.exactPath),
+        (ctx, params) => ctx.from("categories").where((c) => c.path == params.exactPath),
         { exactPath },
         { onSql: (result) => (capturedSql = result) },
       );
@@ -330,7 +329,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "comments").where((c) => c.parent_comment_id == null),
+        (ctx) => ctx.from("comments").where((c) => c.parent_comment_id == null),
         { onSql: (result) => (capturedSql = result) },
       );
 
@@ -378,7 +377,7 @@ describe("PostgreSQL Integration - Hierarchical Data", () => {
       const maxDepth = 1;
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "comments").where((c) => c.depth <= params.maxDepth),
+        (ctx, params) => ctx.from("comments").where((c) => c.depth <= params.maxDepth),
         { maxDepth },
         { onSql: (result) => (capturedSql = result) },
       );

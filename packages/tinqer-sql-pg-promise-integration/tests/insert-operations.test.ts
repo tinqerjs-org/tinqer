@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { insertInto, createContext } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { executeInsert, insertStatement } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -104,8 +104,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should insert a single row with all columns", async () => {
       const rowCount = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        (ctx) =>
+          ctx.insertInto("products").values({
             name: "Laptop",
             price: 999.99,
             category: "Electronics",
@@ -129,8 +129,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should insert with partial columns (nullable columns)", async () => {
       const rowCount = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        (ctx) =>
+          ctx.insertInto("products").values({
             name: "Basic Item",
             price: 10.0,
           }),
@@ -175,8 +175,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle boolean values correctly", async () => {
       const rowCount = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        (ctx) =>
+          ctx.insertInto("products").values({
             name: "Out of Stock Item",
             price: 50.0,
             in_stock: false,
@@ -193,8 +193,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle NULL values explicitly", async () => {
       const rowCount = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        (ctx) =>
+          ctx.insertInto("products").values({
             name: "Minimal Product",
             price: 25.0,
             category: null,
@@ -215,8 +215,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should return inserted row with RETURNING *", async () => {
       const results = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products")
+        (ctx) =>
+          ctx.insertInto("products")
             .values({
               name: "Smartphone",
               price: 799.99,
@@ -236,8 +236,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should return specific columns with RETURNING", async () => {
       const results = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products")
+        (ctx) =>
+          ctx.insertInto("products")
             .values({
               name: "Monitor",
               price: 299.99,
@@ -259,8 +259,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should return single column with RETURNING", async () => {
       const results = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products")
+        (ctx) =>
+          ctx.insertInto("products")
             .values({
               name: "Keyboard",
               price: 79.99,
@@ -281,8 +281,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle special characters in strings", async () => {
       const rowCount = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        (ctx) =>
+          ctx.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
             price: 100.0,
             description: "Description with\nnewlines\tand\ttabs",
@@ -302,8 +302,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle Unicode characters", async () => {
       const rowCount = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        (ctx) =>
+          ctx.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
             price: 88.88,
             category: "Special ñ категория",
@@ -322,8 +322,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle numeric edge cases", async () => {
       const rowCount = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products").values({
+        (ctx) =>
+          ctx.insertInto("products").values({
             name: "Edge Case Product",
             price: 0.01, // Very small
           }),
@@ -448,8 +448,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // Insert product
       const productResults = await executeInsert(
         db,
-        () =>
-          insertInto(dbContext, "products")
+        (ctx) =>
+          ctx.insertInto("products")
             .values({
               name: "Test Product",
               price: 49.99,
@@ -490,8 +490,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
   describe("SQL generation verification", () => {
     it("should generate correct INSERT SQL", () => {
       const result = insertStatement(
-        () =>
-          insertInto(dbContext, "products").values({
+        (ctx) =>
+          ctx.insertInto("products").values({
             name: "Test",
             price: 10.99,
             in_stock: true,
@@ -512,8 +512,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
     it("should generate correct INSERT with RETURNING SQL", () => {
       const result = insertStatement(
-        () =>
-          insertInto(dbContext, "products")
+        (ctx) =>
+          ctx.insertInto("products")
             .values({
               name: "Test",
               price: 10.99,

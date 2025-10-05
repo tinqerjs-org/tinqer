@@ -4,7 +4,6 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
@@ -21,10 +20,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .join(
-              from(dbContext, "departments"),
+              ctx.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -67,10 +66,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "orders")
+        (ctx) =>
+          ctx.from("orders")
             .join(
-              from(dbContext, "users"),
+              ctx.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -111,10 +110,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "orders")
+        (ctx) =>
+          ctx.from("orders")
             .join(
-              from(dbContext, "users"),
+              ctx.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -154,10 +153,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "orders")
+        (ctx) =>
+          ctx.from("orders")
             .join(
-              from(dbContext, "users"),
+              ctx.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -257,10 +256,10 @@ describe("PostgreSQL Integration - JOINs", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        (ctx) =>
+          ctx.from("users")
             .join(
-              from(dbContext, "departments"),
+              ctx.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),

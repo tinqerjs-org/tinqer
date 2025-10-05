@@ -5,7 +5,6 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
@@ -23,7 +22,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const targetDate = new Date("2024-01-15 09:00:00");
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date == params.targetDate),
+        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -52,7 +51,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const targetDate = new Date("2024-01-20 10:00:00");
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date != params.targetDate),
+        (ctx, params) => ctx.from("events").where((e) => e.start_date != params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -81,7 +80,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const cutoffDate = new Date("2024-01-18");
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date > params.cutoffDate),
+        (ctx, params) => ctx.from("events").where((e) => e.start_date > params.cutoffDate),
         { cutoffDate },
         {
           onSql: (result) => {
@@ -109,7 +108,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const deadline = new Date("2024-01-20");
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date <= params.deadline),
+        (ctx, params) => ctx.from("events").where((e) => e.start_date <= params.deadline),
         { deadline },
         {
           onSql: (result) => {
@@ -205,7 +204,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "events").where((e) => e.updated_at == null),
+        (ctx) => ctx.from("events").where((e) => e.updated_at == null),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -228,7 +227,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "events").where((e) => e.updated_at != null),
+        (ctx) => ctx.from("events").where((e) => e.updated_at != null),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -281,7 +280,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "events").orderBy((e) => e.start_date),
+        (ctx) => ctx.from("events").orderBy((e) => e.start_date),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -312,7 +311,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "events").orderByDescending((e) => e.start_date),
+        (ctx) => ctx.from("events").orderByDescending((e) => e.start_date),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -345,8 +344,8 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "events").select((e) => ({
+        (ctx) =>
+          ctx.from("events").select((e) => ({
             eventTitle: e.title,
             eventDate: e.start_date,
             lastUpdate: e.updated_at,
@@ -651,7 +650,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const leapDay = new Date("2024-02-29");
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date == params.leapDay),
+        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.leapDay),
         { leapDay },
         {
           onSql: (result) => {
@@ -704,7 +703,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const historicalDate = new Date("1900-01-01");
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date >= params.historicalDate),
+        (ctx, params) => ctx.from("events").where((e) => e.start_date >= params.historicalDate),
         { historicalDate },
         {
           onSql: (result) => {
@@ -729,7 +728,7 @@ describe("PostgreSQL Integration - Date/Time Operations", () => {
       const futureDate = new Date("2099-12-31");
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date <= params.futureDate),
+        (ctx, params) => ctx.from("events").where((e) => e.start_date <= params.futureDate),
         { futureDate },
         {
           onSql: (result) => {
