@@ -620,7 +620,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
         dbContext,
         (ctx) =>
           ctx
-            .from<{ id: number; category: string | null }>("test_distinct_nulls")
+            .from("test_distinct_nulls")
             .select((t) => t.category)
             .distinct(),
         {

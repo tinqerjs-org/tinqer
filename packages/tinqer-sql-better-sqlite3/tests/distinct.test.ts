@@ -1,9 +1,22 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { createContext } from "@webpods/tinqer";
 
 describe("Distinct SQL Generation", () => {
+  interface Product {
+    id: number;
+    category: string;
+    brand: string;
+    price: number;
+  }
+
+  interface Schema {
+    products: Product;
+  }
+
+  const db = createContext<Schema>();
+
   it("should generate DISTINCT for all columns", () => {
     const result = selectStatement(db, (ctx) => ctx.from("products").distinct(), {});
 

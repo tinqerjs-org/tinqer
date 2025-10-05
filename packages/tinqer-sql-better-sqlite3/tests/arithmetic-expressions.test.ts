@@ -4,8 +4,8 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
+import { createContext } from "@webpods/tinqer";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
 
 describe("Arithmetic Expression SQL Generation", () => {
   interface Product {
@@ -27,6 +27,13 @@ describe("Arithmetic Expression SQL Generation", () => {
     employees: number;
   }
 
+  interface Schema {
+    products: Product;
+    financial: Financial;
+  }
+
+  const db = createContext<Schema>();
+
   describe("Basic arithmetic operations", () => {
     // Test removed: Arithmetic operations are no longer supported in SELECT projections
     // Test removed: Arithmetic subtraction no longer supported in SELECT projections
@@ -45,7 +52,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle arithmetic comparisons in WHERE", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from<Product>("products").where((p) => p.price - p.cost > 50),
+        (ctx) => ctx.from("products").where((p) => p.price - p.cost > 50),
         {},
       );
 
@@ -56,7 +63,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle complex arithmetic in WHERE", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from<Financial>("financial").where((f) => f.revenue / f.employees > 100000),
+        (ctx) => ctx.from("financial").where((f) => f.revenue / f.employees > 100000),
         {},
       );
 
@@ -70,9 +77,7 @@ describe("Arithmetic Expression SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx) =>
-          ctx
-            .from<Product>("products")
-            .where((p) => p.price * 0.9 > 100 && p.cost * p.quantity < 10000),
+          ctx.from("products").where((p) => p.price * 0.9 > 100 && p.cost * p.quantity < 10000),
         {},
       );
 
@@ -93,10 +98,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle arithmetic with nullable checks", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
-            .from<Product>("products")
-            .where((p) => p.discount != null && p.price - p.discount > 50),
+        (ctx) => ctx.from("products").where((p) => p.discount != null && p.price - p.discount > 50),
         {},
       );
 
@@ -115,9 +117,7 @@ describe("Arithmetic Expression SQL Generation", () => {
       const result = selectStatement(
         db,
         (ctx, params: { baseDiscount: number }) =>
-          ctx
-            .from<Product>("products")
-            .where((p) => p.price * (1 - params.baseDiscount - 0.05) > 100),
+          ctx.from("products").where((p) => p.price * (1 - params.baseDiscount - 0.05) > 100),
         { baseDiscount: 0.1 },
       );
 
@@ -143,7 +143,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle very large numbers", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from<Financial>("financial").where((f) => f.revenue > 1000000000),
+        (ctx) => ctx.from("financial").where((f) => f.revenue > 1000000000),
         {},
       );
 

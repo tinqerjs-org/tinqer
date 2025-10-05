@@ -25,8 +25,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should generate DELETE with schema prefix in table name", () => {
       const result = deleteStatement(
         db,
-        (ctx) =>
-          ctx.deleteFrom<{ id: number; name: string }>("main.users").where((u) => u.id === 2),
+        (ctx) => ctx.deleteFrom("main.users").where((u) => u.id === 2),
         {},
       );
 

@@ -54,9 +54,9 @@ describe("UPDATE Statement Generation (SQLite)", () => {
         db,
         (ctx) =>
           ctx
-            .update<{ id: number; age: number }>("main.users")
+            .update("main.users")
             .set({ age: 33 })
-            .where((u) => u.id === 3),
+            .where((u: { id: number; age: number }) => u.id === 3),
         {},
       );
 

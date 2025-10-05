@@ -1,9 +1,23 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { createContext } from "@webpods/tinqer";
 
 describe("GroupBy SQL Generation", () => {
+  interface Sale {
+    id: number;
+    product: string;
+    category: string;
+    amount: number;
+    quantity: number;
+  }
+
+  interface Schema {
+    sales: Sale;
+  }
+
+  const db = createContext<Schema>();
+
   it("should generate GROUP BY clause", () => {
     const result = selectStatement(db, (ctx) => ctx.from("sales").groupBy((s) => s.category), {});
 
@@ -120,7 +134,7 @@ describe("GroupBy SQL Generation", () => {
         ctx
           .from("sales")
           .where((s) => s.quantity > 10)
-          .groupBy((s) => s.category)
+          .groupBy((s) => s.product)
           .select((g) => ({
             product: g.key,
             totalQuantity: g.sum((s) => s.quantity),
@@ -131,7 +145,7 @@ describe("GroupBy SQL Generation", () => {
     );
 
     expect(result.sql).to.equal(
-      'SELECT "category" AS "product", SUM("quantity") AS "totalQuantity", MAX("amount") AS "maxAmount", MIN("amount") AS "minAmount" FROM "sales" WHERE "quantity" > @__p1 GROUP BY "category"',
+      'SELECT "product" AS "product", SUM("quantity") AS "totalQuantity", MAX("amount") AS "maxAmount", MIN("amount") AS "minAmount" FROM "sales" WHERE "quantity" > @__p1 GROUP BY "product"',
     );
     expect(result.params).to.deep.equal({ __p1: 10 });
   });

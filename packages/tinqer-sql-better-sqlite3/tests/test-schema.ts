@@ -175,10 +175,14 @@ export interface TestSchema {
     join: string;
     union: string;
   };
+
+  // Schema-prefixed table for testing
+  "main.users": {
+    id: number;
+    name: string;
+    age: number;
+  };
 }
 
 // Create the database context
 export const db = createContext<TestSchema>();
-
-// Re-export from for use with db context
-export { from } from "@webpods/tinqer";

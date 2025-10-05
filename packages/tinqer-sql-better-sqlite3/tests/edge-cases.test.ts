@@ -8,17 +8,6 @@ import { selectStatement } from "../dist/index.js";
 import { db } from "./test-schema.js";
 
 describe("Edge Cases and Error Handling", () => {
-  interface TestTable {
-    id: number;
-    name: string;
-    value?: number;
-    data?: unknown;
-    flag: boolean;
-    "special-column"?: string;
-    column_with_underscore?: string;
-    UPPERCASE_COLUMN?: string;
-  }
-
   describe("Empty queries", () => {
     it("should handle simple FROM without any operations", () => {
       const result = selectStatement(db, (ctx) => ctx.from("test"), {});
@@ -81,11 +70,7 @@ describe("Edge Cases and Error Handling", () => {
     // Removed: || operator for defaults
 
     it("should handle zero values", () => {
-      const result = selectStatement(
-        db,
-        (ctx) => ctx.from<TestTable>("test").where((t) => t.value == 0),
-        {},
-      );
+      const result = selectStatement(db, (ctx) => ctx.from("test").where((t) => t.value == 0), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "value" = @__p1');
       expect(result.params).to.deep.equal({ __p1: 0 });
@@ -96,11 +81,7 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("String edge cases", () => {
     it("should handle empty strings", () => {
-      const result = selectStatement(
-        db,
-        (ctx) => ctx.from<TestTable>("test").where((t) => t.name == ""),
-        {},
-      );
+      const result = selectStatement(db, (ctx) => ctx.from("test").where((t) => t.name == ""), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "name" = @__p1');
       expect(result.params).to.deep.equal({ __p1: "" });
@@ -212,22 +193,14 @@ describe("Edge Cases and Error Handling", () => {
     });
 
     it("should handle boolean field directly", () => {
-      const result = selectStatement(
-        db,
-        (ctx) => ctx.from<TestTable>("test").where((t) => t.flag),
-        {},
-      );
+      const result = selectStatement(db, (ctx) => ctx.from("test").where((t) => t.flag), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "flag"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should handle negated boolean", () => {
-      const result = selectStatement(
-        db,
-        (ctx) => ctx.from<TestTable>("test").where((t) => !t.flag),
-        {},
-      );
+      const result = selectStatement(db, (ctx) => ctx.from("test").where((t) => !t.flag), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE NOT "flag"');
       expect(result.params).to.deep.equal({});
@@ -287,28 +260,28 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Pagination edge cases", () => {
     it("should handle SKIP 0", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<TestTable>("test").skip(0), {});
+      const result = selectStatement(db, (ctx) => ctx.from("test").skip(0), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" LIMIT -1 OFFSET @__p1');
       expect(result.params).to.deep.equal({ __p1: 0 });
     });
 
     it("should handle TAKE 0", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<TestTable>("test").take(0), {});
+      const result = selectStatement(db, (ctx) => ctx.from("test").take(0), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" LIMIT @__p1');
       expect(result.params).to.deep.equal({ __p1: 0 });
     });
 
     it("should handle very large SKIP", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<TestTable>("test").skip(1000000), {});
+      const result = selectStatement(db, (ctx) => ctx.from("test").skip(1000000), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" LIMIT -1 OFFSET @__p1');
       expect(result.params).to.deep.equal({ __p1: 1000000 });
     });
 
     it("should handle very large TAKE", () => {
-      const result = selectStatement(db, (ctx) => ctx.from<TestTable>("test").take(999999), {});
+      const result = selectStatement(db, (ctx) => ctx.from("test").take(999999), {});
 
       expect(result.sql).to.equal('SELECT * FROM "test" LIMIT @__p1');
       expect(result.params).to.deep.equal({ __p1: 999999 });
@@ -359,14 +332,14 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle reserved keywords as column names", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("reserved").where((t) => t.select == "value" && t.from == "test"),
+        (ctx) => ctx.from("reserved").where((t) => t.select == 123 && t.from == "test"),
         {},
       );
 
       expect(result.sql).to.equal(
         'SELECT * FROM "reserved" WHERE ("select" = @__p1 AND "from" = @__p2)',
       );
-      expect(result.params).to.deep.equal({ __p1: "value", __p2: "test" });
+      expect(result.params).to.deep.equal({ __p1: 123, __p2: "test" });
     });
 
     it("should handle reserved keywords in SELECT", () => {

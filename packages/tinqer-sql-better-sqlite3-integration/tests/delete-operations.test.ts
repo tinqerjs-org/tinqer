@@ -217,8 +217,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         dbContext,
-        (ctx, p: typeof params) =>
-          ctx.deleteFrom("test_products").where((prod) => prod.name === p.productName),
+        (ctx, p) => ctx.deleteFrom("test_products").where((prod) => prod.name === p.productName),
         params,
       );
 
@@ -299,7 +298,7 @@ describe("DELETE Operations - SQLite Integration", () => {
         dbContext,
         (ctx) =>
           ctx
-            .deleteFrom(dbContext, "test_products")
+            .deleteFrom("test_products")
             .where((p) => p.category === "Stationery" || p.price! > 500),
         {},
       );
@@ -357,10 +356,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         dbContext,
-        (ctx) =>
-          ctx
-            .deleteFrom(dbContext, "test_products")
-            .where((p) => p.price! >= 250 && p.price! <= 600),
+        (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! >= 250 && p.price! <= 600),
         {},
       );
 
@@ -425,9 +421,7 @@ describe("DELETE Operations - SQLite Integration", () => {
         db,
         dbContext,
         (ctx, p) =>
-          ctx
-            .deleteFrom(dbContext, "test_products")
-            .where((prod) => p.categories.includes(prod.category!)),
+          ctx.deleteFrom("test_products").where((prod) => p.categories.includes(prod.category!)),
         { categories: categoriesToDelete },
       );
 
@@ -675,9 +669,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const result = deleteStatement(
         dbContext,
         (ctx, p) =>
-          ctx
-            .deleteFrom(dbContext, "test_users")
-            .where((u) => u.age! > p.minAge && u.role === p.targetRole),
+          ctx.deleteFrom("test_users").where((u) => u.age! > p.minAge && u.role === p.targetRole),
         params,
       );
 
