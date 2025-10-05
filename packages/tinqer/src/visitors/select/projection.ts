@@ -127,8 +127,11 @@ function visitObjectProjection(
   for (const prop of node.properties) {
     // Handle spread operator
     if ("type" in prop && (prop as { type: string }).type === "SpreadElement") {
-      // Spread is complex - would need shape information
-      // For now, skip spread in SELECT
+      // Spread operator expands to all columns from the source
+      // Use a special key that will be detected by the SQL generator
+      properties["__spread__"] = {
+        type: "allColumns",
+      };
       continue;
     }
 

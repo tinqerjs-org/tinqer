@@ -31,11 +31,14 @@ export interface QueryOperation {
 
 /**
  * FROM operation - the root of all query chains
+ * Can reference either a table or a subquery (derived table)
  */
 export interface FromOperation extends QueryOperation {
   operationType: "from";
-  table: string;
+  table?: string;
   schema?: string;
+  subquery?: QueryOperation; // Derived table / subquery
+  aliasHint?: string; // Suggested alias name (often the original table name)
 }
 
 /**

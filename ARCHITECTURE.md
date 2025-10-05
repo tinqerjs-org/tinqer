@@ -466,6 +466,208 @@ export interface SumOperation extends QueryOperation {
 }
 ```
 
+## Query Processing Pipeline
+
+The query execution flow follows a multi-stage pipeline that transforms user code into SQL:
+
+```
+User Code → Parser → Normalization Passes → SQL Generator → SQL
+```
+
+### Stage 1: Parsing (Runtime Lambda Parsing)
+
+The parser uses OXC to convert lambda expressions into an Abstract Syntax Tree (AST), then transforms it into Tinqer's operation tree.
+
+**Input**: Lambda expression
+
+```typescript
+(e) =>
+  from(ctx, "employees")
+    .select((e) => ({ ...e, rn: window.rowNumber() }))
+    .where((r) => r.rn === 1);
+```
+
+**Output**: Operation tree
+
+```typescript
+{
+  operationType: "where",
+  predicate: { type: "comparison", ... },
+  source: {
+    operationType: "select",
+    selector: { type: "object", properties: { ... } },
+    source: {
+      operationType: "from",
+      table: "employees"
+    }
+  }
+}
+```
+
+### Stage 2: Normalization Passes
+
+Normalization passes transform the operation tree to handle SQL constraints and optimize structure. These run **after parsing, before SQL generation**.
+
+#### Current Normalization Passes:
+
+1. **`normalizeJoins`** - Converts CROSS JOIN with WHERE to INNER JOIN
+2. **`wrapWindowFilters`** - Wraps queries in subqueries when WHERE references window function columns
+
+#### Window Filter Normalization
+
+SQL doesn't allow filtering on window functions at the same level where they're defined:
+
+```sql
+-- INVALID ❌
+SELECT *, ROW_NUMBER() OVER (...) AS rn
+FROM users
+WHERE rn = 1
+```
+
+The normalization pass detects this pattern and automatically wraps it:
+
+```sql
+-- VALID ✅ (automatically generated)
+SELECT * FROM (
+  SELECT *, ROW_NUMBER() OVER (...) AS rn
+  FROM users
+) AS users
+WHERE rn = 1
+```
+
+**Implementation**: `packages/tinqer/src/parser/normalize-window-filters.ts`
+
+**Algorithm**:
+
+1. Traverse operation tree bottom-up
+2. Track window function column names through SELECT operations
+3. When WHERE operation is encountered:
+   - Check if predicate references any tracked window columns
+   - If yes, wrap the source in a FROM operation with subquery
+4. Propagate window aliases up the tree for nested queries
+
+**Key Design**: The normalization creates a new `FromOperation` with:
+
+- `subquery`: The original operation tree
+- `aliasHint`: Original table name for readability
+
+**Example Transformation**:
+
+Before:
+
+```typescript
+WHERE {
+  predicate: rn === 1,
+  source: SELECT {
+    selector: { rn: WindowFunction(...) },
+    source: FROM { table: "users" }
+  }
+}
+```
+
+After:
+
+```typescript
+WHERE {
+  predicate: rn === 1,
+  source: FROM {
+    subquery: SELECT {
+      selector: { rn: WindowFunction(...) },
+      source: FROM { table: "users" }
+    },
+    aliasHint: "users"
+  }
+}
+```
+
+### Stage 3: SQL Generation
+
+The SQL generator traverses the normalized operation tree and emits database-specific SQL.
+
+**Key Features**:
+
+- Recursive generation for subqueries
+- Adapter-specific parameter formatting (`$(name)` for pg-promise, `@name` for better-sqlite3)
+- Operation collection stops at subquery boundaries
+- Table alias management for joins and derived tables
+
+**Subquery Handling**:
+
+```typescript
+function generateFrom(operation: FromOperation, context: SqlContext): string {
+  if (operation.subquery) {
+    // Recursive call for inner query
+    const innerSql = generateSql(operation.subquery, context.params);
+    const alias = operation.aliasHint || `t${context.aliasCounter++}`;
+    return `FROM (${innerSql}) AS "${alias}"`;
+  }
+  // Regular table
+  return `FROM "${operation.table}"`;
+}
+```
+
+**Operation Collection**:
+
+```typescript
+function collectOperations(operation: QueryOperation): QueryOperation[] {
+  while (current) {
+    operations.push(current);
+
+    // Stop at subquery boundary - inner operations handled separately
+    if (current.operationType === "from" && current.subquery) {
+      break;
+    }
+
+    current = current.source;
+  }
+  return operations.reverse();
+}
+```
+
+### Normalization Pass Pattern
+
+Normalization passes follow a consistent pattern for extensibility:
+
+1. **Bottom-up traversal**: Process children before parents
+2. **Immutable transforms**: Return new operations rather than mutating
+3. **Context propagation**: Track state (e.g., window aliases) as you traverse
+4. **Conditional wrapping**: Only transform when necessary
+
+**Adding a new normalization pass**:
+
+```typescript
+// packages/tinqer/src/parser/normalize-*.ts
+export function normalizeXYZ(operation: QueryOperation): QueryOperation {
+  return visit(operation);
+}
+
+function visit(op: QueryOperation): QueryOperation {
+  // Recursively process source first
+  if (op.source) {
+    const normalizedSource = visit(op.source);
+    // Apply transformation logic
+    // Return transformed operation
+  }
+  return op;
+}
+```
+
+Then add to pipeline in `parse-query.ts`:
+
+```typescript
+let normalizedOperation = normalizeJoins(result.operation);
+normalizedOperation = wrapWindowFilters(normalizedOperation);
+normalizedOperation = normalizeXYZ(normalizedOperation); // New pass
+```
+
+### Benefits of Normalization Architecture
+
+- **Separation of Concerns**: Parser focuses on AST conversion, normalizer on SQL semantics, generator on dialect
+- **Composability**: Multiple independent passes can be chained
+- **Testability**: Each pass can be tested in isolation
+- **Maintainability**: SQL semantics separated from parsing logic
+- **Extensibility**: New SQL patterns can be added as new passes
+
 ## API Layers
 
 ### User-Facing API (Compile-Time)
