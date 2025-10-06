@@ -334,8 +334,7 @@ describe("Edge Cases and Error Handling", () => {
     it("should handle null parameter values", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { name: string | null }) =>
-          ctx.from("test").where((t) => t.name == params.name),
+        (ctx, params) => ctx.from("test").where((t) => t.name == params.name),
         { name: null },
       );
 

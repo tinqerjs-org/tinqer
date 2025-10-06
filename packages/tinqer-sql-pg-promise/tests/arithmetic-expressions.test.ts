@@ -116,7 +116,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should mix parameters with constants in arithmetic", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { baseDiscount: number }) =>
+        (ctx, params) =>
           ctx.from("products").where((p) => p.price * (1 - params.baseDiscount - 0.05) > 100),
         { baseDiscount: 0.1 },
       );

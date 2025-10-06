@@ -373,7 +373,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
     it("should handle complex conditions with external parameters", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { minAge: number; maxAge: number; roles: string[]; isActive: boolean }) =>
+        (ctx, params) =>
           ctx
             .from("users")
             .where(
@@ -402,7 +402,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
     it("should mix parameters with auto-parameterized constants", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { threshold: number }) =>
+        (ctx, params) =>
           ctx
             .from("products")
             .where(

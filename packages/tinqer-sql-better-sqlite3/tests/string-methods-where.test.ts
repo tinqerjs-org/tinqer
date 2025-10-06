@@ -25,8 +25,7 @@ describe("String methods in WHERE clause", () => {
     it("should handle toLowerCase with params", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { search: string }) =>
-          ctx.from("users").where((u) => u.name.toLowerCase() == params.search),
+        (ctx, params) => ctx.from("users").where((u) => u.name.toLowerCase() == params.search),
         { search: "john" },
       );
 
@@ -38,7 +37,7 @@ describe("String methods in WHERE clause", () => {
     it("should handle toLowerCase on both sides", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { search: string }) =>
+        (ctx, params) =>
           ctx.from("users").where((u) => u.name.toLowerCase() == params.search.toLowerCase()),
         { search: "JOHN" },
       );
@@ -52,7 +51,7 @@ describe("String methods in WHERE clause", () => {
     it("should combine toLowerCase with other conditions", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { search: string; minAge: number }) =>
+        (ctx, params) =>
           ctx
             .from("users")
             .where((u) => u.name.toLowerCase() == params.search && u.age > params.minAge),
@@ -70,7 +69,7 @@ describe("String methods in WHERE clause", () => {
     it("should work with startsWith and toLowerCase", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { prefix: string; minAge: number }) =>
+        (ctx, params) =>
           ctx
             .from("users")
             .where(
@@ -104,8 +103,7 @@ describe("String methods in WHERE clause", () => {
     it("should handle toUpperCase with params", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { search: string }) =>
-          ctx.from("users").where((u) => u.name.toUpperCase() == params.search),
+        (ctx, params) => ctx.from("users").where((u) => u.name.toUpperCase() == params.search),
         { search: "JOHN" },
       );
 
@@ -117,7 +115,7 @@ describe("String methods in WHERE clause", () => {
     it("should combine toUpperCase with other conditions", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { category: string; excludeName: string }) =>
+        (ctx, params) =>
           ctx
             .from("products")
             .where(
@@ -139,7 +137,7 @@ describe("String methods in WHERE clause", () => {
     it("should handle nested expressions with toLowerCase", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { name1: string; name2: string }) =>
+        (ctx, params) =>
           ctx
             .from("users")
             .where(
@@ -160,7 +158,7 @@ describe("String methods in WHERE clause", () => {
     it("should handle multiple string methods in one query", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { searchName: string; searchCategory: string }) =>
+        (ctx, params) =>
           ctx
             .from("products")
             .where(
@@ -181,7 +179,7 @@ describe("String methods in WHERE clause", () => {
     it("should handle string methods with NULL coalescing", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { defaultName: string; search: string }) =>
+        (ctx, params) =>
           ctx
             .from("users")
             .where((u) => (u.name ?? params.defaultName).toLowerCase() == params.search),

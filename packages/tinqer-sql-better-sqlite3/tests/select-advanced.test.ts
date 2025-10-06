@@ -231,7 +231,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     it("should handle SELECT with pagination pattern", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { page: number; pageSize: number }) =>
+        (ctx, params) =>
           ctx
             .from("products")
             .select((p) => ({

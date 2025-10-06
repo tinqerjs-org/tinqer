@@ -303,7 +303,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     it("should handle parameters in WHERE before GROUP BY", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { minAmount: number; region: string }) =>
+        (ctx, params) =>
           ctx
             .from("sales")
             .where((s) => s.amount >= params.minAmount && s.region == params.region)
@@ -324,7 +324,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     it("should mix parameters with auto-params in GROUP BY queries", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { targetProfit: number }) =>
+        (ctx, params) =>
           ctx
             .from("sales")
             .where((s) => s.profit > params.targetProfit && s.quantity > 10)

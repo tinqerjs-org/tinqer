@@ -236,8 +236,7 @@ describe("IN Operator", () => {
     it("should expand parameterized array in IN clause", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { targetIds: number[] }) =>
-          ctx.from("users").where((u) => params.targetIds.includes(u.id)),
+        (ctx, params) => ctx.from("users").where((u) => params.targetIds.includes(u.id)),
         { targetIds: [1, 3, 5, 7] },
       );
 
@@ -256,8 +255,7 @@ describe("IN Operator", () => {
     it("should expand parameterized array in NOT IN clause", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { excludedIds: number[] }) =>
-          ctx.from("users").where((u) => !params.excludedIds.includes(u.id)),
+        (ctx, params) => ctx.from("users").where((u) => !params.excludedIds.includes(u.id)),
         { excludedIds: [2, 4] },
       );
 
@@ -274,9 +272,8 @@ describe("IN Operator", () => {
     it("should handle empty parameterized array", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { ids: number[] }) =>
-          ctx.from("users").where((u) => params.ids.includes(u.id)),
-        { ids: [] },
+        (ctx, params) => ctx.from("users").where((u) => params.ids.includes(u.id)),
+        { ids: [] as number[] },
       );
 
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE FALSE');
@@ -288,8 +285,7 @@ describe("IN Operator", () => {
     it("should handle parameterized array with strings", () => {
       const result = selectStatement(
         db,
-        (ctx, params: { roles: string[] }) =>
-          ctx.from("users").where((u) => params.roles.includes(u.role)),
+        (ctx, params) => ctx.from("users").where((u) => params.roles.includes(u.role)),
         { roles: ["admin", "moderator", "user"] },
       );
 
