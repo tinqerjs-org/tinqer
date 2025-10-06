@@ -58,7 +58,7 @@ const schema = createSchema<Schema>();
 
 const { sql, params } = selectStatement(
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q
       .from("users")
       .where((u) => u.age >= p.minAge)
@@ -110,7 +110,7 @@ const schema = createSchema<Schema>();
 const users = await executeSelect(
   db,
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q
       .from("users")
       .where((u) => u.age >= p.minAge)
@@ -159,7 +159,7 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-const allUsers = await executeSelectSimple(db, schema, (q, _params, _helpers) => q.from("users"));
+const allUsers = await executeSelectSimple(db, schema, (q) => q.from("users"));
 ```
 
 ### 1.4 insertStatement & executeInsert
@@ -217,14 +217,14 @@ const schema = createSchema<Schema>();
 const inserted = await executeInsert(
   db,
   schema,
-  (q, _params, _helpers) => q.insertInto("users").values({ name: "Alice" }),
+  (q) => q.insertInto("users").values({ name: "Alice" }),
   {},
 );
 
 const createdUsers = await executeInsert(
   db,
   schema,
-  (q, _params, _helpers) =>
+  (q) =>
     q
       .insertInto("users")
       .values({ name: "Bob" })
@@ -291,7 +291,7 @@ const schema = createSchema<Schema>();
 const updatedRows = await executeUpdate(
   db,
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q
       .update("users")
       .set({ status: "inactive" })
@@ -343,7 +343,7 @@ const schema = createSchema<Schema>();
 const deletedCount = await executeDelete(
   db,
   schema,
-  (q, _params, _helpers) => q.deleteFrom("users").where((u) => u.status === "inactive"),
+  (q) => q.deleteFrom("users").where((u) => u.status === "inactive"),
   {},
 );
 ```
@@ -446,8 +446,7 @@ const schema = createSchema<Schema>();
 
 const result = selectStatement(
   schema,
-  (q, _params, helpers) =>
-    q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  (q, helpers) => q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 ```

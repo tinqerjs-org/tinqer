@@ -53,7 +53,7 @@ const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const schema = createSchema<Schema>();
 
 // Execute without external params
-const activeUsers = await executeSelectSimple(db, schema, (q, _params, _helpers) =>
+const activeUsers = await executeSelectSimple(db, schema, (q) =>
   q
     .from("users")
     .where((u) => u.active)
@@ -64,7 +64,7 @@ const activeUsers = await executeSelectSimple(db, schema, (q, _params, _helpers)
 const matchingUsers = await executeSelect(
   db,
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q
       .from("users")
       .where((u) => u.age >= p.minAge)
@@ -76,7 +76,7 @@ const matchingUsers = await executeSelect(
 const createdUsers = await executeInsert(
   db,
   schema,
-  (q, _params, _helpers) =>
+  (q) =>
     q
       .insertInto("users")
       .values({ name: "Alice", email: "alice@example.com", age: 30, active: true })
@@ -88,7 +88,7 @@ const createdUsers = await executeInsert(
 const updatedCount = await executeUpdate(
   db,
   schema,
-  (q, _params, _helpers) =>
+  (q) =>
     q
       .update("users")
       .set({ active: false })
@@ -100,14 +100,14 @@ const updatedCount = await executeUpdate(
 const deletedCount = await executeDelete(
   db,
   schema,
-  (q, _params, _helpers) => q.deleteFrom("users").where((u) => !u.active),
+  (q) => q.deleteFrom("users").where((u) => !u.active),
   {},
 );
 
 // Generate SQL without executing
 const { sql, params } = selectStatement(
   schema,
-  (q, _params, _helpers) => q.from("users").where((u) => u.email.endsWith("@example.com")),
+  (q) => q.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```
@@ -163,8 +163,7 @@ db.exec(`
 const inserted = executeInsert(
   db,
   schema,
-  (q, _params, _helpers) =>
-    q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
+  (q) => q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
   {},
 );
 // inserted === 1
@@ -172,7 +171,7 @@ const inserted = executeInsert(
 const users = executeSelect(
   db,
   schema,
-  (q, params, _helpers) =>
+  (q, params) =>
     q
       .from("users")
       .where((u) => u.isActive === params.active)
@@ -183,7 +182,7 @@ const users = executeSelect(
 const updated = executeUpdate(
   db,
   schema,
-  (q, _params, _helpers) =>
+  (q) =>
     q
       .update("users")
       .set({ isActive: 0 })
@@ -194,14 +193,14 @@ const updated = executeUpdate(
 const removed = executeDelete(
   db,
   schema,
-  (q, p, _helpers) => q.deleteFrom("users").where((u) => u.age < p.cutoff),
+  (q, p) => q.deleteFrom("users").where((u) => u.age < p.cutoff),
   { cutoff: 18 },
 );
 
 // Need the SQL text for custom execution?
 const { sql, params } = selectStatement(
   schema,
-  (q, _params, _helpers) => q.from("users").where((u) => u.name.startsWith("S")),
+  (q) => q.from("users").where((u) => u.name.startsWith("S")),
   {},
 );
 const rows = db.prepare(sql).all(params);
@@ -252,8 +251,7 @@ const schema = createSchema<Schema>();
 
 const { sql } = selectStatement(
   schema,
-  (q, _params, helpers) =>
-    q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  (q, helpers) => q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 // PostgreSQL: WHERE "name" ILIKE $(__p1)
