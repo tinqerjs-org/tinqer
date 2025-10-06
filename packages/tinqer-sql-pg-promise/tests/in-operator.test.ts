@@ -254,4 +254,77 @@ describe("IN Operator", () => {
       expect(result.params).to.deep.equal({});
     });
   });
+
+  describe("Parameterized arrays", () => {
+    it("should expand parameterized array in IN clause", () => {
+      const result = selectStatement(
+        db,
+        (ctx, params: { targetIds: number[] }) =>
+          ctx.from("users").where((u) => params.targetIds.includes(u.id)),
+        { targetIds: [1, 3, 5, 7] },
+      );
+
+      expect(result.sql).to.equal(
+        'SELECT * FROM "users" WHERE "id" IN ($(targetIds_0), $(targetIds_1), $(targetIds_2), $(targetIds_3))',
+      );
+      expect(result.params).to.deep.equal({
+        targetIds: [1, 3, 5, 7],
+        targetIds_0: 1,
+        targetIds_1: 3,
+        targetIds_2: 5,
+        targetIds_3: 7,
+      });
+    });
+
+    it("should expand parameterized array in NOT IN clause", () => {
+      const result = selectStatement(
+        db,
+        (ctx, params: { excludedIds: number[] }) =>
+          ctx.from("users").where((u) => !params.excludedIds.includes(u.id)),
+        { excludedIds: [2, 4] },
+      );
+
+      expect(result.sql).to.equal(
+        'SELECT * FROM "users" WHERE "id" NOT IN ($(excludedIds_0), $(excludedIds_1))',
+      );
+      expect(result.params).to.deep.equal({
+        excludedIds: [2, 4],
+        excludedIds_0: 2,
+        excludedIds_1: 4,
+      });
+    });
+
+    it("should handle empty parameterized array", () => {
+      const result = selectStatement(
+        db,
+        (ctx, params: { ids: number[] }) =>
+          ctx.from("users").where((u) => params.ids.includes(u.id)),
+        { ids: [] },
+      );
+
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE FALSE');
+      expect(result.params).to.deep.equal({
+        ids: [],
+      });
+    });
+
+    it("should handle parameterized array with strings", () => {
+      const result = selectStatement(
+        db,
+        (ctx, params: { roles: string[] }) =>
+          ctx.from("users").where((u) => params.roles.includes(u.role)),
+        { roles: ["admin", "moderator", "user"] },
+      );
+
+      expect(result.sql).to.equal(
+        'SELECT * FROM "users" WHERE "role" IN ($(roles_0), $(roles_1), $(roles_2))',
+      );
+      expect(result.params).to.deep.equal({
+        roles: ["admin", "moderator", "user"],
+        roles_0: "admin",
+        roles_1: "moderator",
+        roles_2: "user",
+      });
+    });
+  });
 });

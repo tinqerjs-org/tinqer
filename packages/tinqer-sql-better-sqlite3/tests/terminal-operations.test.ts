@@ -5,35 +5,7 @@
 
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
-
-interface User {
-  id: number;
-  name: string;
-  age: number;
-  isActive: boolean;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  category: string;
-}
-
-interface Order {
-  id: number;
-  userId: number;
-  amount: number;
-}
-
-interface Schema {
-  users: User;
-  products: Product;
-  orders: Order;
-}
-
-const db = createContext<Schema>();
+import { db } from "./test-schema.js";
 
 describe("Terminal Operations", () => {
   describe("FIRST operations", () => {
@@ -188,12 +160,12 @@ describe("Terminal Operations", () => {
               (o) => o.userId,
               (u, o) => ({ u, o }),
             )
-            .select((joined) => ({ userName: joined.u.name, orderAmount: joined.o.amount }))
+            .select((joined) => ({ userName: joined.u.name, orderAmount: joined.o.total }))
             .single(),
         {},
       );
       expect(result.sql).to.equal(
-        'SELECT "t0"."name" AS "userName", "t1"."amount" AS "orderAmount" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" LIMIT 2',
+        'SELECT "t0"."name" AS "userName", "t1"."total" AS "orderAmount" FROM "users" AS "t0" INNER JOIN "orders" AS "t1" ON "t0"."id" = "t1"."userId" LIMIT 2',
       );
       expect(result.params).to.deep.equal({});
     });

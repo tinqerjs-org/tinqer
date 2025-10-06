@@ -5,28 +5,7 @@
 
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
-
-interface User {
-  id: number;
-  name: string;
-  role: string;
-  age: number;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  category: string;
-  price: number;
-}
-
-interface Schema {
-  users: User;
-  products: Product;
-}
-
-const db = createContext<Schema>();
+import { db } from "./test-schema.js";
 
 describe("IN Operator", () => {
   describe("Basic IN operations", () => {
