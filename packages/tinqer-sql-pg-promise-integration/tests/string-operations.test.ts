@@ -6,12 +6,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - String Operations", () => {
   before(async () => {
-    await setupTestDatabase(db);
+    await setupTestDatabase(dbClient);
   });
 
   describe("startsWith", () => {
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").where((u) => u.name.startsWith("J")),
         {
@@ -44,7 +44,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").where((u) => u.email.startsWith("alice")),
         {
@@ -69,7 +69,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q.from("users").where((u) => u.name.startsWith("J") && u.is_active === true),
@@ -100,7 +100,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").where((u) => u.email.endsWith("@example.com")),
         {
@@ -127,7 +127,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("products").where((p) => p.name.endsWith("top")),
         {
@@ -154,7 +154,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("oh")),
         {
@@ -181,7 +181,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -209,7 +209,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -247,7 +247,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q.from("users").where((u) => u.email.startsWith("j") && u.email.endsWith("@example.com")),
@@ -275,7 +275,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -306,7 +306,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -347,7 +347,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       // Note: PostgreSQL LIKE is case-sensitive by default
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       const upperResults = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("J")),
         {
@@ -365,7 +365,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
       const lowerResults = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("o")),
         {
@@ -389,7 +389,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       // Case sensitivity check - capital D vs lowercase d
       let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
       const capitalD = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("D")),
         {
@@ -407,7 +407,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       let capturedSql4: { sql: string; params: Record<string, unknown> } | undefined;
       const lowercaseD = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("d")),
         {
@@ -435,7 +435,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const count = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -464,7 +464,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q.from("products").where((p) => p.description !== null && p.description.includes("High")),
@@ -490,7 +490,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("products").where((p) => p.description !== null),
         {
@@ -511,7 +511,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
   describe("String pattern escaping", () => {
     it("should handle percent sign in search term", async () => {
-      await db.none(`
+      await dbClient.none(`
         CREATE TEMP TABLE test_special_chars (
           id INTEGER PRIMARY KEY,
           text TEXT
@@ -526,7 +526,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params, _helpers) =>
           q.from("test_special_chars").where((t) => t.text.includes(params.search)),
@@ -547,11 +547,11 @@ describe("PostgreSQL Integration - String Operations", () => {
       // So searching for "%" will match ALL rows (acts like %%%)
       expect(results).to.have.length(4);
 
-      await db.none("DROP TABLE test_special_chars");
+      await dbClient.none("DROP TABLE test_special_chars");
     });
 
     it("should handle underscore in search term", async () => {
-      await db.none(`
+      await dbClient.none(`
         CREATE TEMP TABLE test_special_chars (
           id INTEGER PRIMARY KEY,
           text TEXT
@@ -566,7 +566,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params, _helpers) =>
           q.from("test_special_chars").where((t) => t.text.includes(params.search)),
@@ -587,11 +587,11 @@ describe("PostgreSQL Integration - String Operations", () => {
       // So searching for "_" will match any string with at least 1 character between the wildcards
       expect(results.length).to.be.greaterThan(0);
 
-      await db.none("DROP TABLE test_special_chars");
+      await dbClient.none("DROP TABLE test_special_chars");
     });
 
     it("should handle backslash in search term", async () => {
-      await db.none(`
+      await dbClient.none(`
         CREATE TEMP TABLE test_backslash (
           id INTEGER PRIMARY KEY,
           text TEXT
@@ -606,7 +606,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params, _helpers) =>
           q.from("test_backslash").where((t) => t.text.includes(params.search)),
@@ -627,11 +627,11 @@ describe("PostgreSQL Integration - String Operations", () => {
       // Backslashes in PostgreSQL TEXT columns are literal, but LIKE treats them specially
       expect(results).to.be.an("array");
 
-      await db.none("DROP TABLE test_backslash");
+      await dbClient.none("DROP TABLE test_backslash");
     });
 
     it("should handle mixed special characters", async () => {
-      await db.none(`
+      await dbClient.none(`
         CREATE TEMP TABLE test_mixed_chars (
           id INTEGER PRIMARY KEY,
           text TEXT
@@ -646,7 +646,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params, _helpers) =>
           q.from("test_mixed_chars").where((t) => t.text.includes(params.search)),
@@ -667,7 +667,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       // This will match most/all strings depending on content
       expect(results).to.be.an("array");
 
-      await db.none("DROP TABLE test_mixed_chars");
+      await dbClient.none("DROP TABLE test_mixed_chars");
     });
   });
 });

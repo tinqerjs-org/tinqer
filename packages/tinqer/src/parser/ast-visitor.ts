@@ -76,7 +76,7 @@ export function convertAstToQueryOperationWithParams(
   ast: ASTExpression,
   startCounter?: number,
   existingAutoParams?: Map<string, unknown>,
-  existingDslParam?: string,
+  maybeQueryBuilderParam?: string,
 ): {
   operation: QueryOperation | null;
   autoParams: Record<string, unknown>;
@@ -90,12 +90,12 @@ export function convertAstToQueryOperationWithParams(
 
   // If no DSL param was extracted (e.g., for non-lambda expressions like q.from()),
   // use the existing DSL param from parent context
-  const dslParam = extracted.dslParam || existingDslParam;
+  const queryBuilderParam = extracted.queryBuilderParam || maybeQueryBuilderParam;
   const { tableParams, queryParams, helpersParam } = extracted;
 
   // Create shared visitor context
   const visitorContext: VisitorContext = {
-    dslParam,
+    queryBuilderParam: queryBuilderParam,
     tableParams: new Set(tableParams),
     queryParams: new Set(queryParams),
     helpersParam,
@@ -126,14 +126,14 @@ export function convertAstToQueryOperationWithParams(
  * Extract DSL, table, query, and helpers parameters from the root lambda
  */
 function extractParameters(ast: ASTExpression): {
-  dslParam?: string;
+  queryBuilderParam?: string;
   tableParams: Set<string>;
   queryParams: Set<string>;
   helpersParam?: string;
 } {
   const tableParams = new Set<string>();
   const queryParams = new Set<string>();
-  let dslParam: string | undefined;
+  let queryBuilderParam: string | undefined;
   let helpersParam: string | undefined;
 
   // Check if the root is an arrow function with params
@@ -145,12 +145,12 @@ function extractParameters(ast: ASTExpression): {
       // First param is DSL param (new signature) or query params (old signature)
       const firstParam = arrow.params[0];
       if (firstParam && firstParam.type === "Identifier") {
-        dslParam = (firstParam as Identifier).name;
+        queryBuilderParam = (firstParam as Identifier).name;
       } else if (firstParam && (firstParam as { type?: string }).type === "AssignmentPattern") {
         // Handle default parameters
         const assignPattern = firstParam as { left?: { type?: string; name?: string } };
         if (assignPattern.left?.type === "Identifier" && assignPattern.left.name) {
-          dslParam = assignPattern.left.name;
+          queryBuilderParam = assignPattern.left.name;
         }
       }
 
@@ -189,7 +189,7 @@ function extractParameters(ast: ASTExpression): {
     // For parameterless lambdas, no query params or helpers
   }
 
-  return { dslParam, tableParams, queryParams, helpersParam };
+  return { queryBuilderParam: queryBuilderParam, tableParams, queryParams, helpersParam };
 }
 
 /**
@@ -233,8 +233,8 @@ function visitQueryChain(
 /**
  * Check if a call expression is a DSL method call (e.g., q.from())
  */
-function isDSLMethodCall(ast: ASTCallExpression, dslParam: string | undefined): boolean {
-  if (!dslParam) {
+function isDSLMethodCall(ast: ASTCallExpression, queryBuilderParam: string | undefined): boolean {
+  if (!queryBuilderParam) {
     return false;
   }
 
@@ -242,7 +242,7 @@ function isDSLMethodCall(ast: ASTCallExpression, dslParam: string | undefined): 
     const memberExpr = ast.callee as ASTMemberExpression;
     if (memberExpr.object.type === "Identifier") {
       const objName = (memberExpr.object as Identifier).name;
-      return objName === dslParam;
+      return objName === queryBuilderParam;
     }
   }
 
@@ -275,7 +275,7 @@ function visitCallExpression(
   }
 
   // Check if this is a DSL method call or bare operation
-  const isDSLCall = isDSLMethodCall(ast, visitorContext.dslParam);
+  const isDSLCall = isDSLMethodCall(ast, visitorContext.queryBuilderParam);
   const isBareCall = isBareDSLOperation(ast, methodName);
 
   // Handle root operations

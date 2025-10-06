@@ -6,12 +6,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
+import { dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - JOINs", () => {
   before(() => {
-    setupTestDatabase(db);
+    setupTestDatabase(dbClient);
   });
 
   describe("INNER JOIN", () => {
@@ -19,7 +19,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -67,7 +67,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -113,7 +113,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -158,7 +158,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -207,7 +207,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -265,7 +265,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -321,7 +321,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -379,7 +379,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -432,7 +432,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -482,7 +482,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -521,7 +521,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q

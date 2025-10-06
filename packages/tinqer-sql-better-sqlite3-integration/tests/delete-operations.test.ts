@@ -9,7 +9,7 @@ import { executeDelete } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
 // Use isolated in-memory database for DELETE tests
-const db: Database.Database = new Database(":memory:");
+const dbClient: Database.Database = new Database(":memory:");
 
 // Define types for test tables
 // Note: SQLite doesn't have a boolean type, it uses INTEGER (0/1)
@@ -57,16 +57,16 @@ const schema = createSchema<TestSchema>();
 describe("DELETE Operations - SQLite Integration", () => {
   before(() => {
     // Enable foreign key constraints in SQLite (must be set before creating tables)
-    db.exec("PRAGMA foreign_keys = ON");
+    dbClient.exec("PRAGMA foreign_keys = ON");
 
     // Drop existing tables to ensure fresh schema
-    db.exec("DROP TABLE IF EXISTS test_orders");
-    db.exec("DROP TABLE IF EXISTS test_logs");
-    db.exec("DROP TABLE IF EXISTS test_users");
-    db.exec("DROP TABLE IF EXISTS test_products");
+    dbClient.exec("DROP TABLE IF EXISTS test_orders");
+    dbClient.exec("DROP TABLE IF EXISTS test_logs");
+    dbClient.exec("DROP TABLE IF EXISTS test_users");
+    dbClient.exec("DROP TABLE IF EXISTS test_products");
 
     // Create test tables for DELETE operations
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE test_products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -78,7 +78,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       )
     `);
 
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE test_users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -91,7 +91,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       )
     `);
 
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE test_orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER REFERENCES test_users(id) ON DELETE CASCADE,
@@ -102,7 +102,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       )
     `);
 
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE test_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         level TEXT NOT NULL,
@@ -115,27 +115,27 @@ describe("DELETE Operations - SQLite Integration", () => {
 
   after(() => {
     // Drop test tables
-    db.exec("DROP TABLE IF EXISTS test_orders");
-    db.exec("DROP TABLE IF EXISTS test_logs");
-    db.exec("DROP TABLE IF EXISTS test_users");
-    db.exec("DROP TABLE IF EXISTS test_products");
+    dbClient.exec("DROP TABLE IF EXISTS test_orders");
+    dbClient.exec("DROP TABLE IF EXISTS test_logs");
+    dbClient.exec("DROP TABLE IF EXISTS test_users");
+    dbClient.exec("DROP TABLE IF EXISTS test_products");
     // Close isolated database
-    db.close();
+    dbClient.close();
   });
 
   beforeEach(() => {
     // Clear and seed test data
-    db.exec("DELETE FROM test_orders");
-    db.exec("DELETE FROM test_logs");
-    db.exec("DELETE FROM test_users");
-    db.exec("DELETE FROM test_products");
+    dbClient.exec("DELETE FROM test_orders");
+    dbClient.exec("DELETE FROM test_logs");
+    dbClient.exec("DELETE FROM test_users");
+    dbClient.exec("DELETE FROM test_products");
     // Reset auto-increment counters
-    db.exec(
+    dbClient.exec(
       "DELETE FROM sqlite_sequence WHERE name IN ('test_orders', 'test_logs', 'test_users', 'test_products')",
     );
 
     // Seed products
-    db.exec(`
+    dbClient.exec(`
       INSERT INTO test_products (name, category, price, in_stock, created_date)
       VALUES
         ('Laptop', 'Electronics', 999.99, 1, '2024-01-01'),
@@ -149,7 +149,7 @@ describe("DELETE Operations - SQLite Integration", () => {
     `);
 
     // Seed users
-    db.exec(`
+    dbClient.exec(`
       INSERT INTO test_users (username, email, age, is_active, role, joined_date)
       VALUES
         ('admin_user', 'admin@example.com', 35, 1, 'admin', '2023-01-01'),
@@ -161,7 +161,7 @@ describe("DELETE Operations - SQLite Integration", () => {
     `);
 
     // Seed orders
-    db.exec(`
+    dbClient.exec(`
       INSERT INTO test_orders (user_id, product_id, quantity, status)
       VALUES
         (1, 1, 1, 'completed'),
@@ -173,7 +173,7 @@ describe("DELETE Operations - SQLite Integration", () => {
     `);
 
     // Seed logs
-    db.exec(`
+    dbClient.exec(`
       INSERT INTO test_logs (level, message, user_id)
       VALUES
         ('INFO', 'User logged in', 1),
@@ -187,13 +187,15 @@ describe("DELETE Operations - SQLite Integration", () => {
 
   describe("Basic DELETE operations", () => {
     it("should delete single row with WHERE clause", () => {
-      const initialCount = db.prepare("SELECT COUNT(*) as count FROM test_products").get() as {
+      const initialCount = dbClient
+        .prepare("SELECT COUNT(*) as count FROM test_products")
+        .get() as {
         count: number;
       };
       assert.equal(initialCount.count, 8);
 
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.name === "Notebook"),
         {},
@@ -201,13 +203,13 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const finalCount = db.prepare("SELECT COUNT(*) as count FROM test_products").get() as {
+      const finalCount = dbClient.prepare("SELECT COUNT(*) as count FROM test_products").get() as {
         count: number;
       };
       assert.equal(finalCount.count, 7);
 
       // Verify the specific row is deleted
-      const result = db.prepare("SELECT * FROM test_products WHERE name = ?").all("Notebook");
+      const result = dbClient.prepare("SELECT * FROM test_products WHERE name = ?").all("Notebook");
       assert.equal(result.length, 0);
     });
 
@@ -215,7 +217,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const params = { productName: "Mouse" };
 
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) => q.deleteFrom("test_products").where((prod) => prod.name === p.productName),
         params,
@@ -223,7 +225,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const result = db
+      const result = dbClient
         .prepare("SELECT * FROM test_products WHERE name = ?")
         .all(params.productName);
       assert.equal(result.length, 0);
@@ -231,7 +233,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
     it("should delete with numeric comparison", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.price! < 10),
         {},
@@ -239,13 +241,13 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1); // Only Notebook (5.99)
 
-      const remaining = db.prepare("SELECT * FROM test_products WHERE price < ?").all(10);
+      const remaining = dbClient.prepare("SELECT * FROM test_products WHERE price < ?").all(10);
       assert.equal(remaining.length, 0);
     });
 
     it("should delete with boolean condition", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_users").where((u) => u.is_active === 0), // SQLite uses 0 for false
         {},
@@ -253,13 +255,13 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 2); // jane_smith and inactive_user
 
-      const inactiveUsers = db.prepare("SELECT * FROM test_users WHERE is_active = ?").all(0);
+      const inactiveUsers = dbClient.prepare("SELECT * FROM test_users WHERE is_active = ?").all(0);
       assert.equal(inactiveUsers.length, 0);
     });
 
     it("should delete with NULL checks", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_logs").where((l) => l.user_id === null),
         {},
@@ -267,7 +269,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1); // One log with NULL user_id
 
-      const nullLogs = db.prepare("SELECT * FROM test_logs WHERE user_id IS NULL").all();
+      const nullLogs = dbClient.prepare("SELECT * FROM test_logs WHERE user_id IS NULL").all();
       assert.equal(nullLogs.length, 0);
     });
   });
@@ -275,7 +277,7 @@ describe("DELETE Operations - SQLite Integration", () => {
   describe("DELETE with complex WHERE clauses", () => {
     it("should delete with AND conditions", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) =>
           q.deleteFrom("test_products").where(
@@ -286,7 +288,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1); // Only Keyboard matches
 
-      const result = db
+      const result = dbClient
         .prepare("SELECT * FROM test_products WHERE category = ? AND in_stock = ?")
         .all("Electronics", 0);
       assert.equal(result.length, 0);
@@ -294,7 +296,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
     it("should delete with OR conditions", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) =>
           q.deleteFrom("test_products").where((p) => p.category === "Stationery" || p.price! > 500),
@@ -303,18 +305,18 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 4); // Notebook, Pen Set (Stationery), Standing Desk (599.99), and Laptop (999.99)
 
-      const stationery = db
+      const stationery = dbClient
         .prepare("SELECT * FROM test_products WHERE category = ?")
         .all("Stationery");
       assert.equal(stationery.length, 0);
 
-      const expensive = db.prepare("SELECT * FROM test_products WHERE price > ?").all(500);
+      const expensive = dbClient.prepare("SELECT * FROM test_products WHERE price > ?").all(500);
       assert.equal(expensive.length, 0);
     });
 
     it("should delete with complex nested conditions", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) =>
           q.deleteFrom("test_users").where(
@@ -326,7 +328,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       // john_doe (user, 28), alice_jones (user, 26), jane_smith (inactive, user), inactive_user (inactive, user)
       assert.equal(rowCount, 4);
 
-      const remainingUsers = db
+      const remainingUsers = dbClient
         .prepare("SELECT username FROM test_users ORDER BY username")
         .all() as { username: string }[];
       const usernames = remainingUsers.map((u) => u.username);
@@ -335,7 +337,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
     it("should delete with NOT conditions", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_logs").where((l) => l.level !== "INFO"),
         {},
@@ -343,7 +345,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 4); // ERROR, WARNING, DEBUG logs
 
-      const remainingLogs = db
+      const remainingLogs = dbClient
         .prepare("SELECT * FROM test_logs")
         .all() as TestSchema["test_logs"][];
       assert.equal(remainingLogs.length, 2);
@@ -352,7 +354,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
     it("should delete with comparison operators", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.price! >= 250 && p.price! <= 600),
         {},
@@ -361,7 +363,9 @@ describe("DELETE Operations - SQLite Integration", () => {
       assert.equal(rowCount, 2); // Monitor (299.99) and Standing Desk (599.99)
       // Desk Chair (249.99) doesn't match because 249.99 < 250
 
-      const remaining = db.prepare("SELECT name, price FROM test_products ORDER BY price").all();
+      const remaining = dbClient
+        .prepare("SELECT name, price FROM test_products ORDER BY price")
+        .all();
       // Should have deleted Monitor (299.99) and Standing Desk (599.99)
       assert.equal(remaining.length, 6);
     });
@@ -370,7 +374,7 @@ describe("DELETE Operations - SQLite Integration", () => {
   describe("DELETE with string operations", () => {
     it("should delete with startsWith", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_users").where((u) => u.username.startsWith("john")),
         {},
@@ -378,13 +382,13 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1); // john_doe
 
-      const johns = db.prepare("SELECT * FROM test_users WHERE username LIKE ?").all("john%");
+      const johns = dbClient.prepare("SELECT * FROM test_users WHERE username LIKE ?").all("john%");
       assert.equal(johns.length, 0);
     });
 
     it("should delete with endsWith", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_users").where((u) => u.email.endsWith("@example.com")),
         {},
@@ -392,13 +396,13 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 6); // All users have @example.com
 
-      const users = db.prepare("SELECT * FROM test_users").all();
+      const users = dbClient.prepare("SELECT * FROM test_users").all();
       assert.equal(users.length, 0);
     });
 
     it("should delete with contains", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_logs").where((l) => l.message!.includes("login")),
         {},
@@ -406,7 +410,9 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1); // Only "Failed login attempt" (contains "login" as substring)
 
-      const loginLogs = db.prepare("SELECT * FROM test_logs WHERE message LIKE ?").all("%login%");
+      const loginLogs = dbClient
+        .prepare("SELECT * FROM test_logs WHERE message LIKE ?")
+        .all("%login%");
       assert.equal(loginLogs.length, 0);
     });
   });
@@ -416,7 +422,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const categoriesToDelete = ["Furniture", "Stationery"];
 
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) =>
           q.deleteFrom("test_products").where((prod) => p.categories.includes(prod.category!)),
@@ -425,7 +431,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 4); // 2 Furniture + 2 Stationery
 
-      const remaining = db.prepare("SELECT DISTINCT category FROM test_products").all() as {
+      const remaining = dbClient.prepare("SELECT DISTINCT category FROM test_products").all() as {
         category: string;
       }[];
       assert.equal(remaining.length, 1);
@@ -436,7 +442,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const userIds = [2, 3, 4];
 
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) => q.deleteFrom("test_users").where((u) => p.ids.includes(u.id!)),
         { ids: userIds },
@@ -444,7 +450,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 3);
 
-      const remaining = db.prepare("SELECT id FROM test_users ORDER BY id").all() as {
+      const remaining = dbClient.prepare("SELECT id FROM test_users ORDER BY id").all() as {
         id: number;
       }[];
       assert.deepEqual(
@@ -459,7 +465,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const cutoffDate = "2024-01-15";
 
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) => q.deleteFrom("test_products").where((prod) => prod.created_date! < p.cutoff),
         { cutoff: cutoffDate },
@@ -467,7 +473,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 3); // Products created before Jan 15, 2024
 
-      const remaining = db.prepare("SELECT name FROM test_products ORDER BY name").all();
+      const remaining = dbClient.prepare("SELECT name FROM test_products ORDER BY name").all();
       assert.equal(remaining.length, 5);
     });
 
@@ -475,17 +481,16 @@ describe("DELETE Operations - SQLite Integration", () => {
       // First, update some logs to have old timestamps
       const oldDate = new Date();
       oldDate.setDate(oldDate.getDate() - 30);
-      db.prepare("UPDATE test_logs SET created_at = ? WHERE level = ?").run(
-        oldDate.toISOString(),
-        "DEBUG",
-      );
+      dbClient
+        .prepare("UPDATE test_logs SET created_at = ? WHERE level = ?")
+        .run(oldDate.toISOString(), "DEBUG");
 
       const now = new Date();
       now.setDate(now.getDate() - 7); // 7 days ago
       const cutoffTime = now.toISOString();
 
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) => q.deleteFrom("test_logs").where((l) => l.created_at! < p.cutoff),
         { cutoff: cutoffTime },
@@ -493,7 +498,9 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1); // Only the DEBUG log we made old
 
-      const oldLogs = db.prepare("SELECT * FROM test_logs WHERE created_at < ?").all(cutoffTime);
+      const oldLogs = dbClient
+        .prepare("SELECT * FROM test_logs WHERE created_at < ?")
+        .all(cutoffTime);
       assert.equal(oldLogs.length, 0);
     });
   });
@@ -501,7 +508,7 @@ describe("DELETE Operations - SQLite Integration", () => {
   describe("DELETE multiple rows", () => {
     it("should delete all matching rows", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_orders").where((o) => o.status === "pending"),
         {},
@@ -509,13 +516,15 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 2);
 
-      const pendingOrders = db.prepare("SELECT * FROM test_orders WHERE status = ?").all("pending");
+      const pendingOrders = dbClient
+        .prepare("SELECT * FROM test_orders WHERE status = ?")
+        .all("pending");
       assert.equal(pendingOrders.length, 0);
     });
 
     it("should delete with allowFullTableDelete", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_logs").allowFullTableDelete(),
         {},
@@ -523,13 +532,13 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 6); // All logs
 
-      const logs = db.prepare("SELECT * FROM test_logs").all();
+      const logs = dbClient.prepare("SELECT * FROM test_logs").all();
       assert.equal(logs.length, 0);
     });
 
     it("should throw error when DELETE has no WHERE and no allow flag", () => {
       try {
-        executeDelete(db, schema, (q) => q.deleteFrom("test_products"), {});
+        executeDelete(dbClient, schema, (q) => q.deleteFrom("test_products"), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -543,11 +552,13 @@ describe("DELETE Operations - SQLite Integration", () => {
   describe("DELETE with cascading", () => {
     it("should cascade delete related records", () => {
       // Delete a user that has orders (CASCADE should delete orders too)
-      const userOrdersBefore = db.prepare("SELECT * FROM test_orders WHERE user_id = ?").all(2);
+      const userOrdersBefore = dbClient
+        .prepare("SELECT * FROM test_orders WHERE user_id = ?")
+        .all(2);
       assert.equal(userOrdersBefore.length, 2); // john_doe has 2 orders
 
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_users").where((u) => u.username === "john_doe"),
         {},
@@ -556,7 +567,9 @@ describe("DELETE Operations - SQLite Integration", () => {
       assert.equal(rowCount, 1);
 
       // Check that orders were also deleted (if foreign keys are enabled)
-      const userOrdersAfter = db.prepare("SELECT * FROM test_orders WHERE user_id = ?").all(2);
+      const userOrdersAfter = dbClient
+        .prepare("SELECT * FROM test_orders WHERE user_id = ?")
+        .all(2);
       assert.equal(userOrdersAfter.length, 0);
     });
   });
@@ -564,7 +577,7 @@ describe("DELETE Operations - SQLite Integration", () => {
   describe("DELETE with no matches", () => {
     it("should return 0 when no rows match", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.name === "NonExistent"),
         {},
@@ -573,7 +586,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       assert.equal(rowCount, 0);
 
       // Verify nothing was deleted
-      const count = db.prepare("SELECT COUNT(*) as count FROM test_products").get() as {
+      const count = dbClient.prepare("SELECT COUNT(*) as count FROM test_products").get() as {
         count: number;
       };
       assert.equal(count.count, 8);
@@ -581,7 +594,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
     it("should handle impossible conditions gracefully", () => {
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.price! < 0),
         {},
@@ -595,7 +608,7 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should handle boolean values as 0/1", () => {
       // SQLite stores booleans as integers
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.in_stock === 1), // SQLite uses 1 for true
         {},
@@ -605,7 +618,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       // Products: Laptop, Mouse, Monitor, Desk Chair, Notebook, Pen Set = 6 products
       assert.equal(rowCount, 6);
 
-      const remaining = db
+      const remaining = dbClient
         .prepare("SELECT * FROM test_products")
         .all() as TestSchema["test_products"][];
       assert.equal(remaining.length, 2); // Only Keyboard and Standing Desk remain (in_stock = 0)
@@ -615,7 +628,7 @@ describe("DELETE Operations - SQLite Integration", () => {
     it("should handle type coercion in comparisons", () => {
       // SQLite allows flexible type comparisons
       const rowCount = executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.price === 299.99),
         {},
@@ -624,7 +637,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       // Should match Monitor with price 299.99 even though we used string
       assert.equal(rowCount, 1);
 
-      const monitor = db.prepare("SELECT * FROM test_products WHERE name = ?").all("Monitor");
+      const monitor = dbClient.prepare("SELECT * FROM test_products WHERE name = ?").all("Monitor");
       assert.equal(monitor.length, 0);
     });
   });

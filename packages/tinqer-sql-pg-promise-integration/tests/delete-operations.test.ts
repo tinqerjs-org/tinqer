@@ -6,7 +6,7 @@ import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createSchema } from "@webpods/tinqer";
 import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 
 // Define types for test tables
 interface TestSchema {
@@ -53,7 +53,7 @@ const schema = createSchema<TestSchema>();
 describe("DELETE Operations - PostgreSQL Integration", () => {
   before(async () => {
     // Create test tables for DELETE operations
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE IF NOT EXISTS test_products (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -65,7 +65,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       )
     `);
 
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE IF NOT EXISTS test_users (
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
@@ -78,7 +78,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       )
     `);
 
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE IF NOT EXISTS test_orders (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES test_users(id) ON DELETE CASCADE,
@@ -89,7 +89,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       )
     `);
 
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE IF NOT EXISTS test_logs (
         id SERIAL PRIMARY KEY,
         level VARCHAR(10) NOT NULL,
@@ -102,20 +102,20 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
   after(async () => {
     // Drop test tables
-    await db.none("DROP TABLE IF EXISTS test_orders CASCADE");
-    await db.none("DROP TABLE IF EXISTS test_logs CASCADE");
-    await db.none("DROP TABLE IF EXISTS test_users CASCADE");
-    await db.none("DROP TABLE IF EXISTS test_products CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS test_orders CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS test_logs CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS test_users CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS test_products CASCADE");
   });
 
   beforeEach(async () => {
     // Clear and seed test data
-    await db.none(
+    await dbClient.none(
       "TRUNCATE TABLE test_orders, test_logs, test_users, test_products RESTART IDENTITY CASCADE",
     );
 
     // Seed products
-    await db.none(`
+    await dbClient.none(`
       INSERT INTO test_products (name, category, price, in_stock, created_date)
       VALUES
         ('Laptop', 'Electronics', 999.99, true, '2024-01-01'),
@@ -129,7 +129,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     `);
 
     // Seed users
-    await db.none(`
+    await dbClient.none(`
       INSERT INTO test_users (username, email, age, is_active, role, joined_date)
       VALUES
         ('admin_user', 'admin@example.com', 35, true, 'admin', '2023-01-01'),
@@ -141,7 +141,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     `);
 
     // Seed orders
-    await db.none(`
+    await dbClient.none(`
       INSERT INTO test_orders (user_id, product_id, quantity, status)
       VALUES
         (1, 1, 1, 'completed'),
@@ -153,7 +153,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     `);
 
     // Seed logs
-    await db.none(`
+    await dbClient.none(`
       INSERT INTO test_logs (level, message, user_id)
       VALUES
         ('INFO', 'User logged in', 1),
@@ -167,11 +167,11 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
   describe("Basic DELETE operations", () => {
     it("should delete single row with WHERE clause", async () => {
-      const initialCount = await db.one("SELECT COUNT(*) FROM test_products");
+      const initialCount = await dbClient.one("SELECT COUNT(*) FROM test_products");
       assert.equal(parseInt(initialCount.count), 8);
 
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.name === "Notebook"),
         {},
@@ -179,11 +179,13 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const finalCount = await db.one("SELECT COUNT(*) FROM test_products");
+      const finalCount = await dbClient.one("SELECT COUNT(*) FROM test_products");
       assert.equal(parseInt(finalCount.count), 7);
 
       // Verify the specific row is deleted
-      const result = await db.any("SELECT * FROM test_products WHERE name = $1", ["Notebook"]);
+      const result = await dbClient.any("SELECT * FROM test_products WHERE name = $1", [
+        "Notebook",
+      ]);
       assert.equal(result.length, 0);
     });
 
@@ -191,7 +193,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const params = { productName: "Mouse" };
 
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) => q.deleteFrom("test_products").where((prod) => prod.name === p.productName),
         params,
@@ -199,7 +201,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const result = await db.any("SELECT * FROM test_products WHERE name = $1", [
+      const result = await dbClient.any("SELECT * FROM test_products WHERE name = $1", [
         params.productName,
       ]);
       assert.equal(result.length, 0);
@@ -207,7 +209,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
     it("should delete with numeric comparison", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.price! < 10),
         {},
@@ -215,13 +217,13 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1); // Only Notebook (5.99)
 
-      const remaining = await db.any("SELECT * FROM test_products WHERE price < 10");
+      const remaining = await dbClient.any("SELECT * FROM test_products WHERE price < 10");
       assert.equal(remaining.length, 0);
     });
 
     it("should delete with boolean condition", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_users").where((u) => u.is_active === false),
         {},
@@ -229,13 +231,13 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 2); // jane_smith and inactive_user
 
-      const inactiveUsers = await db.any("SELECT * FROM test_users WHERE is_active = false");
+      const inactiveUsers = await dbClient.any("SELECT * FROM test_users WHERE is_active = false");
       assert.equal(inactiveUsers.length, 0);
     });
 
     it("should delete with NULL checks", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_logs").where((l) => l.user_id === null),
         {},
@@ -243,7 +245,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1); // One log with NULL user_id
 
-      const nullLogs = await db.any("SELECT * FROM test_logs WHERE user_id IS NULL");
+      const nullLogs = await dbClient.any("SELECT * FROM test_logs WHERE user_id IS NULL");
       assert.equal(nullLogs.length, 0);
     });
   });
@@ -251,7 +253,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
   describe("DELETE with complex WHERE clauses", () => {
     it("should delete with AND conditions", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -262,7 +264,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1); // Only Keyboard matches
 
-      const result = await db.any(
+      const result = await dbClient.any(
         "SELECT * FROM test_products WHERE category = $1 AND in_stock = $2",
         ["Electronics", false],
       );
@@ -271,7 +273,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
     it("should delete with OR conditions", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) =>
           q.deleteFrom("test_products").where((p) => p.category === "Stationery" || p.price! > 500),
@@ -280,18 +282,18 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 4); // Notebook, Pen Set (Stationery), Standing Desk (599.99), and Laptop (999.99)
 
-      const stationery = await db.any("SELECT * FROM test_products WHERE category = $1", [
+      const stationery = await dbClient.any("SELECT * FROM test_products WHERE category = $1", [
         "Stationery",
       ]);
       assert.equal(stationery.length, 0);
 
-      const expensive = await db.any("SELECT * FROM test_products WHERE price > $1", [500]);
+      const expensive = await dbClient.any("SELECT * FROM test_products WHERE price > $1", [500]);
       assert.equal(expensive.length, 0);
     });
 
     it("should delete with complex nested conditions", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -306,14 +308,14 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       // john_doe (user, 28), alice_jones (user, 26), jane_smith (inactive, user), inactive_user (inactive, user)
       assert.equal(rowCount, 4);
 
-      const remainingUsers = await db.many("SELECT username FROM test_users");
+      const remainingUsers = await dbClient.many("SELECT username FROM test_users");
       const usernames = remainingUsers.map((u) => u.username).sort();
       assert.deepEqual(usernames, ["admin_user", "bob_wilson"]);
     });
 
     it("should delete with NOT conditions", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_logs").where((l) => l.level !== "INFO"),
         {},
@@ -321,14 +323,14 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 4); // ERROR, WARNING, DEBUG logs
 
-      const remainingLogs = await db.many("SELECT * FROM test_logs");
+      const remainingLogs = await dbClient.many("SELECT * FROM test_logs");
       assert.equal(remainingLogs.length, 2);
       remainingLogs.forEach((log) => assert.equal(log.level, "INFO"));
     });
 
     it("should delete with comparison operators", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.price! >= 250 && p.price! <= 600),
         {},
@@ -337,7 +339,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       assert.equal(rowCount, 2); // Monitor (299.99), Standing Desk (599.99)
       // Desk Chair is 249.99 which is < 250, so not deleted
 
-      const remaining = await db.many("SELECT name, price FROM test_products ORDER BY price");
+      const remaining = await dbClient.many("SELECT name, price FROM test_products ORDER BY price");
       // Should have: Notebook (5.99), Pen Set (12.99), Mouse (29.99), Keyboard (79.99), Desk Chair (249.99), Laptop (999.99)
       assert.equal(remaining.length, 6);
     });
@@ -346,7 +348,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
   describe("DELETE with string operations", () => {
     it("should delete with startsWith", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_users").where((u) => u.username.startsWith("john")),
         {},
@@ -354,13 +356,15 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1); // john_doe
 
-      const johns = await db.any("SELECT * FROM test_users WHERE username LIKE $1", ["john%"]);
+      const johns = await dbClient.any("SELECT * FROM test_users WHERE username LIKE $1", [
+        "john%",
+      ]);
       assert.equal(johns.length, 0);
     });
 
     it("should delete with endsWith", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_users").where((u) => u.email.endsWith("@example.com")),
         {},
@@ -368,13 +372,13 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 6); // All users have @example.com
 
-      const users = await db.any("SELECT * FROM test_users");
+      const users = await dbClient.any("SELECT * FROM test_users");
       assert.equal(users.length, 0);
     });
 
     it("should delete with contains", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_logs").where((l) => l.message!.includes("login")),
         {},
@@ -382,7 +386,9 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1); // Only "Failed login attempt" (contains "login" as substring)
 
-      const loginLogs = await db.any("SELECT * FROM test_logs WHERE message LIKE $1", ["%login%"]);
+      const loginLogs = await dbClient.any("SELECT * FROM test_logs WHERE message LIKE $1", [
+        "%login%",
+      ]);
       assert.equal(loginLogs.length, 0);
     });
   });
@@ -392,7 +398,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const categoriesToDelete = ["Furniture", "Stationery"];
 
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) =>
           q.deleteFrom("test_products").where((prod) => p.categories.includes(prod.category!)),
@@ -401,7 +407,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 4); // 2 Furniture + 2 Stationery
 
-      const remaining = await db.many("SELECT DISTINCT category FROM test_products");
+      const remaining = await dbClient.many("SELECT DISTINCT category FROM test_products");
       assert.equal(remaining.length, 1);
       assert.equal(remaining[0].category, "Electronics");
     });
@@ -410,7 +416,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const userIds = [2, 3, 4];
 
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) => q.deleteFrom("test_users").where((u) => p.ids.includes(u.id!)),
         { ids: userIds },
@@ -418,7 +424,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 3);
 
-      const remaining = await db.many("SELECT id FROM test_users ORDER BY id");
+      const remaining = await dbClient.many("SELECT id FROM test_users ORDER BY id");
       assert.deepEqual(
         remaining.map((r) => r.id),
         [1, 5, 6],
@@ -431,7 +437,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       const cutoffDate = new Date("2024-01-15");
 
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) => q.deleteFrom("test_products").where((prod) => prod.created_date! < p.cutoff),
         { cutoff: cutoffDate },
@@ -439,13 +445,13 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 3); // Products created before Jan 15, 2024
 
-      const remaining = await db.many("SELECT name FROM test_products ORDER BY name");
+      const remaining = await dbClient.many("SELECT name FROM test_products ORDER BY name");
       assert.equal(remaining.length, 5);
     });
 
     it("should delete old records by timestamp", async () => {
       // First, update some logs to have old timestamps
-      await db.none(`
+      await dbClient.none(`
         UPDATE test_logs
         SET created_at = NOW() - INTERVAL '30 days'
         WHERE level = 'DEBUG'
@@ -455,7 +461,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       cutoffTime.setDate(cutoffTime.getDate() - 7); // 7 days ago
 
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q, p) => q.deleteFrom("test_logs").where((l) => l.created_at! < p.cutoff),
         { cutoff: cutoffTime },
@@ -463,7 +469,9 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1); // Only the DEBUG log we made old
 
-      const oldLogs = await db.any("SELECT * FROM test_logs WHERE created_at < $1", [cutoffTime]);
+      const oldLogs = await dbClient.any("SELECT * FROM test_logs WHERE created_at < $1", [
+        cutoffTime,
+      ]);
       assert.equal(oldLogs.length, 0);
     });
   });
@@ -471,7 +479,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
   describe("DELETE multiple rows", () => {
     it("should delete all matching rows", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_orders").where((o) => o.status === "pending"),
         {},
@@ -479,7 +487,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 2);
 
-      const pendingOrders = await db.any("SELECT * FROM test_orders WHERE status = $1", [
+      const pendingOrders = await dbClient.any("SELECT * FROM test_orders WHERE status = $1", [
         "pending",
       ]);
       assert.equal(pendingOrders.length, 0);
@@ -487,7 +495,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
     it("should delete with allowFullTableDelete", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_logs").allowFullTableDelete(),
         {},
@@ -495,13 +503,13 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 6); // All logs
 
-      const logs = await db.any("SELECT * FROM test_logs");
+      const logs = await dbClient.any("SELECT * FROM test_logs");
       assert.equal(logs.length, 0);
     });
 
     it("should throw error when DELETE has no WHERE and no allow flag", async () => {
       try {
-        await executeDelete(db, schema, (q) => q.deleteFrom("test_products"), {});
+        await executeDelete(dbClient, schema, (q) => q.deleteFrom("test_products"), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -515,11 +523,13 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
   describe("DELETE with cascading", () => {
     it("should cascade delete related records", async () => {
       // Delete a user that has orders (CASCADE should delete orders too)
-      const userOrdersBefore = await db.any("SELECT * FROM test_orders WHERE user_id = $1", [2]);
+      const userOrdersBefore = await dbClient.any("SELECT * FROM test_orders WHERE user_id = $1", [
+        2,
+      ]);
       assert.equal(userOrdersBefore.length, 2); // john_doe has 2 orders
 
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_users").where((u) => u.username === "john_doe"),
         {},
@@ -528,7 +538,9 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       assert.equal(rowCount, 1);
 
       // Check that orders were also deleted
-      const userOrdersAfter = await db.any("SELECT * FROM test_orders WHERE user_id = $1", [2]);
+      const userOrdersAfter = await dbClient.any("SELECT * FROM test_orders WHERE user_id = $1", [
+        2,
+      ]);
       assert.equal(userOrdersAfter.length, 0);
     });
   });
@@ -536,7 +548,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
   describe("DELETE with no matches", () => {
     it("should return 0 when no rows match", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.name === "NonExistent"),
         {},
@@ -545,13 +557,13 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       assert.equal(rowCount, 0);
 
       // Verify nothing was deleted
-      const count = await db.one("SELECT COUNT(*) FROM test_products");
+      const count = await dbClient.one("SELECT COUNT(*) FROM test_products");
       assert.equal(parseInt(count.count), 8);
     });
 
     it("should handle impossible conditions gracefully", async () => {
       const rowCount = await executeDelete(
-        db,
+        dbClient,
         schema,
         (q) => q.deleteFrom("test_products").where((p) => p.price! < 0),
         {},

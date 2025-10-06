@@ -6,12 +6,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Complex WHERE", () => {
   before(async () => {
-    await setupTestDatabase(db);
+    await setupTestDatabase(dbClient);
   });
 
   describe("Nested logical conditions", () => {
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -60,7 +60,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -108,7 +108,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -144,7 +144,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("products").where((p) => p.price >= 50 && p.price <= 300),
         {
@@ -172,7 +172,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -213,7 +213,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("products").where((p) => p.stock > 100 && p.stock < 500),
         {
@@ -244,7 +244,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
 
       const targetIds = [1, 3, 5, 7];
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) => q.from("users").where((u) => params.targetIds.includes(u.id)),
         { targetIds },
@@ -279,7 +279,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
 
       const excludedCategories = ["Furniture", "Stationery"];
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -315,7 +315,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
 
       const emptyList: number[] = [];
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) => q.from("users").where((u) => params.emptyList.includes(u.id)),
         { emptyList },
@@ -341,7 +341,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
 
       // All our test users have department_id, but let's test the syntax
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("users").where((u) => u.department_id !== null && u.is_active === true),
         {
@@ -369,7 +369,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -402,7 +402,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("products").where((p) => p.price * 0.9 > 100),
         {
@@ -429,7 +429,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("order_items").where((oi) => oi.quantity * oi.unit_price > 500),
         {
@@ -456,7 +456,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("users").where((u) => u.id % 2 === 0),
         {
@@ -483,7 +483,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -517,7 +517,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -569,7 +569,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       };
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, p) =>
           q
@@ -616,7 +616,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const params = { threshold: 100 };
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, p) =>
           q
@@ -658,7 +658,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -709,7 +709,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q.from("products").where(
@@ -749,7 +749,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       const activeResults = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("users").where((u) => u.is_active),
         {
@@ -760,7 +760,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       );
 
       const inactiveResults = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("users").where((u) => !u.is_active),
         {

@@ -6,12 +6,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Terminal Operations", () => {
   before(async () => {
-    await setupTestDatabase(db);
+    await setupTestDatabase(dbClient);
   });
 
   describe("first() and firstOrDefault()", () => {
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const user = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -47,7 +47,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const user = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").first((u) => u.age !== null && u.age > 40),
         {
@@ -72,7 +72,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       try {
         await executeSelectSimple(
-          db,
+          dbClient,
           schema,
           (q, _params, _helpers) => q.from("users").first((u) => u.age !== null && u.age > 100),
           {
@@ -97,7 +97,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const user = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q.from("users").firstOrDefault((u) => u.age !== null && u.age > 100),
@@ -121,7 +121,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const result = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -167,7 +167,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const user = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").single((u) => u.email === "john@example.com"),
         {
@@ -190,7 +190,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       try {
         await executeSelectSimple(
-          db,
+          dbClient,
           schema,
           (q, _params, _helpers) => q.from("users").single((u) => u.department_id === 1),
           {
@@ -216,7 +216,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       try {
         await executeSelectSimple(
-          db,
+          dbClient,
           schema,
           (q, _params, _helpers) =>
             q.from("users").single((u) => u.email === "nonexistent@example.com"),
@@ -240,7 +240,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const user = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q.from("users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
@@ -263,7 +263,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       try {
         await executeSelectSimple(
-          db,
+          dbClient,
           schema,
           (q, _params, _helpers) => q.from("users").singleOrDefault((u) => u.department_id === 1),
           {
@@ -290,7 +290,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const user = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -316,7 +316,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const user = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -345,7 +345,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const user = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q.from("users").lastOrDefault((u) => u.age !== null && u.age > 100),
@@ -371,7 +371,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const hasYoungUsers = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").any((u) => u.age !== null && u.age < 30),
         {
@@ -394,7 +394,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const hasCentenarians = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").any((u) => u.age !== null && u.age > 100),
         {
@@ -417,7 +417,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const hasUsers = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").any(),
         {
@@ -440,7 +440,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const allHaveEmail = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").all((u) => u.email !== null),
         {
@@ -463,7 +463,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const allActive = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").all((u) => u.is_active === true),
         {
@@ -486,7 +486,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const allEngineersActive = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -507,7 +507,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       expect(capturedSql!.params).to.deep.equal({ __p1: 1, __p2: true });
 
       // Check the actual data to verify the result
-      const engineerStatus = await executeSelectSimple(db, schema, (q, _params, _helpers) =>
+      const engineerStatus = await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
         q
           .from("users")
           .where((u) => u.department_id === 1)
@@ -524,7 +524,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const users = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -555,7 +555,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const products = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q
@@ -593,7 +593,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const targetEmail = "jane@example.com";
       const user = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params, _helpers) => q.from("users").single((u) => u.email === params.email),
         { email: targetEmail },
@@ -617,7 +617,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const hasExpensiveElectronics = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q.from("products").any((p) => p.category === "Electronics" && p.price > 500),
@@ -641,7 +641,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const allPositive = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) =>
           q

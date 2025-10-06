@@ -6,7 +6,7 @@ import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createSchema } from "@webpods/tinqer";
 import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 
 // Define types for test tables
 interface TestSchema {
@@ -45,12 +45,12 @@ const schema = createSchema<TestSchema>();
 describe("INSERT Operations - PostgreSQL Integration", () => {
   before(async () => {
     // Drop existing tables to ensure fresh schema
-    await db.none("DROP TABLE IF EXISTS orders CASCADE");
-    await db.none("DROP TABLE IF EXISTS products CASCADE");
-    await db.none("DROP TABLE IF EXISTS customers CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS orders CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS products CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS customers CASCADE");
 
     // Create test tables for INSERT operations
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE products (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -63,7 +63,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       )
     `);
 
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE orders (
         id SERIAL PRIMARY KEY,
         customer_id INTEGER NOT NULL,
@@ -76,7 +76,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       )
     `);
 
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE customers (
         id SERIAL PRIMARY KEY,
         email VARCHAR(100) UNIQUE NOT NULL,
@@ -90,20 +90,20 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
   after(async () => {
     // Drop test tables
-    await db.none("DROP TABLE IF EXISTS orders CASCADE");
-    await db.none("DROP TABLE IF EXISTS products CASCADE");
-    await db.none("DROP TABLE IF EXISTS customers CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS orders CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS products CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS customers CASCADE");
   });
 
   beforeEach(async () => {
     // Clear tables before each test
-    await db.none("TRUNCATE TABLE orders, products, customers RESTART IDENTITY CASCADE");
+    await dbClient.none("TRUNCATE TABLE orders, products, customers RESTART IDENTITY CASCADE");
   });
 
   describe("Basic INSERT operations", () => {
     it("should insert a single row with all columns", async () => {
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _) =>
           q.insertInto("products").values({
@@ -119,7 +119,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       assert.equal(rowCount, 1);
 
       // Verify the insert
-      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Laptop"]);
+      const product = await dbClient.one("SELECT * FROM products WHERE name = $1", ["Laptop"]);
       assert.equal(product.name, "Laptop");
       assert.equal(parseFloat(product.price), 999.99);
       assert.equal(product.category, "Electronics");
@@ -129,7 +129,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
     it("should insert with partial columns (nullable columns)", async () => {
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _) =>
           q.insertInto("products").values({
@@ -141,7 +141,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Basic Item"]);
+      const product = await dbClient.one("SELECT * FROM products WHERE name = $1", ["Basic Item"]);
       assert.equal(product.name, "Basic Item");
       assert.equal(parseFloat(product.price), 10.0);
       assert.equal(product.category, null); // Should be null
@@ -156,7 +156,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       };
 
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, p: typeof params) =>
           q.insertInto("products").values({
@@ -170,14 +170,16 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM products WHERE name = $1", [params.productName]);
+      const product = await dbClient.one("SELECT * FROM products WHERE name = $1", [
+        params.productName,
+      ]);
       assert.equal(product.name, "Tablet");
       assert.equal(parseFloat(product.price), 599.99);
     });
 
     it("should handle boolean values correctly", async () => {
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _params) =>
           q.insertInto("products").values({
@@ -190,13 +192,15 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Out of Stock Item"]);
+      const product = await dbClient.one("SELECT * FROM products WHERE name = $1", [
+        "Out of Stock Item",
+      ]);
       assert.equal(product.in_stock, false);
     });
 
     it("should handle NULL values explicitly", async () => {
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _params) =>
           q.insertInto("products").values({
@@ -210,7 +214,9 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Minimal Product"]);
+      const product = await dbClient.one("SELECT * FROM products WHERE name = $1", [
+        "Minimal Product",
+      ]);
       assert.equal(product.category, null);
       assert.equal(product.description, null);
     });
@@ -219,7 +225,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
   describe("INSERT with RETURNING clause", () => {
     it("should return inserted row with RETURNING *", async () => {
       const results = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _params) =>
           q
@@ -242,7 +248,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
     it("should return specific columns with RETURNING", async () => {
       const results = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _params) =>
           q
@@ -267,7 +273,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
     it("should return single column with RETURNING", async () => {
       const results = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _params) =>
           q
@@ -291,7 +297,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
   describe("Complex INSERT scenarios", () => {
     it("should handle special characters in strings", async () => {
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _params) =>
           q.insertInto("products").values({
@@ -304,7 +310,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM products WHERE price = $1", [100.0]);
+      const product = await dbClient.one("SELECT * FROM products WHERE price = $1", [100.0]);
       assert(product.name.includes("'quotes'"));
       assert(product.name.includes('"double quotes"'));
       assert(product.description.includes("\n"));
@@ -313,7 +319,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
     it("should handle Unicode characters", async () => {
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _params) =>
           q.insertInto("products").values({
@@ -326,7 +332,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM products WHERE price = $1", [88.88]);
+      const product = await dbClient.one("SELECT * FROM products WHERE price = $1", [88.88]);
       assert(product.name.includes("🚀"));
       assert(product.name.includes("中文"));
       assert(product.category.includes("ñ"));
@@ -334,7 +340,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
     it("should handle numeric edge cases", async () => {
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _params) =>
           q.insertInto("products").values({
@@ -346,7 +352,9 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM products WHERE name = $1", ["Edge Case Product"]);
+      const product = await dbClient.one("SELECT * FROM products WHERE name = $1", [
+        "Edge Case Product",
+      ]);
       assert.equal(parseFloat(product.price), 0.01);
     });
 
@@ -354,7 +362,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const testDate = new Date("2024-01-15T10:30:00Z");
 
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q.insertInto("orders").values({
@@ -371,7 +379,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const order = await db.one("SELECT * FROM orders WHERE customer_id = $1", [1]);
+      const order = await dbClient.one("SELECT * FROM orders WHERE customer_id = $1", [1]);
       assert.equal(order.status, "completed");
       // Date comparison might need timezone handling
       assert(order.order_date instanceof Date);
@@ -387,7 +395,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       };
 
       const rowCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q.insertInto("products").values({
@@ -400,7 +408,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM products WHERE name = $1", [
+      const product = await dbClient.one("SELECT * FROM products WHERE name = $1", [
         "Product with Metadata",
       ]);
       assert.deepEqual(product.metadata, metadata);
@@ -411,7 +419,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle unique constraint violations gracefully", async () => {
       // First insert
       await executeInsert(
-        db,
+        dbClient,
         schema,
         (q) =>
           q.insertInto("customers").values({
@@ -425,7 +433,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // Second insert with same email should fail
       try {
         await executeInsert(
-          db,
+          dbClient,
           schema,
           (q) =>
             q.insertInto("customers").values({
@@ -449,7 +457,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle multiple inserts in sequence", async () => {
       // Insert customer
       const customerResults = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -467,7 +475,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       // Insert product
       const productResults = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, _params) =>
           q
@@ -485,7 +493,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       // Insert order referencing both
       const orderCount = await executeInsert(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q.insertInto("orders").values({
@@ -501,7 +509,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       assert.equal(orderCount, 1);
 
       // Verify all inserts
-      const order = await db.one(
+      const order = await dbClient.one(
         "SELECT * FROM orders WHERE customer_id = $1 AND product_id = $2",
         [customerId, productId],
       );

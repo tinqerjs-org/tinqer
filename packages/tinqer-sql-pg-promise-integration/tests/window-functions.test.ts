@@ -6,18 +6,18 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";
 
 describe("Window Functions - PostgreSQL Integration", () => {
   before(async () => {
-    await setupTestDatabase(db);
+    await setupTestDatabase(dbClient);
   });
 
   describe("ROW_NUMBER()", () => {
     it("should assign unique row numbers within each department ordered by salary DESC", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -63,7 +63,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle ROW_NUMBER without PARTITION BY", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -93,7 +93,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should work with WHERE clause filtering", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -126,7 +126,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("RANK()", () => {
     it("should handle ties in salary with gaps in rank", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -160,12 +160,12 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should show rank gaps when there are ties", async () => {
       // Create a tie scenario: Set Diana and Grace to same salary
-      await db.none(
+      await dbClient.none(
         "UPDATE users SET salary = 110000 WHERE name IN ('Diana Prince', 'Grace Hopper')",
       );
 
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -195,20 +195,20 @@ describe("Window Functions - PostgreSQL Integration", () => {
       expect(result[3]!.rank).to.equal(4); // Gap
 
       // Reset
-      await db.none("UPDATE users SET salary = 110000 WHERE name = 'Diana Prince'");
-      await db.none("UPDATE users SET salary = 105000 WHERE name = 'Grace Hopper'");
+      await dbClient.none("UPDATE users SET salary = 110000 WHERE name = 'Diana Prince'");
+      await dbClient.none("UPDATE users SET salary = 105000 WHERE name = 'Grace Hopper'");
     });
   });
 
   describe("DENSE_RANK()", () => {
     it("should handle ties without gaps in rank", async () => {
       // Create a tie scenario
-      await db.none(
+      await dbClient.none(
         "UPDATE users SET salary = 110000 WHERE name IN ('Diana Prince', 'Grace Hopper')",
       );
 
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -238,13 +238,13 @@ describe("Window Functions - PostgreSQL Integration", () => {
       expect(result[3]!.dense_rank).to.equal(3); // NO gap
 
       // Reset
-      await db.none("UPDATE users SET salary = 110000 WHERE name = 'Diana Prince'");
-      await db.none("UPDATE users SET salary = 105000 WHERE name = 'Grace Hopper'");
+      await dbClient.none("UPDATE users SET salary = 110000 WHERE name = 'Diana Prince'");
+      await dbClient.none("UPDATE users SET salary = 105000 WHERE name = 'Grace Hopper'");
     });
 
     it("should work across all departments", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -275,7 +275,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Multiple Window Functions", () => {
     it("should support multiple window functions in the same query", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -324,7 +324,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Real-world Scenarios", () => {
     it("should find the top earner in each department", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -357,7 +357,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should rank employees by salary within department with age as tiebreaker", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -386,7 +386,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should assign sequential numbers for pagination-like scenarios", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -414,7 +414,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Complex Ordering", () => {
     it("should handle multiple ORDER BY columns in window function", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -445,7 +445,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Filtering on Window Function Results", () => {
     it("should filter on ROW_NUMBER to get top 1 per department", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -477,7 +477,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should filter on ROW_NUMBER to get top 3 per department", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -509,7 +509,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should filter on RANK to get all rank 1 employees", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -539,7 +539,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should combine window filter with regular WHERE conditions", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -571,7 +571,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle spread operator with window functions", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -604,7 +604,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
   describe("Recursive Nesting - Multiple Window Filters", () => {
     it("should handle double nesting: top-3 per department, then top-1 overall", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -644,7 +644,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle triple nesting: salary -> performance -> name", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -691,7 +691,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle nested filters with different window functions", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -732,7 +732,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle nested filters with spread operator preserving all columns", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -773,7 +773,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle mixed regular WHERE and nested window filters", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -814,7 +814,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle quadruple nesting (extreme case)", async () => {
       const result = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q
@@ -868,7 +868,7 @@ describe("Window Functions - PostgreSQL Integration", () => {
 
     it("should handle COUNT after window filter", async () => {
       const count = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, _, h) =>
           q

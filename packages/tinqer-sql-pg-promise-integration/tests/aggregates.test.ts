@@ -6,12 +6,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Aggregates", () => {
   before(async () => {
-    await setupTestDatabase(db);
+    await setupTestDatabase(dbClient);
   });
 
   describe("COUNT", () => {
@@ -19,7 +19,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const count = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q, _params, _helpers) => q.from("users").count(),
         {
@@ -41,7 +41,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const count = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("users").count((u) => u.is_active === true),
         {
@@ -63,7 +63,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const count = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -93,7 +93,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const sum = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("products").sum((p) => p.price),
         {
@@ -115,7 +115,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const sum = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -143,7 +143,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const sum = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("orders").sum((o) => o.total_amount),
         {
@@ -167,7 +167,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const avg = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -195,7 +195,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       const avgElectronics = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -210,7 +210,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       );
 
       const avgFurniture = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -248,7 +248,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       const minAge = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -263,7 +263,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       );
 
       const maxAge = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -297,7 +297,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       const minPrice = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("products").min((p) => p.price),
         {
@@ -308,7 +308,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       );
 
       const maxPrice = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("products").max((p) => p.price),
         {
@@ -336,7 +336,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const maxElectronicsPrice = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -365,7 +365,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -397,7 +397,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -437,7 +437,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -474,7 +474,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -511,11 +511,16 @@ describe("PostgreSQL Integration - Aggregates", () => {
       // Uses users.age which has some NULL values in test data
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const sum = await executeSelectSimple(db, schema, (q) => q.from("users").sum((u) => u.age!), {
-        onSql: (result) => {
-          capturedSql = result;
+      const sum = await executeSelectSimple(
+        dbClient,
+        schema,
+        (q) => q.from("users").sum((u) => u.age!),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
         },
-      });
+      );
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal('SELECT SUM("age") FROM "users"');
@@ -526,7 +531,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const avg = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("test_nulls").average((t) => t.value!),
         {
@@ -544,11 +549,16 @@ describe("PostgreSQL Integration - Aggregates", () => {
     it("should handle COUNT(*) with NULL values (NULLs counted)", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = await executeSelectSimple(db, schema, (q) => q.from("test_nulls").count(), {
-        onSql: (result) => {
-          capturedSql = result;
+      const count = await executeSelectSimple(
+        dbClient,
+        schema,
+        (q) => q.from("test_nulls").count(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
         },
-      });
+      );
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal('SELECT COUNT(*) FROM "test_nulls"');
@@ -559,7 +569,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -588,7 +598,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       const min = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("test_minmax").min((t) => t.value!),
         {
@@ -599,7 +609,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       );
 
       const max = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) => q.from("test_minmax").max((t) => t.value!),
         {
@@ -622,7 +632,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -660,7 +670,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -695,7 +705,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -729,14 +739,16 @@ describe("PostgreSQL Integration - Aggregates", () => {
     });
 
     it("should verify aggregate relationships (min <= avg <= max)", async () => {
-      const count = await executeSelectSimple(db, schema, (q) => q.from("test_agg_simple").count());
-      const min = await executeSelectSimple(db, schema, (q) =>
+      const count = await executeSelectSimple(dbClient, schema, (q) =>
+        q.from("test_agg_simple").count(),
+      );
+      const min = await executeSelectSimple(dbClient, schema, (q) =>
         q.from("test_agg_simple").min((t) => t.value),
       );
-      const max = await executeSelectSimple(db, schema, (q) =>
+      const max = await executeSelectSimple(dbClient, schema, (q) =>
         q.from("test_agg_simple").max((t) => t.value),
       );
-      const avg = await executeSelectSimple(db, schema, (q) =>
+      const avg = await executeSelectSimple(dbClient, schema, (q) =>
         q.from("test_agg_simple").average((t) => t.value),
       );
 
@@ -754,7 +766,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q

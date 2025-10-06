@@ -7,12 +7,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Advanced Pagination", () => {
   before(async () => {
-    await setupTestDatabase(db);
+    await setupTestDatabase(dbClient);
   });
 
   describe("Offset-based pagination", () => {
@@ -23,7 +23,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -58,7 +58,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -88,7 +88,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -122,7 +122,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -155,7 +155,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -192,7 +192,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -230,7 +230,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -270,7 +270,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -309,7 +309,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -344,7 +344,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -382,7 +382,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -425,7 +425,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       // Note: having clause not directly supported, filter after grouping
       const allResults = await executeSelectSimple(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -474,7 +474,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -522,7 +522,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -561,7 +561,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -592,7 +592,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -629,7 +629,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       // Select only indexed columns for better performance
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -673,7 +673,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -710,7 +710,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
 
       // Forward
       const forwardResults = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -742,7 +742,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       // Backward
       capturedSql = undefined;
       const backwardResults = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -786,7 +786,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -837,7 +837,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -874,7 +874,7 @@ describe("PostgreSQL Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q

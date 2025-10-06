@@ -6,7 +6,7 @@ import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createSchema } from "@webpods/tinqer";
 import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 
 // Define types for test tables
 interface TestSchema {
@@ -52,7 +52,7 @@ const schema = createSchema<TestSchema>();
 describe("UPDATE Operations - PostgreSQL Integration", () => {
   before(async () => {
     // Create test tables for UPDATE operations
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE IF NOT EXISTS inventory (
         id SERIAL PRIMARY KEY,
         product_name VARCHAR(100) NOT NULL,
@@ -66,7 +66,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       )
     `);
 
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE IF NOT EXISTS user_profiles (
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
@@ -82,7 +82,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       )
     `);
 
-    await db.none(`
+    await dbClient.none(`
       CREATE TABLE IF NOT EXISTS product_reviews (
         id SERIAL PRIMARY KEY,
         product_id INTEGER NOT NULL,
@@ -99,19 +99,19 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
   after(async () => {
     // Drop test tables
-    await db.none("DROP TABLE IF EXISTS inventory CASCADE");
-    await db.none("DROP TABLE IF EXISTS user_profiles CASCADE");
-    await db.none("DROP TABLE IF EXISTS product_reviews CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS inventory CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS user_profiles CASCADE");
+    await dbClient.none("DROP TABLE IF EXISTS product_reviews CASCADE");
   });
 
   beforeEach(async () => {
     // Clear and seed test data
-    await db.none(
+    await dbClient.none(
       "TRUNCATE TABLE inventory, user_profiles, product_reviews RESTART IDENTITY CASCADE",
     );
 
     // Seed inventory data
-    await db.none(`
+    await dbClient.none(`
       INSERT INTO inventory (product_name, quantity, price, status, warehouse_location)
       VALUES
         ('Laptop', 10, 999.99, 'available', 'Warehouse A'),
@@ -122,7 +122,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     `);
 
     // Seed user profiles
-    await db.none(`
+    await dbClient.none(`
       INSERT INTO user_profiles (username, email, full_name, age, bio, is_verified)
       VALUES
         ('john_doe', 'john@example.com', 'John Doe', 30, 'Software developer', true),
@@ -132,7 +132,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     `);
 
     // Seed product reviews
-    await db.none(`
+    await dbClient.none(`
       INSERT INTO product_reviews (product_id, user_id, rating, review_text, is_verified_purchase)
       VALUES
         (1, 1, 5, 'Excellent product!', true),
@@ -145,7 +145,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
   describe("Basic UPDATE operations", () => {
     it("should update single column with WHERE clause", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -157,13 +157,15 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM inventory WHERE product_name = $1", ["Laptop"]);
+      const product = await dbClient.one("SELECT * FROM inventory WHERE product_name = $1", [
+        "Laptop",
+      ]);
       assert.equal(product.quantity, 20);
     });
 
     it("should update multiple columns", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -179,7 +181,9 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM inventory WHERE product_name = $1", ["Keyboard"]);
+      const product = await dbClient.one("SELECT * FROM inventory WHERE product_name = $1", [
+        "Keyboard",
+      ]);
       assert.equal(product.quantity, 15);
       assert.equal(parseFloat(product.price), 89.99);
       assert.equal(product.status, "available");
@@ -193,7 +197,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       };
 
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q, p) =>
           q
@@ -208,7 +212,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM inventory WHERE product_name = $1", [
+      const product = await dbClient.one("SELECT * FROM inventory WHERE product_name = $1", [
         params.productName,
       ]);
       assert.equal(product.quantity, 100);
@@ -217,7 +221,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should update boolean values", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -229,13 +233,15 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = await db.one("SELECT * FROM user_profiles WHERE username = $1", ["jane_smith"]);
+      const user = await dbClient.one("SELECT * FROM user_profiles WHERE username = $1", [
+        "jane_smith",
+      ]);
       assert.equal(user.is_verified, true);
     });
 
     it("should update with NULL values", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -247,7 +253,9 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = await db.one("SELECT * FROM user_profiles WHERE username = $1", ["john_doe"]);
+      const user = await dbClient.one("SELECT * FROM user_profiles WHERE username = $1", [
+        "john_doe",
+      ]);
       assert.equal(user.bio, null);
       assert.equal(user.age, null);
     });
@@ -256,7 +264,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
   describe("UPDATE with complex WHERE clauses", () => {
     it("should update with AND conditions", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -268,13 +276,15 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1); // Only Monitor matches
 
-      const monitor = await db.one("SELECT * FROM inventory WHERE product_name = $1", ["Monitor"]);
+      const monitor = await dbClient.one("SELECT * FROM inventory WHERE product_name = $1", [
+        "Monitor",
+      ]);
       assert.equal(monitor.status, "reorder_needed");
     });
 
     it("should update with OR conditions", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -286,18 +296,20 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 2); // Keyboard (out_of_stock) and Monitor (quantity = 5)
 
-      const keyboard = await db.one("SELECT * FROM inventory WHERE product_name = $1", [
+      const keyboard = await dbClient.one("SELECT * FROM inventory WHERE product_name = $1", [
         "Keyboard",
       ]);
       assert.equal(keyboard.warehouse_location, "Warehouse D");
 
-      const monitor = await db.one("SELECT * FROM inventory WHERE product_name = $1", ["Monitor"]);
+      const monitor = await dbClient.one("SELECT * FROM inventory WHERE product_name = $1", [
+        "Monitor",
+      ]);
       assert.equal(monitor.warehouse_location, "Warehouse D");
     });
 
     it("should update with complex nested conditions", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -315,7 +327,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       // Note: Laptop has exactly 10, not < 10, so only Keyboard should be updated
       assert.equal(rowCount, 1);
 
-      const keyboard = await db.one("SELECT * FROM inventory WHERE product_name = $1", [
+      const keyboard = await dbClient.one("SELECT * FROM inventory WHERE product_name = $1", [
         "Keyboard",
       ]);
       assert.equal(keyboard.is_active, false);
@@ -323,7 +335,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should update with string operations", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -335,7 +347,9 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1); // Only Laptop
 
-      const laptop = await db.one("SELECT * FROM inventory WHERE product_name = $1", ["Laptop"]);
+      const laptop = await dbClient.one("SELECT * FROM inventory WHERE product_name = $1", [
+        "Laptop",
+      ]);
       assert.equal(laptop.notes, "Premium product");
     });
 
@@ -343,7 +357,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const targetProducts = ["Mouse", "Keyboard", "Headphones"];
 
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q, p: { products: string[] }) =>
           q
@@ -355,7 +369,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 3);
 
-      const results = await db.many(
+      const results = await dbClient.many(
         "SELECT product_name FROM inventory WHERE warehouse_location = $1",
         ["Warehouse E"],
       );
@@ -368,7 +382,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
   describe("UPDATE with RETURNING clause", () => {
     it("should return updated rows with RETURNING *", async () => {
       const results = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -388,7 +402,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should return specific columns with RETURNING", async () => {
       const results = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -412,7 +426,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should return single column with RETURNING", async () => {
       const results = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -436,7 +450,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
   describe("UPDATE multiple rows", () => {
     it("should update all matching rows", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -448,7 +462,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 2); // jane_smith and alice_jones
 
-      const unverifiedCount = await db.one(
+      const unverifiedCount = await dbClient.one(
         "SELECT COUNT(*) FROM user_profiles WHERE is_verified = false",
       );
       assert.equal(parseInt(unverifiedCount.count), 0);
@@ -456,7 +470,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should update with allowFullTableUpdate", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) => q.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
         {},
@@ -464,13 +478,20 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 4); // All reviews
 
-      const totalHelpful = await db.one("SELECT SUM(helpful_count) as total FROM product_reviews");
+      const totalHelpful = await dbClient.one(
+        "SELECT SUM(helpful_count) as total FROM product_reviews",
+      );
       assert.equal(parseInt(totalHelpful.total || 0), 0);
     });
 
     it("should throw error when UPDATE has no WHERE and no allow flag", async () => {
       try {
-        await executeUpdate(db, schema, (q) => q.update("inventory").set({ quantity: 0 }), {});
+        await executeUpdate(
+          dbClient,
+          schema,
+          (q) => q.update("inventory").set({ quantity: 0 }),
+          {},
+        );
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -486,7 +507,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const newDate = new Date("2024-06-01T12:00:00Z");
 
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -498,7 +519,9 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = await db.one("SELECT * FROM user_profiles WHERE username = $1", ["bob_wilson"]);
+      const user = await dbClient.one("SELECT * FROM user_profiles WHERE username = $1", [
+        "bob_wilson",
+      ]);
       assert(user.last_login instanceof Date);
       // Compare timestamps (might need timezone handling)
       assert.equal(user.last_login.toISOString(), newDate.toISOString());
@@ -510,7 +533,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const beforeUpdate = new Date();
 
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -525,7 +548,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM inventory WHERE product_name = $1", [
+      const product = await dbClient.one("SELECT * FROM inventory WHERE product_name = $1", [
         "Headphones",
       ]);
       assert(product.last_updated >= beforeUpdate);
@@ -545,7 +568,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       };
 
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -557,7 +580,9 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = await db.one("SELECT * FROM user_profiles WHERE username = $1", ["alice_jones"]);
+      const user = await dbClient.one("SELECT * FROM user_profiles WHERE username = $1", [
+        "alice_jones",
+      ]);
       assert.deepEqual(user.settings, newSettings);
     });
   });
@@ -565,7 +590,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
   describe("UPDATE with special characters", () => {
     it("should handle special characters in strings", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -579,7 +604,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = await db.one("SELECT * FROM inventory WHERE id = $1", [1]);
+      const product = await dbClient.one("SELECT * FROM inventory WHERE id = $1", [1]);
       assert(product.notes.includes("'quotes'"));
       assert(product.notes.includes('"double"'));
       assert(product.notes.includes("\n"));
@@ -588,7 +613,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should handle Unicode characters", async () => {
       const rowCount = await executeUpdate(
-        db,
+        dbClient,
         schema,
         (q) =>
           q
@@ -602,7 +627,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = await db.one("SELECT * FROM user_profiles WHERE id = $1", [2]);
+      const user = await dbClient.one("SELECT * FROM user_profiles WHERE id = $1", [2]);
       assert(user.bio.includes("你好"));
       assert(user.bio.includes("🎉"));
       assert(user.bio.includes("Здравствуйте"));

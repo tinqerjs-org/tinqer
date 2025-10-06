@@ -280,7 +280,7 @@ export function executeSelect<
 
 /**
  * Execute a query with no parameters
- * @param db Better SQLite3 database instance
+ * @param dbClient Better SQLite3 database instance
  * @param schema Database context with schema information
  * @param builder Function that builds the query using LINQ operations with DSL and helpers
  * @param options Optional execution options (e.g., SQL inspection callback)
@@ -290,7 +290,7 @@ export function executeSelectSimple<
   TSchema,
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
-  db: BetterSqlite3Database,
+  dbClient: BetterSqlite3Database,
   schema: DatabaseSchema<TSchema>,
   builder: (
     queryBuilder: QueryBuilder<TSchema>,
@@ -305,7 +305,7 @@ export function executeSelectSimple<
     : TQuery extends TerminalQuery<infer T>
       ? T
       : never {
-  return executeSelect(db, schema, builder, {}, options);
+  return executeSelect(dbClient, schema, builder, {}, options);
 }
 
 // ==================== INSERT Statement & Execution ====================

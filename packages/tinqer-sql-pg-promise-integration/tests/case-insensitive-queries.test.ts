@@ -7,15 +7,15 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
+import { db as dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
   before(async () => {
-    await setupTestDatabase(db);
+    await setupTestDatabase(dbClient);
 
     // Add test data with mixed cases
-    await db.none(`
+    await dbClient.none(`
       INSERT INTO users (id, name, email, age, is_active, created_at, manager_id, department_id)
       VALUES
         (100, 'JOHN SMITH', 'john.smith@example.com', 30, true, '2024-01-01', null, 1),
@@ -40,7 +40,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) => q.from("users").where((u) => u.name.toLowerCase() == params.searchName),
         { searchName },
@@ -64,7 +64,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) => q.from("users").where((u) => u.name.toLowerCase().startsWith(params.prefix)),
         { prefix: "j" },
@@ -90,7 +90,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) => q.from("users").where((u) => u.email.toLowerCase() == params.searchEmail),
         { searchEmail },
@@ -114,7 +114,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -147,7 +147,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q.from("products").where((p) => p.category!.toUpperCase() == params.searchCategory),
@@ -175,7 +175,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) => q.from("products").where((p) => p.name.toUpperCase() == params.searchName),
         { searchName },
@@ -202,7 +202,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -235,7 +235,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       // Test toLowerCase on users table
       const userResults = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) => q.from("users").where((u) => u.name.toLowerCase() == params.userName),
         { userName: "john smith" },
@@ -255,7 +255,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       // Test toUpperCase on products table
       capturedSql = undefined;
       const productResults = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q.from("products").where((p) => p.category!.toUpperCase() == params.productCategory),
@@ -282,7 +282,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -312,7 +312,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q.from("products").where((p) => p.name.toLowerCase().includes(params.searchTerm)),
@@ -338,7 +338,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
       // Test toLowerCase in WHERE directly
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -373,10 +373,10 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Create a functional index for better performance
-      await db.none("CREATE INDEX IF NOT EXISTS idx_users_name_lower ON users(LOWER(name))");
+      await dbClient.none("CREATE INDEX IF NOT EXISTS idx_users_name_lower ON users(LOWER(name))");
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -400,14 +400,14 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
       expect(results[0]).to.have.property("name", "jane doe");
 
       // Clean up index
-      await db.none("DROP INDEX IF EXISTS idx_users_name_lower");
+      await dbClient.none("DROP INDEX IF EXISTS idx_users_name_lower");
     });
 
     it("should handle large result sets with case-insensitive filtering", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelect(
-        db,
+        dbClient,
         schema,
         (q, params) =>
           q
@@ -438,7 +438,7 @@ describe("PostgreSQL Integration - Case-Insensitive Queries", () => {
 
   // Clean up test data
   after(async () => {
-    await db.none("DELETE FROM users WHERE id >= 100");
-    await db.none("DELETE FROM products WHERE id >= 100");
+    await dbClient.none("DELETE FROM users WHERE id >= 100");
+    await dbClient.none("DELETE FROM products WHERE id >= 100");
   });
 });
