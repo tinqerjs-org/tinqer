@@ -7,7 +7,7 @@ import { expect } from "chai";
 import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("Window Functions - SQLite Integration", () => {
   before(() => {
@@ -18,7 +18,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should assign unique row numbers within each department ordered by salary DESC", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -64,7 +64,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle ROW_NUMBER without PARTITION BY", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -94,7 +94,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should work with WHERE clause filtering", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -127,7 +127,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle ties in salary with gaps in rank", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -164,7 +164,7 @@ describe("Window Functions - SQLite Integration", () => {
 
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -205,7 +205,7 @@ describe("Window Functions - SQLite Integration", () => {
 
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -241,7 +241,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should work across all departments", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -272,7 +272,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should support multiple window functions in the same query", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -321,7 +321,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should find the top earner in each department", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -354,7 +354,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should rank employees by salary within department with age as tiebreaker", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -383,7 +383,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should assign sequential numbers for pagination-like scenarios", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -411,7 +411,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle multiple ORDER BY columns in window function", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -442,7 +442,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should filter on ROW_NUMBER to get top 1 per department", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -474,7 +474,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should filter on ROW_NUMBER to get top 3 per department", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -506,7 +506,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should filter on RANK to get all rank 1 employees", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -536,7 +536,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should combine window filter with regular WHERE conditions", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -568,7 +568,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle spread operator with window functions", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -601,7 +601,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle double nesting: top-3 per department, then top-1 overall", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -641,7 +641,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle triple nesting: salary -> performance -> name", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -688,7 +688,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle nested filters with different window functions", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -729,7 +729,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle nested filters with spread operator preserving all columns", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -770,7 +770,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle mixed regular WHERE and nested window filters", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -811,7 +811,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle quadruple nesting (extreme case)", () => {
       const result = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")
@@ -865,7 +865,7 @@ describe("Window Functions - SQLite Integration", () => {
     it("should handle COUNT after window filter", () => {
       const count = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, _, h) =>
           ctx
             .from("users")

@@ -734,7 +734,7 @@ function convertAstToQueryOperation(ast: unknown): QueryOperation;
 ```typescript
 // Main execution functions (in adapters)
 function selectStatement<TParams, TResult>(
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseContext<TSchema>,
   queryBuilder: (
     dsl: DSL<TSchema>,
     params: TParams,
@@ -744,7 +744,7 @@ function selectStatement<TParams, TResult>(
 ): Promise<TResult[]>;
 
 function insertStatement<TParams>(
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseContext<TSchema>,
   queryBuilder: (dsl: DSL<TSchema>, params: TParams, helpers: Helpers) => InsertQuery,
   params: TParams,
 ): Promise<void>;
@@ -763,7 +763,7 @@ function generateSql(operation: QueryOperation, params: unknown): string;
 
 ```typescript
 // Create database context
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 // Execute query with DSL parameter pattern
 const result = await selectStatement(

@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { selectStatement } from "../dist/index.js";
 
 describe("String Operations SQL Generation", () => {
@@ -27,7 +27,7 @@ describe("String Operations SQL Generation", () => {
     products: Product;
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   describe("startsWith", () => {
     it("should generate SQL for startsWith", () => {

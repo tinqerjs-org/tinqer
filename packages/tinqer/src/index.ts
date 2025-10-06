@@ -10,7 +10,7 @@ export { Queryable, OrderedQueryable } from "./linq/queryable.js";
 export { TerminalQuery } from "./linq/terminal-query.js";
 export { from } from "./linq/from.js";
 export { Grouping } from "./linq/grouping.js";
-export { DatabaseContext, createContext } from "./linq/database-context.js";
+export { DatabaseContext, createSchema } from "./linq/database-context.js";
 export {
   functions,
   createQueryHelpers,
@@ -20,8 +20,8 @@ export {
   WINDOW_MARKER,
 } from "./linq/functions.js";
 export type { QueryHelpers, WindowFunctionType, WindowOrderSpec } from "./linq/functions.js";
-export { createQueryDSL } from "./linq/query-dsl.js";
-export type { QueryDSL } from "./linq/query-dsl.js";
+export { createQueryBuilder } from "./linq/query-dsl.js";
+export type { QueryBuilder } from "./linq/query-dsl.js";
 
 // Data modification builders
 export { insertInto } from "./linq/insert-into.js";

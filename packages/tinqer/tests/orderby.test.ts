@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery } from "../dist/index.js";
-import type { QueryDSL } from "../dist/index.js";
+import type { QueryBuilder } from "../dist/index.js";
 import {
   asOrderByOperation,
   asSelectOperation,
@@ -19,7 +19,7 @@ import { type TestSchema } from "./test-schema.js";
 describe("ORDER BY Operations", () => {
   describe("orderBy()", () => {
     it("should parse orderBy with simple property", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").orderBy((x) => x.name);
+      const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").orderBy((x) => x.name);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("orderBy");
@@ -29,7 +29,7 @@ describe("ORDER BY Operations", () => {
     });
 
     it("should parse orderBy with numeric property", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").orderBy((x) => x.age);
+      const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").orderBy((x) => x.age);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("orderBy");
@@ -39,7 +39,7 @@ describe("ORDER BY Operations", () => {
     });
 
     it("should parse orderBy after where", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx
           .from("users")
           .where((x) => x.age >= 18)
@@ -52,7 +52,7 @@ describe("ORDER BY Operations", () => {
     });
 
     it("should parse orderBy before select", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx
           .from("users")
           .orderBy((x) => x.age)
@@ -65,7 +65,7 @@ describe("ORDER BY Operations", () => {
     });
 
     it("should parse orderBy with computed expression", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx.from("users").orderBy((x) => x.firstName + x.lastName);
       const result = parseQuery(query);
 
@@ -78,7 +78,7 @@ describe("ORDER BY Operations", () => {
 
   describe("orderByDescending()", () => {
     it("should parse orderByDescending with simple property", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx.from("users").orderByDescending((x) => x.createdAt);
       const result = parseQuery(query);
 
@@ -89,7 +89,7 @@ describe("ORDER BY Operations", () => {
     });
 
     it("should parse orderByDescending with numeric property", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx.from("employees").orderByDescending((x) => x.salary);
       const result = parseQuery(query);
 
@@ -100,7 +100,7 @@ describe("ORDER BY Operations", () => {
     });
 
     it("should parse ordering with take", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx
           .from("users")
           .orderByDescending((x) => x.age)

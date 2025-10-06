@@ -7,7 +7,7 @@ import { expect } from "chai";
 import { executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - JOINs", () => {
   before(() => {
@@ -20,7 +20,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -68,7 +68,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("orders")
@@ -114,7 +114,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("orders")
@@ -159,7 +159,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("orders")
@@ -208,7 +208,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("order_items")
@@ -266,7 +266,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -322,7 +322,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -380,7 +380,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -433,7 +433,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -483,7 +483,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -522,7 +522,7 @@ describe("Better SQLite3 Integration - JOINs", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("departments")

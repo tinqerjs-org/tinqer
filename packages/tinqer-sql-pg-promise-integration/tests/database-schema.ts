@@ -2,7 +2,7 @@
  * Database schema types and context for PostgreSQL integration tests
  */
 
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 /**
  * Database schema types matching the PostgreSQL tables
@@ -175,4 +175,4 @@ export type Article = TestDatabaseSchema["articles"];
 /**
  * Typed database context for use with from() function
  */
-export const dbContext = createContext<TestDatabaseSchema>();
+export const schema = createSchema<TestDatabaseSchema>();

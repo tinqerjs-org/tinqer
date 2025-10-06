@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 describe("Join SQL Generation", () => {
   interface User {
@@ -52,7 +52,7 @@ describe("Join SQL Generation", () => {
     locations: Location;
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   describe("INNER JOIN", () => {
     it("should generate INNER JOIN with proper syntax", () => {

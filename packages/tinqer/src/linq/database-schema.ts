@@ -6,7 +6,7 @@
  * Database context that provides type information for tables
  * @template TSchema The schema type defining all tables and their row types
  */
-export class DatabaseContext<TSchema> {
+export class DatabaseSchema<TSchema> {
   // Phantom type to ensure TSchema is used in type checking
   private readonly _phantom?: TSchema;
 
@@ -20,8 +20,8 @@ export class DatabaseContext<TSchema> {
 /**
  * Creates a typed database context
  * @template TSchema The schema type defining all tables and their row types
- * @returns A new DatabaseContext instance
+ * @returns A new DatabaseSchema instance
  */
-export function createSchema<TSchema>(): DatabaseContext<TSchema> {
-  return new DatabaseContext<TSchema>();
+export function createSchema<TSchema>(): DatabaseSchema<TSchema> {
+  return new DatabaseSchema<TSchema>();
 }

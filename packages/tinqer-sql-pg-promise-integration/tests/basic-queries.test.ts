@@ -6,7 +6,7 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 import { db } from "./shared-db.js";
 
 describe("PostgreSQL Integration - Basic Queries", () => {
@@ -18,7 +18,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should select all users", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSelectSimple(db, dbContext, (ctx) => ctx.from("users"), {
+      const results = await executeSelectSimple(db, schema, (ctx) => ctx.from("users"), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -40,7 +40,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx.from("users").select((u) => ({
             id: u.id,
@@ -69,7 +69,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx.from("users").select((u) => ({
             userId: u.id,
@@ -101,7 +101,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 30),
         {
           onSql: (result) => {
@@ -130,7 +130,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx.from("users").where((u) => u.age !== null && u.age >= 25 && u.is_active === true),
         {
@@ -159,7 +159,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx.from("users").where((u) => (u.age !== null && u.age < 30) || u.department_id === 4),
         {
@@ -187,7 +187,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.age !== null && u.age >= params.minAge),
         { minAge: 35 },
         {
@@ -217,7 +217,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("users").orderBy((u) => u.name),
         {
           onSql: (result) => {
@@ -242,7 +242,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -273,7 +273,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -313,7 +313,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("users").orderBy((u) => u.is_active),
         {
           onSql: (result) => {
@@ -342,7 +342,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("users").orderByDescending((u) => u.is_active),
         {
           onSql: (result) => {
@@ -371,7 +371,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -411,7 +411,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should limit results", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSelectSimple(db, dbContext, (ctx) => ctx.from("users").take(5), {
+      const results = await executeSelectSimple(db, schema, (ctx) => ctx.from("users").take(5), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -425,7 +425,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should skip results", async () => {
-      const allResults = await executeSelectSimple(db, dbContext, (ctx) =>
+      const allResults = await executeSelectSimple(db, schema, (ctx) =>
         ctx.from("users").orderBy((u) => u.id),
       );
 
@@ -433,7 +433,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const skippedResults = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -454,7 +454,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should paginate results", async () => {
-      const page1 = await executeSelectSimple(db, dbContext, (ctx) =>
+      const page1 = await executeSelectSimple(db, schema, (ctx) =>
         ctx
           .from("users")
           .orderBy((u) => u.id)
@@ -465,7 +465,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const page2 = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -497,7 +497,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")

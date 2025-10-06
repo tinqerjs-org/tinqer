@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 describe("Skip SQL Generation", () => {
   interface User {
@@ -14,7 +14,7 @@ describe("Skip SQL Generation", () => {
     users: User;
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   it("should generate OFFSET clause", () => {
     const result = selectStatement(db, (ctx) => ctx.from("users").skip(10), {});

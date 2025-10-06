@@ -27,7 +27,7 @@ npm install @webpods/tinqer-sql-better-sqlite3
 ### PostgreSQL Example
 
 ```typescript
-import { createContext, from } from "@webpods/tinqer";
+import { createSchema, from } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
@@ -42,7 +42,7 @@ interface Schema {
 
 const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const results = await executeSelectSimple(db, () =>
   from(ctx, "users")
@@ -57,7 +57,7 @@ const results = await executeSelectSimple(db, () =>
 
 ```typescript
 import Database from "better-sqlite3";
-import { createContext, from } from "@webpods/tinqer";
+import { createSchema, from } from "@webpods/tinqer";
 import { executeSelect, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
@@ -70,7 +70,7 @@ interface Schema {
 }
 
 const db = new Database("./data.db");
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const results = executeSelect(
   db,
@@ -91,7 +91,7 @@ const { sql, params } = selectStatement(() => from(ctx, "products").select((p) =
 ### Type-Safe Query Building
 
 ```typescript
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 // Full TypeScript type inference
 const query = () =>
@@ -116,7 +116,7 @@ interface Schema {
   departments: { id: number; name: string };
 }
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const inner = from(ctx, "users")
   .join(
@@ -221,10 +221,10 @@ See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed 
 ### CRUD Operations
 
 ```typescript
-import { createContext, insertInto, update, deleteFrom } from "@webpods/tinqer";
+import { createSchema, insertInto, update, deleteFrom } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 // INSERT
 const insertedRows = await executeInsert(
@@ -264,7 +264,7 @@ All literal values are automatically parameterized to prevent SQL injection:
 
 ```typescript
 // External parameters via params object
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const sample = selectStatement(
   (p: { minAge: number }) =>
@@ -294,7 +294,7 @@ import { createQueryHelpers } from "@webpods/tinqer";
 
 const { ilike, contains, startsWith, endsWith } = createQueryHelpers<Schema>();
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const query = from(ctx, "users")
   .where((u) => contains(u.name, "alice")) // Case-insensitive substring match
@@ -412,7 +412,7 @@ npm install @webpods/tinqer-sql-pg-promise pg-promise
 
 ```typescript
 import pgPromise from "pg-promise";
-import { createContext, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
+import { createSchema, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
 import {
   executeSelect,
   executeSelectSimple,
@@ -428,7 +428,7 @@ interface Schema {
 
 const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 // Execute without external params
 const activeUsers = await executeSelectSimple(db, () =>
@@ -503,7 +503,7 @@ npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
 
 ```typescript
 import Database from "better-sqlite3";
-import { createContext, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
+import { createSchema, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
@@ -517,7 +517,7 @@ interface Schema {
 }
 
 const db = new Database(":memory:");
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 db.exec(`
   CREATE TABLE users (
@@ -602,10 +602,10 @@ const rows = db.prepare(sql).all(params);
 Use `createQueryHelpers` for portable case-insensitive comparisons:
 
 ```typescript
-import { createContext, createQueryHelpers, from } from "@webpods/tinqer";
+import { createSchema, createQueryHelpers, from } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 const helpers = createQueryHelpers<Schema>();
 
 const { sql } = selectStatement(
@@ -642,7 +642,7 @@ Reference for adapter execution helpers, typed contexts, and query utilities.
   - [1.7 toSql](#17-tosql)
   - [1.8 ExecuteOptions & SqlResult](#18-executeoptions--sqlresult)
 - [2. Type-Safe Contexts](#2-type-safe-contexts)
-  - [2.1 createContext](#21-createcontext)
+  - [2.1 createSchema](#21-createcontext)
 - [3. Helper Utilities](#3-helper-utilities)
   - [3.1 createQueryHelpers](#31-createqueryhelpers)
 
@@ -673,14 +673,14 @@ function selectStatement<TParams, TResult>(
 **Example (PostgreSQL)**
 
 ```typescript
-import { createContext, from } from "@webpods/tinqer";
+import { createSchema, from } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; age: number };
 }
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const { sql, params } = selectStatement(
   (p: { minAge: number }) =>
@@ -785,9 +785,9 @@ async function executeInsert<TParams, TTable, TReturning>(
 **Example**
 
 ```typescript
-import { createContext, insertInto } from "@webpods/tinqer";
+import { createSchema, insertInto } from "@webpods/tinqer";
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const inserted = await executeInsert(
   db,
@@ -839,9 +839,9 @@ async function executeUpdate<TParams, TTable, TReturning>(
 **Example**
 
 ```typescript
-import { createContext, update } from "@webpods/tinqer";
+import { createSchema, update } from "@webpods/tinqer";
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const updatedRows = await executeUpdate(
   db,
@@ -872,9 +872,9 @@ async function executeDelete<TParams, TResult>(
 **Example**
 
 ```typescript
-import { createContext, deleteFrom } from "@webpods/tinqer";
+import { createSchema, deleteFrom } from "@webpods/tinqer";
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const deletedCount = await executeDelete(
   db,
@@ -927,19 +927,19 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 
 ## 2. Type-Safe Contexts
 
-### 2.1 createContext
+### 2.1 createSchema
 
 Creates a phantom-typed `DatabaseContext` that ties table names to row types. Combine it with the `from` overload that accepts a context to get strongly typed queryables.
 
 ```typescript
-import { createContext, from } from "@webpods/tinqer";
+import { createSchema, from } from "@webpods/tinqer";
 
 interface Schema {
   users: { id: number; name: string; email: string };
   posts: { id: number; userId: number; title: string };
 }
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const query = () =>
   from(ctx, "users")
@@ -958,14 +958,14 @@ The overload `from<Table>()` without a context remains available when you want t
 Provides helper functions for case-insensitive comparisons and string searches. Helpers can be passed into query builders through the optional `helpers` argument provided by the adapters.
 
 ```typescript
-import { createContext, createQueryHelpers, from } from "@webpods/tinqer";
+import { createSchema, createQueryHelpers, from } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string };
 }
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 const helpers = createQueryHelpers<Schema>();
 
 const result = selectStatement(
@@ -1156,7 +1156,7 @@ npm test
 ```typescript
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { createContext, from } from "@webpods/tinqer";
+import { createSchema, from } from "@webpods/tinqer";
 
 describe("Queryable", () => {
   it("should filter with WHERE clause", () => {
@@ -1164,7 +1164,7 @@ describe("Queryable", () => {
       users: { id: number; name: string; age: number };
     }
 
-    const ctx = createContext<Schema>();
+    const ctx = createSchema<Schema>();
     const query = from(ctx, "users")
       .where((u) => u.age >= 18)
       .select((u) => u);
@@ -1180,11 +1180,11 @@ describe("Queryable", () => {
 ```typescript
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext, from } from "@webpods/tinqer";
+import { createSchema, from } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 describe("PostgreSQL Integration", () => {
   beforeEach(async () => {
@@ -3028,10 +3028,10 @@ The `insertInto` function creates INSERT operations. Values are specified using 
 #### Basic INSERT
 
 ```typescript
-import { createContext, insertInto } from "@webpods/tinqer";
+import { createSchema, insertInto } from "@webpods/tinqer";
 import { insertStatement } from "@webpods/tinqer-sql-pg-promise";
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 // Insert with literal values - direct object syntax
 const insert = insertStatement(
@@ -3126,10 +3126,10 @@ The `update` function creates UPDATE operations. The `.set()` method uses direct
 #### Basic UPDATE
 
 ```typescript
-import { createContext, update } from "@webpods/tinqer";
+import { createSchema, update } from "@webpods/tinqer";
 import { updateStatement } from "@webpods/tinqer-sql-pg-promise";
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const update = updateStatement(
   () =>
@@ -3217,10 +3217,10 @@ The `deleteFrom` function creates DELETE operations with optional WHERE conditio
 #### Basic DELETE
 
 ```typescript
-import { createContext, deleteFrom } from "@webpods/tinqer";
+import { createSchema, deleteFrom } from "@webpods/tinqer";
 import { deleteStatement } from "@webpods/tinqer-sql-pg-promise";
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const del = deleteStatement(() => deleteFrom(ctx, "users").where((u) => u.age > 100), {});
 ```
@@ -3356,7 +3356,7 @@ import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql
 const insertedUsers = await executeInsert(
   db,
   () =>
-    insertInto(dbContext, "users")
+    insertInto(schema, "users")
       .values({ name: "Frank", age: 28 })
       .returning((u) => ({ id: u.id, name: u.name })),
   {},
@@ -3367,7 +3367,7 @@ const insertedUsers = await executeInsert(
 const updateCount = await executeUpdate(
   db,
   () =>
-    update(dbContext, "users")
+    update(schema, "users")
       .set({ age: 29 })
       .where((u) => u.id === 123),
   {},
@@ -3377,7 +3377,7 @@ const updateCount = await executeUpdate(
 // Execute DELETE - returns affected row count
 const deleteCount = await executeDelete(
   db,
-  () => deleteFrom(dbContext, "users").where((u) => u.id === 123),
+  () => deleteFrom(schema, "users").where((u) => u.id === 123),
   {},
 );
 ```
@@ -3390,7 +3390,7 @@ import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql
 // Execute INSERT - returns row count
 const insertCount = executeInsert(
   db,
-  () => insertInto(dbContext, "users").values({ name: "Grace", age: 30 }),
+  () => insertInto(schema, "users").values({ name: "Grace", age: 30 }),
   {},
 );
 // Returns number of inserted rows
@@ -3399,7 +3399,7 @@ const insertCount = executeInsert(
 const updateCount = executeUpdate(
   db,
   () =>
-    update(dbContext, "users")
+    update(schema, "users")
       .set({ age: 33 })
       .where((u) => u.name === "Henry"),
   {},
@@ -3408,7 +3408,7 @@ const updateCount = executeUpdate(
 // Execute DELETE - returns row count
 const deleteCount = executeDelete(
   db,
-  () => deleteFrom(dbContext, "users").where((u) => u.age > 100),
+  () => deleteFrom(schema, "users").where((u) => u.age > 100),
   {},
 );
 ```
@@ -3425,7 +3425,7 @@ await db.tx(async (t) => {
   const users = await executeInsert(
     t,
     () =>
-      insertInto(dbContext, "users")
+      insertInto(schema, "users")
         .values({ name: "Ivy" })
         .returning((u) => u.id),
     {},
@@ -3434,7 +3434,7 @@ await db.tx(async (t) => {
   await executeInsert(
     t,
     () =>
-      insertInto(dbContext, "user_logs").values({
+      insertInto(schema, "user_logs").values({
         userId: users[0]!.id,
         action: "created",
       }),
@@ -3444,11 +3444,11 @@ await db.tx(async (t) => {
 
 // SQLite transactions
 const transaction = sqliteDb.transaction(() => {
-  executeInsert(db, () => insertInto(dbContext, "users").values({ name: "Jack" }), {});
+  executeInsert(db, () => insertInto(schema, "users").values({ name: "Jack" }), {});
   executeUpdate(
     db,
     () =>
-      update(dbContext, "users")
+      update(schema, "users")
         .set({ lastLogin: new Date() })
         .where((u) => u.name === "Jack"),
     {},

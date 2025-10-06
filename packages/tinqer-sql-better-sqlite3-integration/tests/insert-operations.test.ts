@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
@@ -44,7 +44,7 @@ interface TestSchema {
   };
 }
 
-const dbContext = createContext<TestSchema>();
+const schema = createSchema<TestSchema>();
 
 describe("INSERT Operations - SQLite Integration", () => {
   before(() => {
@@ -117,7 +117,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should insert a single row with all columns", () => {
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Laptop",
@@ -145,7 +145,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should insert with partial columns (nullable columns)", () => {
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Basic Item",
@@ -174,7 +174,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p: typeof params) =>
           ctx.insertInto("products").values({
             name: p.productName,
@@ -197,7 +197,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle boolean values correctly", () => {
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Out of Stock Item",
@@ -218,7 +218,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle NULL values explicitly", () => {
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Minimal Product",
@@ -243,7 +243,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle special characters in strings", () => {
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
@@ -267,7 +267,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle Unicode characters", () => {
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
@@ -290,7 +290,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle numeric edge cases", () => {
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Edge Case Product",
@@ -312,7 +312,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.insertInto("orders").values({
             customer_id: 1,
@@ -348,7 +348,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.insertInto("products").values({
             name: "Product with Metadata",
@@ -373,7 +373,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       // First insert
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("customers").values({
             email: "test@example.com",
@@ -387,7 +387,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       try {
         executeInsert(
           db,
-          dbContext,
+          schema,
           (ctx, _params) =>
             ctx.insertInto("customers").values({
               email: "test@example.com",
@@ -408,7 +408,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Insert customer
       const customerCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("customers").values({
             email: "john@example.com",
@@ -429,7 +429,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Insert product
       const productCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Test Product",
@@ -450,7 +450,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Insert order referencing both
       const orderCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.insertInto("orders").values({
             customer_id: params.customerId,
@@ -479,7 +479,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       for (let i = 1; i <= 3; i++) {
         executeInsert(
           db,
-          dbContext,
+          schema,
           (ctx, params) =>
             ctx.insertInto("products").values({
               name: params.name,
@@ -503,7 +503,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       // SQLite allows flexible types
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Flexible Type Product",
@@ -526,7 +526,7 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle CURRENT_TIMESTAMP default", () => {
       const rowCount = executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("customers").values({
             email: "timestamp@test.com",

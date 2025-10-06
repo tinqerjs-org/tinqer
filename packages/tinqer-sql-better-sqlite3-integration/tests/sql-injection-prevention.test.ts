@@ -9,7 +9,7 @@ import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
   before(() => {
@@ -23,7 +23,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
@@ -42,7 +42,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Verify table still exists
       let tableCheckSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const tableCheck = executeSelectSimple(db, dbContext, (ctx) => ctx.from("users").take(1), {
+      const tableCheck = executeSelectSimple(db, schema, (ctx) => ctx.from("users").take(1), {
         onSql: (result) => {
           tableCheckSql = result;
         },
@@ -59,7 +59,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
@@ -82,7 +82,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
@@ -105,7 +105,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
@@ -124,7 +124,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       let activeUsersSql: { sql: string; params: Record<string, unknown> } | undefined;
       const activeUsers = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("users").where((u) => u.is_active === 1),
         {
           onSql: (result) => {
@@ -144,7 +144,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
@@ -161,7 +161,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Verify orders still exist
       let ordersSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const orders = executeSelectSimple(db, dbContext, (ctx) => ctx.from("orders").take(1), {
+      const orders = executeSelectSimple(db, schema, (ctx) => ctx.from("orders").take(1), {
         onSql: (result) => {
           ordersSql = result;
         },
@@ -180,7 +180,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.nameWithQuote),
         { nameWithQuote },
         {
@@ -203,7 +203,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.from("products").where((p) => p.description == params.pathWithBackslash),
         { pathWithBackslash },
@@ -229,7 +229,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.from("products").where((p) => p.description == params.textWithSpecials),
         { textWithSpecials },
@@ -257,7 +257,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
@@ -279,7 +279,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
@@ -301,7 +301,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
@@ -325,7 +325,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.age == params.age),
         { age },
         {
@@ -350,7 +350,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("users")
@@ -381,7 +381,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("accounts").where((a) => a.balance == params.negativeBalance),
         { negativeBalance },
         {
@@ -410,7 +410,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
@@ -432,7 +432,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
@@ -455,11 +455,11 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
         "admin'; INSERT INTO users (name, email) VALUES ('hacker', 'hack@test.com'); --";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const userCountBefore = executeSelectSimple(db, dbContext, (ctx) => ctx.from("users"));
+      const userCountBefore = executeSelectSimple(db, schema, (ctx) => ctx.from("users"));
 
       executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
@@ -473,7 +473,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "name" = @maliciousName');
       expect(capturedSql!.params).to.deep.equal({ maliciousName });
 
-      const userCountAfter = executeSelectSimple(db, dbContext, (ctx) => ctx.from("users"));
+      const userCountAfter = executeSelectSimple(db, schema, (ctx) => ctx.from("users"));
       expect(userCountAfter.length).to.equal(userCountBefore.length);
     });
 
@@ -483,7 +483,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
@@ -500,7 +500,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Verify products table still exists
       let productsSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const products = executeSelectSimple(db, dbContext, (ctx) => ctx.from("products").take(1), {
+      const products = executeSelectSimple(db, schema, (ctx) => ctx.from("products").take(1), {
         onSql: (result) => {
           productsSql = result;
         },
@@ -520,7 +520,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -543,7 +543,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Verify users table still exists
       let usersSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const users = executeSelectSimple(db, dbContext, (ctx) => ctx.from("users").take(1), {
+      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users").take(1), {
         onSql: (result) => {
           usersSql = result;
         },
@@ -560,7 +560,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("users")
@@ -594,7 +594,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -628,7 +628,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.longString),
         { longString },
         {
@@ -650,7 +650,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.unicodeString),
         { unicodeString },
         {
@@ -667,7 +667,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Table should still exist
       let usersSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const users = executeSelectSimple(db, dbContext, (ctx) => ctx.from("users").take(1), {
+      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users").take(1), {
         onSql: (result) => {
           usersSql = result;
         },
@@ -684,7 +684,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.hexString),
         { hexString },
         {
@@ -710,7 +710,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("users")
@@ -736,7 +736,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       expect(results).to.have.length(0);
 
       // Verify table integrity
-      const users = executeSelectSimple(db, dbContext, (ctx) => ctx.from("users"));
+      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users"));
       expect(users.length).to.be.greaterThan(0);
     });
 
@@ -748,7 +748,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("users")
@@ -781,7 +781,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.nullBytePayload),
         { nullBytePayload },
         {
@@ -804,7 +804,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.email == params.surrogatePayload),
         { surrogatePayload },
         {
@@ -826,7 +826,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name == params.binaryEncoded),
         { binaryEncoded },
         {
@@ -843,7 +843,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       expect(results).to.have.length(0);
 
       // Verify table still exists
-      const users = executeSelectSimple(db, dbContext, (ctx) => ctx.from("users").take(1));
+      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users").take(1));
       expect(users).to.have.length(1);
     });
 
@@ -853,7 +853,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.email == params.mixedPayload),
         { mixedPayload },
         {
@@ -869,7 +869,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       expect(results).to.have.length(0);
 
       // Verify database integrity
-      const users = executeSelectSimple(db, dbContext, (ctx) => ctx.from("users"));
+      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users"));
       expect(users.length).to.be.greaterThan(0);
     });
   });

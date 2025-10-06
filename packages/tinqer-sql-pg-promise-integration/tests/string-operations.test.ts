@@ -7,7 +7,7 @@ import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - String Operations", () => {
   before(async () => {
@@ -20,7 +20,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.startsWith("J")),
         {
           onSql: (result) => {
@@ -45,7 +45,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.email.startsWith("alice")),
         {
           onSql: (result) => {
@@ -70,7 +70,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").where((u) => u.name.startsWith("J") && u.is_active === true),
         {
@@ -101,7 +101,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").where((u) => u.email.endsWith("@example.com")),
         {
@@ -129,7 +129,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("products").where((p) => p.name.endsWith("top")),
         {
           onSql: (result) => {
@@ -156,7 +156,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("oh")),
         {
           onSql: (result) => {
@@ -183,7 +183,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("products")
@@ -211,7 +211,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("products")
@@ -249,7 +249,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -279,7 +279,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("products")
@@ -310,7 +310,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -351,7 +351,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       const upperResults = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("J")),
         {
           onSql: (result) => {
@@ -369,7 +369,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
       const lowerResults = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("o")),
         {
           onSql: (result) => {
@@ -393,7 +393,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
       const capitalD = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("D")),
         {
           onSql: (result) => {
@@ -411,7 +411,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       let capturedSql4: { sql: string; params: Record<string, unknown> } | undefined;
       const lowercaseD = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("d")),
         {
           onSql: (result) => {
@@ -439,7 +439,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const count = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -468,7 +468,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("products")
@@ -496,7 +496,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("products").where((p) => p.description !== null),
         {
           onSql: (result) => {
@@ -532,7 +532,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params, _helpers) =>
           ctx.from("test_special_chars").where((t) => t.text.includes(params.search)),
         { search: "%" },
@@ -572,7 +572,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params, _helpers) =>
           ctx.from("test_special_chars").where((t) => t.text.includes(params.search)),
         { search: "_" },
@@ -612,7 +612,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params, _helpers) =>
           ctx.from("test_backslash").where((t) => t.text.includes(params.search)),
         { search: "\\" },
@@ -652,7 +652,7 @@ describe("PostgreSQL Integration - String Operations", () => {
 
       const results = await executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params, _helpers) =>
           ctx.from("test_mixed_chars").where((t) => t.text.includes(params.search)),
         { search: "%_" },

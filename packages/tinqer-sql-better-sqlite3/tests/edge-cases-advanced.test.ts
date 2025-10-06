@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 interface TestTable {
   id: number;
@@ -44,7 +44,7 @@ interface Schema {
   reserved: ReservedTable;
 }
 
-const db = createContext<Schema>();
+const db = createSchema<Schema>();
 
 describe("Advanced Edge Cases and Corner Scenarios", () => {
   describe("NULL value edge cases", () => {

@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { selectStatement } from "../dist/index.js";
 
 interface Sale {
@@ -51,7 +51,7 @@ interface Schema {
   customers: Customer;
 }
 
-const db = createContext<Schema>();
+const db = createSchema<Schema>();
 
 describe("Advanced GROUP BY SQL Generation", () => {
   describe("GROUP BY with all aggregate functions", () => {

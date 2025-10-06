@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { selectStatement } from "../dist/index.js";
 
 describe("Advanced SELECT Projection SQL Generation", () => {
@@ -44,7 +44,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     departments: Department;
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   describe("Complex object projections", () => {
     // Removed: nested object structures with || operator
@@ -131,7 +131,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
         departments: Department;
       }
 
-      const dbWithDepartments = createContext<SchemaWithDepartments>();
+      const dbWithDepartments = createSchema<SchemaWithDepartments>();
 
       const result = selectStatement(
         dbWithDepartments,

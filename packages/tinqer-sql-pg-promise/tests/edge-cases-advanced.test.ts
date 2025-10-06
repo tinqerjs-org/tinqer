@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 describe("Advanced Edge Cases and Corner Scenarios", () => {
   interface TestTable {
@@ -17,7 +17,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
     items: TestTable;
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   describe("NULL value edge cases", () => {
     it("should handle NULL in arithmetic with COALESCE", () => {
@@ -84,7 +84,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
         "user-accounts": SpecialTable;
       }
 
-      const specialDb = createContext<SpecialSchema>();
+      const specialDb = createSchema<SpecialSchema>();
 
       const result = selectStatement(specialDb, (ctx) => ctx.from("user-accounts"), {});
 
@@ -341,7 +341,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
         dangerous: DangerousTable;
       }
 
-      const dangerousDb = createContext<DangerousSchema>();
+      const dangerousDb = createSchema<DangerousSchema>();
 
       const result = selectStatement(
         dangerousDb,
@@ -419,7 +419,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
         reserved: ReservedTable;
       }
 
-      const reservedDb = createContext<ReservedSchema>();
+      const reservedDb = createSchema<ReservedSchema>();
 
       const result = selectStatement(
         reservedDb,

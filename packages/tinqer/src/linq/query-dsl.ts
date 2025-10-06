@@ -15,7 +15,7 @@ import { deleteFrom } from "./delete-from.js";
 /**
  * Query DSL interface providing type-safe query builders
  */
-export interface QueryDSL<TSchema> {
+export interface QueryBuilder<TSchema> {
   from<K extends keyof TSchema & string>(table: K): Queryable<TSchema[K]>;
   insertInto<K extends keyof TSchema & string>(table: K): Insertable<TSchema[K]>;
   update<K extends keyof TSchema & string>(table: K): Updatable<TSchema[K]>;
@@ -25,9 +25,11 @@ export interface QueryDSL<TSchema> {
 /**
  * Creates a query DSL object bound to a database context
  * @param context The database context with schema information
- * @returns A QueryDSL instance with type-safe query builders
+ * @returns A QueryBuilder instance with type-safe query builders
  */
-export function createQueryDSL<TSchema>(context: DatabaseContext<TSchema>): QueryDSL<TSchema> {
+export function createQueryBuilder<TSchema>(
+  context: DatabaseContext<TSchema>,
+): QueryBuilder<TSchema> {
   return {
     from: (table) => from(context, table),
     insertInto: (table) => insertInto(context, table),

@@ -34,7 +34,7 @@ npm install @webpods/tinqer-sql-pg-promise pg-promise
 
 ```typescript
 import pgPromise from "pg-promise";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import {
   executeSelect,
   executeSelectSimple,
@@ -50,7 +50,7 @@ interface Schema {
 
 const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 // Execute without external params
 const activeUsers = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) =>
@@ -134,7 +134,7 @@ npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
 
 ```typescript
 import Database from "better-sqlite3";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
@@ -148,7 +148,7 @@ interface Schema {
 }
 
 const db = new Database(":memory:");
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 db.exec(`
   CREATE TABLE users (
@@ -241,14 +241,14 @@ const rows = db.prepare(sql).all(params);
 Use query helpers for portable case-insensitive comparisons:
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; email: string };
 }
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 const { sql } = selectStatement(
   ctx,

@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery } from "../dist/index.js";
-import type { QueryDSL } from "../dist/index.js";
+import type { QueryBuilder } from "../dist/index.js";
 import {
   asFromOperation,
   asWhereOperation,
@@ -21,7 +21,7 @@ import { type TestSchema } from "./test-schema.js";
 
 describe("Operation Chaining", () => {
   it("should parse from().where().select() chain", () => {
-    const query = (ctx: QueryDSL<TestSchema>) =>
+    const query = (ctx: QueryBuilder<TestSchema>) =>
       ctx
         .from("users")
         .where((x) => x.age >= 18 && x.isActive)
@@ -38,7 +38,7 @@ describe("Operation Chaining", () => {
   });
 
   it("should parse complex chain with multiple where operations", () => {
-    const query = (ctx: QueryDSL<TestSchema>) =>
+    const query = (ctx: QueryBuilder<TestSchema>) =>
       ctx
         .from("users")
         .where((x) => x.age >= 18)
@@ -61,7 +61,7 @@ describe("Operation Chaining", () => {
   });
 
   it("should parse chain with select-where-select", () => {
-    const query = (ctx: QueryDSL<TestSchema>) =>
+    const query = (ctx: QueryBuilder<TestSchema>) =>
       ctx
         .from("users")
         .select((x) => ({ id: x.id, firstName: x.firstName, lastName: x.lastName, age: x.age }))
@@ -81,7 +81,7 @@ describe("Operation Chaining", () => {
   });
 
   it("should parse pagination with filtering and ordering", () => {
-    const query = (ctx: QueryDSL<TestSchema>) =>
+    const query = (ctx: QueryBuilder<TestSchema>) =>
       ctx
         .from("products")
         .where((x) => x.inStock)

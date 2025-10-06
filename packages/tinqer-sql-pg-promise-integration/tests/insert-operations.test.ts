@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -40,7 +40,7 @@ interface TestSchema {
   };
 }
 
-const dbContext = createContext<TestSchema>();
+const schema = createSchema<TestSchema>();
 
 describe("INSERT Operations - PostgreSQL Integration", () => {
   before(async () => {
@@ -104,7 +104,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should insert a single row with all columns", async () => {
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _) =>
           ctx.insertInto("products").values({
             name: "Laptop",
@@ -130,7 +130,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should insert with partial columns (nullable columns)", async () => {
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _) =>
           ctx.insertInto("products").values({
             name: "Basic Item",
@@ -157,7 +157,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p: typeof params) =>
           ctx.insertInto("products").values({
             name: p.productName,
@@ -178,7 +178,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle boolean values correctly", async () => {
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Out of Stock Item",
@@ -197,7 +197,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle NULL values explicitly", async () => {
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Minimal Product",
@@ -220,7 +220,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should return inserted row with RETURNING *", async () => {
       const results = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .insertInto("products")
@@ -243,7 +243,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should return specific columns with RETURNING", async () => {
       const results = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .insertInto("products")
@@ -268,7 +268,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should return single column with RETURNING", async () => {
       const results = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .insertInto("products")
@@ -292,7 +292,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle special characters in strings", async () => {
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
@@ -314,7 +314,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle Unicode characters", async () => {
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
@@ -335,7 +335,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     it("should handle numeric edge cases", async () => {
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.insertInto("products").values({
             name: "Edge Case Product",
@@ -355,7 +355,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.insertInto("orders").values({
             customer_id: 1,
@@ -388,7 +388,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.insertInto("products").values({
             name: "Product with Metadata",
@@ -412,7 +412,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // First insert
       await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx.insertInto("customers").values({
             email: "test@example.com",
@@ -426,7 +426,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       try {
         await executeInsert(
           db,
-          dbContext,
+          schema,
           (ctx) =>
             ctx.insertInto("customers").values({
               email: "test@example.com",
@@ -450,7 +450,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // Insert customer
       const customerResults = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .insertInto("customers")
@@ -468,7 +468,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // Insert product
       const productResults = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .insertInto("products")
@@ -486,7 +486,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       // Insert order referencing both
       const orderCount = await executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.insertInto("orders").values({
             customer_id: params.customerId,

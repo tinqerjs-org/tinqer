@@ -7,7 +7,7 @@ import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - String Operations", () => {
   before(() => {
@@ -20,7 +20,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.startsWith("J")),
         {
           onSql: (result) => {
@@ -45,7 +45,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.email.startsWith("alice")),
         {
           onSql: (result) => {
@@ -68,7 +68,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").where((u) => u.name.startsWith("J") && u.is_active === 1),
         {
@@ -99,7 +99,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").where((u) => u.email.endsWith("@example.com")),
         {
@@ -125,7 +125,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("products").where((p) => p.name.endsWith("top")),
         {
           onSql: (result) => {
@@ -152,7 +152,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("oh")),
         {
           onSql: (result) => {
@@ -179,7 +179,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("products")
@@ -207,7 +207,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("products")
@@ -245,7 +245,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -275,7 +275,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("products")
@@ -306,7 +306,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -347,7 +347,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       const upperResults = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("J")),
         {
           onSql: (result) => {
@@ -365,7 +365,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
       const lowerResults = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("o")),
         {
           onSql: (result) => {
@@ -389,7 +389,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
       const capitalD = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("D")),
         {
           onSql: (result) => {
@@ -407,7 +407,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       let capturedSql4: { sql: string; params: Record<string, unknown> } | undefined;
       const lowercaseD = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.includes("d")),
         {
           onSql: (result) => {
@@ -435,7 +435,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const count = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -464,7 +464,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("products")
@@ -492,7 +492,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("products").where((p) => p.description !== null),
         {
           onSql: (result) => {
@@ -529,7 +529,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.from("test_special_chars").where((t) => t.text.includes(params.search)),
         { search: "%" },
@@ -573,7 +573,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params, _helpers) =>
           ctx.from("test_special_chars").where((t) => t.text.includes(params.search)),
         { search: "_" },
@@ -616,7 +616,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params, _helpers) =>
           ctx.from("test_backslash").where((t) => t.text.includes(params.search)),
         { search: "\\" },
@@ -660,7 +660,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       // Search for pattern containing both % and _
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params, _helpers) =>
           ctx.from("test_mixed_chars").where((t) => t.text.includes(params.search)),
         { search: "%_" },

@@ -7,7 +7,7 @@ import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - Basic Queries", () => {
   before(() => {
@@ -20,7 +20,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users"),
         {
           onSql: (result) => {
@@ -45,7 +45,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").select((u) => ({
             id: u.id,
@@ -74,7 +74,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").select((u) => ({
             userId: u.id,
@@ -106,7 +106,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.age !== null && u.age >= 30),
         {
           onSql: (result) => {
@@ -135,7 +135,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").where((u) => u.age !== null && u.age >= 25 && u.is_active === 1),
         {
@@ -164,7 +164,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").where((u) => (u.age !== null && u.age < 30) || u.department_id === 4),
         {
@@ -192,7 +192,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params, _helpers) =>
           ctx.from("users").where((u) => u.age !== null && u.age >= params.minAge),
         { minAge: 35 },
@@ -223,7 +223,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").orderBy((u) => u.name),
         {
           onSql: (result) => {
@@ -248,7 +248,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -279,7 +279,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -319,7 +319,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").orderBy((u) => u.is_active),
         {
           onSql: (result) => {
@@ -352,7 +352,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").orderByDescending((u) => u.is_active),
         {
           onSql: (result) => {
@@ -385,7 +385,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -432,7 +432,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").take(5),
         {
           onSql: (result) => {
@@ -449,7 +449,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
     });
 
     it("should skip results", () => {
-      const allResults = executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      const allResults = executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").orderBy((u) => u.id),
       );
 
@@ -457,7 +457,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const skippedResults = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -480,7 +480,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
     });
 
     it("should paginate results", () => {
-      const page1 = executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      const page1 = executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx
           .from("users")
           .orderBy((u) => u.id)
@@ -491,7 +491,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const page2 = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -523,7 +523,7 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
 
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")

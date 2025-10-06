@@ -5,7 +5,7 @@
 
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 interface User {
   id: number;
@@ -18,7 +18,7 @@ interface Schema {
   users: User;
 }
 
-const db = createContext<Schema>();
+const db = createSchema<Schema>();
 
 describe("Terminal Operations", () => {
   describe("FIRST operations", () => {
@@ -173,7 +173,7 @@ describe("Terminal Operations", () => {
         orders: Order;
       }
 
-      const dbWithOrders = createContext<SchemaWithOrders>();
+      const dbWithOrders = createSchema<SchemaWithOrders>();
 
       const result = selectStatement(
         dbWithOrders,

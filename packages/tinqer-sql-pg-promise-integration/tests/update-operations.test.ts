@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -47,7 +47,7 @@ interface TestSchema {
   };
 }
 
-const dbContext = createContext<TestSchema>();
+const schema = createSchema<TestSchema>();
 
 describe("UPDATE Operations - PostgreSQL Integration", () => {
   before(async () => {
@@ -146,7 +146,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update single column with WHERE clause", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("inventory")
@@ -164,7 +164,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update multiple columns", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("inventory")
@@ -194,7 +194,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx
             .update("inventory")
@@ -218,7 +218,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update boolean values", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("user_profiles")
@@ -236,7 +236,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with NULL values", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("user_profiles")
@@ -257,7 +257,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with AND conditions", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("inventory")
@@ -275,7 +275,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with OR conditions", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("inventory")
@@ -298,7 +298,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with complex nested conditions", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("inventory")
@@ -324,7 +324,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with string operations", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("inventory")
@@ -344,7 +344,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, p: { products: string[] }) =>
           ctx
             .update("inventory")
@@ -369,7 +369,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should return updated rows with RETURNING *", async () => {
       const results = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("inventory")
@@ -389,7 +389,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should return specific columns with RETURNING", async () => {
       const results = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("user_profiles")
@@ -413,7 +413,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should return single column with RETURNING", async () => {
       const results = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("product_reviews")
@@ -437,7 +437,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update all matching rows", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("user_profiles")
@@ -457,7 +457,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should update with allowFullTableUpdate", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
         {},
       );
@@ -470,12 +470,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", async () => {
       try {
-        await executeUpdate(
-          db,
-          dbContext,
-          (ctx) => ctx.update("inventory").set({ quantity: 0 }),
-          {},
-        );
+        await executeUpdate(db, schema, (ctx) => ctx.update("inventory").set({ quantity: 0 }), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -492,7 +487,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .update("user_profiles")
@@ -516,7 +511,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .update("inventory")
@@ -551,7 +546,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .update("user_profiles")
@@ -571,7 +566,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should handle special characters in strings", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("inventory")
@@ -594,7 +589,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
     it("should handle Unicode characters", async () => {
       const rowCount = await executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .update("user_profiles")

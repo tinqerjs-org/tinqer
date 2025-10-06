@@ -4,7 +4,7 @@
 
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 interface User {
   id: number;
@@ -43,7 +43,7 @@ interface Schema {
   products: Product;
 }
 
-const db = createContext<Schema>();
+const db = createSchema<Schema>();
 
 describe("JOIN with Table References", () => {
   describe("Basic table reference returns", () => {

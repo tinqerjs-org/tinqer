@@ -8,7 +8,7 @@ import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - Hierarchical Data", () => {
   before(() => {
@@ -20,7 +20,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("categories").where((c) => c.parent_id == null),
         { onSql: (result) => (capturedSql = result) },
       );
@@ -42,7 +42,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const parentId = 1; // Electronics
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("categories").where((c) => c.parent_id == params.parentId),
         { parentId },
         { onSql: (result) => (capturedSql = result) },
@@ -64,7 +64,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("categories").where((c) => c.is_leaf === 1),
         { onSql: (result) => (capturedSql = result) },
       );
@@ -86,7 +86,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const targetLevel = 1;
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("categories").where((c) => c.level == params.targetLevel),
         { targetLevel },
         { onSql: (result) => (capturedSql = result) },
@@ -110,7 +110,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const pathPrefix = "/electronics";
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("categories").where((c) => c.path.startsWith(params.pathPrefix)),
         { pathPrefix },
         { onSql: (result) => (capturedSql = result) },
@@ -135,7 +135,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const pathSuffix = "/";
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("categories")
@@ -165,7 +165,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const exactPath = "/electronics/phones/smartphones";
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("categories").where((c) => c.path == params.exactPath),
         { exactPath },
         { onSql: (result) => (capturedSql = result) },
@@ -190,7 +190,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const maxLevel = 2;
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("categories")
@@ -217,7 +217,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("categories")
@@ -255,7 +255,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("users").where((u) => u.manager_id == null),
         { onSql: (result) => (capturedSql = result) },
       );
@@ -276,7 +276,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const managerId = 1; // John Doe
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.manager_id == params.managerId),
         { managerId },
         { onSql: (result) => (capturedSql = result) },
@@ -297,7 +297,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -338,7 +338,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("comments").where((c) => c.parent_comment_id == null),
         { onSql: (result) => (capturedSql = result) },
       );
@@ -362,7 +362,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const commentId = 1; // "Great product!"
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("comments").where((c) => c.parent_comment_id == params.commentId),
         { commentId },
         { onSql: (result) => (capturedSql = result) },
@@ -387,7 +387,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const maxDepth = 1;
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("comments").where((c) => c.depth <= params.maxDepth),
         { maxDepth },
         { onSql: (result) => (capturedSql = result) },
@@ -408,7 +408,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("comments")
@@ -444,7 +444,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("categories")
@@ -482,7 +482,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -521,7 +521,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const parentId = 1; // Electronics
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("categories")
@@ -555,7 +555,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const level = 2;
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("categories")
@@ -588,7 +588,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const pathPrefix = "/electronics";
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("categories")
@@ -630,7 +630,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
       const results = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("categories")
@@ -676,7 +676,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       const pathSuffix = "/";
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("categories")
@@ -712,7 +712,7 @@ describe("Better SQLite3 Integration - Hierarchical Data", () => {
       // Would check if a category is an ancestor by checking if child path starts with ancestor path
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("categories")

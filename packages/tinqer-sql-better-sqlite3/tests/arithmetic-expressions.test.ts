@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { selectStatement } from "../dist/index.js";
 
 describe("Arithmetic Expression SQL Generation", () => {
@@ -32,7 +32,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     financial: Financial;
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   describe("Basic arithmetic operations", () => {
     // Test removed: Arithmetic operations are no longer supported in SELECT projections

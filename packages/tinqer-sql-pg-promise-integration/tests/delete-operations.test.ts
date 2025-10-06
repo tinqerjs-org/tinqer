@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -48,7 +48,7 @@ interface TestSchema {
   };
 }
 
-const dbContext = createContext<TestSchema>();
+const schema = createSchema<TestSchema>();
 
 describe("DELETE Operations - PostgreSQL Integration", () => {
   before(async () => {
@@ -172,7 +172,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_products").where((p) => p.name === "Notebook"),
         {},
       );
@@ -192,7 +192,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx, p) => ctx.deleteFrom("test_products").where((prod) => prod.name === p.productName),
         params,
       );
@@ -208,7 +208,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with numeric comparison", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! < 10),
         {},
       );
@@ -222,7 +222,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with boolean condition", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_users").where((u) => u.is_active === false),
         {},
       );
@@ -236,7 +236,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with NULL checks", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_logs").where((l) => l.user_id === null),
         {},
       );
@@ -252,7 +252,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with AND conditions", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .deleteFrom("test_products")
@@ -272,7 +272,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with OR conditions", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .deleteFrom("test_products")
@@ -294,7 +294,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with complex nested conditions", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .deleteFrom("test_users")
@@ -316,7 +316,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with NOT conditions", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_logs").where((l) => l.level !== "INFO"),
         {},
       );
@@ -331,7 +331,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with comparison operators", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! >= 250 && p.price! <= 600),
         {},
       );
@@ -349,7 +349,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with startsWith", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_users").where((u) => u.username.startsWith("john")),
         {},
       );
@@ -363,7 +363,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with endsWith", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_users").where((u) => u.email.endsWith("@example.com")),
         {},
       );
@@ -377,7 +377,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with contains", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_logs").where((l) => l.message!.includes("login")),
         {},
       );
@@ -395,7 +395,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.deleteFrom("test_products").where((prod) => p.categories.includes(prod.category!)),
         { categories: categoriesToDelete },
@@ -413,7 +413,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx, p) => ctx.deleteFrom("test_users").where((u) => p.ids.includes(u.id!)),
         { ids: userIds },
       );
@@ -434,7 +434,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx, p) => ctx.deleteFrom("test_products").where((prod) => prod.created_date! < p.cutoff),
         { cutoff: cutoffDate },
       );
@@ -458,7 +458,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx, p) => ctx.deleteFrom("test_logs").where((l) => l.created_at! < p.cutoff),
         { cutoff: cutoffTime },
       );
@@ -474,7 +474,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete all matching rows", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_orders").where((o) => o.status === "pending"),
         {},
       );
@@ -490,7 +490,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should delete with allowFullTableDelete", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_logs").allowFullTableDelete(),
         {},
       );
@@ -503,7 +503,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
     it("should throw error when DELETE has no WHERE and no allow flag", async () => {
       try {
-        await executeDelete(db, dbContext, (ctx) => ctx.deleteFrom("test_products"), {});
+        await executeDelete(db, schema, (ctx) => ctx.deleteFrom("test_products"), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -522,7 +522,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
 
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_users").where((u) => u.username === "john_doe"),
         {},
       );
@@ -539,7 +539,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should return 0 when no rows match", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_products").where((p) => p.name === "NonExistent"),
         {},
       );
@@ -554,7 +554,7 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
     it("should handle impossible conditions gracefully", async () => {
       const rowCount = await executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! < 0),
         {},
       );

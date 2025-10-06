@@ -19,7 +19,7 @@ npm install @webpods/tinqer-sql-better-sqlite3
 ### PostgreSQL Example
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
@@ -34,9 +34,9 @@ interface Schema {
 
 const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
-const results = await executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+const results = await executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
   ctx
     .from("users")
     .where((u) => u.age >= 18)
@@ -50,7 +50,7 @@ const results = await executeSelectSimple(db, dbContext, (ctx, _params, _helpers
 
 ```typescript
 import Database from "better-sqlite3";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
@@ -63,11 +63,11 @@ interface Schema {
 }
 
 const db = new Database("./data.db");
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const results = executeSelect(
   db,
-  dbContext,
+  schema,
   (ctx, params, _helpers) =>
     ctx
       .from("products")
@@ -79,7 +79,7 @@ const results = executeSelect(
 
 // Need the raw SQL for logging or prepared statements? selectStatement is still available:
 const { sql, params } = selectStatement(
-  dbContext,
+  schema,
   (ctx) => ctx.from("products").select((p) => p.name),
   {},
 );
@@ -90,7 +90,7 @@ const { sql, params } = selectStatement(
 ### Type-Safe Query Building
 
 ```typescript
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 // Full TypeScript type inference
 const query = (ctx, _params, _helpers) =>
@@ -116,7 +116,7 @@ interface Schema {
   departments: { id: number; name: string };
 }
 
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const query = (ctx, _params, _helpers) =>
   ctx
@@ -200,7 +200,7 @@ Window functions enable calculations across rows related to the current row. Tin
 // Get top earner per department (automatically wrapped in subquery)
 const topEarners = await executeSelect(
   db,
-  dbContext,
+  schema,
   (ctx, _params, h) =>
     ctx
       .from("employees")
@@ -231,15 +231,15 @@ See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed 
 ### CRUD Operations
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 // INSERT
 const insertedRows = await executeInsert(
   db,
-  dbContext,
+  schema,
   (ctx, _params) =>
     ctx.insertInto("users").values({
       name: "Alice",
@@ -251,7 +251,7 @@ const insertedRows = await executeInsert(
 // UPDATE with RETURNING
 const inactiveUsers = await executeUpdate(
   db,
-  dbContext,
+  schema,
   (ctx, params) =>
     ctx
       .update("users")
@@ -264,7 +264,7 @@ const inactiveUsers = await executeUpdate(
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  dbContext,
+  schema,
   (ctx, _params) => ctx.deleteFrom("users").where((u) => u.status === "deleted"),
   {},
 );
@@ -278,10 +278,10 @@ All literal values are automatically parameterized to prevent SQL injection:
 
 ```typescript
 // External parameters via params object
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const sample = selectStatement(
-  dbContext,
+  schema,
   (ctx, p) =>
     ctx
       .from("users")
@@ -294,7 +294,7 @@ const sample = selectStatement(
 
 // Literals auto-parameterized automatically
 const literals = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -308,9 +308,9 @@ const literals = selectStatement(
 ### Case-Insensitive String Operations
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const query = (ctx, _params, helpers) =>
   ctx

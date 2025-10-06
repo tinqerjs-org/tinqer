@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { selectStatement } from "../dist/index.js";
 
 describe("Edge Cases and Error Handling", () => {
@@ -35,7 +35,7 @@ describe("Edge Cases and Error Handling", () => {
     };
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   describe("Empty queries", () => {
     it("should handle simple FROM without any operations", () => {

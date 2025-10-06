@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 describe("GroupBy SQL Generation", () => {
   interface Sale {
@@ -16,7 +16,7 @@ describe("GroupBy SQL Generation", () => {
     sales: Sale;
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   it("should generate GROUP BY clause", () => {
     const result = selectStatement(db, (ctx) => ctx.from("sales").groupBy((s) => s.category), {});

@@ -8,7 +8,7 @@ import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - Advanced Pagination", () => {
   before(() => {
@@ -24,7 +24,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -59,7 +59,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -89,7 +89,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -123,7 +123,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -156,7 +156,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -193,7 +193,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -231,7 +231,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -271,7 +271,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("articles")
@@ -310,7 +310,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -345,7 +345,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("articles")
@@ -383,7 +383,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -426,7 +426,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       // Note: having clause not directly supported, filter after grouping
       const allResults = executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("products")
@@ -475,7 +475,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("orders")
@@ -523,7 +523,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -562,7 +562,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -593,7 +593,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -630,7 +630,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       // Select only indexed columns for better performance
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -674,7 +674,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -711,7 +711,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       // Forward
       const forwardResults = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -743,7 +743,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       capturedSql = undefined;
       const backwardResults = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -787,7 +787,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -838,7 +838,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("articles")
@@ -875,7 +875,7 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("articles")

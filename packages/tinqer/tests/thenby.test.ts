@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery } from "../dist/index.js";
-import type { QueryDSL } from "../dist/index.js";
+import type { QueryBuilder } from "../dist/index.js";
 import {
   asOrderByOperation,
   asThenByOperation,
@@ -17,7 +17,7 @@ import { type TestSchema } from "./test-schema.js";
 describe("THEN BY Operations", () => {
   describe("thenBy()", () => {
     it("should parse orderBy followed by thenBy", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx
           .from("products")
           .orderBy((x) => x.category)
@@ -35,7 +35,7 @@ describe("THEN BY Operations", () => {
     });
 
     it("should parse multiple thenBy operations", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx
           .from("users")
           .orderBy((x) => x.country)
@@ -57,7 +57,7 @@ describe("THEN BY Operations", () => {
     });
 
     it("should parse thenBy with computed expression", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx
           .from("products")
           .orderBy((x) => x.category)
@@ -74,7 +74,7 @@ describe("THEN BY Operations", () => {
 
   describe("thenByDescending()", () => {
     it("should parse orderBy followed by thenByDescending", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx
           .from("employees")
           .orderBy((x) => x.department)
@@ -88,7 +88,7 @@ describe("THEN BY Operations", () => {
     });
 
     it("should parse mixed thenBy and thenByDescending", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
+      const query = (ctx: QueryBuilder<TestSchema>) =>
         ctx
           .from("products")
           .orderBy((x) => x.category)

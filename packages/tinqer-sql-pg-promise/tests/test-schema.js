@@ -1,8 +1,8 @@
 /**
  * Test schema for SQL generator tests
  */
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 // Create the database context
-export const db = createContext();
+export const db = createSchema();
 // Re-export from for use with db context
 export { from } from "@webpods/tinqer";

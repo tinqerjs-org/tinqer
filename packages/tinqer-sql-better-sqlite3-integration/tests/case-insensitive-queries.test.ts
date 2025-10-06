@@ -8,7 +8,7 @@ import { expect } from "chai";
 import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
   before(() => {
@@ -39,7 +39,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name.toLowerCase() == params.searchName),
         { searchName },
         {
@@ -61,7 +61,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.from("users").where((u) => u.name.toLowerCase().startsWith(params.prefix)),
         { prefix: "j" },
@@ -88,7 +88,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.from("users").where((u) => u.email.toLowerCase() == params.searchEmail),
         { searchEmail },
@@ -113,7 +113,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("users")
@@ -146,7 +146,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.from("products").where((p) => p.category!.toUpperCase() == params.searchCategory),
         { searchCategory },
@@ -174,7 +174,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.from("products").where((p) => p.name.toUpperCase() == params.searchName),
         { searchName },
@@ -202,7 +202,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")
@@ -235,7 +235,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       // Test toLowerCase on users table
       const userResults = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) => ctx.from("users").where((u) => u.name.toLowerCase() == params.userName),
         { userName: "john smith" },
         {
@@ -255,7 +255,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       capturedSql = undefined;
       const productResults = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.from("products").where((p) => p.category!.toUpperCase() == params.productCategory),
         { productCategory: "ELECTRONICS" },
@@ -282,7 +282,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("users")
@@ -312,7 +312,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx.from("products").where((p) => p.name.toLowerCase().includes(params.searchTerm)),
         { searchTerm: "usb" },
@@ -338,7 +338,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
       // Test toLowerCase in WHERE directly
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("users")
@@ -376,7 +376,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("users")
@@ -407,7 +407,7 @@ describe("Better SQLite3 Integration - Case-Insensitive Queries", () => {
 
       const results = executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .from("products")

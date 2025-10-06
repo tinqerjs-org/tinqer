@@ -69,15 +69,15 @@ The `where` method applies predicates to filter query results. Multiple `where` 
 ### 1.1 Basic Comparison
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 interface Schema {
   users: { id: number; name: string; age: number; email: string; active: boolean };
 }
 
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
-const adults = selectStatement(dbContext, (ctx) => ctx.from("users").where((u) => u.age >= 18), {});
+const adults = selectStatement(schema, (ctx) => ctx.from("users").where((u) => u.age >= 18), {});
 ```
 
 ```sql
@@ -98,7 +98,7 @@ SELECT * FROM "users" WHERE "age" >= @__p1
 
 ```typescript
 const activeRange = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -129,7 +129,7 @@ WHERE "age" >= @__p1 AND "age" <= @__p2 AND "active" = @__p3
 
 ```typescript
 const premium = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx.from("users").where((u) => (u.salary * 0.9 > 150_000 && u.age < 55) || u.active === false),
   {},
@@ -156,7 +156,7 @@ WHERE ((("salary" * @__p1) > @__p2 AND "age" < @__p3) OR "active" = @__p4)
 
 ```typescript
 const preferredName = selectStatement(
-  dbContext,
+  schema,
   (ctx) => ctx.from("users").where((u) => (u.nickname ?? u.name) === "anonymous"),
   {},
 );
@@ -180,7 +180,7 @@ SELECT * FROM "users" WHERE COALESCE("nickname", "name") = @__p1
 
 ```typescript
 const emailFilters = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -215,7 +215,7 @@ WHERE "email" LIKE @__p1 || '%'
 
 ```typescript
 const insensitive = selectStatement(
-  dbContext,
+  schema,
   (ctx, _params, helpers) =>
     ctx.from("users").where((u) => helpers.functions.iequals(u.name, "ALICE")),
   {},
@@ -240,7 +240,7 @@ SELECT * FROM "users" WHERE LOWER("name") = LOWER(@__p1)
 
 ```typescript
 const allowed = selectStatement(
-  dbContext,
+  schema,
   (ctx) => ctx.from("users").where((u) => ["admin", "support", "auditor"].includes(u.role)),
   {},
 );
@@ -266,7 +266,7 @@ Negating the predicate (`!array.includes(...)`) yields `NOT IN`.
 
 ```typescript
 const advancedFilter = selectStatement(
-  dbContext,
+  schema,
   (ctx, params, helpers) =>
     ctx
       .from("users")
@@ -312,7 +312,7 @@ The `select` method transforms query results by projecting columns or computed e
 ### 2.1 Full Row Projection
 
 ```typescript
-const fullRow = selectStatement(dbContext, (ctx) => ctx.from("users").select((u) => u), {});
+const fullRow = selectStatement(schema, (ctx) => ctx.from("users").select((u) => u), {});
 ```
 
 ```sql
@@ -329,7 +329,7 @@ SELECT * FROM "users"
 
 ```typescript
 const summary = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -361,7 +361,7 @@ SELECT "id" AS "id", "name" AS "name", "email" AS "contact.email" FROM "users" W
 interface ProductSchema {
   products: { id: number; name: string; price: number; discount: number | null };
 }
-const productContext = createContext<ProductSchema>();
+const productContext = createSchema<ProductSchema>();
 
 const pricing = selectStatement(
   productContext,
@@ -398,11 +398,7 @@ Methods `orderBy`, `orderByDescending`, `thenBy`, and `thenByDescending` control
 ### 3.1 Single Key Ascending
 
 ```typescript
-const alphabetical = selectStatement(
-  dbContext,
-  (ctx) => ctx.from("users").orderBy((u) => u.name),
-  {},
-);
+const alphabetical = selectStatement(schema, (ctx) => ctx.from("users").orderBy((u) => u.name), {});
 ```
 
 ```sql
@@ -419,7 +415,7 @@ SELECT * FROM "users" ORDER BY "name" ASC
 
 ```typescript
 const ordered = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -446,7 +442,7 @@ SELECT * FROM "users" ORDER BY "departmentId" ASC, "salary" DESC, "name" ASC
 
 ```typescript
 const departments = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -476,7 +472,7 @@ Methods `skip` and `take` implement OFFSET and LIMIT clauses.
 
 ```typescript
 const page = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -505,7 +501,7 @@ SELECT * FROM "users" ORDER BY "id" ASC LIMIT @__p2 OFFSET @__p1
 
 ```typescript
 const filteredPage = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -544,7 +540,7 @@ interface JoinSchema {
   users: { id: number; name: string; departmentId: number };
   departments: { id: number; name: string };
 }
-const joinContext = createContext<JoinSchema>();
+const joinContext = createSchema<JoinSchema>();
 
 const userDepartments = selectStatement(
   joinContext,
@@ -580,7 +576,7 @@ interface OrderSchema {
   users: { id: number; name: string };
   orders: { id: number; userId: number; total: number };
 }
-const orderContext = createContext<OrderSchema>();
+const orderContext = createSchema<OrderSchema>();
 
 const regionOrders = selectStatement(
   orderContext,
@@ -749,7 +745,7 @@ The `groupBy` method groups results and enables aggregate functions: `count`, `s
 
 ```typescript
 const byDepartment = selectStatement(
-  dbContext,
+  schema,
   (ctx) => ctx.from("users").groupBy((u) => u.departmentId),
   {},
 );
@@ -769,7 +765,7 @@ SELECT "departmentId" FROM "users" GROUP BY "departmentId"
 
 ```typescript
 const departmentStats = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -807,7 +803,7 @@ ORDER BY "totalSalary" DESC
 ```typescript
 const largeDepartments = await executeSelect(
   db,
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -840,7 +836,7 @@ All window functions are accessed via the helpers parameter (second parameter in
 interface EmployeeSchema {
   employees: { id: number; name: string; department: string; salary: number };
 }
-const empContext = createContext<EmployeeSchema>();
+const empContext = createSchema<EmployeeSchema>();
 
 const rankedEmployees = selectStatement(
   empContext,
@@ -879,7 +875,7 @@ FROM "employees"
 interface OrderTimeSchema {
   orders: { id: number; createdAt: Date };
 }
-const orderTimeContext = createContext<OrderTimeSchema>();
+const orderTimeContext = createSchema<OrderTimeSchema>();
 
 const chronological = selectStatement(
   orderTimeContext,
@@ -907,7 +903,7 @@ FROM "orders"
 interface RegionEmployeeSchema {
   employees: { name: string; region: string; department: string; salary: number };
 }
-const regionEmpContext = createContext<RegionEmployeeSchema>();
+const regionEmpContext = createSchema<RegionEmployeeSchema>();
 
 const multiPartition = selectStatement(
   regionEmpContext,
@@ -1011,7 +1007,7 @@ Notice rank 2 is skipped because two employees share rank 1.
 interface PlayerSchema {
   players: { name: string; score: number };
 }
-const playerContext = createContext<PlayerSchema>();
+const playerContext = createSchema<PlayerSchema>();
 
 const globalRank = selectStatement(
   playerContext,
@@ -1083,7 +1079,7 @@ Example result without gaps:
 interface EmployeeAgeSchema {
   employees: { name: string; department: string; salary: number; age: number };
 }
-const empAgeContext = createContext<EmployeeAgeSchema>();
+const empAgeContext = createSchema<EmployeeAgeSchema>();
 
 const complexRanking = selectStatement(
   empAgeContext,
@@ -1219,7 +1215,7 @@ Get the top 3 highest-paid employees from a specific department:
 interface EmployeeDeptSchema {
   employees: { name: string; salary: number; department_id: number };
 }
-const empDeptContext = createContext<EmployeeDeptSchema>();
+const empDeptContext = createSchema<EmployeeDeptSchema>();
 
 const top3Engineering = await executeSelect(
   db,
@@ -1261,7 +1257,7 @@ The spread operator (`...e`) includes all original columns along with window fun
 interface PerformanceSchema {
   employees: { id: number; name: string; performance_score: number };
 }
-const perfContext = createContext<PerformanceSchema>();
+const perfContext = createSchema<PerformanceSchema>();
 
 const topPerformers = await executeSelect(
   db,
@@ -1298,7 +1294,7 @@ Combine window function filters with regular WHERE conditions:
 interface ActiveEmployeeSchema {
   employees: { name: string; department: string; salary: number; is_active: boolean };
 }
-const activeEmpContext = createContext<ActiveEmployeeSchema>();
+const activeEmpContext = createSchema<ActiveEmployeeSchema>();
 
 const activeTopEarners = await executeSelect(
   db,
@@ -1347,7 +1343,7 @@ Aggregate methods can be called directly on queries to return single values.
 
 ```typescript
 const totals = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -1374,11 +1370,7 @@ SELECT SUM("salary") FROM "users" WHERE "active" = @__p1
 Methods `count`, `average`, `min`, and `max` follow the same structure. The `count` method also accepts a predicate:
 
 ```typescript
-const activeCount = selectStatement(
-  dbContext,
-  (ctx) => ctx.from("users").count((u) => u.active),
-  {},
-);
+const activeCount = selectStatement(schema, (ctx) => ctx.from("users").count((u) => u.active), {});
 ```
 
 ```sql
@@ -1400,11 +1392,7 @@ Methods `any` and `all` test whether elements satisfy conditions.
 ### 10.1 Any Operation
 
 ```typescript
-const hasAdults = selectStatement(
-  dbContext,
-  (ctx) => ctx.from("users").any((u) => u.age >= 18),
-  {},
-);
+const hasAdults = selectStatement(schema, (ctx) => ctx.from("users").any((u) => u.age >= 18), {});
 ```
 
 ```sql
@@ -1427,7 +1415,7 @@ The `all` method emits a `NOT EXISTS` check:
 
 ```typescript
 const allActive = selectStatement(
-  dbContext,
+  schema,
   (ctx) => ctx.from("users").all((u) => u.active === true),
   {},
 );
@@ -1451,7 +1439,7 @@ Methods `first`, `firstOrDefault`, `single`, `singleOrDefault`, `last`, and `las
 
 ```typescript
 const newestUser = selectStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -1484,7 +1472,7 @@ Queries are executed directly without requiring a materialization method. The qu
 ```typescript
 const activeUsers = await executeSelect(
   db,
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .from("users")
@@ -1506,7 +1494,7 @@ Tinqer automatically parameterizes all values to prevent SQL injection and enabl
 
 ```typescript
 const filtered = selectStatement(
-  dbContext,
+  schema,
   (ctx, params) =>
     ctx
       .from("users")
@@ -1536,7 +1524,7 @@ Nested properties and array indices are preserved (`params.filters.departments[0
 
 ```typescript
 const autoParams = selectStatement(
-  dbContext,
+  schema,
   (ctx) => ctx.from("users").where((u) => u.departmentId === 7 && u.name.startsWith("A")),
   {},
 );
@@ -1560,7 +1548,7 @@ SELECT * FROM "users" WHERE "departmentId" = @__p1 AND "name" LIKE @__p2 || '%'
 
 ```typescript
 const membership = selectStatement(
-  dbContext,
+  schema,
   (ctx) => ctx.from("users").where((u) => [1, 2, 3].includes(u.id)),
   {},
 );
@@ -1584,7 +1572,7 @@ Parameterized array example:
 
 ```typescript
 const dynamicMembership = selectStatement(
-  dbContext,
+  schema,
   (ctx, params) => ctx.from("users").where((u) => params.allowed.includes(u.id)),
   { allowed: [5, 8] },
 );
@@ -1598,7 +1586,7 @@ const dynamicMembership = selectStatement(
 
 ```typescript
 const ic = selectStatement(
-  dbContext,
+  schema,
   (ctx, _params, helpers) =>
     ctx.from("users").where((u) => helpers.functions.icontains(u.email, "support")),
   {},
@@ -1632,17 +1620,17 @@ The `insertInto` function creates INSERT operations. Values are specified using 
 #### Basic INSERT
 
 ```typescript
-import { createContext, insertInto } from "@webpods/tinqer";
+import { createSchema, insertInto } from "@webpods/tinqer";
 import { insertStatement } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; age: number; email: string };
 }
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 // Insert with literal values - direct object syntax
 const insert = insertStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx.insertInto("users").values({
       name: "Alice",
@@ -1671,7 +1659,7 @@ External variables must be passed via the params object - closure variables are 
 
 ```typescript
 const insert = insertStatement(
-  dbContext,
+  schema,
   (ctx, p) =>
     ctx.insertInto("users").values({
       name: p.name,
@@ -1697,7 +1685,7 @@ Both PostgreSQL and SQLite (3.35.0+) support the RETURNING clause to retrieve va
 ```typescript
 // Return specific columns
 const insertWithReturn = insertStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .insertInto("users")
@@ -1708,7 +1696,7 @@ const insertWithReturn = insertStatement(
 
 // Return all columns
 const insertReturnAll = insertStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .insertInto("users")
@@ -1722,7 +1710,7 @@ const insertReturnAll = insertStatement(
 
 ```typescript
 const insert = insertStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx.insertInto("users").values({
       name: "Eve",
@@ -1740,13 +1728,13 @@ The `update` function creates UPDATE operations. The `.set()` method uses direct
 #### Basic UPDATE
 
 ```typescript
-import { createContext, update } from "@webpods/tinqer";
+import { createSchema, update } from "@webpods/tinqer";
 import { updateStatement } from "@webpods/tinqer-sql-pg-promise";
 
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const updateStmt = updateStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .update("users")
@@ -1776,7 +1764,7 @@ External variables must be passed via the params object:
 
 ```typescript
 const updateStmt = updateStatement(
-  dbContext,
+  schema,
   (ctx, p) =>
     ctx
       .update("users")
@@ -1790,7 +1778,7 @@ const updateStmt = updateStatement(
 
 ```typescript
 const updateStmt = updateStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .update("users")
@@ -1804,7 +1792,7 @@ const updateStmt = updateStatement(
 
 ```typescript
 const updateWithReturn = updateStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .update("users")
@@ -1820,7 +1808,7 @@ const updateWithReturn = updateStatement(
 ```typescript
 // UPDATE without WHERE requires explicit permission
 const updateAll = updateStatement(
-  dbContext,
+  schema,
   (ctx) => ctx.update("users").set({ isActive: true }).allowFullTableUpdate(), // Required flag
   {},
 );
@@ -1840,16 +1828,12 @@ The `deleteFrom` function creates DELETE operations with optional WHERE conditio
 #### Basic DELETE
 
 ```typescript
-import { createContext, deleteFrom } from "@webpods/tinqer";
+import { createSchema, deleteFrom } from "@webpods/tinqer";
 import { deleteStatement } from "@webpods/tinqer-sql-pg-promise";
 
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
-const del = deleteStatement(
-  dbContext,
-  (ctx) => ctx.deleteFrom("users").where((u) => u.age > 100),
-  {},
-);
+const del = deleteStatement(schema, (ctx) => ctx.deleteFrom("users").where((u) => u.age > 100), {});
 ```
 
 Generated SQL:
@@ -1863,7 +1847,7 @@ DELETE FROM "users" WHERE "age" > @__p1    -- SQLite
 
 ```typescript
 const del = deleteStatement(
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .deleteFrom("users")
@@ -1876,7 +1860,7 @@ const del = deleteStatement(
 
 ```typescript
 const del = deleteStatement(
-  dbContext,
+  schema,
   (ctx, p) => ctx.deleteFrom("users").where((u) => p.userIds.includes(u.id)),
   { userIds: [1, 2, 3, 4, 5] },
 );
@@ -1910,7 +1894,7 @@ WHERE "id" IN (@userIds_0, @userIds_1, @userIds_2, @userIds_3, @userIds_4)
 ```typescript
 // DELETE without WHERE requires explicit permission
 const deleteAll = deleteStatement(
-  dbContext,
+  schema,
   (ctx) => ctx.deleteFrom("users").allowFullTableDelete(), // Required flag
   {},
 );
@@ -1926,11 +1910,11 @@ UPDATE and DELETE operations require WHERE clauses by default to prevent acciden
 
 ```typescript
 // This throws an error
-deleteStatement(dbContext, (ctx) => ctx.deleteFrom("users"), {});
+deleteStatement(schema, (ctx) => ctx.deleteFrom("users"), {});
 // Error: DELETE requires a WHERE clause or explicit allowFullTableDelete()
 
 // This works
-deleteStatement(dbContext, (ctx) => ctx.deleteFrom("users").allowFullTableDelete(), {});
+deleteStatement(schema, (ctx) => ctx.deleteFrom("users").allowFullTableDelete(), {});
 ```
 
 #### Type Safety
@@ -1941,7 +1925,7 @@ All CRUD operations maintain full TypeScript type safety:
 interface UserSchema {
   users: { id: number; name: string; email: string | null; age: number };
 }
-const userContext = createContext<UserSchema>();
+const userContext = createSchema<UserSchema>();
 
 // Type error: 'username' doesn't exist on users table
 insertStatement(
@@ -1994,7 +1978,7 @@ import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql
 // Execute INSERT with RETURNING
 const insertedUsers = await executeInsert(
   db,
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .insertInto("users")
@@ -2007,7 +1991,7 @@ const insertedUsers = await executeInsert(
 // Execute UPDATE - returns affected row count
 const updateCount = await executeUpdate(
   db,
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .update("users")
@@ -2020,7 +2004,7 @@ const updateCount = await executeUpdate(
 // Execute DELETE - returns affected row count
 const deleteCount = await executeDelete(
   db,
-  dbContext,
+  schema,
   (ctx) => ctx.deleteFrom("users").where((u) => u.id === 123),
   {},
 );
@@ -2034,7 +2018,7 @@ import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql
 // Execute INSERT - returns row count
 const insertCount = executeInsert(
   db,
-  dbContext,
+  schema,
   (ctx) => ctx.insertInto("users").values({ name: "Grace", age: 30 }),
   {},
 );
@@ -2043,7 +2027,7 @@ const insertCount = executeInsert(
 // Execute UPDATE - returns row count
 const updateCount = executeUpdate(
   db,
-  dbContext,
+  schema,
   (ctx) =>
     ctx
       .update("users")
@@ -2055,7 +2039,7 @@ const updateCount = executeUpdate(
 // Execute DELETE - returns row count
 const deleteCount = executeDelete(
   db,
-  dbContext,
+  schema,
   (ctx) => ctx.deleteFrom("users").where((u) => u.age > 100),
   {},
 );
@@ -2072,7 +2056,7 @@ interface TxSchema {
   users: { id: number; name: string; lastLogin: Date };
   user_logs: { userId: number; action: string };
 }
-const txContext = createContext<TxSchema>();
+const txContext = createSchema<TxSchema>();
 
 // PostgreSQL transactions
 await db.tx(async (t) => {

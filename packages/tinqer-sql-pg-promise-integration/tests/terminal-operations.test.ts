@@ -7,7 +7,7 @@ import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Terminal Operations", () => {
   before(async () => {
@@ -20,7 +20,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -48,7 +48,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").first((u) => u.age !== null && u.age > 40),
         {
           onSql: (result) => {
@@ -73,7 +73,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       try {
         await executeSelectSimple(
           db,
-          dbContext,
+          schema,
           (ctx, _params, _helpers) => ctx.from("users").first((u) => u.age !== null && u.age > 100),
           {
             onSql: (result) => {
@@ -98,7 +98,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").firstOrDefault((u) => u.age !== null && u.age > 100),
         {
@@ -122,7 +122,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const result = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -168,7 +168,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").single((u) => u.email === "john@example.com"),
         {
           onSql: (result) => {
@@ -191,7 +191,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       try {
         await executeSelectSimple(
           db,
-          dbContext,
+          schema,
           (ctx, _params, _helpers) => ctx.from("users").single((u) => u.department_id === 1),
           {
             onSql: (result) => {
@@ -217,7 +217,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       try {
         await executeSelectSimple(
           db,
-          dbContext,
+          schema,
           (ctx, _params, _helpers) =>
             ctx.from("users").single((u) => u.email === "nonexistent@example.com"),
           {
@@ -241,7 +241,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
         {
@@ -264,7 +264,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       try {
         await executeSelectSimple(
           db,
-          dbContext,
+          schema,
           (ctx, _params, _helpers) =>
             ctx.from("users").singleOrDefault((u) => u.department_id === 1),
           {
@@ -292,7 +292,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -318,7 +318,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -347,7 +347,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const user = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("users").lastOrDefault((u) => u.age !== null && u.age > 100),
         {
@@ -373,7 +373,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const hasYoungUsers = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").any((u) => u.age !== null && u.age < 30),
         {
           onSql: (result) => {
@@ -396,7 +396,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const hasCentenarians = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").any((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
@@ -419,7 +419,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const hasUsers = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").any(),
         {
           onSql: (result) => {
@@ -442,7 +442,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const allHaveEmail = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").all((u) => u.email !== null),
         {
           onSql: (result) => {
@@ -465,7 +465,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const allActive = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").all((u) => u.is_active === true),
         {
           onSql: (result) => {
@@ -488,7 +488,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const allEngineersActive = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -508,7 +508,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       expect(capturedSql!.params).to.deep.equal({ __p1: 1, __p2: true });
 
       // Check the actual data to verify the result
-      const engineerStatus = await executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      const engineerStatus = await executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx
           .from("users")
           .where((u) => u.department_id === 1)
@@ -526,7 +526,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const users = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("users")
@@ -557,7 +557,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const products = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("products")
@@ -595,7 +595,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const targetEmail = "jane@example.com";
       const user = await executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, params, _helpers) => ctx.from("users").single((u) => u.email === params.email),
         { email: targetEmail },
         {
@@ -619,7 +619,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const hasExpensiveElectronics = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx.from("products").any((p) => p.category === "Electronics" && p.price > 500),
         {
@@ -643,7 +643,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
 
       const allPositive = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) =>
           ctx
             .from("orders")

@@ -2,7 +2,7 @@
  * Shared test schema for all test files
  */
 
-import { createContext } from "../dist/index.js";
+import { createSchema } from "../dist/index.js";
 
 // Common test schema
 export interface TestSchema {
@@ -88,4 +88,4 @@ export interface TestSchema {
 }
 
 // Shared database context for all tests
-export const db = createContext<TestSchema>();
+export const db = createSchema<TestSchema>();

@@ -4,7 +4,7 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeUpdate } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
@@ -51,7 +51,7 @@ interface TestSchema {
   };
 }
 
-const dbContext = createContext<TestSchema>();
+const schema = createSchema<TestSchema>();
 
 describe("UPDATE Operations - SQLite Integration", () => {
   before(() => {
@@ -164,7 +164,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update single column with WHERE clause", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")
@@ -184,7 +184,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update multiple columns", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")
@@ -216,7 +216,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, p: typeof params) =>
           ctx
             .update("inventory")
@@ -240,7 +240,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update boolean values", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("user_profiles")
@@ -260,7 +260,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update with NULL values", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("user_profiles")
@@ -283,7 +283,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update with AND conditions", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")
@@ -303,7 +303,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update with OR conditions", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")
@@ -328,7 +328,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update with complex nested conditions", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")
@@ -353,7 +353,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update with string operations", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")
@@ -375,7 +375,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, p: { products: string[] }) =>
           ctx
             .update("inventory")
@@ -399,7 +399,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update all matching rows", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("user_profiles")
@@ -419,7 +419,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should update with allowFullTableUpdate", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
         {},
@@ -437,7 +437,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       try {
         executeUpdate(
           db,
-          dbContext,
+          schema,
           (ctx, _params) => ctx.update("inventory").set({ quantity: 0 }),
           {},
         );
@@ -457,7 +457,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .update("user_profiles")
@@ -482,7 +482,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .update("inventory")
@@ -520,7 +520,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, params) =>
           ctx
             .update("user_profiles")
@@ -543,7 +543,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should handle special characters in strings", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")
@@ -568,7 +568,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should handle Unicode characters", () => {
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("user_profiles")
@@ -595,7 +595,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       // SQLite allows flexible typing
       const rowCount = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")
@@ -621,7 +621,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       // Test updating with explicit 0/1 and boolean
       const rowCount1 = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")
@@ -639,7 +639,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       const rowCount2 = executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, _params) =>
           ctx
             .update("inventory")

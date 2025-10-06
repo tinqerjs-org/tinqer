@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 describe("GROUP BY with Composite Keys", () => {
   interface Sale {
@@ -19,7 +19,7 @@ describe("GROUP BY with Composite Keys", () => {
     sales: Sale;
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   describe("Composite key GROUP BY", () => {
     it("should group by object with two properties", () => {
@@ -294,7 +294,7 @@ describe("GROUP BY with Composite Keys", () => {
         orders: OrderWithCustomer;
       }
 
-      const orderDb = createContext<OrderSchema>();
+      const orderDb = createSchema<OrderSchema>();
 
       const result = selectStatement(
         orderDb,

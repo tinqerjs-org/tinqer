@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { selectStatement } from "../dist/index.js";
 
 describe("Advanced GROUP BY SQL Generation", () => {
@@ -38,7 +38,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
     employees: Employee;
   }
 
-  const db = createContext<Schema>();
+  const db = createSchema<Schema>();
 
   describe("GROUP BY with all aggregate functions", () => {
     it("should use all aggregate functions together", () => {
@@ -270,7 +270,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
         customers: Customer;
       }
 
-      const orderDb = createContext<OrderSchema>();
+      const orderDb = createSchema<OrderSchema>();
 
       const result = selectStatement(
         orderDb,

@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 interface Sale {
   id: number;
@@ -18,7 +18,7 @@ interface Schema {
   sales: Sale;
 }
 
-const db = createContext<Schema>();
+const db = createSchema<Schema>();
 
 describe("GROUP BY with Composite Keys", () => {
   describe("Composite key GROUP BY", () => {
@@ -294,7 +294,7 @@ describe("GROUP BY with Composite Keys", () => {
         orders: OrderWithCustomer;
       }
 
-      const orderDb = createContext<OrderSchema>();
+      const orderDb = createSchema<OrderSchema>();
 
       const result = selectStatement(
         orderDb,

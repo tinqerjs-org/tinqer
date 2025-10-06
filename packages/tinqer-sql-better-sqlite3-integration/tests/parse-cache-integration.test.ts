@@ -3,7 +3,7 @@ import {
   clearParseCache,
   setParseCacheConfig,
   getParseCacheConfig,
-  type QueryDSL,
+  type QueryBuilder,
   type QueryHelpers,
 } from "@webpods/tinqer";
 import {
@@ -16,7 +16,7 @@ import {
 import { parseCache } from "@webpods/tinqer/dist/parser/parse-cache.js";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext, type TestDatabaseSchema } from "./database-schema.js";
+import { schema, type TestDatabaseSchema } from "./database-schema.js";
 
 describe("Parse Cache Integration Tests (SQLite)", () => {
   let originalConfig: ReturnType<typeof getParseCacheConfig>;
@@ -40,13 +40,13 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
   describe("SELECT query caching", () => {
     it("should cache repeated SELECT queries", () => {
       // First execution - should parse
-      const result1 = executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      const result1 = executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 18),
       );
       expect(parseCache.size()).to.equal(1);
 
       // Second execution - should hit cache (same function code)
-      const result2 = executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      const result2 = executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 18),
       );
       expect(parseCache.size()).to.equal(1);
@@ -59,7 +59,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       // First execution
       executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, p, _helpers) => ctx.from("users").where((u) => u.age !== null && u.age >= p.minAge),
         { minAge: 21 },
       );
@@ -68,7 +68,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       // Second execution with different params (same query function code)
       executeSelect(
         db,
-        dbContext,
+        schema,
         (ctx, p, _helpers) => ctx.from("users").where((u) => u.age !== null && u.age >= p.minAge),
         { minAge: 30 },
       );
@@ -77,14 +77,14 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
     it("should bypass cache when cache option is false", () => {
       // First execution with cache
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 18),
       );
 
       // Second execution with cache: false
       executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").where((u) => u.age !== null && u.age >= 18),
         { cache: false },
       );
@@ -94,10 +94,10 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     });
 
     it("should cache different queries separately", () => {
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 18),
       );
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 21),
       );
 
@@ -105,7 +105,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     });
 
     it("should cache complex queries with joins", () => {
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx
           .from("users")
           .join(
@@ -121,7 +121,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       );
       expect(parseCache.size()).to.equal(1);
 
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx
           .from("users")
           .join(
@@ -139,8 +139,8 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     });
 
     it("should cache terminal operations (count, sum, etc.)", () => {
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) => ctx.from("users").count());
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) => ctx.from("users").count());
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx
           .from("users")
           .where((u) => u.age !== null)
@@ -150,8 +150,8 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       expect(parseCache.size()).to.equal(2);
 
       // Re-execute should hit cache
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) => ctx.from("users").count());
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) => ctx.from("users").count());
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx
           .from("users")
           .where((u) => u.age !== null)
@@ -166,7 +166,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     it("should cache repeated INSERT statements", () => {
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.insertInto("users").values({
             name: p.name,
@@ -183,7 +183,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.insertInto("users").values({
             name: p.name,
@@ -202,7 +202,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     it("should bypass INSERT cache when cache option is false", () => {
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.insertInto("users").values({
             name: p.name,
@@ -213,7 +213,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       );
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.insertInto("users").values({
             name: p.name,
@@ -233,7 +233,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       // Use existing user IDs - 5 and 6 are employees with no one reporting to them
       executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx
             .update("users")
@@ -245,7 +245,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
       executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx
             .update("users")
@@ -259,7 +259,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     it("should bypass UPDATE cache when cache option is false", () => {
       executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx
             .update("users")
@@ -269,7 +269,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       );
       executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx
             .update("users")
@@ -288,7 +288,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       // Insert temporary users for deletion testing
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.insertInto("users").values({
             name: "Temp Delete Test",
@@ -301,7 +301,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.insertInto("users").values({
             name: "Temp Delete Test",
@@ -315,7 +315,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       // Delete the temporary users
       executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx, p) => ctx.deleteFrom("users").where((u) => u.id === p.userId),
         { userId: userId1.id },
       );
@@ -323,7 +323,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
       executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx, p) => ctx.deleteFrom("users").where((u) => u.id === p.userId),
         { userId: userId2.id },
       );
@@ -348,7 +348,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       // Insert temporary users for deletion testing
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.insertInto("users").values({
             name: "Temp Delete Test",
@@ -361,7 +361,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.insertInto("users").values({
             name: "Temp Delete Test",
@@ -374,13 +374,13 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
       executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx, p) => ctx.deleteFrom("users").where((u) => u.id === p.userId),
         { userId: userId1.id },
       );
       executeDelete(
         db,
-        dbContext,
+        schema,
         (ctx, p) => ctx.deleteFrom("users").where((u) => u.id === p.userId),
         { userId: userId2.id },
         { cache: false },
@@ -408,10 +408,10 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     it("should respect disabled cache in real queries", () => {
       setParseCacheConfig({ enabled: false });
 
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 18),
       );
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 18),
       );
 
@@ -421,15 +421,15 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     it("should respect capacity limit in real queries", () => {
       setParseCacheConfig({ capacity: 2 });
 
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 18),
       );
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 21),
       );
       expect(parseCache.size()).to.equal(2);
 
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 25),
       );
       expect(parseCache.size()).to.equal(2); // Should evict oldest
@@ -438,12 +438,12 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
   describe("Mixed operation caching", () => {
     it("should cache different operation types separately", () => {
-      executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
+      executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
         ctx.from("users").where((u) => u.age !== null && u.age >= 18),
       );
       executeInsert(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx.insertInto("users").values({
             name: p.name,
@@ -454,7 +454,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       );
       executeUpdate(
         db,
-        dbContext,
+        schema,
         (ctx, p) =>
           ctx
             .update("users")
@@ -471,7 +471,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     it("should demonstrate cache performance benefit", () => {
       // Define query once so all uses have identical code
       const testQuery = (
-        ctx: QueryDSL<TestDatabaseSchema>,
+        ctx: QueryBuilder<TestDatabaseSchema>,
         _params: Record<string, never>,
         _helpers: QueryHelpers,
       ) =>
@@ -484,12 +484,12 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
       // Clear cache and measure time for first execution
       clearParseCache();
-      executeSelectSimple(db, dbContext, testQuery);
+      executeSelectSimple(db, schema, testQuery);
 
       // Measure time for cached execution
       const start2 = Date.now();
       for (let i = 0; i < 100; i++) {
-        executeSelectSimple(db, dbContext, testQuery);
+        executeSelectSimple(db, schema, testQuery);
       }
       const time2 = Date.now() - start2;
 
@@ -501,7 +501,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       clearParseCache();
       const start3 = Date.now();
       for (let i = 0; i < 100; i++) {
-        executeSelectSimple(db, dbContext, testQuery, { cache: false });
+        executeSelectSimple(db, schema, testQuery, { cache: false });
       }
       const time3 = Date.now() - start3;
 

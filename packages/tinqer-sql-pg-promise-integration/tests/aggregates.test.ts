@@ -7,7 +7,7 @@ import { expect } from "chai";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Aggregates", () => {
   before(async () => {
@@ -20,7 +20,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const count = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx, _params, _helpers) => ctx.from("users").count(),
         {
           onSql: (result) => {
@@ -42,7 +42,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const count = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("users").count((u) => u.is_active === true),
         {
           onSql: (result) => {
@@ -64,7 +64,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const count = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -94,7 +94,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("products").sum((p) => p.price),
         {
           onSql: (result) => {
@@ -116,7 +116,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("products")
@@ -144,7 +144,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("orders").sum((o) => o.total_amount),
         {
           onSql: (result) => {
@@ -168,7 +168,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avg = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -196,7 +196,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avgElectronics = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("products")
@@ -211,7 +211,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avgFurniture = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("products")
@@ -249,7 +249,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const minAge = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -264,7 +264,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const maxAge = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -298,7 +298,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const minPrice = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("products").min((p) => p.price),
         {
           onSql: (result) => {
@@ -309,7 +309,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const maxPrice = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("products").max((p) => p.price),
         {
           onSql: (result) => {
@@ -337,7 +337,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const maxElectronicsPrice = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("products")
@@ -366,7 +366,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -398,7 +398,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("products")
@@ -438,7 +438,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("users")
@@ -475,7 +475,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("orders")
@@ -513,7 +513,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("users").sum((u) => u.age!),
         {
           onSql: (result) => {
@@ -532,7 +532,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avg = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("test_nulls").average((t) => t.value!),
         {
           onSql: (result) => {
@@ -549,16 +549,11 @@ describe("PostgreSQL Integration - Aggregates", () => {
     it("should handle COUNT(*) with NULL values (NULLs counted)", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) => ctx.from("test_nulls").count(),
-        {
-          onSql: (result) => {
-            capturedSql = result;
-          },
+      const count = await executeSelectSimple(db, schema, (ctx) => ctx.from("test_nulls").count(), {
+        onSql: (result) => {
+          capturedSql = result;
         },
-      );
+      });
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal('SELECT COUNT(*) FROM "test_nulls"');
@@ -570,7 +565,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("test_nulls_category")
@@ -599,7 +594,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const min = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("test_minmax").min((t) => t.value!),
         {
           onSql: (result) => {
@@ -610,7 +605,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const max = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) => ctx.from("test_minmax").max((t) => t.value!),
         {
           onSql: (result) => {
@@ -633,7 +628,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("test_groupby")
@@ -671,7 +666,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("test_agg_simple")
@@ -706,7 +701,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("test_agg_category")
@@ -739,16 +734,16 @@ describe("PostgreSQL Integration - Aggregates", () => {
     });
 
     it("should verify aggregate relationships (min <= avg <= max)", async () => {
-      const count = await executeSelectSimple(db, dbContext, (ctx) =>
+      const count = await executeSelectSimple(db, schema, (ctx) =>
         ctx.from("test_agg_simple").count(),
       );
-      const min = await executeSelectSimple(db, dbContext, (ctx) =>
+      const min = await executeSelectSimple(db, schema, (ctx) =>
         ctx.from("test_agg_simple").min((t) => t.value),
       );
-      const max = await executeSelectSimple(db, dbContext, (ctx) =>
+      const max = await executeSelectSimple(db, schema, (ctx) =>
         ctx.from("test_agg_simple").max((t) => t.value),
       );
-      const avg = await executeSelectSimple(db, dbContext, (ctx) =>
+      const avg = await executeSelectSimple(db, schema, (ctx) =>
         ctx.from("test_agg_simple").average((t) => t.value),
       );
 
@@ -767,7 +762,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        dbContext,
+        schema,
         (ctx) =>
           ctx
             .from("test_agg_price")
