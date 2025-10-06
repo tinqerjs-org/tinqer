@@ -181,7 +181,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Out of Stock Item",
             price: 50.0,
@@ -202,7 +202,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Minimal Product",
             price: 25.0,
@@ -227,7 +227,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const results = await executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .insertInto("products")
             .values({
@@ -250,7 +250,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const results = await executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .insertInto("products")
             .values({
@@ -275,7 +275,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const results = await executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .insertInto("products")
             .values({
@@ -299,7 +299,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
             price: 100.0,
@@ -321,7 +321,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
             price: 88.88,
@@ -342,7 +342,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Edge Case Product",
             price: 0.01, // Very small
@@ -477,7 +477,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const productResults = await executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .insertInto("products")
             .values({

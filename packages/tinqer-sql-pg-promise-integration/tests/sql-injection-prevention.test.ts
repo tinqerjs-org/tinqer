@@ -24,7 +24,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -45,7 +45,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const tableCheck = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").take(1),
+        (q) => q.from("users").take(1),
         {
           onSql: (result) => {
             tableCheckSql = result;
@@ -65,7 +65,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.email == params.maliciousEmail),
+        (q, params) => q.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
           onSql: (result) => {
@@ -88,7 +88,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -111,7 +111,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.email == params.maliciousEmail),
+        (q, params) => q.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
           onSql: (result) => {
@@ -130,7 +130,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const activeUsers = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.is_active == true),
+        (q) => q.from("users").where((u) => u.is_active == true),
         {
           onSql: (result) => {
             activeUsersSql = result;
@@ -150,7 +150,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -166,16 +166,11 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
       // Verify orders still exist
       let ordersSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const orders = await executeSelectSimple(
-        dbClient,
-        schema,
-        (q, _params, _helpers) => q.from("orders").take(1),
-        {
-          onSql: (result) => {
-            ordersSql = result;
-          },
+      const orders = await executeSelectSimple(dbClient, schema, (q) => q.from("orders").take(1), {
+        onSql: (result) => {
+          ordersSql = result;
         },
-      );
+      });
       expect(ordersSql).to.exist;
       expect(ordersSql!.sql).to.equal('SELECT * FROM "orders" LIMIT $(__p1)');
       expect(ordersSql!.params).to.deep.equal({ __p1: 1 });
@@ -214,8 +209,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
-          q.from("products").where((p) => p.description == params.pathWithBackslash),
+        (q, params) => q.from("products").where((p) => p.description == params.pathWithBackslash),
         { pathWithBackslash },
         {
           onSql: (result) => {
@@ -240,8 +234,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
-          q.from("products").where((p) => p.description == params.textWithSpecials),
+        (q, params) => q.from("products").where((p) => p.description == params.textWithSpecials),
         { textWithSpecials },
         {
           onSql: (result) => {
@@ -268,7 +261,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -290,7 +283,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -312,7 +305,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.email == params.maliciousEmail),
+        (q, params) => q.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
           onSql: (result) => {
@@ -336,7 +329,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.age == params.age),
+        (q, params) => q.from("users").where((u) => u.age == params.age),
         { age },
         {
           onSql: (result) => {
@@ -361,7 +354,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
+        (q, params) =>
           q
             .from("users")
             .where((u) => u.id == params.maliciousId)
@@ -392,8 +385,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
-          q.from("accounts").where((a) => a.balance == params.negativeBalance),
+        (q, params) => q.from("accounts").where((a) => a.balance == params.negativeBalance),
         { negativeBalance },
         {
           onSql: (result) => {
@@ -422,7 +414,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.email == params.maliciousEmail),
+        (q, params) => q.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
           onSql: (result) => {
@@ -444,7 +436,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -466,14 +458,12 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
         "admin'; INSERT INTO users (name, email) VALUES ('hacker', 'hack@test.com'); --";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const userCountBefore = await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
-        q.from("users"),
-      );
+      const userCountBefore = await executeSelectSimple(dbClient, schema, (q) => q.from("users"));
 
       await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -486,9 +476,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "name" = $(maliciousName)');
       expect(capturedSql!.params).to.deep.equal({ maliciousName });
 
-      const userCountAfter = await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
-        q.from("users"),
-      );
+      const userCountAfter = await executeSelectSimple(dbClient, schema, (q) => q.from("users"));
       expect(userCountAfter.length).to.equal(userCountBefore.length);
     });
 
@@ -499,7 +487,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -518,7 +506,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const products = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("products").take(1),
+        (q) => q.from("products").take(1),
         {
           onSql: (result) => {
             productsSql = result;
@@ -541,7 +529,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
+        (q, params) =>
           q
             .from("products")
             .where((p) => p.category == params.maliciousCategory)
@@ -563,16 +551,11 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
       // Verify users table still exists
       let usersSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const users = await executeSelectSimple(
-        dbClient,
-        schema,
-        (q, _params, _helpers) => q.from("users").take(1),
-        {
-          onSql: (result) => {
-            usersSql = result;
-          },
+      const users = await executeSelectSimple(dbClient, schema, (q) => q.from("users").take(1), {
+        onSql: (result) => {
+          usersSql = result;
         },
-      );
+      });
       expect(usersSql).to.exist;
       expect(usersSql!.sql).to.equal('SELECT * FROM "users" LIMIT $(__p1)');
       expect(usersSql!.params).to.deep.equal({ __p1: 1 });
@@ -586,7 +569,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
+        (q, params) =>
           q
             .from("users")
             .where((u) => u.name == params.testName)
@@ -620,7 +603,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
+        (q, params) =>
           q
             .from("products")
             .where((p) => p.category == params.maliciousCategory)
@@ -654,7 +637,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.longString),
+        (q, params) => q.from("users").where((u) => u.name == params.longString),
         { longString },
         {
           onSql: (result) => {
@@ -676,7 +659,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.unicodeString),
+        (q, params) => q.from("users").where((u) => u.name == params.unicodeString),
         { unicodeString },
         {
           onSql: (result) => {
@@ -692,16 +675,11 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
 
       // Table should still exist
       let usersSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const users = await executeSelectSimple(
-        dbClient,
-        schema,
-        (q, _params, _helpers) => q.from("users").take(1),
-        {
-          onSql: (result) => {
-            usersSql = result;
-          },
+      const users = await executeSelectSimple(dbClient, schema, (q) => q.from("users").take(1), {
+        onSql: (result) => {
+          usersSql = result;
         },
-      );
+      });
       expect(usersSql).to.exist;
       expect(usersSql!.sql).to.equal('SELECT * FROM "users" LIMIT $(__p1)');
       expect(usersSql!.params).to.deep.equal({ __p1: 1 });
@@ -715,7 +693,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.hexString),
+        (q, params) => q.from("users").where((u) => u.name == params.hexString),
         { hexString },
         {
           onSql: (result) => {
@@ -739,7 +717,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.email == params.surrogatePayload),
+        (q, params) => q.from("users").where((u) => u.email == params.surrogatePayload),
         { surrogatePayload },
         {
           onSql: (result) => {
@@ -764,8 +742,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
-          q.from("products").where((p) => p.name == params.controlCharsPayload),
+        (q, params) => q.from("products").where((p) => p.name == params.controlCharsPayload),
         { controlCharsPayload },
         {
           onSql: (result) => {
@@ -790,7 +767,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").where((u) => u.name == params.mixedPayload),
+        (q, params) => q.from("users").where((u) => u.name == params.mixedPayload),
         { mixedPayload },
         {
           onSql: (result) => {
@@ -806,9 +783,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       expect(results).to.have.length(0);
 
       // Verify table still exists
-      const users = await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
-        q.from("users").take(1),
-      );
+      const users = await executeSelectSimple(dbClient, schema, (q) => q.from("users").take(1));
       expect(users).to.have.length(1);
     });
   });
@@ -823,7 +798,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
+        (q, params) =>
           q
             .from("users")
             .where(
@@ -848,9 +823,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       expect(results).to.have.length(0);
 
       // Verify table integrity
-      const users = await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
-        q.from("users"),
-      );
+      const users = await executeSelectSimple(dbClient, schema, (q) => q.from("users"));
       expect(users.length).to.be.greaterThan(0);
     });
 
@@ -863,7 +836,7 @@ describe("PostgreSQL Integration - SQL Injection Prevention", () => {
       const results = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
+        (q, params) =>
           q
             .from("users")
             .where(

@@ -21,7 +21,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("users")
             .orderBy((u) => u.id)
@@ -49,7 +49,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").first((u) => u.age !== null && u.age > 40),
+        (q) => q.from("users").first((u) => u.age !== null && u.age > 40),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -74,7 +74,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
         await executeSelectSimple(
           dbClient,
           schema,
-          (q, _params, _helpers) => q.from("users").first((u) => u.age !== null && u.age > 100),
+          (q) => q.from("users").first((u) => u.age !== null && u.age > 100),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -99,8 +99,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
-          q.from("users").firstOrDefault((u) => u.age !== null && u.age > 100),
+        (q) => q.from("users").firstOrDefault((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -123,7 +122,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const result = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("users")
             .join(
@@ -169,7 +168,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").single((u) => u.email === "john@example.com"),
+        (q) => q.from("users").single((u) => u.email === "john@example.com"),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -192,7 +191,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
         await executeSelectSimple(
           dbClient,
           schema,
-          (q, _params, _helpers) => q.from("users").single((u) => u.department_id === 1),
+          (q) => q.from("users").single((u) => u.department_id === 1),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -218,8 +217,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
         await executeSelectSimple(
           dbClient,
           schema,
-          (q, _params, _helpers) =>
-            q.from("users").single((u) => u.email === "nonexistent@example.com"),
+          (q) => q.from("users").single((u) => u.email === "nonexistent@example.com"),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -242,8 +240,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
-          q.from("users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
+        (q) => q.from("users").singleOrDefault((u) => u.email === "nonexistent@example.com"),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -265,7 +262,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
         await executeSelectSimple(
           dbClient,
           schema,
-          (q, _params, _helpers) => q.from("users").singleOrDefault((u) => u.department_id === 1),
+          (q) => q.from("users").singleOrDefault((u) => u.department_id === 1),
           {
             onSql: (result) => {
               capturedSql = result;
@@ -292,7 +289,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("users")
             .orderBy((u) => u.id)
@@ -318,7 +315,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("users")
             .where((u) => u.department_id === 1)
@@ -347,8 +344,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
-          q.from("users").lastOrDefault((u) => u.age !== null && u.age > 100),
+        (q) => q.from("users").lastOrDefault((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -373,7 +369,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const hasYoungUsers = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").any((u) => u.age !== null && u.age < 30),
+        (q) => q.from("users").any((u) => u.age !== null && u.age < 30),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -396,7 +392,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const hasCentenarians = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").any((u) => u.age !== null && u.age > 100),
+        (q) => q.from("users").any((u) => u.age !== null && u.age > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -416,16 +412,11 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
     it("should return true when any() is called without predicate on non-empty table", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const hasUsers = await executeSelectSimple(
-        dbClient,
-        schema,
-        (q, _params, _helpers) => q.from("users").any(),
-        {
-          onSql: (result) => {
-            capturedSql = result;
-          },
+      const hasUsers = await executeSelectSimple(dbClient, schema, (q) => q.from("users").any(), {
+        onSql: (result) => {
+          capturedSql = result;
         },
-      );
+      });
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal(
@@ -442,7 +433,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const allHaveEmail = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").all((u) => u.email !== null),
+        (q) => q.from("users").all((u) => u.email !== null),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -465,7 +456,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const allActive = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").all((u) => u.is_active === true),
+        (q) => q.from("users").all((u) => u.is_active === true),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -488,7 +479,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const allEngineersActive = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("users")
             .where((u) => u.department_id === 1)
@@ -507,7 +498,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       expect(capturedSql!.params).to.deep.equal({ __p1: 1, __p2: true });
 
       // Check the actual data to verify the result
-      const engineerStatus = await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      const engineerStatus = await executeSelectSimple(dbClient, schema, (q) =>
         q
           .from("users")
           .where((u) => u.department_id === 1)
@@ -526,7 +517,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const users = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("users")
             .where((u) => u.is_active === true)
@@ -557,7 +548,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const products = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("products")
             .where((p) => p.stock > 50)
@@ -595,7 +586,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const user = await executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) => q.from("users").single((u) => u.email === params.email),
+        (q, params) => q.from("users").single((u) => u.email === params.email),
         { email: targetEmail },
         {
           onSql: (result) => {
@@ -619,8 +610,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const hasExpensiveElectronics = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
-          q.from("products").any((p) => p.category === "Electronics" && p.price > 500),
+        (q) => q.from("products").any((p) => p.category === "Electronics" && p.price > 500),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -643,7 +633,7 @@ describe("PostgreSQL Integration - Terminal Operations", () => {
       const allPositive = await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("orders")
             .where((o) => o.status === "completed")

@@ -251,7 +251,8 @@ const schema = createSchema<Schema>();
 
 const { sql } = selectStatement(
   schema,
-  (q, helpers) => q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  (q, params, helpers) =>
+    q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 // PostgreSQL: WHERE "name" ILIKE $(__p1)

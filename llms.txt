@@ -44,7 +44,7 @@ const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const schema = createSchema<Schema>();
 
-const results = await executeSelectSimple(db, schema, (q, _params, _helpers) =>
+const results = await executeSelectSimple(db, schema, (q) =>
   q
     .from("users")
     .where((u) => u.age >= 18)
@@ -76,7 +76,7 @@ const schema = createSchema<Schema>();
 const results = executeSelect(
   db,
   schema,
-  (q, params, _helpers) =>
+  (q, params) =>
     q
       .from("products")
       .where((p) => p.inStock === 1 && p.price < params.maxPrice)
@@ -101,7 +101,7 @@ const { sql, params } = selectStatement(
 const schema = createSchema<Schema>();
 
 // Full TypeScript type inference
-const query = (q, _params, _helpers) =>
+const query = (q) =>
   q
     .from("users")
     .where((u) => u.age >= 18 && u.email.includes("@company.com"))
@@ -126,7 +126,7 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-const query = (q, _params, _helpers) =>
+const query = (q) =>
   q
     .from("users")
     .join(
@@ -144,7 +144,7 @@ const query = (q, _params, _helpers) =>
 #### Left Outer Join
 
 ```typescript
-const query = (q, _params, _helpers) =>
+const query = (q) =>
   q
     .from("users")
     .groupJoin(
@@ -169,7 +169,7 @@ const query = (q, _params, _helpers) =>
 #### Cross Join
 
 ```typescript
-const query = (q, _params, _helpers) =>
+const query = (q) =>
   q
     .from("departments")
     .selectMany(
@@ -187,7 +187,7 @@ Right and full outer joins still require manual SQL, just as in LINQ-to-Objects.
 ### Grouping and Aggregation
 
 ```typescript
-const query = (q, _params, _helpers) =>
+const query = (q) =>
   q
     .from("orders")
     .groupBy((o) => o.product_id)
@@ -248,7 +248,7 @@ const schema = createSchema<Schema>();
 const insertedRows = await executeInsert(
   db,
   schema,
-  (q, _params) =>
+  (q, ) =>
     q.insertInto("users").values({
       name: "Alice",
       email: "alice@example.com",
@@ -273,7 +273,7 @@ const inactiveUsers = await executeUpdate(
 const deletedCount = await executeDelete(
   db,
   schema,
-  (q, _params) => q.deleteFrom("users").where((u) => u.status === "deleted"),
+  (q, ) => q.deleteFrom("users").where((u) => u.status === "deleted"),
   {},
 );
 
@@ -457,7 +457,7 @@ const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const schema = createSchema<Schema>();
 
 // Execute without external params
-const activeUsers = await executeSelectSimple(db, schema, (q, _params, _helpers) =>
+const activeUsers = await executeSelectSimple(db, schema, (q) =>
   q
     .from("users")
     .where((u) => u.active)
@@ -468,7 +468,7 @@ const activeUsers = await executeSelectSimple(db, schema, (q, _params, _helpers)
 const matchingUsers = await executeSelect(
   db,
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q
       .from("users")
       .where((u) => u.age >= p.minAge)
@@ -480,7 +480,7 @@ const matchingUsers = await executeSelect(
 const createdUsers = await executeInsert(
   db,
   schema,
-  (q, _params, _helpers) =>
+  (q) =>
     q
       .insertInto("users")
       .values({ name: "Alice", email: "alice@example.com", age: 30, active: true })
@@ -492,7 +492,7 @@ const createdUsers = await executeInsert(
 const updatedCount = await executeUpdate(
   db,
   schema,
-  (q, _params, _helpers) =>
+  (q) =>
     q
       .update("users")
       .set({ active: false })
@@ -504,14 +504,14 @@ const updatedCount = await executeUpdate(
 const deletedCount = await executeDelete(
   db,
   schema,
-  (q, _params, _helpers) => q.deleteFrom("users").where((u) => !u.active),
+  (q) => q.deleteFrom("users").where((u) => !u.active),
   {},
 );
 
 // Generate SQL without executing
 const { sql, params } = selectStatement(
   schema,
-  (q, _params, _helpers) => q.from("users").where((u) => u.email.endsWith("@example.com")),
+  (q) => q.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```
@@ -567,7 +567,7 @@ db.exec(`
 const inserted = executeInsert(
   db,
   schema,
-  (q, _params, _helpers) =>
+  (q) =>
     q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
   {},
 );
@@ -576,7 +576,7 @@ const inserted = executeInsert(
 const users = executeSelect(
   db,
   schema,
-  (q, params, _helpers) =>
+  (q, params) =>
     q
       .from("users")
       .where((u) => u.isActive === params.active)
@@ -587,7 +587,7 @@ const users = executeSelect(
 const updated = executeUpdate(
   db,
   schema,
-  (q, _params, _helpers) =>
+  (q) =>
     q
       .update("users")
       .set({ isActive: 0 })
@@ -598,14 +598,14 @@ const updated = executeUpdate(
 const removed = executeDelete(
   db,
   schema,
-  (q, p, _helpers) => q.deleteFrom("users").where((u) => u.age < p.cutoff),
+  (q, p) => q.deleteFrom("users").where((u) => u.age < p.cutoff),
   { cutoff: 18 },
 );
 
 // Need the SQL text for custom execution?
 const { sql, params } = selectStatement(
   schema,
-  (q, _params, _helpers) => q.from("users").where((u) => u.name.startsWith("S")),
+  (q) => q.from("users").where((u) => u.name.startsWith("S")),
   {},
 );
 const rows = db.prepare(sql).all(params);
@@ -732,7 +732,7 @@ const schema = createSchema<Schema>();
 
 const { sql, params } = selectStatement(
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q
       .from("users")
       .where((u) => u.age >= p.minAge)
@@ -784,7 +784,7 @@ const schema = createSchema<Schema>();
 const users = await executeSelect(
   db,
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q
       .from("users")
       .where((u) => u.age >= p.minAge)
@@ -833,7 +833,7 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-const allUsers = await executeSelectSimple(db, schema, (q, _params, _helpers) => q.from("users"));
+const allUsers = await executeSelectSimple(db, schema, (q) => q.from("users"));
 ```
 
 ### 1.4 insertStatement & executeInsert
@@ -891,14 +891,14 @@ const schema = createSchema<Schema>();
 const inserted = await executeInsert(
   db,
   schema,
-  (q, _params, _helpers) => q.insertInto("users").values({ name: "Alice" }),
+  (q) => q.insertInto("users").values({ name: "Alice" }),
   {},
 );
 
 const createdUsers = await executeInsert(
   db,
   schema,
-  (q, _params, _helpers) =>
+  (q) =>
     q
       .insertInto("users")
       .values({ name: "Bob" })
@@ -965,7 +965,7 @@ const schema = createSchema<Schema>();
 const updatedRows = await executeUpdate(
   db,
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q
       .update("users")
       .set({ status: "inactive" })
@@ -1017,7 +1017,7 @@ const schema = createSchema<Schema>();
 const deletedCount = await executeDelete(
   db,
   schema,
-  (q, _params, _helpers) => q.deleteFrom("users").where((u) => u.status === "inactive"),
+  (q) => q.deleteFrom("users").where((u) => u.status === "inactive"),
   {},
 );
 ```
@@ -1369,7 +1369,7 @@ describe("PostgreSQL Integration", () => {
   });
 
   it("should execute SELECT query", async () => {
-    const results = await executeSelectSimple(db, schema, (q, _params, _helpers) =>
+    const results = await executeSelectSimple(db, schema, (q) =>
       q
         .from("users")
         .where((u) => u.age >= 25)
@@ -1624,7 +1624,7 @@ Error: Unsupported AST node type: TemplateLiteral
 await executeSelectSimple(
   db,
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q.from("users").where((u) => u.name === p.name),
   { name: `User ${userId}` }
 );
@@ -1647,7 +1647,7 @@ const minAge = 18;
 await executeSelectSimple(
   db,
   schema,
-  (q, p, _helpers) =>
+  (q, p) =>
     q.from("users").where((u) => u.age >= p.minAge),
   { minAge: 18 }
 );

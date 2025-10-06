@@ -4,7 +4,6 @@ import {
   setParseCacheConfig,
   getParseCacheConfig,
   type QueryBuilder,
-  type QueryHelpers,
 } from "@webpods/tinqer";
 import {
   executeSelect,
@@ -40,13 +39,13 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
   describe("SELECT query caching", () => {
     it("should cache repeated SELECT queries", () => {
       // First execution - should parse
-      const result1 = executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      const result1 = executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
       expect(parseCache.size()).to.equal(1);
 
       // Second execution - should hit cache (same function code)
-      const result2 = executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      const result2 = executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
       expect(parseCache.size()).to.equal(1);
@@ -60,7 +59,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       executeSelect(
         dbClient,
         schema,
-        (q, p, _helpers) => q.from("users").where((u) => u.age !== null && u.age >= p.minAge),
+        (q, p) => q.from("users").where((u) => u.age !== null && u.age >= p.minAge),
         { minAge: 21 },
       );
       expect(parseCache.size()).to.equal(1);
@@ -69,7 +68,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       executeSelect(
         dbClient,
         schema,
-        (q, p, _helpers) => q.from("users").where((u) => u.age !== null && u.age >= p.minAge),
+        (q, p) => q.from("users").where((u) => u.age !== null && u.age >= p.minAge),
         { minAge: 30 },
       );
       expect(parseCache.size()).to.equal(1);
@@ -77,7 +76,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
     it("should bypass cache when cache option is false", () => {
       // First execution with cache
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
 
@@ -85,7 +84,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.age !== null && u.age >= 18),
+        (q) => q.from("users").where((u) => u.age !== null && u.age >= 18),
         { cache: false },
       );
 
@@ -94,10 +93,10 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     });
 
     it("should cache different queries separately", () => {
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 21),
       );
 
@@ -105,7 +104,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     });
 
     it("should cache complex queries with joins", () => {
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q
           .from("users")
           .join(
@@ -121,7 +120,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       );
       expect(parseCache.size()).to.equal(1);
 
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q
           .from("users")
           .join(
@@ -139,8 +138,8 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     });
 
     it("should cache terminal operations (count, sum, etc.)", () => {
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) => q.from("users").count());
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) => q.from("users").count());
+      executeSelectSimple(dbClient, schema, (q) =>
         q
           .from("users")
           .where((u) => u.age !== null)
@@ -150,8 +149,8 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
       expect(parseCache.size()).to.equal(2);
 
       // Re-execute should hit cache
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) => q.from("users").count());
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) => q.from("users").count());
+      executeSelectSimple(dbClient, schema, (q) =>
         q
           .from("users")
           .where((u) => u.age !== null)
@@ -414,10 +413,10 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     it("should respect disabled cache in real queries", () => {
       setParseCacheConfig({ enabled: false });
 
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
 
@@ -427,15 +426,15 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
     it("should respect capacity limit in real queries", () => {
       setParseCacheConfig({ capacity: 2 });
 
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 21),
       );
       expect(parseCache.size()).to.equal(2);
 
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 25),
       );
       expect(parseCache.size()).to.equal(2); // Should evict oldest
@@ -444,7 +443,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
 
   describe("Mixed operation caching", () => {
     it("should cache different operation types separately", () => {
-      executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
       executeInsert(
@@ -476,11 +475,7 @@ describe("Parse Cache Integration Tests (SQLite)", () => {
   describe("Performance verification", () => {
     it("should demonstrate cache performance benefit", () => {
       // Define query once so all uses have identical code
-      const testQuery = (
-        q: QueryBuilder<TestDatabaseSchema>,
-        _params: Record<string, never>,
-        _helpers: QueryHelpers,
-      ) =>
+      const testQuery = (q: QueryBuilder<TestDatabaseSchema>) =>
         q
           .from("users")
           .where((u) => u.age !== null && u.age >= 18)

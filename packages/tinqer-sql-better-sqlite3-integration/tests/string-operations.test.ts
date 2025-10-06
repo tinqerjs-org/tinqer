@@ -21,7 +21,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.name.startsWith("J")),
+        (q) => q.from("users").where((u) => u.name.startsWith("J")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -46,7 +46,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.email.startsWith("alice")),
+        (q) => q.from("users").where((u) => u.email.startsWith("alice")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -69,8 +69,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
-          q.from("users").where((u) => u.name.startsWith("J") && u.is_active === 1),
+        (q) => q.from("users").where((u) => u.name.startsWith("J") && u.is_active === 1),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -100,7 +99,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.email.endsWith("@example.com")),
+        (q) => q.from("users").where((u) => u.email.endsWith("@example.com")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -125,7 +124,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("products").where((p) => p.name.endsWith("top")),
+        (q) => q.from("products").where((p) => p.name.endsWith("top")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -152,7 +151,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("oh")),
+        (q) => q.from("users").where((u) => u.name.includes("oh")),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -179,7 +178,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("products")
             .where((p) => p.description !== null && p.description.includes("office")),
@@ -207,7 +206,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("products")
             .where(
@@ -245,7 +244,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q.from("users").where((u) => u.email.startsWith("j") && u.email.endsWith("@example.com")),
         {
           onSql: (result) => {
@@ -273,7 +272,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("products")
             .where(
@@ -304,7 +303,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("users")
             .join(
@@ -345,7 +344,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const upperResults = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("J")),
+        (q) => q.from("users").where((u) => u.name.includes("J")),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -363,7 +362,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const lowerResults = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("o")),
+        (q) => q.from("users").where((u) => u.name.includes("o")),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -387,7 +386,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const capitalD = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("D")),
+        (q) => q.from("users").where((u) => u.name.includes("D")),
         {
           onSql: (result) => {
             capturedSql3 = result;
@@ -405,7 +404,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const lowercaseD = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.name.includes("d")),
+        (q) => q.from("users").where((u) => u.name.includes("d")),
         {
           onSql: (result) => {
             capturedSql4 = result;
@@ -433,7 +432,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const count = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q
             .from("users")
             .where((u) => u.email.endsWith("@example.com"))
@@ -462,7 +461,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) =>
+        (q) =>
           q.from("products").where((p) => p.description !== null && p.description.includes("High")),
         {
           onSql: (result) => {
@@ -488,7 +487,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("products").where((p) => p.description !== null),
+        (q) => q.from("products").where((p) => p.description !== null),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -568,8 +567,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
-          q.from("test_special_chars").where((t) => t.text.includes(params.search)),
+        (q, params) => q.from("test_special_chars").where((t) => t.text.includes(params.search)),
         { search: "_" },
         {
           onSql: (result) => {
@@ -611,8 +609,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
-          q.from("test_backslash").where((t) => t.text.includes(params.search)),
+        (q, params) => q.from("test_backslash").where((t) => t.text.includes(params.search)),
         { search: "\\" },
         {
           onSql: (result) => {
@@ -655,8 +652,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelect(
         dbClient,
         schema,
-        (q, params, _helpers) =>
-          q.from("test_mixed_chars").where((t) => t.text.includes(params.search)),
+        (q, params) => q.from("test_mixed_chars").where((t) => t.text.includes(params.search)),
         { search: "%_" },
         {
           onSql: (result) => {

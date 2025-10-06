@@ -202,7 +202,7 @@ export interface FromOperation extends QueryOperation {
 }
 ```
 
-**User-Facing API**: `(q, _params) => q.from("users")`
+**User-Facing API**: `(q, ) => q.from("users")`
 
 **Internal Representation**:
 
@@ -482,7 +482,7 @@ The parser uses OXC to convert lambda expressions into an Abstract Syntax Tree (
 **Input**: Lambda expression with DSL parameter pattern
 
 ```typescript
-(q, _params, _helpers) =>
+(q) =>
   q
     .from("employees")
     .select((e) => ({ ...e, rn: window.rowNumber() }))
