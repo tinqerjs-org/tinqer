@@ -99,7 +99,7 @@ export function visitPredicate(
     }
 
     case "CallExpression": {
-      // Try case-insensitive functions first (_.functions.iequals)
+      // Try case-insensitive functions first (h.functions.iequals)
       const caseInsensitiveResult = visitCaseInsensitiveFunction(node as CallExpression, {
         ...context,
         autoParamCounter: currentCounter,

@@ -1,6 +1,6 @@
 /**
  * Case-insensitive function visitor for WHERE clauses
- * Handles helpers.functions.* calls like _.functions.iequals(a, b)
+ * Handles helpers.functions.* calls like h.functions.iequals(a, b)
  */
 
 import type {
