@@ -89,7 +89,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should use external parameters", () => {
       const result = deleteStatement(
         schema,
-        (q, p: { userId: number }) => q.deleteFrom("users").where((u) => u.id === p.userId),
+        (q, p) => q.deleteFrom("users").where((u) => u.id === p.userId),
         { userId: 4 },
       );
 
@@ -102,8 +102,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should mix external parameters with literals", () => {
       const result = deleteStatement(
         schema,
-        (q, p: { minAge: number }) =>
-          q.deleteFrom("users").where((u) => u.age > p.minAge && u.department === "Old"),
+        (q, p) => q.deleteFrom("users").where((u) => u.age > p.minAge && u.department === "Old"),
         { minAge: 65 },
       );
 
@@ -261,7 +260,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle parameterized array includes", () => {
       const result = deleteStatement(
         schema,
-        (q, p: { ids: number[] }) => q.deleteFrom("users").where((u) => p.ids.includes(u.id)),
+        (q, p) => q.deleteFrom("users").where((u) => p.ids.includes(u.id)),
         { ids: [4, 5, 6] },
       );
 
@@ -279,8 +278,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle date parameters (converted to string format at execution time)", () => {
       const result = deleteStatement(
         schema,
-        (q, p: { cutoffDate: Date }) =>
-          q.deleteFrom("users").where((u) => u.createdAt < p.cutoffDate),
+        (q, p) => q.deleteFrom("users").where((u) => u.createdAt < p.cutoffDate),
         { cutoffDate: new Date("2020-01-01") },
       );
 

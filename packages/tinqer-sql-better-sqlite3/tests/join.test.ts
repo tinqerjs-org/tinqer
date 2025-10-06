@@ -373,7 +373,7 @@ describe("Join SQL Generation", () => {
     it("should handle JOIN with pagination", () => {
       const result = selectStatement(
         schema,
-        (q, p: { page: number; pageSize: number }) =>
+        (q, p) =>
           q
             .from("users")
             .join(

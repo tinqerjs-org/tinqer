@@ -59,7 +59,7 @@ describe("WHERE SQL Generation", () => {
     it("should handle simple parameter", () => {
       const result = selectStatement(
         schema,
-        (q, p: { minAge: number }) => q.from("users").where((x) => x.age >= p.minAge),
+        (q, p) => q.from("users").where((x) => x.age >= p.minAge),
         { minAge: 18 },
       );
 
@@ -70,8 +70,7 @@ describe("WHERE SQL Generation", () => {
     it("should handle multiple parameters", () => {
       const result = selectStatement(
         schema,
-        (q, p: { minAge: number; maxAge: number }) =>
-          q.from("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge),
+        (q, p) => q.from("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge),
         { minAge: 18, maxAge: 65 },
       );
 
@@ -254,7 +253,7 @@ describe("WHERE SQL Generation", () => {
     it("should handle WHERE clauses with parameters", () => {
       const result = selectStatement(
         schema,
-        (q, p: { minAge: number; targetRole: string }) =>
+        (q, p) =>
           q
             .from("users")
             .where((x) => x.age >= p.minAge)
