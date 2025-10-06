@@ -25,7 +25,7 @@ describe("Auto-Parameterization SQL Generation", () => {
   it("should merge user params with auto-params", () => {
     const result = selectStatement(
       schema,
-      (q, p: { role: string }) => q.from("users").where((x) => x.age >= 21 && x.role == p.role),
+      (q, p) => q.from("users").where((x) => x.age >= 21 && x.role == p.role),
       { role: "admin" },
     );
 
@@ -58,7 +58,7 @@ describe("Auto-Parameterization SQL Generation", () => {
   it("should handle complex query with multiple auto-params", () => {
     const result = selectStatement(
       schema,
-      (q, p: { category: string }) =>
+      (q, p) =>
         q
           .from("products")
           .where((x) => x.price > 100)

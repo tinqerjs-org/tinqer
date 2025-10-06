@@ -11,7 +11,7 @@ describe("Complex Query Chaining", () => {
   it("should generate complex query with WHERE, SELECT, ORDER BY, TAKE", () => {
     const result = selectStatement(
       schema,
-      (q, p: { minAge: number }) =>
+      (q, p) =>
         q
           .from("users")
           .where((x) => x.age >= p.minAge && x.isActive)
@@ -30,7 +30,7 @@ describe("Complex Query Chaining", () => {
   it("should generate query with SKIP and TAKE for pagination", () => {
     const result = selectStatement(
       schema,
-      (q, p: { page: number; pageSize: number }) =>
+      (q, p) =>
         q
           .from("products")
           .orderBy((x) => x.name)

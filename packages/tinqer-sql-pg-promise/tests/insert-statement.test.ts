@@ -72,7 +72,7 @@ describe("INSERT Statement Generation", () => {
     it("should use external parameters", () => {
       const result = insertStatement(
         schema,
-        (q, p: { name: string; age: number }) =>
+        (q, p) =>
           q.insertInto("users").values({
             name: p.name,
             age: p.age,
@@ -90,7 +90,7 @@ describe("INSERT Statement Generation", () => {
     it("should mix external parameters with literals", () => {
       const result = insertStatement(
         schema,
-        (q, p: { name: string }) =>
+        (q, p) =>
           q.insertInto("users").values({
             name: p.name,
             age: 25,

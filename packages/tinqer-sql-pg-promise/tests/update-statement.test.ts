@@ -56,7 +56,7 @@ describe("UPDATE Statement Generation", () => {
           q
             .update("public.users")
             .set({ age: 33 })
-            .where((u: { id: number; age: number }) => u.id === 3),
+            .where((u) => u.id === 3),
         {},
       );
 
@@ -121,7 +121,7 @@ describe("UPDATE Statement Generation", () => {
     it("should use external parameters in SET", () => {
       const result = updateStatement(
         schema,
-        (q, p: { newAge: number; userId: number }) =>
+        (q, p) =>
           q
             .update("users")
             .set({ age: p.newAge })
@@ -139,7 +139,7 @@ describe("UPDATE Statement Generation", () => {
     it("should mix external parameters with literals", () => {
       const result = updateStatement(
         schema,
-        (q, p: { userId: number }) =>
+        (q, p) =>
           q
             .update("users")
             .set({ age: 36, email: "fixed@example.com" })

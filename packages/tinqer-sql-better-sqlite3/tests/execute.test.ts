@@ -42,7 +42,7 @@ describe("Execute Function", () => {
     it("should execute with parameters", async () => {
       const sqlResult = selectStatement(
         schema,
-        (q, p: { minAge: number }) => q.from("users").where((u) => u.age >= p.minAge),
+        (q, p) => q.from("users").where((u) => u.age >= p.minAge),
         { minAge: 21 },
       );
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "age" >= @minAge');

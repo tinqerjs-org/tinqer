@@ -359,7 +359,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         dbClient,
         schema,
-        (q, p: { products: string[] }) =>
+        (q, p) =>
           q
             .update("inventory")
             .set({ warehouse_location: "Warehouse E" })

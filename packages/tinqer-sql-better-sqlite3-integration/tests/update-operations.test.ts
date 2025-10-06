@@ -376,7 +376,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, p: { products: string[] }) =>
+        (q, p) =>
           q
             .update("inventory")
             .set({ warehouse_location: "Warehouse E" })

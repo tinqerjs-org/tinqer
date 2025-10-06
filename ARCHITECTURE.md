@@ -768,7 +768,7 @@ const schema = createSchema<Schema>();
 // Execute query with parameter pattern
 const result = await selectStatement(
   schema,
-  (q, p: { minAge: number; dept: string }) =>
+  (q, p) =>
     q
       .from("users")
       .where((x) => x.age >= p.minAge && x.department === p.dept)

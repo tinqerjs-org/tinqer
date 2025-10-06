@@ -44,7 +44,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle startsWith with parameter", () => {
       const result = selectStatement(
         schema,
-        (q, p: { prefix: string }) => q.from("users").where((u) => u.email.startsWith(p.prefix)),
+        (q, p) => q.from("users").where((u) => u.email.startsWith(p.prefix)),
         { prefix: "admin@" },
       );
 
@@ -80,7 +80,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle endsWith with parameter", () => {
       const result = selectStatement(
         schema,
-        (q, p: { suffix: string }) => q.from("users").where((u) => u.name.endsWith(p.suffix)),
+        (q, p) => q.from("users").where((u) => u.name.endsWith(p.suffix)),
         { suffix: "son" },
       );
 
@@ -118,8 +118,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle contains with parameter", () => {
       const result = selectStatement(
         schema,
-        (q, p: { keyword: string }) =>
-          q.from("products").where((pr) => pr.name.includes(p.keyword)),
+        (q, p) => q.from("products").where((pr) => pr.name.includes(p.keyword)),
         { keyword: "laptop" },
       );
 
