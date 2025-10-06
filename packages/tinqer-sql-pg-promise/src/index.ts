@@ -43,14 +43,14 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
 /**
  * Generate SQL from a query builder function
  * @param schema Database context with schema information
- * @param queryBuilder Function that builds the query using LINQ operations with DSL, params, and helpers
+ * @param builder Function that builds the query using LINQ operations with DSL, params, and helpers
  * @param params Parameters to pass to the query builder
  * @param options Parse options including cache control
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function selectStatement<TSchema, TParams, TResult>(
   _schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
@@ -59,7 +59,7 @@ export function selectStatement<TSchema, TParams, TResult>(
   options: ParseQueryOptions = {},
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
   // Parse the query to get the operation tree and auto-params
-  const parseResult = parseQuery(queryBuilder, options);
+  const parseResult = parseQuery(builder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse query");
@@ -125,7 +125,7 @@ interface PgDatabase {
  * Execute a query and return typed results
  * @param db pg-promise database instance
  * @param schema Database context with schema information
- * @param queryBuilder Function that builds the query using LINQ operations with DSL, params, and helpers
+ * @param builder Function that builds the query using LINQ operations with DSL, params, and helpers
  * @param params Parameters to pass to the query builder
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Promise with query results, properly typed based on the query
@@ -137,11 +137,7 @@ export async function executeSelect<
 >(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-    helpers: QueryHelpers,
-  ) => TQuery,
+  builder: (queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
 ): Promise<
@@ -162,7 +158,7 @@ export async function executeSelect<
           ? T
           : never;
 
-  const { sql, params: sqlParams } = selectStatement(schema, queryBuilder, params, options);
+  const { sql, params: sqlParams } = selectStatement(schema, builder, params, options);
 
   // Call onSql callback if provided
   if (options.onSql) {
@@ -170,7 +166,7 @@ export async function executeSelect<
   }
 
   // Check if this is a terminal operation that returns a single value
-  const parseResult = parseQuery(queryBuilder, options);
+  const parseResult = parseQuery(builder, options);
   if (!parseResult) {
     throw new Error("Failed to parse query");
   }
@@ -251,7 +247,7 @@ export async function executeSelect<
  * Execute a query with no parameters
  * @param db pg-promise database instance
  * @param schema Database context with schema information
- * @param queryBuilder Function that builds the query using LINQ operations with DSL and helpers
+ * @param builder Function that builds the query using LINQ operations with DSL and helpers
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Promise with query results, properly typed based on the query
  */
@@ -261,7 +257,7 @@ export async function executeSelectSimple<
 >(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     _params: Record<string, never>,
     helpers: QueryHelpers,
@@ -276,7 +272,7 @@ export async function executeSelectSimple<
         ? T
         : never
 > {
-  return executeSelect(db, schema, queryBuilder, {}, options);
+  return executeSelect(db, schema, builder, {}, options);
 }
 
 // ==================== INSERT Statement & Execution ====================
@@ -286,7 +282,7 @@ export async function executeSelectSimple<
  */
 export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
   _schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
@@ -296,7 +292,7 @@ export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
   TParams & Record<string, string | number | boolean | null>,
   TReturning extends never ? void : TReturning
 > {
-  const parseResult = parseQuery(queryBuilder, options);
+  const parseResult = parseQuery(builder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse INSERT query");
@@ -321,7 +317,7 @@ export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
 export async function executeInsert<TSchema, TParams, TTable>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  queryBuilder: (queryBuilder: QueryBuilder<TSchema>, params: TParams) => Insertable<TTable>,
+  builder: (queryBuilder: QueryBuilder<TSchema>, params: TParams) => Insertable<TTable>,
   params: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): Promise<number>;
@@ -332,7 +328,7 @@ export async function executeInsert<TSchema, TParams, TTable>(
 export async function executeInsert<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
   ) => InsertableWithReturning<TTable, TReturning>,
@@ -344,20 +340,20 @@ export async function executeInsert<TSchema, TParams, TTable, TReturning>(
 export async function executeInsert<TSchema, TParams, TTable, TReturning = never>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
 ): Promise<number | TReturning[]> {
-  const { sql, params: sqlParams } = insertStatement(schema, queryBuilder, params, options);
+  const { sql, params: sqlParams } = insertStatement(schema, builder, params, options);
 
   if (options.onSql) {
     options.onSql({ sql, params: sqlParams });
   }
 
-  const parseResult = parseQuery(queryBuilder, options);
+  const parseResult = parseQuery(builder, options);
   if (!parseResult) {
     throw new Error("Failed to parse INSERT query");
   }
@@ -382,7 +378,7 @@ export async function executeInsert<TSchema, TParams, TTable, TReturning = never
  */
 export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
   _schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
   ) =>
@@ -395,7 +391,7 @@ export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
   TParams & Record<string, string | number | boolean | null>,
   TReturning extends never ? void : TReturning
 > {
-  const parseResult = parseQuery(queryBuilder, options);
+  const parseResult = parseQuery(builder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse UPDATE query");
@@ -420,7 +416,7 @@ export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
 export async function executeUpdate<TSchema, TParams, TTable>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
   ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
@@ -434,7 +430,7 @@ export async function executeUpdate<TSchema, TParams, TTable>(
 export async function executeUpdate<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
   ) => UpdatableWithReturning<TTable, TReturning>,
@@ -446,7 +442,7 @@ export async function executeUpdate<TSchema, TParams, TTable, TReturning>(
 export async function executeUpdate<TSchema, TParams, TTable, TReturning = never>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
   ) =>
@@ -456,13 +452,13 @@ export async function executeUpdate<TSchema, TParams, TTable, TReturning = never
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
 ): Promise<number | TReturning[]> {
-  const { sql, params: sqlParams } = updateStatement(schema, queryBuilder, params, options);
+  const { sql, params: sqlParams } = updateStatement(schema, builder, params, options);
 
   if (options.onSql) {
     options.onSql({ sql, params: sqlParams });
   }
 
-  const parseResult = parseQuery(queryBuilder, options);
+  const parseResult = parseQuery(builder, options);
   if (!parseResult) {
     throw new Error("Failed to parse UPDATE query");
   }
@@ -487,14 +483,14 @@ export async function executeUpdate<TSchema, TParams, TTable, TReturning = never
  */
 export function deleteStatement<TSchema, TParams, TResult>(
   _schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
   ) => Deletable<TResult> | DeletableComplete<TResult>,
   params: TParams,
   options: ParseQueryOptions = {},
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
-  const parseResult = parseQuery(queryBuilder, options);
+  const parseResult = parseQuery(builder, options);
 
   if (!parseResult) {
     throw new Error("Failed to parse DELETE query");
@@ -519,14 +515,14 @@ export function deleteStatement<TSchema, TParams, TResult>(
 export async function executeDelete<TSchema, TParams, TResult>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
+  builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
   ) => Deletable<TResult> | DeletableComplete<TResult>,
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
 ): Promise<number> {
-  const { sql, params: sqlParams } = deleteStatement(schema, queryBuilder, params, options);
+  const { sql, params: sqlParams } = deleteStatement(schema, builder, params, options);
 
   if (options.onSql) {
     options.onSql({ sql, params: sqlParams });
