@@ -356,7 +356,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         dbContext,
-        (ctx, params: { testDate: Date }) =>
+        (ctx, params) =>
           ctx.insertInto("orders").values({
             customer_id: 1,
             product_id: 1,
@@ -389,7 +389,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         dbContext,
-        (ctx, params: { metadataJson: string }) =>
+        (ctx, params) =>
           ctx.insertInto("products").values({
             name: "Product with Metadata",
             price: 199.99,
@@ -487,7 +487,7 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const orderCount = await executeInsert(
         db,
         dbContext,
-        (ctx, params: { customerId: number; productId: number }) =>
+        (ctx, params) =>
           ctx.insertInto("orders").values({
             customer_id: params.customerId,
             product_id: params.productId,

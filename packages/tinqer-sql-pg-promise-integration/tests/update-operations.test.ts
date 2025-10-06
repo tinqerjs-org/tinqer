@@ -493,7 +493,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         dbContext,
-        (ctx, params: { newDate: Date }) =>
+        (ctx, params) =>
           ctx
             .update("user_profiles")
             .set({ last_login: params.newDate })
@@ -517,7 +517,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         dbContext,
-        (ctx, params: { currentTime: Date }) =>
+        (ctx, params) =>
           ctx
             .update("inventory")
             .set({
@@ -552,7 +552,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         dbContext,
-        (ctx, params: { settingsJson: string }) =>
+        (ctx, params) =>
           ctx
             .update("user_profiles")
             .set({ settings: params.settingsJson })

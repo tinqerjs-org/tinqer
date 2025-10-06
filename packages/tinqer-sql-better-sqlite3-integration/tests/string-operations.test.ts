@@ -574,7 +574,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelect(
         db,
         dbContext,
-        (ctx, params: { search: string }, _helpers) =>
+        (ctx, params, _helpers) =>
           ctx.from("test_special_chars").where((t) => t.text.includes(params.search)),
         { search: "_" },
         {
@@ -617,7 +617,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelect(
         db,
         dbContext,
-        (ctx, params: { search: string }, _helpers) =>
+        (ctx, params, _helpers) =>
           ctx.from("test_backslash").where((t) => t.text.includes(params.search)),
         { search: "\\" },
         {
@@ -661,7 +661,7 @@ describe("Better SQLite3 Integration - String Operations", () => {
       const results = executeSelect(
         db,
         dbContext,
-        (ctx, params: { search: string }, _helpers) =>
+        (ctx, params, _helpers) =>
           ctx.from("test_mixed_chars").where((t) => t.text.includes(params.search)),
         { search: "%_" },
         {

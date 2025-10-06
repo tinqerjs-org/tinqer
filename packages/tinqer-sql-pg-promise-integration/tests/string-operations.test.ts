@@ -573,7 +573,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelect(
         db,
         dbContext,
-        (ctx, params: { search: string }, _helpers) =>
+        (ctx, params, _helpers) =>
           ctx.from("test_special_chars").where((t) => t.text.includes(params.search)),
         { search: "_" },
         {
@@ -613,7 +613,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelect(
         db,
         dbContext,
-        (ctx, params: { search: string }, _helpers) =>
+        (ctx, params, _helpers) =>
           ctx.from("test_backslash").where((t) => t.text.includes(params.search)),
         { search: "\\" },
         {
@@ -653,7 +653,7 @@ describe("PostgreSQL Integration - String Operations", () => {
       const results = await executeSelect(
         db,
         dbContext,
-        (ctx, params: { search: string }, _helpers) =>
+        (ctx, params, _helpers) =>
           ctx.from("test_mixed_chars").where((t) => t.text.includes(params.search)),
         { search: "%_" },
         {

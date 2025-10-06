@@ -483,7 +483,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         dbContext,
-        (ctx, params: { newDate: string }) =>
+        (ctx, params) =>
           ctx
             .update("user_profiles")
             .set({ last_login: params.newDate })
@@ -508,7 +508,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         dbContext,
-        (ctx, params: { currentTime: string }) =>
+        (ctx, params) =>
           ctx
             .update("inventory")
             .set({
@@ -546,7 +546,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         dbContext,
-        (ctx, params: { settingsJson: string }) =>
+        (ctx, params) =>
           ctx
             .update("user_profiles")
             .set({ settings: params.settingsJson })
