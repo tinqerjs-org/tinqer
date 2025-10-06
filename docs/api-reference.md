@@ -54,12 +54,12 @@ interface Schema {
   users: { id: number; name: string; age: number };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 const { sql, params } = selectStatement(
-  ctx,
-  (ctx, p, _helpers) =>
-    ctx
+  schema,
+  (q, p, _helpers) =>
+    q
       .from("users")
       .where((u) => u.age >= p.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
@@ -105,13 +105,13 @@ interface Schema {
   users: { id: number; name: string; age: number };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 const users = await executeSelect(
   db,
-  ctx,
-  (ctx, p, _helpers) =>
-    ctx
+  schema,
+  (q, p, _helpers) =>
+    q
       .from("users")
       .where((u) => u.age >= p.minAge)
       .orderBy((u) => u.name),
@@ -157,9 +157,9 @@ interface Schema {
   users: { id: number; name: string };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
-const allUsers = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) => ctx.from("users"));
+const allUsers = await executeSelectSimple(db, schema, (q, _params, _helpers) => q.from("users"));
 ```
 
 ### 1.4 insertStatement & executeInsert
@@ -212,20 +212,20 @@ interface Schema {
   users: { id: number; name: string };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 const inserted = await executeInsert(
   db,
-  ctx,
-  (ctx, _params, _helpers) => ctx.insertInto("users").values({ name: "Alice" }),
+  schema,
+  (q, _params, _helpers) => q.insertInto("users").values({ name: "Alice" }),
   {},
 );
 
 const createdUsers = await executeInsert(
   db,
-  ctx,
-  (ctx, _params, _helpers) =>
-    ctx
+  schema,
+  (q, _params, _helpers) =>
+    q
       .insertInto("users")
       .values({ name: "Bob" })
       .returning((u) => ({ id: u.id, name: u.name })),
@@ -286,13 +286,13 @@ interface Schema {
   users: { id: number; name: string; lastLogin: Date; status: string };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 const updatedRows = await executeUpdate(
   db,
-  ctx,
-  (ctx, p, _helpers) =>
-    ctx
+  schema,
+  (q, p, _helpers) =>
+    q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < p.cutoff),
@@ -338,12 +338,12 @@ interface Schema {
   users: { id: number; name: string; status: string };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 const deletedCount = await executeDelete(
   db,
-  ctx,
-  (ctx, _params, _helpers) => ctx.deleteFrom("users").where((u) => u.status === "inactive"),
+  schema,
+  (q, _params, _helpers) => q.deleteFrom("users").where((u) => u.status === "inactive"),
   {},
 );
 ```
@@ -431,8 +431,8 @@ When using execution functions like `executeSelect`, the DSL is passed as the fi
 ```typescript
 const results = await executeSelect(
   db,
-  ctx,
-  (ctx, _params, _helpers) => ctx.from("users").where((u) => u.email.endsWith("@example.com")),
+  schema,
+  (q, _params, _helpers) => q.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```
@@ -453,12 +453,12 @@ interface Schema {
   users: { id: number; name: string };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 const result = selectStatement(
-  ctx,
-  (ctx, _params, helpers) =>
-    ctx.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  schema,
+  (q, _params, helpers) =>
+    q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 ```

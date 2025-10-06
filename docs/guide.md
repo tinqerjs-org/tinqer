@@ -216,8 +216,7 @@ WHERE "email" LIKE @__p1 || '%'
 ```typescript
 const insensitive = selectStatement(
   schema,
-  (ctx, _params, helpers) =>
-    ctx.from("users").where((u) => helpers.functions.iequals(u.name, "ALICE")),
+  (q, _params, helpers) => q.from("users").where((u) => helpers.functions.iequals(u.name, "ALICE")),
   {},
 );
 ```
@@ -267,8 +266,8 @@ Negating the predicate (`!array.includes(...)`) yields `NOT IN`.
 ```typescript
 const advancedFilter = selectStatement(
   schema,
-  (ctx, params, helpers) =>
-    ctx
+  (q, params, helpers) =>
+    q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .where((u) => params.categories.includes(u.departmentId.toString()))
@@ -840,8 +839,8 @@ const empContext = createSchema<EmployeeSchema>();
 
 const rankedEmployees = selectStatement(
   empContext,
-  (ctx, _params, helpers) =>
-    ctx.from("employees").select((e) => ({
+  (q, _params, helpers) =>
+    q.from("employees").select((e) => ({
       name: e.name,
       department: e.department,
       salary: e.salary,
@@ -879,8 +878,8 @@ const orderTimeContext = createSchema<OrderTimeSchema>();
 
 const chronological = selectStatement(
   orderTimeContext,
-  (ctx, _params, helpers) =>
-    ctx.from("orders").select((o) => ({
+  (q, _params, helpers) =>
+    q.from("orders").select((o) => ({
       orderId: o.id,
       rowNum: helpers
         .window(o)
@@ -907,8 +906,8 @@ const regionEmpContext = createSchema<RegionEmployeeSchema>();
 
 const multiPartition = selectStatement(
   regionEmpContext,
-  (ctx, _params, helpers) =>
-    ctx.from("employees").select((e) => ({
+  (q, _params, helpers) =>
+    q.from("employees").select((e) => ({
       name: e.name,
       rank: helpers
         .window(e)
@@ -935,8 +934,8 @@ FROM "employees"
 ```typescript
 const ranked = selectStatement(
   empContext,
-  (ctx, _params, helpers) =>
-    ctx.from("employees").select((e) => ({
+  (q, _params, helpers) =>
+    q.from("employees").select((e) => ({
       name: e.name,
       rank: helpers
         .window(e)
@@ -963,8 +962,8 @@ FROM "employees"
 ```typescript
 const rankedSalaries = selectStatement(
   empContext,
-  (ctx, _params, helpers) =>
-    ctx.from("employees").select((e) => ({
+  (q, _params, helpers) =>
+    q.from("employees").select((e) => ({
       name: e.name,
       salary: e.salary,
       rank: helpers
@@ -1011,8 +1010,8 @@ const playerContext = createSchema<PlayerSchema>();
 
 const globalRank = selectStatement(
   playerContext,
-  (ctx, _params, helpers) =>
-    ctx.from("players").select((p) => ({
+  (q, _params, helpers) =>
+    q.from("players").select((p) => ({
       player: p.name,
       score: p.score,
       rank: helpers
@@ -1037,8 +1036,8 @@ FROM "players"
 ```typescript
 const denseRanked = selectStatement(
   empContext,
-  (ctx, _params, helpers) =>
-    ctx.from("employees").select((e) => ({
+  (q, _params, helpers) =>
+    q.from("employees").select((e) => ({
       name: e.name,
       salary: e.salary,
       rank: helpers
@@ -1083,8 +1082,8 @@ const empAgeContext = createSchema<EmployeeAgeSchema>();
 
 const complexRanking = selectStatement(
   empAgeContext,
-  (ctx, _params, helpers) =>
-    ctx.from("employees").select((e) => ({
+  (q, _params, helpers) =>
+    q.from("employees").select((e) => ({
       name: e.name,
       rank: helpers
         .window(e)
@@ -1115,8 +1114,8 @@ Combine multiple window functions in a single SELECT:
 ```typescript
 const allRankings = selectStatement(
   empContext,
-  (ctx, _params, helpers) =>
-    ctx.from("employees").select((e) => ({
+  (q, _params, helpers) =>
+    q.from("employees").select((e) => ({
       name: e.name,
       department: e.department,
       salary: e.salary,
@@ -1170,8 +1169,8 @@ Get the top earner from each department:
 const topEarners = await executeSelect(
   db,
   empContext,
-  (ctx, _params, helpers) =>
-    ctx
+  (q, _params, helpers) =>
+    q
       .from("employees")
       .select((e) => ({
         ...e,
@@ -1220,8 +1219,8 @@ const empDeptContext = createSchema<EmployeeDeptSchema>();
 const top3Engineering = await executeSelect(
   db,
   empDeptContext,
-  (ctx, params, helpers) =>
-    ctx
+  (q, params, helpers) =>
+    q
       .from("employees")
       .select((e) => ({
         name: e.name,
@@ -1262,8 +1261,8 @@ const perfContext = createSchema<PerformanceSchema>();
 const topPerformers = await executeSelect(
   db,
   perfContext,
-  (ctx, _params, helpers) =>
-    ctx
+  (q, _params, helpers) =>
+    q
       .from("employees")
       .select((e) => ({
         ...e, // All original columns
@@ -1299,8 +1298,8 @@ const activeEmpContext = createSchema<ActiveEmployeeSchema>();
 const activeTopEarners = await executeSelect(
   db,
   activeEmpContext,
-  (ctx, _params, helpers) =>
-    ctx
+  (q, _params, helpers) =>
+    q
       .from("employees")
       .select((e) => ({
         name: e.name,
@@ -1495,8 +1494,8 @@ Tinqer automatically parameterizes all values to prevent SQL injection and enabl
 ```typescript
 const filtered = selectStatement(
   schema,
-  (ctx, params) =>
-    ctx
+  (q, params) =>
+    q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .where((u) => u.role === params.role),
@@ -1525,7 +1524,7 @@ Nested properties and array indices are preserved (`params.filters.departments[0
 ```typescript
 const autoParams = selectStatement(
   schema,
-  (ctx) => ctx.from("users").where((u) => u.departmentId === 7 && u.name.startsWith("A")),
+  (q) => q.from("users").where((u) => u.departmentId === 7 && u.name.startsWith("A")),
   {},
 );
 ```
@@ -1549,7 +1548,7 @@ SELECT * FROM "users" WHERE "departmentId" = @__p1 AND "name" LIKE @__p2 || '%'
 ```typescript
 const membership = selectStatement(
   schema,
-  (ctx) => ctx.from("users").where((u) => [1, 2, 3].includes(u.id)),
+  (q) => q.from("users").where((u) => [1, 2, 3].includes(u.id)),
   {},
 );
 ```
@@ -1573,7 +1572,7 @@ Parameterized array example:
 ```typescript
 const dynamicMembership = selectStatement(
   schema,
-  (ctx, params) => ctx.from("users").where((u) => params.allowed.includes(u.id)),
+  (q, params) => q.from("users").where((u) => params.allowed.includes(u.id)),
   { allowed: [5, 8] },
 );
 ```
@@ -1587,8 +1586,8 @@ const dynamicMembership = selectStatement(
 ```typescript
 const ic = selectStatement(
   schema,
-  (ctx, _params, helpers) =>
-    ctx.from("users").where((u) => helpers.functions.icontains(u.email, "support")),
+  (q, _params, helpers) =>
+    q.from("users").where((u) => helpers.functions.icontains(u.email, "support")),
   {},
 );
 ```
@@ -1660,8 +1659,8 @@ External variables must be passed via the params object - closure variables are 
 ```typescript
 const insert = insertStatement(
   schema,
-  (ctx, p) =>
-    ctx.insertInto("users").values({
+  (q, p) =>
+    q.insertInto("users").values({
       name: p.name,
       age: p.age,
       email: "default@example.com",
@@ -1765,8 +1764,8 @@ External variables must be passed via the params object:
 ```typescript
 const updateStmt = updateStatement(
   schema,
-  (ctx, p) =>
-    ctx
+  (q, p) =>
+    q
       .update("users")
       .set({ age: p.newAge })
       .where((u) => u.id === 1),
@@ -1861,7 +1860,7 @@ const del = deleteStatement(
 ```typescript
 const del = deleteStatement(
   schema,
-  (ctx, p) => ctx.deleteFrom("users").where((u) => p.userIds.includes(u.id)),
+  (q, p) => q.deleteFrom("users").where((u) => p.userIds.includes(u.id)),
   { userIds: [1, 2, 3, 4, 5] },
 );
 ```

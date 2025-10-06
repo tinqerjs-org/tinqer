@@ -36,8 +36,8 @@ const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const schema = createSchema<Schema>();
 
-const results = await executeSelectSimple(db, schema, (ctx, _params, _helpers) =>
-  ctx
+const results = await executeSelectSimple(db, schema, (q, _params, _helpers) =>
+  q
     .from("users")
     .where((u) => u.age >= 18)
     .orderBy((u) => u.name)
@@ -68,8 +68,8 @@ const schema = createSchema<Schema>();
 const results = executeSelect(
   db,
   schema,
-  (ctx, params, _helpers) =>
-    ctx
+  (q, params, _helpers) =>
+    q
       .from("products")
       .where((p) => p.inStock === 1 && p.price < params.maxPrice)
       .orderByDescending((p) => p.price)
@@ -80,7 +80,7 @@ const results = executeSelect(
 // Need the raw SQL for logging or prepared statements? selectStatement is still available:
 const { sql, params } = selectStatement(
   schema,
-  (ctx) => ctx.from("products").select((p) => p.name),
+  (q) => q.from("products").select((p) => p.name),
   {},
 );
 ```
@@ -93,8 +93,8 @@ const { sql, params } = selectStatement(
 const schema = createSchema<Schema>();
 
 // Full TypeScript type inference
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("users")
     .where((u) => u.age >= 18 && u.email.includes("@company.com"))
     .orderBy((u) => u.name)
@@ -118,11 +118,11 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("users")
     .join(
-      ctx.from("departments"),
+      q.from("departments"),
       (user) => user.deptId,
       (department) => department.id,
       (user, department) => ({
@@ -136,11 +136,11 @@ const query = (ctx, _params, _helpers) =>
 #### Left Outer Join
 
 ```typescript
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("users")
     .groupJoin(
-      ctx.from("departments"),
+      q.from("departments"),
       (user) => user.deptId,
       (department) => department.id,
       (user, deptGroup) => ({ user, deptGroup }),
@@ -161,11 +161,11 @@ const query = (ctx, _params, _helpers) =>
 #### Cross Join
 
 ```typescript
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("departments")
     .selectMany(
-      () => ctx.from("users"),
+      () => q.from("users"),
       (department, user) => ({ department, user }),
     )
     .select((row) => ({
@@ -179,8 +179,8 @@ Right and full outer joins still require manual SQL, just as in LINQ-to-Objects.
 ### Grouping and Aggregation
 
 ```typescript
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("orders")
     .groupBy((o) => o.product_id)
     .select((g) => ({
@@ -201,8 +201,8 @@ Window functions enable calculations across rows related to the current row. Tin
 const topEarners = await executeSelect(
   db,
   schema,
-  (ctx, _params, h) =>
-    ctx
+  (q, _params, h) =>
+    q
       .from("employees")
       .select((e) => ({
         ...e,
@@ -240,8 +240,8 @@ const schema = createSchema<Schema>();
 const insertedRows = await executeInsert(
   db,
   schema,
-  (ctx, _params) =>
-    ctx.insertInto("users").values({
+  (q, _params) =>
+    q.insertInto("users").values({
       name: "Alice",
       email: "alice@example.com",
     }),
@@ -252,8 +252,8 @@ const insertedRows = await executeInsert(
 const inactiveUsers = await executeUpdate(
   db,
   schema,
-  (ctx, params) =>
-    ctx
+  (q, params) =>
+    q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoffDate)
@@ -265,7 +265,7 @@ const inactiveUsers = await executeUpdate(
 const deletedCount = await executeDelete(
   db,
   schema,
-  (ctx, _params) => ctx.deleteFrom("users").where((u) => u.status === "deleted"),
+  (q, _params) => q.deleteFrom("users").where((u) => u.status === "deleted"),
   {},
 );
 
@@ -282,8 +282,8 @@ const schema = createSchema<Schema>();
 
 const sample = selectStatement(
   schema,
-  (ctx, p) =>
-    ctx
+  (q, p) =>
+    q
       .from("users")
       .where((u) => u.age >= p.minAge)
       .select((u) => u),
@@ -295,8 +295,8 @@ const sample = selectStatement(
 // Literals auto-parameterized automatically
 const literals = selectStatement(
   schema,
-  (ctx) =>
-    ctx
+  (q) =>
+    q
       .from("users")
       .where((u) => u.age >= 18)
       .select((u) => u),
@@ -312,8 +312,8 @@ import { createSchema } from "@webpods/tinqer";
 
 const schema = createSchema<Schema>();
 
-const query = (ctx, _params, helpers) =>
-  ctx
+const query = (q, _params, helpers) =>
+  q
     .from("users")
     .where((u) => helpers.contains(u.name, "alice")) // Case-insensitive substring match
     .select((u) => u);

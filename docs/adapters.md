@@ -50,11 +50,11 @@ interface Schema {
 
 const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 // Execute without external params
-const activeUsers = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) =>
-  ctx
+const activeUsers = await executeSelectSimple(db, schema, (q, _params, _helpers) =>
+  q
     .from("users")
     .where((u) => u.active)
     .orderBy((u) => u.name),
@@ -63,9 +63,9 @@ const activeUsers = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) 
 // Execute with params
 const matchingUsers = await executeSelect(
   db,
-  ctx,
-  (ctx, p, _helpers) =>
-    ctx
+  schema,
+  (q, p, _helpers) =>
+    q
       .from("users")
       .where((u) => u.age >= p.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
@@ -75,9 +75,9 @@ const matchingUsers = await executeSelect(
 // INSERT with RETURNING
 const createdUsers = await executeInsert(
   db,
-  ctx,
-  (ctx, _params, _helpers) =>
-    ctx
+  schema,
+  (q, _params, _helpers) =>
+    q
       .insertInto("users")
       .values({ name: "Alice", email: "alice@example.com", age: 30, active: true })
       .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
@@ -87,9 +87,9 @@ const createdUsers = await executeInsert(
 // UPDATE
 const updatedCount = await executeUpdate(
   db,
-  ctx,
-  (ctx, _params, _helpers) =>
-    ctx
+  schema,
+  (q, _params, _helpers) =>
+    q
       .update("users")
       .set({ active: false })
       .where((u) => u.age > 65),
@@ -99,15 +99,15 @@ const updatedCount = await executeUpdate(
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  ctx,
-  (ctx, _params, _helpers) => ctx.deleteFrom("users").where((u) => !u.active),
+  schema,
+  (q, _params, _helpers) => q.deleteFrom("users").where((u) => !u.active),
   {},
 );
 
 // Generate SQL without executing
 const { sql, params } = selectStatement(
-  ctx,
-  (ctx, _params, _helpers) => ctx.from("users").where((u) => u.email.endsWith("@example.com")),
+  schema,
+  (q, _params, _helpers) => q.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```
@@ -148,7 +148,7 @@ interface Schema {
 }
 
 const db = new Database(":memory:");
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 db.exec(`
   CREATE TABLE users (
@@ -162,18 +162,18 @@ db.exec(`
 
 const inserted = executeInsert(
   db,
-  ctx,
-  (ctx, _params, _helpers) =>
-    ctx.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
+  schema,
+  (q, _params, _helpers) =>
+    q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
   {},
 );
 // inserted === 1
 
 const users = executeSelect(
   db,
-  ctx,
-  (ctx, params, _helpers) =>
-    ctx
+  schema,
+  (q, params, _helpers) =>
+    q
       .from("users")
       .where((u) => u.isActive === params.active)
       .orderBy((u) => u.name),
@@ -182,9 +182,9 @@ const users = executeSelect(
 
 const updated = executeUpdate(
   db,
-  ctx,
-  (ctx, _params, _helpers) =>
-    ctx
+  schema,
+  (q, _params, _helpers) =>
+    q
       .update("users")
       .set({ isActive: 0 })
       .where((u) => u.age > 60),
@@ -193,15 +193,15 @@ const updated = executeUpdate(
 
 const removed = executeDelete(
   db,
-  ctx,
-  (ctx, p, _helpers) => ctx.deleteFrom("users").where((u) => u.age < p.cutoff),
+  schema,
+  (q, p, _helpers) => q.deleteFrom("users").where((u) => u.age < p.cutoff),
   { cutoff: 18 },
 );
 
 // Need the SQL text for custom execution?
 const { sql, params } = selectStatement(
-  ctx,
-  (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.startsWith("S")),
+  schema,
+  (q, _params, _helpers) => q.from("users").where((u) => u.name.startsWith("S")),
   {},
 );
 const rows = db.prepare(sql).all(params);
@@ -248,12 +248,12 @@ interface Schema {
   users: { id: number; name: string; email: string };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 const { sql } = selectStatement(
-  ctx,
-  (ctx, _params, helpers) =>
-    dsl.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  schema,
+  (q, _params, helpers) =>
+    q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 // PostgreSQL: WHERE "name" ILIKE $(__p1)
