@@ -676,7 +676,7 @@ normalizedOperation = normalizeXYZ(normalizedOperation); // New pass
 
 ```typescript
 // Database context provides DSL access
-interface DatabaseContext<TSchema> {
+interface DatabaseSchema<TSchema> {
   dsl: DSL<TSchema>;
   // ... other context properties
 }
@@ -734,7 +734,7 @@ function convertAstToQueryOperation(ast: unknown): QueryOperation;
 ```typescript
 // Main execution functions (in adapters)
 function selectStatement<TParams, TResult>(
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: DSL<TSchema>,
     params: TParams,
@@ -744,7 +744,7 @@ function selectStatement<TParams, TResult>(
 ): Promise<TResult[]>;
 
 function insertStatement<TParams>(
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (dsl: DSL<TSchema>, params: TParams, helpers: Helpers) => InsertQuery,
   params: TParams,
 ): Promise<void>;

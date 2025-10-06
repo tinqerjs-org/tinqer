@@ -929,7 +929,7 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 
 ### 2.1 createSchema
 
-Creates a phantom-typed `DatabaseContext` that ties table names to row types. Combine it with the `from` overload that accepts a context to get strongly typed queryables.
+Creates a phantom-typed `DatabaseSchema` that ties table names to row types. Combine it with the `from` overload that accepts a context to get strongly typed queryables.
 
 ```typescript
 import { createSchema, from } from "@webpods/tinqer";

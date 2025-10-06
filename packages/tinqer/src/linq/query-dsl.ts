@@ -2,7 +2,7 @@
  * Query DSL interface for type-safe query building
  */
 
-import type { DatabaseContext } from "./database-context.js";
+import type { DatabaseSchema } from "./database-context.js";
 import type { Queryable } from "./queryable.js";
 import type { Insertable } from "./insertable.js";
 import type { Updatable } from "./updatable.js";
@@ -28,7 +28,7 @@ export interface QueryBuilder<TSchema> {
  * @returns A QueryBuilder instance with type-safe query builders
  */
 export function createQueryBuilder<TSchema>(
-  context: DatabaseContext<TSchema>,
+  context: DatabaseSchema<TSchema>,
 ): QueryBuilder<TSchema> {
   return {
     from: (table) => from(context, table),

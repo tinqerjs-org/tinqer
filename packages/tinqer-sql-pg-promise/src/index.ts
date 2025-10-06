@@ -9,7 +9,7 @@ import {
   type TerminalQuery,
   type QueryHelpers,
   type QueryBuilder,
-  type DatabaseContext,
+  type DatabaseSchema,
   type Insertable,
   type InsertableWithReturning,
   type UpdatableWithSet,
@@ -49,7 +49,7 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function selectStatement<TSchema, TParams, TResult>(
-  _schema: DatabaseContext<TSchema>,
+  _schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -136,7 +136,7 @@ export async function executeSelect<
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (dsl: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
@@ -256,7 +256,7 @@ export async function executeSelectSimple<
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     _params: Record<string, never>,
@@ -281,7 +281,7 @@ export async function executeSelectSimple<
  * Generate INSERT SQL statement
  */
 export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  _schema: DatabaseContext<TSchema>,
+  _schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -316,7 +316,7 @@ export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
  */
 export async function executeInsert<TSchema, TParams, TTable>(
   db: PgDatabase,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (dsl: QueryBuilder<TSchema>, params: TParams) => Insertable<TTable>,
   params: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
@@ -327,7 +327,7 @@ export async function executeInsert<TSchema, TParams, TTable>(
  */
 export async function executeInsert<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -339,7 +339,7 @@ export async function executeInsert<TSchema, TParams, TTable, TReturning>(
 // Implementation
 export async function executeInsert<TSchema, TParams, TTable, TReturning = never>(
   db: PgDatabase,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -377,7 +377,7 @@ export async function executeInsert<TSchema, TParams, TTable, TReturning = never
  * Generate UPDATE SQL statement
  */
 export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
-  _schema: DatabaseContext<TSchema>,
+  _schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -415,7 +415,7 @@ export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
  */
 export async function executeUpdate<TSchema, TParams, TTable>(
   db: PgDatabase,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -429,7 +429,7 @@ export async function executeUpdate<TSchema, TParams, TTable>(
  */
 export async function executeUpdate<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -441,7 +441,7 @@ export async function executeUpdate<TSchema, TParams, TTable, TReturning>(
 // Implementation
 export async function executeUpdate<TSchema, TParams, TTable, TReturning = never>(
   db: PgDatabase,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -482,7 +482,7 @@ export async function executeUpdate<TSchema, TParams, TTable, TReturning = never
  * Generate DELETE SQL statement
  */
 export function deleteStatement<TSchema, TParams, TResult>(
-  _schema: DatabaseContext<TSchema>,
+  _schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -514,7 +514,7 @@ export function deleteStatement<TSchema, TParams, TResult>(
  */
 export async function executeDelete<TSchema, TParams, TResult>(
   db: PgDatabase,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,

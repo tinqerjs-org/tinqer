@@ -3,7 +3,7 @@
  */
 
 import { Updatable } from "./updatable.js";
-import type { DatabaseContext } from "./database-context.js";
+import type { DatabaseSchema } from "./database-context.js";
 
 /**
  * Creates a new Updatable from a table name with explicit type
@@ -19,7 +19,7 @@ export function update<T>(tableName: string): Updatable<T>;
  * @returns A new Updatable instance with inferred types
  */
 export function update<TSchema, K extends keyof TSchema & string>(
-  context: DatabaseContext<TSchema>,
+  context: DatabaseSchema<TSchema>,
   tableName: K,
 ): Updatable<TSchema[K]>;
 

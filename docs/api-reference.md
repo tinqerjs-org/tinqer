@@ -34,7 +34,7 @@ Converts a query builder function into SQL and named parameters without executin
 
 ```typescript
 function selectStatement<TSchema, TParams, TResult>(
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: TParams,
@@ -80,7 +80,7 @@ async function executeSelect<
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (ctx: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options?: ExecuteOptions,
@@ -129,7 +129,7 @@ async function executeSelectSimple<
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: Record<string, never>,
@@ -168,7 +168,7 @@ Generate and execute INSERT statements with optional RETURNING clauses. The quer
 
 ```typescript
 function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: TParams,
@@ -179,7 +179,7 @@ function insertStatement<TSchema, TParams, TTable, TReturning = never>(
 
 async function executeInsert<TSchema, TParams, TTable>(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: TParams,
@@ -191,7 +191,7 @@ async function executeInsert<TSchema, TParams, TTable>(
 
 async function executeInsert<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: TParams,
@@ -239,7 +239,7 @@ Generate and execute UPDATE statements with optional RETURNING clauses. The quer
 
 ```typescript
 function updateStatement<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: TParams,
@@ -253,7 +253,7 @@ function updateStatement<TSchema, TParams, TTable, TReturning = never>(
 
 async function executeUpdate<TSchema, TParams, TTable>(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: TParams,
@@ -265,7 +265,7 @@ async function executeUpdate<TSchema, TParams, TTable>(
 
 async function executeUpdate<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: TParams,
@@ -306,7 +306,7 @@ Generate and execute DELETE statements. The query builder receives a DSL context
 
 ```typescript
 function deleteStatement<TSchema, TParams, TResult>(
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: TParams,
@@ -317,7 +317,7 @@ function deleteStatement<TSchema, TParams, TResult>(
 
 async function executeDelete<TSchema, TParams, TResult>(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     ctx: QueryBuilder<TSchema>,
     params: TParams,
@@ -405,7 +405,7 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 
 ### 2.1 createSchema
 
-Creates a phantom-typed `DatabaseContext` that ties table names to row types and provides a DSL for building queries. The context object includes a `dsl` property that exposes query builder methods.
+Creates a phantom-typed `DatabaseSchema` that ties table names to row types and provides a DSL for building queries. The context object includes a `dsl` property that exposes query builder methods.
 
 ```typescript
 import { createSchema } from "@webpods/tinqer";

@@ -9,7 +9,7 @@ import {
   type TerminalQuery,
   type QueryHelpers,
   type QueryBuilder,
-  type DatabaseContext,
+  type DatabaseSchema,
   type Insertable,
   type InsertableWithReturning,
   type UpdatableWithSet,
@@ -49,7 +49,7 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
 export function selectStatement<TSchema, TParams, TResult>(
-  _schema: DatabaseContext<TSchema>,
+  _schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -139,7 +139,7 @@ export function executeSelect<
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (dsl: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
@@ -291,7 +291,7 @@ export function executeSelectSimple<
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     _params: Record<string, never>,
@@ -315,7 +315,7 @@ export function executeSelectSimple<
  * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
  */
 export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  _schema: DatabaseContext<TSchema>,
+  _schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -350,7 +350,7 @@ export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
  */
 export function executeInsert<TSchema, TParams, TTable>(
   db: BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (dsl: QueryBuilder<TSchema>, params: TParams) => Insertable<TTable>,
   params: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
@@ -362,7 +362,7 @@ export function executeInsert<TSchema, TParams, TTable>(
  */
 export function executeInsert<TSchema, TParams, TTable, TReturning>(
   db: BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -374,7 +374,7 @@ export function executeInsert<TSchema, TParams, TTable, TReturning>(
 // Implementation
 export function executeInsert<TSchema, TParams, TTable, TReturning = never>(
   db: BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -400,7 +400,7 @@ export function executeInsert<TSchema, TParams, TTable, TReturning = never>(
  * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
  */
 export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
-  _schema: DatabaseContext<TSchema>,
+  _schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -438,7 +438,7 @@ export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
  */
 export function executeUpdate<TSchema, TParams, TTable>(
   db: BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -453,7 +453,7 @@ export function executeUpdate<TSchema, TParams, TTable>(
  */
 export function executeUpdate<TSchema, TParams, TTable, TReturning>(
   db: BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -465,7 +465,7 @@ export function executeUpdate<TSchema, TParams, TTable, TReturning>(
 // Implementation
 export function executeUpdate<TSchema, TParams, TTable, TReturning = never>(
   db: BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -493,7 +493,7 @@ export function executeUpdate<TSchema, TParams, TTable, TReturning = never>(
  * Generate DELETE SQL statement
  */
 export function deleteStatement<TSchema, TParams, TResult>(
-  _schema: DatabaseContext<TSchema>,
+  _schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
@@ -525,7 +525,7 @@ export function deleteStatement<TSchema, TParams, TResult>(
  */
 export function executeDelete<TSchema, TParams, TResult>(
   db: BetterSqlite3Database,
-  schema: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: QueryBuilder<TSchema>,
     params: TParams,
