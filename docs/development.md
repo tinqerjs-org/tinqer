@@ -188,8 +188,7 @@ describe("SQL Generation", () => {
     const result = selectStatement(schema, (q) =>
       q
         .from("users")
-        .where((u) => u.age >= 18)
-        .select((u) => u),
+        .where((u) => u.age >= 18),
     );
 
     // Assert SQL and parameters

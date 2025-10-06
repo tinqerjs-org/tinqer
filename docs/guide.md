@@ -216,7 +216,7 @@ WHERE "email" LIKE @__p1 || '%'
 ```typescript
 const insensitive = selectStatement(
   schema,
-  (q, helpers) => q.from("users").where((u) => helpers.functions.iequals(u.name, "ALICE")),
+  (q, params, helpers) => q.from("users").where((u) => helpers.functions.iequals(u.name, "ALICE")),
   {},
 );
 ```
@@ -311,7 +311,7 @@ The `select` method transforms query results by projecting columns or computed e
 ### 2.1 Full Row Projection
 
 ```typescript
-const fullRow = selectStatement(schema, (q) => ctx.from("users").select((u) => u), {});
+const fullRow = selectStatement(schema, (q) => q.from("users"), {});
 ```
 
 ```sql
@@ -839,7 +839,7 @@ const empContext = createSchema<EmployeeSchema>();
 
 const rankedEmployees = selectStatement(
   empContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q.from("employees").select((e) => ({
       name: e.name,
       department: e.department,
@@ -878,7 +878,7 @@ const orderTimeContext = createSchema<OrderTimeSchema>();
 
 const chronological = selectStatement(
   orderTimeContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q.from("orders").select((o) => ({
       orderId: o.id,
       rowNum: helpers
@@ -906,7 +906,7 @@ const regionEmpContext = createSchema<RegionEmployeeSchema>();
 
 const multiPartition = selectStatement(
   regionEmpContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q.from("employees").select((e) => ({
       name: e.name,
       rank: helpers
@@ -934,7 +934,7 @@ FROM "employees"
 ```typescript
 const ranked = selectStatement(
   empContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q.from("employees").select((e) => ({
       name: e.name,
       rank: helpers
@@ -962,7 +962,7 @@ FROM "employees"
 ```typescript
 const rankedSalaries = selectStatement(
   empContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q.from("employees").select((e) => ({
       name: e.name,
       salary: e.salary,
@@ -1010,7 +1010,7 @@ const playerContext = createSchema<PlayerSchema>();
 
 const globalRank = selectStatement(
   playerContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q.from("players").select((p) => ({
       player: p.name,
       score: p.score,
@@ -1036,7 +1036,7 @@ FROM "players"
 ```typescript
 const denseRanked = selectStatement(
   empContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q.from("employees").select((e) => ({
       name: e.name,
       salary: e.salary,
@@ -1082,7 +1082,7 @@ const empAgeContext = createSchema<EmployeeAgeSchema>();
 
 const complexRanking = selectStatement(
   empAgeContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q.from("employees").select((e) => ({
       name: e.name,
       rank: helpers
@@ -1114,7 +1114,7 @@ Combine multiple window functions in a single SELECT:
 ```typescript
 const allRankings = selectStatement(
   empContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q.from("employees").select((e) => ({
       name: e.name,
       department: e.department,
@@ -1169,7 +1169,7 @@ Get the top earner from each department:
 const topEarners = await executeSelect(
   db,
   empContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -1261,7 +1261,7 @@ const perfContext = createSchema<PerformanceSchema>();
 const topPerformers = await executeSelect(
   db,
   perfContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -1298,7 +1298,7 @@ const activeEmpContext = createSchema<ActiveEmployeeSchema>();
 const activeTopEarners = await executeSelect(
   db,
   activeEmpContext,
-  (q, helpers) =>
+  (q, params, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -1586,7 +1586,7 @@ const dynamicMembership = selectStatement(
 ```typescript
 const ic = selectStatement(
   schema,
-  (q, helpers) => q.from("users").where((u) => helpers.functions.icontains(u.email, "support")),
+  (q, params, helpers) => q.from("users").where((u) => helpers.functions.icontains(u.email, "support")),
   {},
 );
 ```

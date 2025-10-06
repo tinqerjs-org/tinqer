@@ -72,8 +72,7 @@ const results = executeSelect(
     q
       .from("products")
       .where((p) => p.inStock === 1 && p.price < params.maxPrice)
-      .orderByDescending((p) => p.price)
-      .select((p) => p),
+      .orderByDescending((p) => p.price),
   { maxPrice: 100 },
 );
 
@@ -284,8 +283,7 @@ const sample = selectStatement(
   (q, p) =>
     q
       .from("users")
-      .where((u) => u.age >= p.minAge)
-      .select((u) => u),
+      .where((u) => u.age >= p.minAge),
   { minAge: 18 },
 );
 // SQL (PostgreSQL): SELECT * FROM "users" WHERE "age" >= $(minAge)
@@ -297,8 +295,7 @@ const literals = selectStatement(
   (q) =>
     q
       .from("users")
-      .where((u) => u.age >= 18)
-      .select((u) => u),
+      .where((u) => u.age >= 18),
   {},
 );
 // params: { __p1: 18 }
@@ -311,11 +308,10 @@ import { createSchema } from "@webpods/tinqer";
 
 const schema = createSchema<Schema>();
 
-const query = (q, helpers) =>
+const query = (q, params, helpers) =>
   q
     .from("users")
-    .where((u) => helpers.contains(u.name, "alice")) // Case-insensitive substring match
-    .select((u) => u);
+    .where((u) => helpers.contains(u.name, "alice")); // Case-insensitive substring match
 
 // PostgreSQL: WHERE u.name ILIKE $1 (param: "%alice%")
 // SQLite: WHERE LOWER(u.name) LIKE LOWER(?) (param: "%alice%")
