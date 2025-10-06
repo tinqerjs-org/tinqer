@@ -26,7 +26,7 @@ import { type TestSchema } from "./test-schema.js";
 
 describe("Parse Query Integration Tests", () => {
   it("should parse a simple from query", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users");
+    const query = (q: QueryBuilder<TestSchema>) => q.from("users");
     const result = parseQuery(query);
 
     expect(getOperation(result)).to.not.be.null;
@@ -36,7 +36,7 @@ describe("Parse Query Integration Tests", () => {
   });
 
   it("should parse a where clause", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").where((x) => x.age >= 18);
+    const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.age >= 18);
     const result = parseQuery(query);
 
     expect(getOperation(result)).to.not.be.null;
@@ -48,8 +48,8 @@ describe("Parse Query Integration Tests", () => {
   });
 
   it("should parse a select projection", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx.from("users").select((x) => ({
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q.from("users").select((x) => ({
         id: x.id,
         name: x.name,
       }));
@@ -63,8 +63,8 @@ describe("Parse Query Integration Tests", () => {
   });
 
   it("should parse a complex query chain", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q
         .from("users")
         .where((x) => x.age >= 18 && x.isActive)
         .select((x) => ({ id: x.id, name: x.name }))
@@ -98,8 +98,8 @@ describe("Parse Query Integration Tests", () => {
   });
 
   it("should parse query with external parameters", () => {
-    const query = (ctx: QueryBuilder<TestSchema>, p: { minAge: number }) =>
-      ctx.from("users").where((x) => x.age >= p.minAge);
+    const query = (q: QueryBuilder<TestSchema>, p: { minAge: number }) =>
+      q.from("users").where((x) => x.age >= p.minAge);
     const result = parseQuery(query);
 
     expect(getOperation(result)).to.not.be.null;
@@ -117,18 +117,18 @@ describe("Parse Query Integration Tests", () => {
   });
 
   it("should parse terminal operations", () => {
-    const query1 = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").count();
+    const query1 = (q: QueryBuilder<TestSchema>) => q.from("users").count();
     const result1 = parseQuery(query1);
     expect(getOperation(result1)?.operationType).to.equal("count");
 
-    const query2 = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").first();
+    const query2 = (q: QueryBuilder<TestSchema>) => q.from("users").first();
     const result2 = parseQuery(query2);
     expect(getOperation(result2)?.operationType).to.equal("first");
   });
 
   it("should parse string methods", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx.from("users").where((x) => x.name.startsWith("John"));
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q.from("users").where((x) => x.name.startsWith("John"));
     const result = parseQuery(query);
 
     expect(getOperation(result)).to.not.be.null;

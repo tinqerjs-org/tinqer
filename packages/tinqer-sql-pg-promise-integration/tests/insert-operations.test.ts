@@ -105,8 +105,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, _) =>
-          ctx.insertInto("products").values({
+        (q, _) =>
+          q.insertInto("products").values({
             name: "Laptop",
             price: 999.99,
             category: "Electronics",
@@ -131,8 +131,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, _) =>
-          ctx.insertInto("products").values({
+        (q, _) =>
+          q.insertInto("products").values({
             name: "Basic Item",
             price: 10.0,
           }),
@@ -158,8 +158,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, p: typeof params) =>
-          ctx.insertInto("products").values({
+        (q, p: typeof params) =>
+          q.insertInto("products").values({
             name: p.productName,
             price: p.productPrice,
             category: p.productCategory,
@@ -179,8 +179,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Out of Stock Item",
             price: 50.0,
             in_stock: false,
@@ -198,8 +198,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Minimal Product",
             price: 25.0,
             category: null,
@@ -221,8 +221,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const results = await executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .insertInto("products")
             .values({
               name: "Smartphone",
@@ -244,8 +244,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const results = await executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .insertInto("products")
             .values({
               name: "Monitor",
@@ -269,8 +269,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const results = await executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .insertInto("products")
             .values({
               name: "Keyboard",
@@ -293,8 +293,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
             price: 100.0,
             description: "Description with\nnewlines\tand\ttabs",
@@ -315,8 +315,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
             price: 88.88,
             category: "Special ñ категория",
@@ -336,8 +336,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Edge Case Product",
             price: 0.01, // Very small
           }),
@@ -356,8 +356,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, params) =>
-          ctx.insertInto("orders").values({
+        (q, params) =>
+          q.insertInto("orders").values({
             customer_id: 1,
             product_id: 1,
             quantity: 2,
@@ -389,8 +389,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const rowCount = await executeInsert(
         db,
         schema,
-        (ctx, params) =>
-          ctx.insertInto("products").values({
+        (q, params) =>
+          q.insertInto("products").values({
             name: "Product with Metadata",
             price: 199.99,
             metadata: params.metadataJson,
@@ -413,8 +413,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       await executeInsert(
         db,
         schema,
-        (ctx) =>
-          ctx.insertInto("customers").values({
+        (q) =>
+          q.insertInto("customers").values({
             email: "test@example.com",
             name: "Test User",
             age: 30,
@@ -427,8 +427,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
         await executeInsert(
           db,
           schema,
-          (ctx) =>
-            ctx.insertInto("customers").values({
+          (q) =>
+            q.insertInto("customers").values({
               email: "test@example.com",
               name: "Another User",
               age: 25,
@@ -451,8 +451,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const customerResults = await executeInsert(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .insertInto("customers")
             .values({
               email: "john@example.com",
@@ -469,8 +469,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const productResults = await executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .insertInto("products")
             .values({
               name: "Test Product",
@@ -487,8 +487,8 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       const orderCount = await executeInsert(
         db,
         schema,
-        (ctx, params) =>
-          ctx.insertInto("orders").values({
+        (q, params) =>
+          q.insertInto("orders").values({
             customer_id: params.customerId,
             product_id: params.productId,
             quantity: 3,

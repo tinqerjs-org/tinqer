@@ -21,8 +21,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx.from("products").select((p) => ({
+        (q) =>
+          q.from("products").select((p) => ({
             name: p.name,
             price: p.price,
             priceWithTax: p.price * 1.1,
@@ -55,8 +55,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx.from("order_items").select((oi) => ({
+        (q) =>
+          q.from("order_items").select((oi) => ({
             orderId: oi.order_id,
             quantity: oi.quantity,
             unitPrice: oi.unit_price,
@@ -90,8 +90,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .select((p) => ({
               name: p.name,
@@ -127,8 +127,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const evenUsers = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.id % 2 === 0)
             .select((u) => ({ id: u.id, name: u.name })),
@@ -142,8 +142,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const oddUsers = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.id % 2 === 1)
             .select((u) => ({ id: u.id, name: u.name })),
@@ -178,8 +178,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => (p.price * p.stock) / 100 > 10)
             .select((p) => ({
@@ -214,8 +214,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("order_items")
             .groupBy((oi) => oi.order_id)
             .select((g) => ({
@@ -262,7 +262,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const nullAgeUsers = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.age === null),
+        (q) => q.from("users").where((u) => u.age === null),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -273,7 +273,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const nonNullAgeUsers = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.age !== null),
+        (q) => q.from("users").where((u) => u.age !== null),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -312,8 +312,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx.from("products").select((p) => ({
+        (q) =>
+          q.from("products").select((p) => ({
             name: p.name,
             // Test NULL-safe arithmetic with coalescing
             totalValue: p.stock * p.price,
@@ -363,8 +363,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("departments")
             .where((d) => d.id === 999)
             .select((d) => ({
@@ -407,8 +407,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const withDescription = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.description !== null && p.description.includes("laptop")),
         {
@@ -421,7 +421,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const withoutDescription = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("products").where((p) => p.description === null),
+        (q) => q.from("products").where((p) => p.description === null),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -467,11 +467,11 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const joinResults = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -516,7 +516,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       `);
 
       // COUNT should count rows with NULL
-      const totalCount = await executeSelectSimple(db, schema, (ctx) => ctx.from("users").count(), {
+      const totalCount = await executeSelectSimple(db, schema, (q) => q.from("users").count(), {
         onSql: (result) => {
           capturedSql1 = result;
         },
@@ -526,8 +526,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const avgAge = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null)
             .average((u) => u.age!),
@@ -553,8 +553,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const nonNullAges = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null)
             .select((u) => ({ age: u.age })),
@@ -587,7 +587,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const activeUsers = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.is_active),
+        (q) => q.from("users").where((u) => u.is_active),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -598,7 +598,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const inactiveUsers = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => !u.is_active),
+        (q) => q.from("users").where((u) => !u.is_active),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -632,8 +632,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx.from("users").where((u) => u.is_active === true && u.age !== null && u.age >= 30),
+        (q) => q.from("users").where((u) => u.is_active === true && u.age !== null && u.age >= 30),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -661,8 +660,8 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where(
               (u) =>

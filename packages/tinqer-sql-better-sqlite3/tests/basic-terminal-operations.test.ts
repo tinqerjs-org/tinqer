@@ -10,7 +10,7 @@ import { db } from "./test-schema.js";
 describe("Basic Terminal Operations", () => {
   describe("COUNT operations", () => {
     it("should generate SQL for count()", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").count(), {});
+      const result = selectStatement(db, (q) => q.from("users").count(), {});
       expect(result.sql).to.equal('SELECT COUNT(*) FROM "users"');
       expect(result.params).to.deep.equal({});
     });
@@ -18,8 +18,8 @@ describe("Basic Terminal Operations", () => {
     it("should generate SQL for count() with WHERE", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.isActive)
             .count(),

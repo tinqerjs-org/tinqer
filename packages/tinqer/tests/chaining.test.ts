@@ -21,8 +21,8 @@ import { type TestSchema } from "./test-schema.js";
 
 describe("Operation Chaining", () => {
   it("should parse from().where().select() chain", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q
         .from("users")
         .where((x) => x.age >= 18 && x.isActive)
         .select((x) => ({ id: x.id, name: x.name }));
@@ -38,8 +38,8 @@ describe("Operation Chaining", () => {
   });
 
   it("should parse complex chain with multiple where operations", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q
         .from("users")
         .where((x) => x.age >= 18)
         .where((x) => x.role == "admin")
@@ -61,8 +61,8 @@ describe("Operation Chaining", () => {
   });
 
   it("should parse chain with select-where-select", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q
         .from("users")
         .select((x) => ({ id: x.id, firstName: x.firstName, lastName: x.lastName, age: x.age }))
         .where((x) => x.age >= 18)
@@ -81,8 +81,8 @@ describe("Operation Chaining", () => {
   });
 
   it("should parse pagination with filtering and ordering", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q
         .from("products")
         .where((x) => x.inStock)
         .orderByDescending((x) => x.price)

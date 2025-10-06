@@ -12,8 +12,8 @@ describe("UPDATE Statement Generation", () => {
     it("should generate UPDATE with WHERE clause", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ age: 31 })
             .where((u) => u.id === 1),
@@ -30,8 +30,8 @@ describe("UPDATE Statement Generation", () => {
     it("should generate UPDATE with multiple columns", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ age: 32, email: "updated@example.com" })
             .where((u) => u.id === 2),
@@ -52,8 +52,8 @@ describe("UPDATE Statement Generation", () => {
     it("should generate UPDATE with schema prefix in table name", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("public.users")
             .set({ age: 33 })
             .where((u: { id: number; age: number }) => u.id === 3),
@@ -68,8 +68,8 @@ describe("UPDATE Statement Generation", () => {
     it("should handle AND conditions", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ age: 34 })
             .where((u) => u.id === 4 && u.name === "Alice"),
@@ -85,8 +85,8 @@ describe("UPDATE Statement Generation", () => {
     it("should handle OR conditions", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ isActive: true })
             .where((u) => u.age > 50 || u.department === "Sales"),
@@ -102,8 +102,8 @@ describe("UPDATE Statement Generation", () => {
     it("should handle complex nested conditions", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ salary: 75000 })
             .where((u) => (u.age > 30 && u.department === "IT") || u.role === "Manager"),
@@ -121,8 +121,8 @@ describe("UPDATE Statement Generation", () => {
     it("should use external parameters in SET", () => {
       const result = updateStatement(
         db,
-        (ctx, p: { newAge: number; userId: number }) =>
-          ctx
+        (q, p: { newAge: number; userId: number }) =>
+          q
             .update("users")
             .set({ age: p.newAge })
             .where((u) => u.id === p.userId),
@@ -139,8 +139,8 @@ describe("UPDATE Statement Generation", () => {
     it("should mix external parameters with literals", () => {
       const result = updateStatement(
         db,
-        (ctx, p: { userId: number }) =>
-          ctx
+        (q, p: { userId: number }) =>
+          q
             .update("users")
             .set({ age: 36, email: "fixed@example.com" })
             .where((u) => u.id === p.userId),
@@ -163,8 +163,8 @@ describe("UPDATE Statement Generation", () => {
     it("should generate UPDATE with RETURNING single column", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ age: 37 })
             .where((u) => u.id === 7)
@@ -181,8 +181,8 @@ describe("UPDATE Statement Generation", () => {
     it("should generate UPDATE with RETURNING multiple columns", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ age: 38, email: "new@example.com" })
             .where((u) => u.id === 8)
@@ -199,8 +199,8 @@ describe("UPDATE Statement Generation", () => {
     it("should generate UPDATE with RETURNING all columns (*)", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ age: 39 })
             .where((u) => u.id === 9)
@@ -219,7 +219,7 @@ describe("UPDATE Statement Generation", () => {
     it("should generate UPDATE without WHERE when allowed", () => {
       const result = updateStatement(
         db,
-        (ctx) => ctx.update("users").set({ isActive: true }).allowFullTableUpdate(),
+        (q) => q.update("users").set({ isActive: true }).allowFullTableUpdate(),
         {},
       );
 
@@ -228,7 +228,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", () => {
       assert.throws(() => {
-        updateStatement(db, (ctx) => ctx.update("users").set({ isActive: true }), {});
+        updateStatement(db, (q) => q.update("users").set({ isActive: true }), {});
       }, /UPDATE requires a WHERE clause or explicit allowFullTableUpdate/);
     });
   });
@@ -237,8 +237,8 @@ describe("UPDATE Statement Generation", () => {
     it("should handle boolean values", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ isActive: false })
             .where((u) => u.id === 10),
@@ -254,8 +254,8 @@ describe("UPDATE Statement Generation", () => {
     it("should handle null values", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ email: null })
             .where((u) => u.id === 11),
@@ -268,8 +268,8 @@ describe("UPDATE Statement Generation", () => {
     it("should handle numeric edge cases", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ age: 0, salary: -500 })
             .where((u) => u.id === 12),
@@ -288,8 +288,8 @@ describe("UPDATE Statement Generation", () => {
     it("should handle startsWith in WHERE", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ department: "Engineering" })
             .where((u) => u.name.startsWith("A")),
@@ -305,8 +305,8 @@ describe("UPDATE Statement Generation", () => {
     it("should handle contains in WHERE", () => {
       const result = updateStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("users")
             .set({ role: "Senior" })
             .where((u) => u.email !== null && u.email.includes("@company.com")),

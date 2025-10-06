@@ -11,8 +11,8 @@ describe("Complex Query Chaining", () => {
   it("should generate complex query with WHERE, SELECT, ORDER BY, TAKE", () => {
     const result = selectStatement(
       db,
-      (ctx, p: { minAge: number }) =>
-        ctx
+      (q, p: { minAge: number }) =>
+        q
           .from("users")
           .where((x) => x.age >= p.minAge && x.isActive)
           .select((x) => ({ id: x.id, name: x.name }))
@@ -30,8 +30,8 @@ describe("Complex Query Chaining", () => {
   it("should generate query with SKIP and TAKE for pagination", () => {
     const result = selectStatement(
       db,
-      (ctx, p: { page: number; pageSize: number }) =>
-        ctx
+      (q, p: { page: number; pageSize: number }) =>
+        q
           .from("products")
           .orderBy((x) => x.name)
           .skip(p.page * p.pageSize)
@@ -48,8 +48,8 @@ describe("Complex Query Chaining", () => {
   it("should generate query with multiple WHERE clauses combined with AND", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("users")
           .where((x) => x.age >= 18)
           .where((x) => x.role == "admin"),
@@ -63,8 +63,8 @@ describe("Complex Query Chaining", () => {
   it("should generate query with DISTINCT", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("products")
           .select((x) => x.category)
           .distinct(),
@@ -77,8 +77,8 @@ describe("Complex Query Chaining", () => {
   it("should generate query with GROUP BY and COUNT aggregate", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("employees")
           .groupBy((x) => x.department)
           .select((g) => ({ department: g.key, count: g.count() })),

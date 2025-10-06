@@ -21,7 +21,7 @@ describe("Null Coalescing Operator (??) with query", () => {
 
     const result = selectStatement(
       db,
-      (ctx) => ctx.from("users").where((u) => (u.status ?? "active") === "active"),
+      (q) => q.from("users").where((u) => (u.status ?? "active") === "active"),
       {},
     );
 
@@ -42,7 +42,7 @@ describe("Null Coalescing Operator (??) with query", () => {
 
     const result = selectStatement(
       db,
-      (ctx) => ctx.from("orders").where((o) => (o.priority ?? 5) < 3),
+      (q) => q.from("orders").where((o) => (o.priority ?? 5) < 3),
       {},
     );
 

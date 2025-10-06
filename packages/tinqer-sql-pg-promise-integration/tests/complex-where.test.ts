@@ -21,8 +21,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -62,8 +62,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where(
               (p) =>
@@ -110,8 +110,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where(
               (u) => !(u.department_id === 1) && u.age !== null && !(u.age < 30) && !!u.is_active,
@@ -146,7 +146,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("products").where((p) => p.price >= 50 && p.price <= 300),
+        (q) => q.from("products").where((p) => p.price >= 50 && p.price <= 300),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -174,8 +174,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -215,7 +215,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("products").where((p) => p.stock > 100 && p.stock < 500),
+        (q) => q.from("products").where((p) => p.stock > 100 && p.stock < 500),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -246,7 +246,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => params.targetIds.includes(u.id)),
+        (q, params) => q.from("users").where((u) => params.targetIds.includes(u.id)),
         { targetIds },
         {
           onSql: (result) => {
@@ -281,8 +281,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.category !== null && !params.excludedCategories.includes(p.category)),
         { excludedCategories },
@@ -317,7 +317,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => params.emptyList.includes(u.id)),
+        (q, params) => q.from("users").where((u) => params.emptyList.includes(u.id)),
         { emptyList },
         {
           onSql: (result) => {
@@ -343,7 +343,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.department_id !== null && u.is_active === true),
+        (q) => q.from("users").where((u) => u.department_id !== null && u.is_active === true),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -371,8 +371,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.description !== null && (p.category === null || p.stock > 100)),
         {
@@ -404,7 +404,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("products").where((p) => p.price * 0.9 > 100),
+        (q) => q.from("products").where((p) => p.price * 0.9 > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -431,7 +431,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("order_items").where((oi) => oi.quantity * oi.unit_price > 500),
+        (q) => q.from("order_items").where((oi) => oi.quantity * oi.unit_price > 500),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -458,7 +458,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.id % 2 === 0),
+        (q) => q.from("users").where((u) => u.id % 2 === 0),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -485,8 +485,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null && u.age >= 25)
             .where((u) => u.is_active === true)
@@ -519,8 +519,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.price > 10)
             .where((p) => p.stock > 0)
@@ -571,8 +571,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelect(
         db,
         schema,
-        (ctx, p) =>
-          ctx
+        (q, p) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -618,8 +618,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelect(
         db,
         schema,
-        (ctx, p) =>
-          ctx
+        (q, p) =>
+          q
             .from("products")
             .where(
               (prod) =>
@@ -660,8 +660,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -711,8 +711,8 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const results = await executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx.from("products").where(
+        (q) =>
+          q.from("products").where(
             (p) =>
               p.id === p.id && // equality
               p.price !== 0 && // inequality
@@ -751,7 +751,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const activeResults = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.is_active),
+        (q) => q.from("users").where((u) => u.is_active),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -762,7 +762,7 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       const inactiveResults = await executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => !u.is_active),
+        (q) => q.from("users").where((u) => !u.is_active),
         {
           onSql: (result) => {
             capturedSql2 = result;

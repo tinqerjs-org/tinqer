@@ -27,7 +27,7 @@ interface TestSchema {
 describe("Auto-Parameterization", () => {
   describe("Numeric literals", () => {
     it("should auto-parameterize numeric constants in comparisons", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").where((x) => x.age >= 18);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.age >= 18);
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: 18 });
@@ -35,8 +35,8 @@ describe("Auto-Parameterization", () => {
     });
 
     it("should handle multiple numeric constants with same column", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("users")
           .where((x) => x.age >= 18)
           .where((x) => x.age <= 65);
@@ -46,21 +46,21 @@ describe("Auto-Parameterization", () => {
     });
 
     it("should auto-parameterize in take operations", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").take(10);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").take(10);
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: 10 });
     });
 
     it("should auto-parameterize in skip operations", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").skip(20);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").skip(20);
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: 20 });
     });
 
     it("should handle both skip and take", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").skip(10).take(25);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").skip(10).take(25);
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: 10, __p2: 25 });
@@ -69,24 +69,23 @@ describe("Auto-Parameterization", () => {
 
   describe("String literals", () => {
     it("should auto-parameterize string constants", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("users").where((x) => x.name == "John");
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.name == "John");
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: "John" });
     });
 
     it("should handle multiple string constants with same column", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("users").where((x) => x.role == "admin" || x.role == "moderator");
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((x) => x.role == "admin" || x.role == "moderator");
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: "admin", __p2: "moderator" });
     });
 
     it("should handle string constants with different columns", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("users").where((x) => x.firstName == "John" && x.lastName == "Doe");
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((x) => x.firstName == "John" && x.lastName == "Doe");
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: "John", __p2: "Doe" });
@@ -95,16 +94,16 @@ describe("Auto-Parameterization", () => {
 
   describe("Boolean literals", () => {
     it("should auto-parameterize boolean constants", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("users").where((x) => x.isActive == true);
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((x) => x.isActive == true);
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: true });
     });
 
     it("should handle false values", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("users").where((x) => x.isDeleted == false);
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((x) => x.isDeleted == false);
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: false });
@@ -113,8 +112,7 @@ describe("Auto-Parameterization", () => {
 
   describe("Null literals", () => {
     it("should NOT auto-parameterize null constants (for IS NULL generation)", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("users").where((x) => x.email == null);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.email == null);
       const result = parseQuery(query);
 
       // Null should not be parameterized - it becomes a ConstantExpression for IS NULL
@@ -122,8 +120,7 @@ describe("Auto-Parameterization", () => {
     });
 
     it("should handle null check with != operator", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("users").where((x) => x.phone != null);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.phone != null);
       const result = parseQuery(query);
 
       // Null should not be parameterized - it becomes a ConstantExpression for IS NOT NULL
@@ -133,8 +130,8 @@ describe("Auto-Parameterization", () => {
 
   describe("Complex queries", () => {
     it("should handle multiple different types of literals", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("users")
           .where((x) => x.age >= 18 && x.name == "John" && x.isActive == true && x.email != null);
       const result = parseQuery(query);
@@ -148,8 +145,8 @@ describe("Auto-Parameterization", () => {
     });
 
     it("should handle literals in arithmetic expressions", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("products").where((x) => x.price + 10 > 100);
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("products").where((x) => x.price + 10 > 100);
       const result = parseQuery(query);
 
       // Both 10 and 100 should be parameterized
@@ -162,8 +159,8 @@ describe("Auto-Parameterization", () => {
     });
 
     it("should handle pagination with filtering", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("users")
           .where((x) => x.age >= 21)
           .where((x) => x.isActive == true)
@@ -183,14 +180,14 @@ describe("Auto-Parameterization", () => {
 
   describe("Sequential auto-param numbering", () => {
     it("should use sequential numbering regardless of column context", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").where((x) => x.age > 100);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.age > 100);
       const result = parseQuery(query);
 
       expect(result?.autoParams).to.deep.equal({ __p1: 100 });
     });
 
     it("should use sequential numbering for constants without table context", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").where((_x) => 5 < 10);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((_x) => 5 < 10);
       const result = parseQuery(query);
 
       // Sequential numbering for all auto-params
@@ -199,8 +196,8 @@ describe("Auto-Parameterization", () => {
     });
 
     it("should use sequential numbering for multiple literals", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("orders")
           .where((x) => x.status == "pending" || x.status == "processing" || x.status == "shipped");
       const result = parseQuery(query);
@@ -215,8 +212,8 @@ describe("Auto-Parameterization", () => {
 
   describe("External parameters should not be auto-parameterized", () => {
     it("should keep external parameters as-is", () => {
-      const query = (ctx: QueryBuilder<TestSchema>, p: { minAge: number; maxAge: number }) =>
-        ctx.from("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge);
+      const query = (q: QueryBuilder<TestSchema>, p: { minAge: number; maxAge: number }) =>
+        q.from("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge);
       const result = parseQuery(query);
 
       // Should not have any auto-params for external parameters
@@ -224,8 +221,8 @@ describe("Auto-Parameterization", () => {
     });
 
     it("should mix external params with auto-parameterized constants", () => {
-      const query = (ctx: QueryBuilder<TestSchema>, p: { role: string }) =>
-        ctx.from("users").where((x) => x.age >= 18 && x.role == p.role && x.isActive == true);
+      const query = (q: QueryBuilder<TestSchema>, p: { role: string }) =>
+        q.from("users").where((x) => x.age >= 18 && x.role == p.role && x.isActive == true);
       const result = parseQuery(query);
 
       // Only the constants should be auto-parameterized

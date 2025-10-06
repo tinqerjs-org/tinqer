@@ -11,7 +11,7 @@ describe("Auto-Parameterization SQL Generation", () => {
   it("should generate SQL with auto-parameterized constants", () => {
     const result = selectStatement(
       db,
-      (ctx) => ctx.from("users").where((x) => x.age >= 18 && x.name == "John"),
+      (q) => q.from("users").where((x) => x.age >= 18 && x.name == "John"),
       {},
     );
 
@@ -25,7 +25,7 @@ describe("Auto-Parameterization SQL Generation", () => {
   it("should merge user params with auto-params", () => {
     const result = selectStatement(
       db,
-      (ctx, p: { role: string }) => ctx.from("users").where((x) => x.age >= 21 && x.role == p.role),
+      (q, p: { role: string }) => q.from("users").where((x) => x.age >= 21 && x.role == p.role),
       { role: "admin" },
     );
 
@@ -39,8 +39,8 @@ describe("Auto-Parameterization SQL Generation", () => {
   it("should handle take and skip auto-parameterization", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("posts")
           .orderBy((x) => x.id)
           .skip(20)
@@ -58,8 +58,8 @@ describe("Auto-Parameterization SQL Generation", () => {
   it("should handle complex query with multiple auto-params", () => {
     const result = selectStatement(
       db,
-      (ctx, p: { category: string }) =>
-        ctx
+      (q, p: { category: string }) =>
+        q
           .from("products")
           .where((x) => x.price > 100)
           .where((x) => x.discount <= 0.5)
@@ -89,11 +89,7 @@ describe("Auto-Parameterization SQL Generation", () => {
   });
 
   it("should handle null comparisons with IS NULL/IS NOT NULL", () => {
-    const result = selectStatement(
-      db,
-      (ctx) => ctx.from("users").where((x) => x.email != null),
-      {},
-    );
+    const result = selectStatement(db, (q) => q.from("users").where((x) => x.email != null), {});
 
     expect(result.sql).to.equal('SELECT * FROM "users" WHERE "email" IS NOT NULL');
     expect(result.params).to.deep.equal({});
@@ -102,8 +98,8 @@ describe("Auto-Parameterization SQL Generation", () => {
   it("should handle multiple uses of same column", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("users")
           .where((x) => x.age >= 18)
           .where((x) => x.age <= 65)
@@ -127,7 +123,7 @@ describe("Auto-Parameterization SQL Generation", () => {
     // they would be parameterized
     const result = selectStatement(
       db,
-      (ctx) => ctx.from("users").where((x) => x.username == "admin' OR '1'='1"),
+      (q) => q.from("users").where((x) => x.username == "admin' OR '1'='1"),
       {},
     );
 

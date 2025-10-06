@@ -19,8 +19,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -65,8 +65,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -95,8 +95,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -128,8 +128,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -167,8 +167,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -210,8 +210,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -246,8 +246,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -277,8 +277,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -326,8 +326,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -359,8 +359,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -388,8 +388,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -416,8 +416,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -447,8 +447,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -479,8 +479,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -511,8 +511,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -541,8 +541,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -573,8 +573,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -606,8 +606,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -646,8 +646,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -693,8 +693,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -734,8 +734,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -775,8 +775,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .where((u) => u.is_active === true) // Regular filter
             .select((u) => ({
@@ -816,8 +816,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const result = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -870,8 +870,8 @@ describe("Window Functions - PostgreSQL Integration", () => {
       const count = await executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               id: u.id,

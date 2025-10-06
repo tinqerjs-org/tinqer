@@ -52,7 +52,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle arithmetic comparisons in WHERE", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("products").where((p) => p.price - p.cost > 50),
+        (q) => q.from("products").where((p) => p.price - p.cost > 50),
         {},
       );
 
@@ -63,7 +63,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle complex arithmetic in WHERE", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("financial").where((f) => f.revenue / f.employees > 100000),
+        (q) => q.from("financial").where((f) => f.revenue / f.employees > 100000),
         {},
       );
 
@@ -76,8 +76,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle multiple arithmetic conditions", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx.from("products").where((p) => p.price * 0.9 > 100 && p.cost * p.quantity < 10000),
+        (q) => q.from("products").where((p) => p.price * 0.9 > 100 && p.cost * p.quantity < 10000),
         {},
       );
 
@@ -98,7 +97,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle arithmetic with nullable checks", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("products").where((p) => p.discount != null && p.price - p.discount > 50),
+        (q) => q.from("products").where((p) => p.discount != null && p.price - p.discount > 50),
         {},
       );
 
@@ -116,8 +115,8 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should mix parameters with constants in arithmetic", () => {
       const result = selectStatement(
         db,
-        (ctx, params) =>
-          ctx.from("products").where((p) => p.price * (1 - params.baseDiscount - 0.05) > 100),
+        (q, params) =>
+          q.from("products").where((p) => p.price * (1 - params.baseDiscount - 0.05) > 100),
         { baseDiscount: 0.1 },
       );
 
@@ -143,7 +142,7 @@ describe("Arithmetic Expression SQL Generation", () => {
     it("should handle very large numbers", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("financial").where((f) => f.revenue > 1000000000),
+        (q) => q.from("financial").where((f) => f.revenue > 1000000000),
         {},
       );
 

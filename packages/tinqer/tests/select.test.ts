@@ -13,7 +13,7 @@ import type { ObjectExpression, ColumnExpression } from "../dist/expressions/exp
 describe("SELECT Operation", () => {
   describe("Simple Projections", () => {
     it("should parse simple property selection", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").select((x) => x.name);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").select((x) => x.name);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("select");
@@ -24,8 +24,8 @@ describe("SELECT Operation", () => {
     });
 
     it("should parse object projection", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("users").select((x) => ({
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").select((x) => ({
           userId: x.id,
           userName: x.name,
         }));
@@ -45,8 +45,8 @@ describe("SELECT Operation", () => {
 
   describe("Nested Projections", () => {
     it("should parse nested object projection", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx.from("users").select((x) => ({
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").select((x) => ({
           id: x.id,
           details: {
             name: x.name,
@@ -78,8 +78,8 @@ describe("SELECT Operation", () => {
 
   describe("Chained SELECT Operations", () => {
     it("should parse select after where", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("users")
           .where((x) => x.age >= 18)
           .select((x) => ({ id: x.id, name: x.name }));
@@ -91,8 +91,8 @@ describe("SELECT Operation", () => {
     });
 
     it("should parse multiple select operations", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("users")
           .select((x) => ({ userId: x.id, userName: x.name, userAge: x.age }))
           .select((x) => ({ id: x.userId, displayName: x.userName }));

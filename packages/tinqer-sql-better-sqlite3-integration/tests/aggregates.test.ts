@@ -39,7 +39,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const count = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").count((u) => u.is_active === 1),
+        (q) => q.from("users").count((u) => u.is_active === 1),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -61,8 +61,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const count = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null && u.age >= 30)
             .count(),
@@ -88,16 +88,11 @@ describe("Better SQLite3 Integration - Aggregates", () => {
     it("should sum product prices", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const sum = executeSelectSimple(
-        db,
-        schema,
-        (ctx) => ctx.from("products").sum((p) => p.price),
-        {
-          onSql: (result) => {
-            capturedSql = result;
-          },
+      const sum = executeSelectSimple(db, schema, (q) => q.from("products").sum((p) => p.price), {
+        onSql: (result) => {
+          capturedSql = result;
         },
-      );
+      });
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal('SELECT SUM("price") FROM "products"');
@@ -113,8 +108,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const sum = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.category === "Electronics")
             .sum((p) => p.price),
@@ -141,7 +136,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const sum = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("orders").sum((o) => o.total_amount),
+        (q) => q.from("orders").sum((o) => o.total_amount),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -165,8 +160,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const avg = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null)
             .average((u) => u.age!),
@@ -193,8 +188,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const avgElectronics = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.category === "Electronics")
             .average((p) => p.price),
@@ -208,8 +203,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const avgFurniture = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.category === "Furniture")
             .average((p) => p.price),
@@ -246,8 +241,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const minAge = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null)
             .min((u) => u.age!),
@@ -261,8 +256,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const maxAge = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null)
             .max((u) => u.age!),
@@ -295,7 +290,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const minPrice = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("products").min((p) => p.price),
+        (q) => q.from("products").min((p) => p.price),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -306,7 +301,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const maxPrice = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("products").max((p) => p.price),
+        (q) => q.from("products").max((p) => p.price),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -334,8 +329,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const maxElectronicsPrice = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.category === "Electronics")
             .max((p) => p.price),
@@ -363,8 +358,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .groupBy((u) => u.department_id)
             .select((g) => ({
@@ -395,8 +390,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .groupBy((p) => p.category)
             .select((g) => ({
@@ -435,8 +430,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.is_active === 1 && u.age !== null)
             .groupBy((u) => u.department_id)
@@ -472,8 +467,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("orders")
             .groupBy((o) => o.status)
             .select((g) => ({
@@ -518,7 +513,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const sum = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("test_nulls").sum((t) => t.value!),
+        (q) => q.from("test_nulls").sum((t) => t.value!),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -551,7 +546,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const avg = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("test_avg_nulls").average((t) => t.score!),
+        (q) => q.from("test_avg_nulls").average((t) => t.score!),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -581,7 +576,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = executeSelectSimple(db, schema, (ctx) => ctx.from("test_count_nulls").count(), {
+      const count = executeSelectSimple(db, schema, (q) => q.from("test_count_nulls").count(), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -613,8 +608,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("test_distinct_nulls")
             .select((t) => t.category)
             .distinct(),
@@ -656,7 +651,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const minPrice = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("test_minmax_nulls").min((t) => t.price!),
+        (q) => q.from("test_minmax_nulls").min((t) => t.price!),
         {
           onSql: (result) => {
             capturedSqlMin = result;
@@ -667,7 +662,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const maxPrice = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("test_minmax_nulls").max((t) => t.price!),
+        (q) => q.from("test_minmax_nulls").max((t) => t.price!),
         {
           onSql: (result) => {
             capturedSqlMax = result;
@@ -704,8 +699,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("test_group_nulls")
             .groupBy((t) => t.category)
             .select((g) => ({
@@ -745,8 +740,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .groupBy((p) => p.category)
             .select((g) => ({
@@ -791,8 +786,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("orders")
             .groupBy((o) => o.status)
             .select((g) => ({
@@ -845,7 +840,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       let capturedSql5: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Get each aggregate separately (Tinqer terminal operations)
-      const count = executeSelectSimple(db, schema, (ctx) => ctx.from("test_agg_all").count(), {
+      const count = executeSelectSimple(db, schema, (q) => q.from("test_agg_all").count(), {
         onSql: (result) => {
           capturedSql1 = result;
         },
@@ -853,7 +848,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const min = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("test_agg_all").min((t) => t.value),
+        (q) => q.from("test_agg_all").min((t) => t.value),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -863,7 +858,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const max = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("test_agg_all").max((t) => t.value),
+        (q) => q.from("test_agg_all").max((t) => t.value),
         {
           onSql: (result) => {
             capturedSql3 = result;
@@ -873,7 +868,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const avg = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("test_agg_all").average((t) => t.value),
+        (q) => q.from("test_agg_all").average((t) => t.value),
         {
           onSql: (result) => {
             capturedSql4 = result;
@@ -883,7 +878,7 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const sum = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("test_agg_all").sum((t) => t.value),
+        (q) => q.from("test_agg_all").sum((t) => t.value),
         {
           onSql: (result) => {
             capturedSql5 = result;
@@ -917,8 +912,8 @@ describe("Better SQLite3 Integration - Aggregates", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.category === "Electronics")
             .groupBy((p) => p.category)

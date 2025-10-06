@@ -24,7 +24,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -42,7 +42,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Verify table still exists
       let tableCheckSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const tableCheck = executeSelectSimple(db, schema, (ctx) => ctx.from("users").take(1), {
+      const tableCheck = executeSelectSimple(db, schema, (q) => q.from("users").take(1), {
         onSql: (result) => {
           tableCheckSql = result;
         },
@@ -60,7 +60,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.email == params.maliciousEmail),
+        (q, params) => q.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
           onSql: (result) => {
@@ -83,7 +83,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -106,7 +106,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.email == params.maliciousEmail),
+        (q, params) => q.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
           onSql: (result) => {
@@ -125,7 +125,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const activeUsers = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.is_active === 1),
+        (q) => q.from("users").where((u) => u.is_active === 1),
         {
           onSql: (result) => {
             activeUsersSql = result;
@@ -145,7 +145,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -161,7 +161,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Verify orders still exist
       let ordersSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const orders = executeSelectSimple(db, schema, (ctx) => ctx.from("orders").take(1), {
+      const orders = executeSelectSimple(db, schema, (q) => q.from("orders").take(1), {
         onSql: (result) => {
           ordersSql = result;
         },
@@ -181,7 +181,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.nameWithQuote),
+        (q, params) => q.from("users").where((u) => u.name == params.nameWithQuote),
         { nameWithQuote },
         {
           onSql: (result) => {
@@ -204,8 +204,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx.from("products").where((p) => p.description == params.pathWithBackslash),
+        (q, params) => q.from("products").where((p) => p.description == params.pathWithBackslash),
         { pathWithBackslash },
         {
           onSql: (result) => {
@@ -230,8 +229,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx.from("products").where((p) => p.description == params.textWithSpecials),
+        (q, params) => q.from("products").where((p) => p.description == params.textWithSpecials),
         { textWithSpecials },
         {
           onSql: (result) => {
@@ -258,7 +256,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -280,7 +278,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -302,7 +300,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.email == params.maliciousEmail),
+        (q, params) => q.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
           onSql: (result) => {
@@ -326,7 +324,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.age == params.age),
+        (q, params) => q.from("users").where((u) => u.age == params.age),
         { age },
         {
           onSql: (result) => {
@@ -351,8 +349,8 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("users")
             .where((u) => u.id == params.maliciousId)
             .select((u) => ({ id: u.id, name: u.name })),
@@ -382,7 +380,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("accounts").where((a) => a.balance == params.negativeBalance),
+        (q, params) => q.from("accounts").where((a) => a.balance == params.negativeBalance),
         { negativeBalance },
         {
           onSql: (result) => {
@@ -411,7 +409,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.email == params.maliciousEmail),
+        (q, params) => q.from("users").where((u) => u.email == params.maliciousEmail),
         { maliciousEmail },
         {
           onSql: (result) => {
@@ -433,7 +431,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -455,12 +453,12 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
         "admin'; INSERT INTO users (name, email) VALUES ('hacker', 'hack@test.com'); --";
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const userCountBefore = executeSelectSimple(db, schema, (ctx) => ctx.from("users"));
+      const userCountBefore = executeSelectSimple(db, schema, (q) => q.from("users"));
 
       executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -473,7 +471,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       expect(capturedSql!.sql).to.equal('SELECT * FROM "users" WHERE "name" = @maliciousName');
       expect(capturedSql!.params).to.deep.equal({ maliciousName });
 
-      const userCountAfter = executeSelectSimple(db, schema, (ctx) => ctx.from("users"));
+      const userCountAfter = executeSelectSimple(db, schema, (q) => q.from("users"));
       expect(userCountAfter.length).to.equal(userCountBefore.length);
     });
 
@@ -484,7 +482,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.maliciousName),
+        (q, params) => q.from("users").where((u) => u.name == params.maliciousName),
         { maliciousName },
         {
           onSql: (result) => {
@@ -500,7 +498,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Verify products table still exists
       let productsSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const products = executeSelectSimple(db, schema, (ctx) => ctx.from("products").take(1), {
+      const products = executeSelectSimple(db, schema, (q) => q.from("products").take(1), {
         onSql: (result) => {
           productsSql = result;
         },
@@ -521,8 +519,8 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.category == params.maliciousCategory)
             .orderBy((p) => p.name),
@@ -543,7 +541,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Verify users table still exists
       let usersSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users").take(1), {
+      const users = executeSelectSimple(db, schema, (q) => q.from("users").take(1), {
         onSql: (result) => {
           usersSql = result;
         },
@@ -561,8 +559,8 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("users")
             .where((u) => u.name == params.testName)
             .select((u) => ({
@@ -595,8 +593,8 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.category == params.maliciousCategory)
             .groupBy((p) => p.category)
@@ -629,7 +627,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.longString),
+        (q, params) => q.from("users").where((u) => u.name == params.longString),
         { longString },
         {
           onSql: (result) => {
@@ -651,7 +649,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.unicodeString),
+        (q, params) => q.from("users").where((u) => u.name == params.unicodeString),
         { unicodeString },
         {
           onSql: (result) => {
@@ -667,7 +665,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
 
       // Table should still exist
       let usersSql: { sql: string; params: Record<string, unknown> } | undefined;
-      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users").take(1), {
+      const users = executeSelectSimple(db, schema, (q) => q.from("users").take(1), {
         onSql: (result) => {
           usersSql = result;
         },
@@ -685,7 +683,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.hexString),
+        (q, params) => q.from("users").where((u) => u.name == params.hexString),
         { hexString },
         {
           onSql: (result) => {
@@ -711,8 +709,8 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -736,7 +734,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       expect(results).to.have.length(0);
 
       // Verify table integrity
-      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users"));
+      const users = executeSelectSimple(db, schema, (q) => q.from("users"));
       expect(users.length).to.be.greaterThan(0);
     });
 
@@ -749,8 +747,8 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -782,7 +780,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.nullBytePayload),
+        (q, params) => q.from("users").where((u) => u.name == params.nullBytePayload),
         { nullBytePayload },
         {
           onSql: (result) => {
@@ -805,7 +803,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.email == params.surrogatePayload),
+        (q, params) => q.from("users").where((u) => u.email == params.surrogatePayload),
         { surrogatePayload },
         {
           onSql: (result) => {
@@ -827,7 +825,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.name == params.binaryEncoded),
+        (q, params) => q.from("users").where((u) => u.name == params.binaryEncoded),
         { binaryEncoded },
         {
           onSql: (result) => {
@@ -843,7 +841,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       expect(results).to.have.length(0);
 
       // Verify table still exists
-      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users").take(1));
+      const users = executeSelectSimple(db, schema, (q) => q.from("users").take(1));
       expect(users).to.have.length(1);
     });
 
@@ -854,7 +852,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => u.email == params.mixedPayload),
+        (q, params) => q.from("users").where((u) => u.email == params.mixedPayload),
         { mixedPayload },
         {
           onSql: (result) => {
@@ -869,7 +867,7 @@ describe("Better SQLite3 Integration - SQL Injection Prevention", () => {
       expect(results).to.have.length(0);
 
       // Verify database integrity
-      const users = executeSelectSimple(db, schema, (ctx) => ctx.from("users"));
+      const users = executeSelectSimple(db, schema, (q) => q.from("users"));
       expect(users.length).to.be.greaterThan(0);
     });
   });

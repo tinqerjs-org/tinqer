@@ -10,21 +10,21 @@ import { db } from "./test-schema.js";
 describe("WHERE SQL Generation", () => {
   describe("Comparison operators", () => {
     it("should generate equality comparison", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").where((x) => x.id == 1), {});
+      const result = selectStatement(db, (q) => q.from("users").where((x) => x.id == 1), {});
 
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "id" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 1 });
     });
 
     it("should generate greater than comparison", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").where((x) => x.age > 18), {});
+      const result = selectStatement(db, (q) => q.from("users").where((x) => x.age > 18), {});
 
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" > $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should generate greater than or equal comparison", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").where((x) => x.age >= 18), {});
+      const result = selectStatement(db, (q) => q.from("users").where((x) => x.age >= 18), {});
 
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" >= $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 18 });
@@ -35,7 +35,7 @@ describe("WHERE SQL Generation", () => {
     it("should generate AND condition", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("users").where((x) => x.age >= 18 && x.isActive),
+        (q) => q.from("users").where((x) => x.age >= 18 && x.isActive),
         {},
       );
 
@@ -46,7 +46,7 @@ describe("WHERE SQL Generation", () => {
     it("should generate OR condition", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("users").where((x) => x.role == "admin" || x.role == "moderator"),
+        (q) => q.from("users").where((x) => x.role == "admin" || x.role == "moderator"),
         {},
       );
 
@@ -61,7 +61,7 @@ describe("WHERE SQL Generation", () => {
     it("should handle simple parameter", () => {
       const result = selectStatement(
         db,
-        (ctx, p: { minAge: number }) => ctx.from("users").where((x) => x.age >= p.minAge),
+        (q, p: { minAge: number }) => q.from("users").where((x) => x.age >= p.minAge),
         { minAge: 18 },
       );
 
@@ -72,8 +72,8 @@ describe("WHERE SQL Generation", () => {
     it("should handle multiple parameters", () => {
       const result = selectStatement(
         db,
-        (ctx, p: { minAge: number; maxAge: number }) =>
-          ctx.from("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge),
+        (q, p: { minAge: number; maxAge: number }) =>
+          q.from("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge),
         { minAge: 18, maxAge: 65 },
       );
 
@@ -88,8 +88,8 @@ describe("WHERE SQL Generation", () => {
     it("should combine two WHERE clauses with AND", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((x) => x.age >= 18)
             .where((x) => x.role == "admin"),
@@ -105,8 +105,8 @@ describe("WHERE SQL Generation", () => {
     it("should combine three WHERE clauses with AND", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((x) => x.age >= 18)
             .where((x) => x.role == "admin")
@@ -123,8 +123,8 @@ describe("WHERE SQL Generation", () => {
     it("should handle complex conditions in multiple WHERE clauses", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((x) => x.age >= 18 && x.age <= 65)
             .where((x) => x.role == "admin" || x.role == "moderator")
@@ -147,8 +147,8 @@ describe("WHERE SQL Generation", () => {
     it("should combine WHERE clauses with SELECT", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((x) => x.age >= 21)
             .where((x) => x.role == "admin")
@@ -165,8 +165,8 @@ describe("WHERE SQL Generation", () => {
     it("should combine WHERE clauses with ORDER BY", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((x) => x.age >= 18)
             .where((x) => x.active == true)
@@ -183,8 +183,8 @@ describe("WHERE SQL Generation", () => {
     it("should combine WHERE clauses with TAKE and SKIP", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("tasks")
             .where((x) => x.status == "pending")
             .where((x) => x.priority > 5)
@@ -207,8 +207,8 @@ describe("WHERE SQL Generation", () => {
     it("should handle WHERE clauses with GROUP BY", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("sales")
             .where((s) => s.amount > 100)
             .where((s) => s.status == "completed")
@@ -226,15 +226,15 @@ describe("WHERE SQL Generation", () => {
       // Single WHERE with AND - adds parentheses around the AND expression
       const single = selectStatement(
         db,
-        (ctx) => ctx.from("users").where((x) => x.age >= 18 && x.role == "admin"),
+        (q) => q.from("users").where((x) => x.age >= 18 && x.role == "admin"),
         {},
       );
 
       // Multiple WHERE clauses - no parentheses needed
       const multiple = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((x) => x.age >= 18)
             .where((x) => x.role == "admin"),
@@ -258,8 +258,8 @@ describe("WHERE SQL Generation", () => {
     it("should handle WHERE clauses with parameters", () => {
       const result = selectStatement(
         db,
-        (ctx, p: { minAge: number; targetRole: string }) =>
-          ctx
+        (q, p: { minAge: number; targetRole: string }) =>
+          q
             .from("users")
             .where((x) => x.age >= p.minAge)
             .where((x) => x.role == p.targetRole)
@@ -276,13 +276,13 @@ describe("WHERE SQL Generation", () => {
     it("should handle WHERE clauses with JOIN", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.id > 100)
             .where((u) => u.name != "")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.deptId,
               (d) => d.id,
               (u, d) => ({ u, d }),

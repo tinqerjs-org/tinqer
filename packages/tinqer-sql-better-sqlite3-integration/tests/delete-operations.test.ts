@@ -195,7 +195,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_products").where((p) => p.name === "Notebook"),
+        (q) => q.deleteFrom("test_products").where((p) => p.name === "Notebook"),
         {},
       );
 
@@ -217,7 +217,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx, p) => ctx.deleteFrom("test_products").where((prod) => prod.name === p.productName),
+        (q, p) => q.deleteFrom("test_products").where((prod) => prod.name === p.productName),
         params,
       );
 
@@ -233,7 +233,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! < 10),
+        (q) => q.deleteFrom("test_products").where((p) => p.price! < 10),
         {},
       );
 
@@ -247,7 +247,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_users").where((u) => u.is_active === 0), // SQLite uses 0 for false
+        (q) => q.deleteFrom("test_users").where((u) => u.is_active === 0), // SQLite uses 0 for false
         {},
       );
 
@@ -261,7 +261,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_logs").where((l) => l.user_id === null),
+        (q) => q.deleteFrom("test_logs").where((l) => l.user_id === null),
         {},
       );
 
@@ -277,8 +277,8 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) =>
-          ctx.deleteFrom("test_products").where(
+        (q) =>
+          q.deleteFrom("test_products").where(
             (p) => p.category === "Electronics" && p.in_stock === 0, // SQLite uses 0 for false
           ),
         {},
@@ -296,10 +296,8 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) =>
-          ctx
-            .deleteFrom("test_products")
-            .where((p) => p.category === "Stationery" || p.price! > 500),
+        (q) =>
+          q.deleteFrom("test_products").where((p) => p.category === "Stationery" || p.price! > 500),
         {},
       );
 
@@ -318,8 +316,8 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) =>
-          ctx.deleteFrom("test_users").where(
+        (q) =>
+          q.deleteFrom("test_users").where(
             (u) => (u.role === "user" && u.age! < 30) || (u.is_active === 0 && u.role !== "admin"), // SQLite uses 0 for false
           ),
         {},
@@ -339,7 +337,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_logs").where((l) => l.level !== "INFO"),
+        (q) => q.deleteFrom("test_logs").where((l) => l.level !== "INFO"),
         {},
       );
 
@@ -356,7 +354,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! >= 250 && p.price! <= 600),
+        (q) => q.deleteFrom("test_products").where((p) => p.price! >= 250 && p.price! <= 600),
         {},
       );
 
@@ -374,7 +372,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_users").where((u) => u.username.startsWith("john")),
+        (q) => q.deleteFrom("test_users").where((u) => u.username.startsWith("john")),
         {},
       );
 
@@ -388,7 +386,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_users").where((u) => u.email.endsWith("@example.com")),
+        (q) => q.deleteFrom("test_users").where((u) => u.email.endsWith("@example.com")),
         {},
       );
 
@@ -402,7 +400,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_logs").where((l) => l.message!.includes("login")),
+        (q) => q.deleteFrom("test_logs").where((l) => l.message!.includes("login")),
         {},
       );
 
@@ -420,8 +418,8 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx, p) =>
-          ctx.deleteFrom("test_products").where((prod) => p.categories.includes(prod.category!)),
+        (q, p) =>
+          q.deleteFrom("test_products").where((prod) => p.categories.includes(prod.category!)),
         { categories: categoriesToDelete },
       );
 
@@ -440,7 +438,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx, p) => ctx.deleteFrom("test_users").where((u) => p.ids.includes(u.id!)),
+        (q, p) => q.deleteFrom("test_users").where((u) => p.ids.includes(u.id!)),
         { ids: userIds },
       );
 
@@ -463,7 +461,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx, p) => ctx.deleteFrom("test_products").where((prod) => prod.created_date! < p.cutoff),
+        (q, p) => q.deleteFrom("test_products").where((prod) => prod.created_date! < p.cutoff),
         { cutoff: cutoffDate },
       );
 
@@ -489,7 +487,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx, p) => ctx.deleteFrom("test_logs").where((l) => l.created_at! < p.cutoff),
+        (q, p) => q.deleteFrom("test_logs").where((l) => l.created_at! < p.cutoff),
         { cutoff: cutoffTime },
       );
 
@@ -505,7 +503,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_orders").where((o) => o.status === "pending"),
+        (q) => q.deleteFrom("test_orders").where((o) => o.status === "pending"),
         {},
       );
 
@@ -519,7 +517,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_logs").allowFullTableDelete(),
+        (q) => q.deleteFrom("test_logs").allowFullTableDelete(),
         {},
       );
 
@@ -531,7 +529,7 @@ describe("DELETE Operations - SQLite Integration", () => {
 
     it("should throw error when DELETE has no WHERE and no allow flag", () => {
       try {
-        executeDelete(db, schema, (ctx) => ctx.deleteFrom("test_products"), {});
+        executeDelete(db, schema, (q) => q.deleteFrom("test_products"), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -551,7 +549,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_users").where((u) => u.username === "john_doe"),
+        (q) => q.deleteFrom("test_users").where((u) => u.username === "john_doe"),
         {},
       );
 
@@ -568,7 +566,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_products").where((p) => p.name === "NonExistent"),
+        (q) => q.deleteFrom("test_products").where((p) => p.name === "NonExistent"),
         {},
       );
 
@@ -585,7 +583,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_products").where((p) => p.price! < 0),
+        (q) => q.deleteFrom("test_products").where((p) => p.price! < 0),
         {},
       );
 
@@ -599,7 +597,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_products").where((p) => p.in_stock === 1), // SQLite uses 1 for true
+        (q) => q.deleteFrom("test_products").where((p) => p.in_stock === 1), // SQLite uses 1 for true
         {},
       );
 
@@ -619,7 +617,7 @@ describe("DELETE Operations - SQLite Integration", () => {
       const rowCount = executeDelete(
         db,
         schema,
-        (ctx) => ctx.deleteFrom("test_products").where((p) => p.price === 299.99),
+        (q) => q.deleteFrom("test_products").where((p) => p.price === 299.99),
         {},
       );
 

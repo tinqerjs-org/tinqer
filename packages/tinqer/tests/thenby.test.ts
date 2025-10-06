@@ -17,8 +17,8 @@ import { type TestSchema } from "./test-schema.js";
 describe("THEN BY Operations", () => {
   describe("thenBy()", () => {
     it("should parse orderBy followed by thenBy", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("products")
           .orderBy((x) => x.category)
           .thenBy((x) => x.name);
@@ -35,8 +35,8 @@ describe("THEN BY Operations", () => {
     });
 
     it("should parse multiple thenBy operations", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("users")
           .orderBy((x) => x.country)
           .thenBy((x) => x.city)
@@ -57,8 +57,8 @@ describe("THEN BY Operations", () => {
     });
 
     it("should parse thenBy with computed expression", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("products")
           .orderBy((x) => x.category)
           .thenBy((x) => x.price - x.cost);
@@ -74,8 +74,8 @@ describe("THEN BY Operations", () => {
 
   describe("thenByDescending()", () => {
     it("should parse orderBy followed by thenByDescending", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("employees")
           .orderBy((x) => x.department)
           .thenByDescending((x) => x.salary);
@@ -88,8 +88,8 @@ describe("THEN BY Operations", () => {
     });
 
     it("should parse mixed thenBy and thenByDescending", () => {
-      const query = (ctx: QueryBuilder<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("products")
           .orderBy((x) => x.category)
           .thenByDescending((x) => x.price)

@@ -21,8 +21,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -64,8 +64,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where(
               (p) =>
@@ -112,8 +112,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where(
               (u) => !(u.department_id === 1) && u.age !== null && !(u.age < 30) && !!u.is_active,
@@ -148,7 +148,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("products").where((p) => p.price >= 50 && p.price <= 300),
+        (q) => q.from("products").where((p) => p.price >= 50 && p.price <= 300),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -176,8 +176,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -217,7 +217,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("products").where((p) => p.stock > 100 && p.stock < 500),
+        (q) => q.from("products").where((p) => p.stock > 100 && p.stock < 500),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -248,7 +248,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => params.targetIds.includes(u.id)),
+        (q, params) => q.from("users").where((u) => params.targetIds.includes(u.id)),
         { targetIds },
         {
           onSql: (result) => {
@@ -283,8 +283,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.category !== null && !params.excludedCategories.includes(p.category)),
         { excludedCategories },
@@ -319,7 +319,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("users").where((u) => params.emptyList.includes(u.id)),
+        (q, params) => q.from("users").where((u) => params.emptyList.includes(u.id)),
         { emptyList },
         {
           onSql: (result) => {
@@ -345,7 +345,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.department_id !== null && u.is_active === 1),
+        (q) => q.from("users").where((u) => u.department_id !== null && u.is_active === 1),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -373,8 +373,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.description !== null && (p.category === null || p.stock > 100)),
         {
@@ -406,7 +406,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("products").where((p) => p.price * 0.9 > 100),
+        (q) => q.from("products").where((p) => p.price * 0.9 > 100),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -431,7 +431,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("order_items").where((oi) => oi.quantity * oi.unit_price > 500),
+        (q) => q.from("order_items").where((oi) => oi.quantity * oi.unit_price > 500),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -458,7 +458,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.id % 2 === 0),
+        (q) => q.from("users").where((u) => u.id % 2 === 0),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -485,8 +485,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null && u.age >= 25)
             .where((u) => u.is_active === 1)
@@ -519,8 +519,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.price > 10)
             .where((p) => p.stock > 0)
@@ -571,8 +571,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, p) =>
-          ctx
+        (q, p) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -618,8 +618,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, p) =>
-          ctx
+        (q, p) =>
+          q
             .from("products")
             .where(
               (prod) =>
@@ -660,8 +660,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where(
               (u) =>
@@ -711,8 +711,8 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx.from("products").where(
+        (q) =>
+          q.from("products").where(
             (p) =>
               p.id === p.id && // equality
               p.price !== 0 && // inequality
@@ -751,7 +751,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const activeResults = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.is_active === 1),
+        (q) => q.from("users").where((u) => u.is_active === 1),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -762,7 +762,7 @@ describe("Better SQLite3 Integration - Complex WHERE", () => {
       const inactiveResults = executeSelectSimple(
         db,
         schema,
-        (ctx) => ctx.from("users").where((u) => u.is_active === 0),
+        (q) => q.from("users").where((u) => u.is_active === 0),
         {
           onSql: (result) => {
             capturedSql2 = result;

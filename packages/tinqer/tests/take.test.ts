@@ -18,7 +18,7 @@ import { type TestSchema } from "./test-schema.js";
 
 describe("TAKE Operation", () => {
   it("should parse take with constant number", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").take(10);
+    const query = (q: QueryBuilder<TestSchema>) => q.from("users").take(10);
     const result = parseQuery(query);
 
     expect(getOperation(result)?.operationType).to.equal("take");
@@ -30,7 +30,7 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take(0)", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").take(0);
+    const query = (q: QueryBuilder<TestSchema>) => q.from("users").take(0);
     const result = parseQuery(query);
 
     const takeOp = asTakeOperation(getOperation(result));
@@ -41,7 +41,7 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take with large number", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").take(1000000);
+    const query = (q: QueryBuilder<TestSchema>) => q.from("users").take(1000000);
     const result = parseQuery(query);
 
     const takeOp = asTakeOperation(getOperation(result));
@@ -52,8 +52,8 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take after where", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q
         .from("users")
         .where((x) => x.isActive)
         .take(5);
@@ -70,8 +70,8 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take after orderBy", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q
         .from("users")
         .orderBy((x) => x.name)
         .take(10);
@@ -88,8 +88,8 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take before select", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q
         .from("users")
         .take(5)
         .select((x) => x.name);
@@ -106,8 +106,8 @@ describe("TAKE Operation", () => {
   });
 
   it("should parse take with external parameter", () => {
-    const query = (ctx: QueryBuilder<TestSchema>, p: { limit: number }) =>
-      ctx.from("users").take(p.limit);
+    const query = (q: QueryBuilder<TestSchema>, p: { limit: number }) =>
+      q.from("users").take(p.limit);
     const result = parseQuery(query);
 
     const takeOp = asTakeOperation(getOperation(result));

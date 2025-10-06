@@ -10,7 +10,7 @@ import { db } from "./test-schema.js";
 describe("Aggregate SQL Generation", () => {
   describe("COUNT", () => {
     it("should generate COUNT(*)", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").count(), {});
+      const result = selectStatement(db, (q) => q.from("users").count(), {});
 
       expect(result.sql).to.equal('SELECT COUNT(*) FROM "users"');
     });
@@ -18,8 +18,8 @@ describe("Aggregate SQL Generation", () => {
     it("should generate COUNT with WHERE", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((x) => x.isActive)
             .count(),
@@ -32,7 +32,7 @@ describe("Aggregate SQL Generation", () => {
 
   describe("SUM", () => {
     it("should generate SUM", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("orders").sum((x) => x.total), {});
+      const result = selectStatement(db, (q) => q.from("orders").sum((x) => x.total), {});
 
       expect(result.sql).to.equal('SELECT SUM("total") FROM "orders"');
     });
@@ -40,7 +40,7 @@ describe("Aggregate SQL Generation", () => {
 
   describe("AVG", () => {
     it("should generate AVG", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("products").average((x) => x.price), {});
+      const result = selectStatement(db, (q) => q.from("products").average((x) => x.price), {});
 
       expect(result.sql).to.equal('SELECT AVG("price") FROM "products"');
     });
@@ -48,7 +48,7 @@ describe("Aggregate SQL Generation", () => {
 
   describe("MIN", () => {
     it("should generate MIN", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").min((x) => x.age), {});
+      const result = selectStatement(db, (q) => q.from("users").min((x) => x.age), {});
 
       expect(result.sql).to.equal('SELECT MIN("age") FROM "users"');
     });
@@ -56,7 +56,7 @@ describe("Aggregate SQL Generation", () => {
 
   describe("MAX", () => {
     it("should generate MAX", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("employees").max((x) => x.salary), {});
+      const result = selectStatement(db, (q) => q.from("employees").max((x) => x.salary), {});
 
       expect(result.sql).to.equal('SELECT MAX("salary") FROM "employees"');
     });

@@ -33,7 +33,7 @@ describe("String Operations SQL Generation", () => {
     it("should generate SQL for startsWith", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("users").where((u) => u.name.startsWith("John")),
+        (q) => q.from("users").where((u) => u.name.startsWith("John")),
         {},
       );
 
@@ -44,8 +44,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle startsWith with parameter", () => {
       const result = selectStatement(
         db,
-        (ctx, p: { prefix: string }) =>
-          ctx.from("users").where((u) => u.email.startsWith(p.prefix)),
+        (q, p: { prefix: string }) => q.from("users").where((u) => u.email.startsWith(p.prefix)),
         { prefix: "admin@" },
       );
 
@@ -56,8 +55,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle multiple startsWith conditions", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx.from("products").where((p) => p.name.startsWith("Pro") || p.sku.startsWith("SKU")),
+        (q) => q.from("products").where((p) => p.name.startsWith("Pro") || p.sku.startsWith("SKU")),
         {},
       );
 
@@ -71,7 +69,7 @@ describe("String Operations SQL Generation", () => {
     it("should generate SQL for endsWith", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("users").where((u) => u.email.endsWith(".com")),
+        (q) => q.from("users").where((u) => u.email.endsWith(".com")),
         {},
       );
 
@@ -82,7 +80,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle endsWith with parameter", () => {
       const result = selectStatement(
         db,
-        (ctx, p: { suffix: string }) => ctx.from("users").where((u) => u.name.endsWith(p.suffix)),
+        (q, p: { suffix: string }) => q.from("users").where((u) => u.name.endsWith(p.suffix)),
         { suffix: "son" },
       );
 
@@ -93,7 +91,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle endsWith in combination with other conditions", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("users").where((u) => u.id > 100 && u.email.endsWith("@example.com")),
+        (q) => q.from("users").where((u) => u.id > 100 && u.email.endsWith("@example.com")),
         {},
       );
 
@@ -107,7 +105,7 @@ describe("String Operations SQL Generation", () => {
     it("should generate SQL for contains", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("products").where((p) => p.description.includes("premium")),
+        (q) => q.from("products").where((p) => p.description.includes("premium")),
         {},
       );
 
@@ -120,8 +118,8 @@ describe("String Operations SQL Generation", () => {
     it("should handle contains with parameter", () => {
       const result = selectStatement(
         db,
-        (ctx, p: { keyword: string }) =>
-          ctx.from("products").where((pr) => pr.name.includes(p.keyword)),
+        (q, p: { keyword: string }) =>
+          q.from("products").where((pr) => pr.name.includes(p.keyword)),
         { keyword: "laptop" },
       );
 
@@ -134,8 +132,8 @@ describe("String Operations SQL Generation", () => {
     it("should handle multiple contains conditions", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.name.includes("Pro") && p.description.includes("quality")),
         {},
@@ -154,8 +152,8 @@ describe("String Operations SQL Generation", () => {
     it("should handle string operations with SELECT", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.name.startsWith("A"))
             .select((u) => ({ id: u.id, name: u.name })),
@@ -171,8 +169,8 @@ describe("String Operations SQL Generation", () => {
     it("should handle string operations with ORDER BY and TAKE", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.sku.startsWith("ELEC"))
             .orderBy((p) => p.name)
@@ -189,8 +187,8 @@ describe("String Operations SQL Generation", () => {
     it("should handle string operations with GROUP BY", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("products")
             .where((p) => p.name.includes("Phone"))
             .groupBy((p) => p.name)
@@ -207,10 +205,8 @@ describe("String Operations SQL Generation", () => {
     it("should handle case-sensitive string operations", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
-            .from("users")
-            .where((u) => u.email.startsWith("Admin") || u.email.startsWith("admin")),
+        (q) =>
+          q.from("users").where((u) => u.email.startsWith("Admin") || u.email.startsWith("admin")),
         {},
       );
 
@@ -220,7 +216,7 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle empty string checks", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").where((u) => u.bio == ""), {});
+      const result = selectStatement(db, (q) => q.from("users").where((u) => u.bio == ""), {});
 
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "bio" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: "" });
@@ -229,12 +225,12 @@ describe("String Operations SQL Generation", () => {
     it("should handle string operations in JOIN", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .where((u) => u.name.startsWith("John"))
             .join(
-              ctx.from("products").where((p) => p.name.includes("Book")),
+              q.from("products").where((p) => p.name.includes("Book")),
               (u) => u.id,
               (p) => p.id,
               (u, p) => ({ u, p }),
@@ -258,7 +254,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle string concatenation in WHERE", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("users").where((u) => u.name + u.email == "johnsmith@test.com"),
+        (q) => q.from("users").where((u) => u.name + u.email == "johnsmith@test.com"),
         {},
       );
 
@@ -269,11 +265,7 @@ describe("String Operations SQL Generation", () => {
 
   describe("Null string handling", () => {
     it("should handle nullable string comparisons", () => {
-      const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => u.bio == null),
-        {},
-      );
+      const result = selectStatement(db, (q) => q.from("users").where((u) => u.bio == null), {});
 
       expect(result.sql).to.equal(`SELECT * FROM "users" WHERE "bio" IS NULL`);
       expect(result.params).to.deep.equal({});
@@ -282,7 +274,7 @@ describe("String Operations SQL Generation", () => {
     it("should handle nullable string with string operations", () => {
       const result = selectStatement(
         db,
-        (ctx) => ctx.from("users").where((u) => u.bio != null && u.bio.includes("developer")),
+        (q) => q.from("users").where((u) => u.bio != null && u.bio.includes("developer")),
         {},
       );
 

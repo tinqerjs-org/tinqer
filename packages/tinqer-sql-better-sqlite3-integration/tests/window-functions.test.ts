@@ -19,8 +19,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -65,8 +65,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -95,8 +95,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -128,8 +128,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -165,8 +165,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -206,8 +206,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -242,8 +242,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -273,8 +273,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -322,8 +322,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -355,8 +355,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -384,8 +384,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -412,8 +412,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -443,8 +443,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -475,8 +475,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -507,8 +507,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -537,8 +537,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -569,8 +569,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -602,8 +602,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -642,8 +642,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -689,8 +689,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -730,8 +730,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -771,8 +771,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .where((u) => u.is_active === 1) // Regular filter
             .select((u) => ({
@@ -812,8 +812,8 @@ describe("Window Functions - SQLite Integration", () => {
       const result = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -866,8 +866,8 @@ describe("Window Functions - SQLite Integration", () => {
       const count = executeSelect(
         db,
         schema,
-        (ctx, _, h) =>
-          ctx
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               id: u.id,

@@ -21,11 +21,11 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -69,11 +69,11 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("orders")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -115,11 +115,11 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("orders")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -160,11 +160,11 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("orders")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -209,17 +209,17 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("order_items")
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (oi) => oi.order_id,
               (o) => o.id,
               (oi, o) => ({ oi, o }),
             )
             .join(
-              ctx.from("products"),
+              q.from("products"),
               (joined) => joined.oi.product_id,
               (p) => p.id,
               (joined, p) => ({ ...joined, p }),
@@ -267,17 +267,17 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
             )
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (joined) => joined.u.id,
               (o) => o.user_id,
               (joined, o) => ({ ...joined, o }),
@@ -323,11 +323,11 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (e) => e.manager_id,
               (m) => m.id,
               (e, m) => ({ employee: e, manager: m }),
@@ -381,11 +381,11 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (e) => e.manager_id,
               (m) => m.id,
               (e, m) => ({ employee: e, manager: m }),
@@ -434,11 +434,11 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (u) => u.id,
               (o) => o.user_id,
               (u, o) => ({ u, o }),
@@ -484,11 +484,11 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .groupJoin(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, deptGroup) => ({ user: u, deptGroup }),
@@ -523,11 +523,11 @@ describe("Better SQLite3 Integration - JOINs", () => {
       const results = executeSelectSimple(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("departments")
             .selectMany(
-              () => ctx.from("users"),
+              () => q.from("users"),
               (department, user) => ({ department, user }),
             )
             .select((row) => ({

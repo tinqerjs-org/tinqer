@@ -10,11 +10,7 @@ import { db } from "./test-schema.js";
 describe("DELETE Statement Generation (SQLite)", () => {
   describe("Basic DELETE", () => {
     it("should generate DELETE with simple WHERE clause using @param format", () => {
-      const result = deleteStatement(
-        db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.id === 1),
-        {},
-      );
+      const result = deleteStatement(db, (q) => q.deleteFrom("users").where((u) => u.id === 1), {});
 
       assert.equal(result.sql, `DELETE FROM "users" WHERE "id" = @__p1`);
       assert.deepEqual(result.params, {
@@ -25,7 +21,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should generate DELETE with schema prefix in table name", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("main.users").where((u) => u.id === 2),
+        (q) => q.deleteFrom("main.users").where((u) => u.id === 2),
         {},
       );
 
@@ -37,7 +33,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle AND conditions", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.id === 3 && u.isDeleted === true),
+        (q) => q.deleteFrom("users").where((u) => u.id === 3 && u.isDeleted === true),
         {},
       );
 
@@ -51,7 +47,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle OR conditions", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.age > 100 || u.isDeleted === true),
+        (q) => q.deleteFrom("users").where((u) => u.age > 100 || u.isDeleted === true),
         {},
       );
 
@@ -61,8 +57,8 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle complex nested conditions", () => {
       const result = deleteStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .deleteFrom("users")
             .where((u) => (u.age < 18 && u.role !== "Admin") || u.isDeleted === true),
         {},
@@ -77,7 +73,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle NOT conditions", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => !(u.isActive === true)),
+        (q) => q.deleteFrom("users").where((u) => !(u.isActive === true)),
         {},
       );
 
@@ -89,7 +85,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should use external parameters", () => {
       const result = deleteStatement(
         db,
-        (ctx, p: { userId: number }) => ctx.deleteFrom("users").where((u) => u.id === p.userId),
+        (q, p: { userId: number }) => q.deleteFrom("users").where((u) => u.id === p.userId),
         { userId: 4 },
       );
 
@@ -102,8 +98,8 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should mix external parameters with literals", () => {
       const result = deleteStatement(
         db,
-        (ctx, p: { minAge: number }) =>
-          ctx.deleteFrom("users").where((u) => u.age > p.minAge && u.department === "Old"),
+        (q, p: { minAge: number }) =>
+          q.deleteFrom("users").where((u) => u.age > p.minAge && u.department === "Old"),
         { minAge: 65 },
       );
 
@@ -120,11 +116,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
 
   describe("DELETE with allowFullTableDelete", () => {
     it("should generate DELETE without WHERE when allowed", () => {
-      const result = deleteStatement(
-        db,
-        (ctx) => ctx.deleteFrom("users").allowFullTableDelete(),
-        {},
-      );
+      const result = deleteStatement(db, (q) => q.deleteFrom("users").allowFullTableDelete(), {});
 
       assert.equal(result.sql, `DELETE FROM "users"`);
       assert.deepEqual(result.params, {});
@@ -132,18 +124,14 @@ describe("DELETE Statement Generation (SQLite)", () => {
 
     it("should throw error when DELETE has no WHERE and no allow flag", () => {
       assert.throws(() => {
-        deleteStatement(db, (ctx) => ctx.deleteFrom("users"), {});
+        deleteStatement(db, (q) => q.deleteFrom("users"), {});
       }, /DELETE requires a WHERE clause or explicit allowFullTableDelete/);
     });
   });
 
   describe("DELETE with comparison operators", () => {
     it("should handle greater than", () => {
-      const result = deleteStatement(
-        db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.age > 50),
-        {},
-      );
+      const result = deleteStatement(db, (q) => q.deleteFrom("users").where((u) => u.age > 50), {});
 
       assert.equal(result.sql, `DELETE FROM "users" WHERE "age" > @__p1`);
     });
@@ -151,7 +139,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle less than or equal", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.salary <= 30000),
+        (q) => q.deleteFrom("users").where((u) => u.salary <= 30000),
         {},
       );
 
@@ -161,7 +149,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle not equal", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.role !== "Admin"),
+        (q) => q.deleteFrom("users").where((u) => u.role !== "Admin"),
         {},
       );
 
@@ -173,7 +161,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle IS NULL", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.email === null),
+        (q) => q.deleteFrom("users").where((u) => u.email === null),
         {},
       );
 
@@ -184,7 +172,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle IS NOT NULL", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.email !== null),
+        (q) => q.deleteFrom("users").where((u) => u.email !== null),
         {},
       );
 
@@ -195,7 +183,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle NULL with AND conditions", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.email === null && u.phone === null),
+        (q) => q.deleteFrom("users").where((u) => u.email === null && u.phone === null),
         {},
       );
 
@@ -207,7 +195,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle startsWith", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.name.startsWith("Test")),
+        (q) => q.deleteFrom("users").where((u) => u.name.startsWith("Test")),
         {},
       );
 
@@ -220,8 +208,8 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle endsWith", () => {
       const result = deleteStatement(
         db,
-        (ctx) =>
-          ctx.deleteFrom("users").where((u) => u.email !== null && u.email.endsWith("@temp.com")),
+        (q) =>
+          q.deleteFrom("users").where((u) => u.email !== null && u.email.endsWith("@temp.com")),
         {},
       );
 
@@ -234,7 +222,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle contains", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => u.name.includes("Spam")),
+        (q) => q.deleteFrom("users").where((u) => u.name.includes("Spam")),
         {},
       );
 
@@ -246,7 +234,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle array includes", () => {
       const result = deleteStatement(
         db,
-        (ctx) => ctx.deleteFrom("users").where((u) => [1, 2, 3].includes(u.id)),
+        (q) => q.deleteFrom("users").where((u) => [1, 2, 3].includes(u.id)),
         {},
       );
 
@@ -261,7 +249,7 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle parameterized array includes", () => {
       const result = deleteStatement(
         db,
-        (ctx, p: { ids: number[] }) => ctx.deleteFrom("users").where((u) => p.ids.includes(u.id)),
+        (q, p: { ids: number[] }) => q.deleteFrom("users").where((u) => p.ids.includes(u.id)),
         { ids: [4, 5, 6] },
       );
 
@@ -279,8 +267,8 @@ describe("DELETE Statement Generation (SQLite)", () => {
     it("should handle date parameters (converted to string format at execution time)", () => {
       const result = deleteStatement(
         db,
-        (ctx, p: { cutoffDate: Date }) =>
-          ctx.deleteFrom("users").where((u) => u.createdAt < p.cutoffDate),
+        (q, p: { cutoffDate: Date }) =>
+          q.deleteFrom("users").where((u) => u.createdAt < p.cutoffDate),
         { cutoffDate: new Date("2020-01-01") },
       );
 

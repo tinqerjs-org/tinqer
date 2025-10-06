@@ -26,7 +26,7 @@ describe("Better SQLite3 Integration - DATE vs TIMESTAMP Columns", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.targetDate),
+        (q, params) => q.from("orders").where((o) => o.order_date == params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -53,7 +53,7 @@ describe("Better SQLite3 Integration - DATE vs TIMESTAMP Columns", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("orders").where((o) => o.order_date != params.targetDate),
+        (q, params) => q.from("orders").where((o) => o.order_date != params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -87,7 +87,7 @@ describe("Better SQLite3 Integration - DATE vs TIMESTAMP Columns", () => {
       const resultsMidnight = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.targetDate),
+        (q, params) => q.from("events").where((e) => e.start_date == params.targetDate),
         { targetDate: midnight },
         {
           onSql: (result) => {
@@ -99,7 +99,7 @@ describe("Better SQLite3 Integration - DATE vs TIMESTAMP Columns", () => {
       const resultsActual = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.targetDate),
+        (q, params) => q.from("events").where((e) => e.start_date == params.targetDate),
         { targetDate: actual },
         {
           onSql: (result) => {
@@ -133,7 +133,7 @@ describe("Better SQLite3 Integration - DATE vs TIMESTAMP Columns", () => {
       const results = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("events").where((e) => e.start_date != params.targetDate),
+        (q, params) => q.from("events").where((e) => e.start_date != params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -164,7 +164,7 @@ describe("Better SQLite3 Integration - DATE vs TIMESTAMP Columns", () => {
       const ordersOnDate = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.searchDate),
+        (q, params) => q.from("orders").where((o) => o.order_date == params.searchDate),
         { searchDate },
         {
           onSql: (result) => {
@@ -183,7 +183,7 @@ describe("Better SQLite3 Integration - DATE vs TIMESTAMP Columns", () => {
       const eventsOnDate = executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.searchDate),
+        (q, params) => q.from("events").where((e) => e.start_date == params.searchDate),
         { searchDate },
         {
           onSql: (result) => {
@@ -204,8 +204,8 @@ describe("Better SQLite3 Integration - DATE vs TIMESTAMP Columns", () => {
       const eventsInRange = executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("events")
             .where((e) => e.start_date >= params.startOfDay && e.start_date < params.endOfDay),
         { startOfDay, endOfDay },

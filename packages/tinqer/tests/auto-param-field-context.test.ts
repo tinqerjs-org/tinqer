@@ -15,8 +15,8 @@ interface TestSchema {
 
 describe("Auto-Parameter Field Context", () => {
   it("should store field context for comparison operations", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx.from("users").where((x) => x.age >= 18 && x.name == "John");
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q.from("users").where((x) => x.age >= 18 && x.name == "John");
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({
@@ -41,7 +41,7 @@ describe("Auto-Parameter Field Context", () => {
   });
 
   it("should store field context for TAKE/SKIP operations", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("users").skip(10).take(25);
+    const query = (q: QueryBuilder<TestSchema>) => q.from("users").skip(10).take(25);
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({
@@ -66,8 +66,8 @@ describe("Auto-Parameter Field Context", () => {
   });
 
   it("should store field context for arithmetic expressions", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx.from("products").where((x) => x.price + 10 > 100);
+    const query = (q: QueryBuilder<TestSchema>) =>
+      q.from("products").where((x) => x.price + 10 > 100);
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({
@@ -92,8 +92,7 @@ describe("Auto-Parameter Field Context", () => {
   });
 
   it("should store field context for negative numbers", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) =>
-      ctx.from("items").where((x) => x.value > -1000);
+    const query = (q: QueryBuilder<TestSchema>) => q.from("items").where((x) => x.value > -1000);
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({
@@ -111,7 +110,7 @@ describe("Auto-Parameter Field Context", () => {
   });
 
   it("should handle constants without field context", () => {
-    const query = (ctx: QueryBuilder<TestSchema>) => ctx.from("items").where((_x) => 5 < 10);
+    const query = (q: QueryBuilder<TestSchema>) => q.from("items").where((_x) => 5 < 10);
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({

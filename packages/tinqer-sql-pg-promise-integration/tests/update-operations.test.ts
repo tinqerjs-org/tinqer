@@ -147,8 +147,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("inventory")
             .set({ quantity: 20 })
             .where((i) => i.product_name === "Laptop"),
@@ -165,8 +165,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("inventory")
             .set({
               quantity: 15,
@@ -195,8 +195,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx, p) =>
-          ctx
+        (q, p) =>
+          q
             .update("inventory")
             .set({
               quantity: p.newQuantity,
@@ -219,8 +219,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("user_profiles")
             .set({ is_verified: true })
             .where((u) => u.username === "jane_smith"),
@@ -237,8 +237,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("user_profiles")
             .set({ bio: null, age: null })
             .where((u) => u.username === "john_doe"),
@@ -258,8 +258,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("inventory")
             .set({ status: "reorder_needed" })
             .where((i) => i.quantity < 10 && i.status === "low_stock"),
@@ -276,8 +276,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("inventory")
             .set({ warehouse_location: "Warehouse D" })
             .where((i) => i.status === "out_of_stock" || i.quantity < 6),
@@ -299,8 +299,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("inventory")
             .set({ is_active: false })
             .where(
@@ -325,8 +325,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("inventory")
             .set({ notes: "Premium product" })
             .where((i) => i.product_name.startsWith("L")),
@@ -345,8 +345,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx, p: { products: string[] }) =>
-          ctx
+        (q, p: { products: string[] }) =>
+          q
             .update("inventory")
             .set({ warehouse_location: "Warehouse E" })
             .where((i) => p.products.includes(i.product_name)),
@@ -370,8 +370,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const results = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("inventory")
             .set({ quantity: 30, status: "available" })
             .where((i) => i.product_name === "Monitor")
@@ -390,8 +390,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const results = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("user_profiles")
             .set({ age: 31, bio: "Updated bio" })
             .where((u) => u.username === "john_doe")
@@ -414,8 +414,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const results = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("product_reviews")
             .set({ helpful_count: 10 })
             .where((r) => r.rating === 5)
@@ -438,8 +438,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("user_profiles")
             .set({ is_verified: true })
             .where((u) => u.is_verified === false),
@@ -458,7 +458,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) => ctx.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
+        (q) => q.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
         {},
       );
 
@@ -470,7 +470,7 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", async () => {
       try {
-        await executeUpdate(db, schema, (ctx) => ctx.update("inventory").set({ quantity: 0 }), {});
+        await executeUpdate(db, schema, (q) => q.update("inventory").set({ quantity: 0 }), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -488,8 +488,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .update("user_profiles")
             .set({ last_login: params.newDate })
             .where((u) => u.username === "bob_wilson"),
@@ -512,8 +512,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .update("inventory")
             .set({
               quantity: 50,
@@ -547,8 +547,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .update("user_profiles")
             .set({ settings: params.settingsJson })
             .where((u) => u.username === "alice_jones"),
@@ -567,8 +567,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("inventory")
             .set({
               notes: "Special chars: 'quotes' \"double\" \n newline \t tab",
@@ -590,8 +590,8 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       const rowCount = await executeUpdate(
         db,
         schema,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .update("user_profiles")
             .set({
               bio: "Unicode test: 你好 🎉 Здравствуйте émoji",

@@ -42,13 +42,13 @@ function typeTests() {
     username: string;
     active: boolean;
     deptId: number;
-  }[] = executeSelect(mockDb, db, (ctx) => ctx.from("users"), {});
+  }[] = executeSelect(mockDb, db, (q) => q.from("users"), {});
 
   // With select, returns projected array
   const userNames: { id: number; name: string }[] = executeSelect(
     mockDb,
     db,
-    (ctx) => ctx.from("users").select((u) => ({ id: u.id, name: u.name })),
+    (q) => q.from("users").select((u) => ({ id: u.id, name: u.name })),
     {},
   );
 
@@ -70,7 +70,7 @@ function typeTests() {
     username: string;
     active: boolean;
     deptId: number;
-  } = executeSelect(mockDb, db, (ctx) => ctx.from("users").first(), {});
+  } = executeSelect(mockDb, db, (q) => q.from("users").first(), {});
 
   // firstOrDefault() returns item or undefined
   const maybeUser:
@@ -92,21 +92,16 @@ function typeTests() {
         active: boolean;
         deptId: number;
       }
-    | undefined = executeSelect(mockDb, db, (ctx) => ctx.from("users").firstOrDefault(), {});
+    | undefined = executeSelect(mockDb, db, (q) => q.from("users").firstOrDefault(), {});
 
   // count() returns number
-  const count: number = executeSelect(mockDb, db, (ctx) => ctx.from("users").count(), {});
+  const count: number = executeSelect(mockDb, db, (q) => q.from("users").count(), {});
 
   // any() returns boolean
-  const hasUsers: boolean = executeSelect(mockDb, db, (ctx) => ctx.from("users").any(), {});
+  const hasUsers: boolean = executeSelect(mockDb, db, (q) => q.from("users").any(), {});
 
   // sum() returns number
-  const totalAge: number = executeSelect(
-    mockDb,
-    db,
-    (ctx) => ctx.from("users").sum((u) => u.age),
-    {},
-  );
+  const totalAge: number = executeSelect(mockDb, db, (q) => q.from("users").sum((u) => u.age), {});
 
   // Use the variables to avoid unused variable warnings
   console.log(users, userNames, firstUser, maybeUser, count, hasUsers, totalAge);

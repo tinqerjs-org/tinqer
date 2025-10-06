@@ -118,8 +118,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Laptop",
             price: 999.99,
             category: "Electronics",
@@ -146,8 +146,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Basic Item",
             price: 10.0,
           }),
@@ -175,8 +175,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, p: typeof params) =>
-          ctx.insertInto("products").values({
+        (q, p: typeof params) =>
+          q.insertInto("products").values({
             name: p.productName,
             price: p.productPrice,
             category: p.productCategory,
@@ -198,8 +198,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Out of Stock Item",
             price: 50.0,
             in_stock: 0, // SQLite uses 0/1 for boolean values
@@ -219,8 +219,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Minimal Product",
             price: 25.0,
             category: null,
@@ -244,8 +244,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
             price: 100.0,
             description: "Description with\nnewlines\tand\ttabs",
@@ -268,8 +268,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
             price: 88.88,
             category: "Special ñ категория",
@@ -291,8 +291,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Edge Case Product",
             price: 0.01, // Very small
           }),
@@ -313,8 +313,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, params) =>
-          ctx.insertInto("orders").values({
+        (q, params) =>
+          q.insertInto("orders").values({
             customer_id: 1,
             product_id: 1,
             quantity: 2,
@@ -349,8 +349,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, params) =>
-          ctx.insertInto("products").values({
+        (q, params) =>
+          q.insertInto("products").values({
             name: "Product with Metadata",
             price: 199.99,
             metadata: params.metadataJson,
@@ -374,8 +374,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("customers").values({
+        (q, _params) =>
+          q.insertInto("customers").values({
             email: "test@example.com",
             name: "Test User",
             age: 30,
@@ -388,8 +388,8 @@ describe("INSERT Operations - SQLite Integration", () => {
         executeInsert(
           db,
           schema,
-          (ctx, _params) =>
-            ctx.insertInto("customers").values({
+          (q, _params) =>
+            q.insertInto("customers").values({
               email: "test@example.com",
               name: "Another User",
               age: 25,
@@ -409,8 +409,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const customerCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("customers").values({
+        (q, _params) =>
+          q.insertInto("customers").values({
             email: "john@example.com",
             name: "John Doe",
             age: 35,
@@ -430,8 +430,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const productCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Test Product",
             price: 49.99,
             category: "Test",
@@ -451,8 +451,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const orderCount = executeInsert(
         db,
         schema,
-        (ctx, params) =>
-          ctx.insertInto("orders").values({
+        (q, params) =>
+          q.insertInto("orders").values({
             customer_id: params.customerId,
             product_id: params.productId,
             quantity: 3,
@@ -480,8 +480,8 @@ describe("INSERT Operations - SQLite Integration", () => {
         executeInsert(
           db,
           schema,
-          (ctx, params) =>
-            ctx.insertInto("products").values({
+          (q, params) =>
+            q.insertInto("products").values({
               name: params.name,
               price: params.price,
             }),
@@ -504,8 +504,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Flexible Type Product",
             price: "99.99" as unknown as number, // String that can be coerced to number
             category: 123 as unknown as string, // Number in text field
@@ -527,8 +527,8 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.insertInto("customers").values({
+        (q, _params) =>
+          q.insertInto("customers").values({
             email: "timestamp@test.com",
             name: "Timestamp Test",
           }),

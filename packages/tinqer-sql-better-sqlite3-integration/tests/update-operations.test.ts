@@ -165,8 +165,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ quantity: 20 })
             .where((i) => i.product_name === "Laptop"),
@@ -185,8 +185,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({
               quantity: 15,
@@ -217,8 +217,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, p: typeof params) =>
-          ctx
+        (q, p: typeof params) =>
+          q
             .update("inventory")
             .set({
               quantity: p.newQuantity,
@@ -241,8 +241,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("user_profiles")
             .set({ is_verified: 1 }) // SQLite uses 0/1 for boolean values
             .where((u) => u.username === "jane_smith"),
@@ -261,8 +261,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("user_profiles")
             .set({ bio: null, age: null })
             .where((u) => u.username === "john_doe"),
@@ -284,8 +284,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ status: "reorder_needed" })
             .where((i) => i.quantity < 10 && i.status === "low_stock"),
@@ -304,8 +304,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ warehouse_location: "Warehouse D" })
             .where((i) => i.status === "out_of_stock" || i.quantity < 6),
@@ -329,8 +329,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ is_active: 0 }) // SQLite uses 0/1 for boolean values
             .where(
@@ -354,8 +354,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ notes: "Premium product" })
             .where((i) => i.product_name.startsWith("L")),
@@ -376,8 +376,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, p: { products: string[] }) =>
-          ctx
+        (q, p: { products: string[] }) =>
+          q
             .update("inventory")
             .set({ warehouse_location: "Warehouse E" })
             .where((i) => p.products.includes(i.product_name)),
@@ -400,8 +400,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("user_profiles")
             .set({ is_verified: 1 }) // SQLite uses 0/1 for boolean values
             .where((u) => u.is_verified === 0), // SQLite uses 0 for false
@@ -420,8 +420,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
+        (q, _params) =>
+          q.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
         {},
       );
 
@@ -435,12 +435,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", () => {
       try {
-        executeUpdate(
-          db,
-          schema,
-          (ctx, _params) => ctx.update("inventory").set({ quantity: 0 }),
-          {},
-        );
+        executeUpdate(db, schema, (q, _params) => q.update("inventory").set({ quantity: 0 }), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -458,8 +453,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .update("user_profiles")
             .set({ last_login: params.newDate })
             .where((u) => u.username === "bob_wilson"),
@@ -483,8 +478,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .update("inventory")
             .set({
               quantity: 50,
@@ -521,8 +516,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .update("user_profiles")
             .set({ settings: params.settingsJson })
             .where((u) => u.username === "alice_jones"),
@@ -544,8 +539,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({
               notes: "Special chars: 'quotes' \"double\" \n newline \t tab",
@@ -569,8 +564,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("user_profiles")
             .set({
               bio: "Unicode test: 你好 🎉 Здравствуйте émoji",
@@ -596,8 +591,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({
               quantity: "50" as unknown as number, // String that will be coerced to number
@@ -622,8 +617,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount1 = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ is_active: 0 })
             .where((i) => i.id === 1),
@@ -640,8 +635,8 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount2 = executeUpdate(
         db,
         schema,
-        (ctx, _params) =>
-          ctx
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ is_active: 1 }) // SQLite uses 0/1 for boolean values
             .where((i) => i.id === 1),

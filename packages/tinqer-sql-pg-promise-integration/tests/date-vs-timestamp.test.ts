@@ -30,7 +30,7 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const results1 = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.targetDate),
+        (q, params) => q.from("orders").where((o) => o.order_date == params.targetDate),
         { targetDate: date1 },
         {
           onSql: (result) => {
@@ -42,7 +42,7 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const results2 = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.targetDate),
+        (q, params) => q.from("orders").where((o) => o.order_date == params.targetDate),
         { targetDate: date2 },
         {
           onSql: (result) => {
@@ -54,7 +54,7 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const results3 = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.targetDate),
+        (q, params) => q.from("orders").where((o) => o.order_date == params.targetDate),
         { targetDate: date3 },
         {
           onSql: (result) => {
@@ -99,7 +99,7 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const results = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("orders").where((o) => o.order_date != params.targetDate),
+        (q, params) => q.from("orders").where((o) => o.order_date != params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -135,7 +135,7 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const resultsMidnight = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.targetDate),
+        (q, params) => q.from("events").where((e) => e.start_date == params.targetDate),
         { targetDate: midnight },
         {
           onSql: (result) => {
@@ -147,7 +147,7 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const resultsActual = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.targetDate),
+        (q, params) => q.from("events").where((e) => e.start_date == params.targetDate),
         { targetDate: actual },
         {
           onSql: (result) => {
@@ -185,7 +185,7 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const results = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("events").where((e) => e.start_date != params.targetDate),
+        (q, params) => q.from("events").where((e) => e.start_date != params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -217,7 +217,7 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const ordersOnDate = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.searchDate),
+        (q, params) => q.from("orders").where((o) => o.order_date == params.searchDate),
         { searchDate },
         {
           onSql: (result) => {
@@ -238,7 +238,7 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const eventsOnDate = await executeSelect(
         db,
         schema,
-        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.searchDate),
+        (q, params) => q.from("events").where((e) => e.start_date == params.searchDate),
         { searchDate },
         {
           onSql: (result) => {
@@ -261,8 +261,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const eventsInRange = await executeSelect(
         db,
         schema,
-        (ctx, params) =>
-          ctx
+        (q, params) =>
+          q
             .from("events")
             .where((e) => e.start_date >= params.startOfDay && e.start_date < params.endOfDay),
         { startOfDay, endOfDay },

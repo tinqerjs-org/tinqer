@@ -19,7 +19,7 @@ describe("GroupBy SQL Generation", () => {
   const db = createSchema<Schema>();
 
   it("should generate GROUP BY clause", () => {
-    const result = selectStatement(db, (ctx) => ctx.from("sales").groupBy((s) => s.category), {});
+    const result = selectStatement(db, (q) => q.from("sales").groupBy((s) => s.category), {});
 
     expect(result.sql).to.equal('SELECT "category" FROM "sales" GROUP BY "category"');
   });
@@ -27,8 +27,8 @@ describe("GroupBy SQL Generation", () => {
   it("should combine GROUP BY with WHERE", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("sales")
           .where((s) => s.amount > 100)
           .groupBy((s) => s.category),
@@ -44,8 +44,8 @@ describe("GroupBy SQL Generation", () => {
   it("should handle GROUP BY with SELECT projection", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("sales")
           .groupBy((s) => s.category)
           .select((g) => ({ category: g.key })),
@@ -58,8 +58,8 @@ describe("GroupBy SQL Generation", () => {
   it("should work with GROUP BY and ORDER BY", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("sales")
           .groupBy((s) => s.product)
           .orderBy((g) => g.key),
@@ -74,8 +74,8 @@ describe("GroupBy SQL Generation", () => {
   it("should handle GROUP BY with COUNT aggregate", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("sales")
           .groupBy((s) => s.category)
           .select((g) => ({ category: g.key, count: g.count() })),
@@ -90,8 +90,8 @@ describe("GroupBy SQL Generation", () => {
   it("should handle GROUP BY with SUM aggregate", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("sales")
           .groupBy((s) => s.category)
           .select((g) => ({
@@ -109,8 +109,8 @@ describe("GroupBy SQL Generation", () => {
   it("should handle GROUP BY with multiple aggregates", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("sales")
           .groupBy((s) => s.category)
           .select((g) => ({
@@ -130,8 +130,8 @@ describe("GroupBy SQL Generation", () => {
   it("should handle GROUP BY with WHERE and aggregates", () => {
     const result = selectStatement(
       db,
-      (ctx) =>
-        ctx
+      (q) =>
+        q
           .from("sales")
           .where((s) => s.quantity > 10)
           .groupBy((s) => s.product)

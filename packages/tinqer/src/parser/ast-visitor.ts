@@ -88,7 +88,7 @@ export function convertAstToQueryOperationWithParams(
   // Extract parameter info from the lambda
   const extracted = extractParameters(ast);
 
-  // If no DSL param was extracted (e.g., for non-lambda expressions like ctx.from()),
+  // If no DSL param was extracted (e.g., for non-lambda expressions like q.from()),
   // use the existing DSL param from parent context
   const dslParam = extracted.dslParam || existingDslParam;
   const { tableParams, queryParams, helpersParam } = extracted;
@@ -137,7 +137,7 @@ function extractParameters(ast: ASTExpression): {
   let helpersParam: string | undefined;
 
   // Check if the root is an arrow function with params
-  // New signature: (ctx, p, h) => ctx.from(...).where(x => x.id == p.minId)
+  // New signature: (q, p, h) => q.from(...).where(x => x.id == p.minId)
   // Old signature (backward compat): (p, h) => from(...).where(x => x.id == p.minId)
   if (ast.type === "ArrowFunctionExpression") {
     const arrow = ast as ArrowFunctionExpression;
@@ -174,7 +174,7 @@ function extractParameters(ast: ASTExpression): {
         if (thirdParam && thirdParam.type === "Identifier") {
           helpersParam = (thirdParam as Identifier).name;
         } else if (thirdParam && (thirdParam as { type?: string }).type === "AssignmentPattern") {
-          // Handle default parameters: (ctx, p, h = createQueryHelpers())
+          // Handle default parameters: (q, p, h = createQueryHelpers())
           const assignPattern = thirdParam as { left?: { type?: string; name?: string } };
           if (assignPattern.left?.type === "Identifier" && assignPattern.left.name) {
             helpersParam = assignPattern.left.name;
@@ -231,7 +231,7 @@ function visitQueryChain(
 }
 
 /**
- * Check if a call expression is a DSL method call (e.g., ctx.from())
+ * Check if a call expression is a DSL method call (e.g., q.from())
  */
 function isDSLMethodCall(ast: ASTCallExpression, dslParam: string | undefined): boolean {
   if (!dslParam) {

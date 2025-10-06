@@ -50,11 +50,11 @@ describe("JOIN with Table References", () => {
     it("should support (u, d) => ({ u, d }) pattern", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -82,11 +82,11 @@ describe("JOIN with Table References", () => {
     it("should support accessing nested properties after table reference JOIN", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -109,11 +109,11 @@ describe("JOIN with Table References", () => {
     it("should support WHERE clause with table references", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -141,17 +141,17 @@ describe("JOIN with Table References", () => {
     it("should support chaining JOINs with table references", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
             )
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (joined) => joined.u.id,
               (o) => o.user_id,
               (joined, o) => ({
@@ -184,17 +184,17 @@ describe("JOIN with Table References", () => {
     it("should correctly resolve properties through chained table references", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ user: u, dept: d }),
             )
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (joined) => joined.user.id,
               (o) => o.user_id,
               (joined, o) => ({ joined, order: o }),
@@ -215,23 +215,23 @@ describe("JOIN with Table References", () => {
     it("should handle three-way JOINs with table references", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
             )
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (joined) => joined.u.id,
               (o) => o.user_id,
               (joined, o) => ({ ...joined, o }),
             )
             .join(
-              ctx.from("products"),
+              q.from("products"),
               (joined) => joined.o.id,
               (p) => p.id,
               (joined, p) => ({ ...joined, p }),
@@ -258,11 +258,11 @@ describe("JOIN with Table References", () => {
       expect(() => {
         selectStatement(
           db,
-          (ctx) =>
-            ctx
+          (q) =>
+            q
               .from("users")
               .join(
-                ctx.from("departments"),
+                q.from("departments"),
                 (u) => u.department_id,
                 (d) => d.id,
                 (u, d) => ({
@@ -285,11 +285,11 @@ describe("JOIN with Table References", () => {
     it("should support GROUP BY with table references", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -315,17 +315,17 @@ describe("JOIN with Table References", () => {
     it("should support complex aggregations with chained table references", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
             )
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (joined) => joined.u.id,
               (o) => o.user_id,
               (joined, o) => ({ ...joined, o }),
@@ -353,9 +353,9 @@ describe("JOIN with Table References", () => {
       expect(() => {
         selectStatement(
           db,
-          (ctx) =>
-            ctx.from("users").join(
-              ctx.from("departments"),
+          (q) =>
+            q.from("users").join(
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -370,11 +370,11 @@ describe("JOIN with Table References", () => {
     it("should handle empty object in result selector with SELECT", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               () => ({}),
@@ -395,11 +395,11 @@ describe("JOIN with Table References", () => {
     it("should handle single table reference return", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, _d) => u, // Just return the first table
@@ -420,11 +420,11 @@ describe("JOIN with Table References", () => {
     it("should support ORDER BY with table references", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -450,11 +450,11 @@ describe("JOIN with Table References", () => {
     it("should support DISTINCT with table references", () => {
       const result = selectStatement(
         db,
-        (ctx) =>
-          ctx
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
