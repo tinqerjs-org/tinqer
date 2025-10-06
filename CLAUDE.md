@@ -220,11 +220,14 @@ npm run test:grep -- "JOIN"
 
 1. **NEVER use `git push --force` or `git push -f`** - Force pushing destroys history
 2. **NEVER use `git push origin --delete`** - Never delete remote branches
-3. **NEVER perform ANY destructive operations on remote repositories**
-4. **ONLY allowed remote operation is standard `git push` or `git push -u origin branch-name`**
-5. **ALL git push commands require EXPLICIT user authorization**
-6. **Use revert commits instead of force push** - To undo changes, create revert commits
-7. **If you need to overwrite remote**, explain consequences and get explicit confirmation
+3. **NEVER use `git reset --hard`** - This is a destructive operation that discards changes
+4. **NEVER use `git clean -fd`** - This permanently deletes untracked files
+5. **NEVER use destructive rebase/amend without explicit permission** - These rewrite history
+6. **NEVER perform ANY destructive operations on remote repositories**
+7. **ONLY allowed remote operation is standard `git push` or `git push -u origin branch-name`**
+8. **ALL git push commands require EXPLICIT user authorization**
+9. **Use revert commits instead of force push** - To undo changes, create revert commits
+10. **If you need to overwrite remote**, explain consequences and get explicit confirmation
 
 **IMPORTANT**: NEVER commit, push, revert, or perform ANY git operations without explicit user permission. You are ONLY allowed to delete LOCAL branches with `git branch -D`, NEVER remote branches.
 
