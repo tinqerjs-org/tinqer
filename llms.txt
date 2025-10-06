@@ -1046,12 +1046,11 @@ interface Schema {
 const schema = createSchema<Schema>();
 
 // Generate SQL without executing
-const result = selectStatement(
-  schema,
-  (q) => q
+const result = selectStatement(schema, (q) =>
+  q
     .from("products")
     .where((p) => p.inStock === 1)
-    .orderByDescending((p) => p.price)
+    .orderByDescending((p) => p.price),
 );
 
 // result.sql contains the SQL string
@@ -1096,10 +1095,8 @@ interface Schema {
 const schema = createSchema<Schema>();
 
 // Schema is passed to execute functions, which provide the query builder 'q' parameter
-const results = await executeSelect(
-  db,
-  schema,
-  (q) => q.from("users").where((u) => u.email.endsWith("@example.com"))
+const results = await executeSelect(db, schema, (q) =>
+  q.from("users").where((u) => u.email.endsWith("@example.com")),
 );
 ```
 
@@ -1340,16 +1337,15 @@ describe("SQL Generation", () => {
     }
 
     const schema = createSchema<Schema>();
-    const result = selectStatement(
-      schema,
-      (q) => q
+    const result = selectStatement(schema, (q) =>
+      q
         .from("users")
         .where((u) => u.age >= 18)
-        .select((u) => u)
+        .select((u) => u),
     );
 
     // Assert SQL and parameters
-    assert.ok(result.sql.includes('WHERE'));
+    assert.ok(result.sql.includes("WHERE"));
     assert.ok(result.params);
   });
 });
@@ -1669,7 +1665,7 @@ const schema = createSchema(); // No schema type provided
 const result = await executeSelect(
   db,
   schema,
-  (q) => q.from("users") // Type is Queryable<unknown>
+  (q) => q.from("users"), // Type is Queryable<unknown>
 );
 ```
 
@@ -1686,7 +1682,7 @@ const schema = createSchema<Schema>();
 const result = await executeSelect(
   db,
   schema,
-  (q) => q.from("users") // Fully typed: Queryable<{ id: number; name: string }>
+  (q) => q.from("users"), // Fully typed: Queryable<{ id: number; name: string }>
 );
 ```
 
