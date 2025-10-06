@@ -3,7 +3,7 @@
  */
 
 import { Queryable } from "./queryable.js";
-import type { DatabaseContext } from "./database-context.js";
+import type { DatabaseSchema } from "./database-context.js";
 
 /**
  * Creates a new Queryable from a table name with explicit type
@@ -19,7 +19,7 @@ export function from<T>(tableName: string): Queryable<T>;
  * @returns A new Queryable instance with inferred types
  */
 export function from<TSchema, K extends keyof TSchema & string>(
-  context: DatabaseContext<TSchema>,
+  context: DatabaseSchema<TSchema>,
   tableName: K,
 ): Queryable<TSchema[K]>;
 

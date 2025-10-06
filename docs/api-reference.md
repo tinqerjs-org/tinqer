@@ -16,7 +16,7 @@ Reference for adapter execution helpers, typed contexts, and query utilities.
   - [1.7 toSql](#17-tosql)
   - [1.8 ExecuteOptions & SqlResult](#18-executeoptions--sqlresult)
 - [2. Type-Safe Contexts](#2-type-safe-contexts)
-  - [2.1 createContext](#21-createcontext)
+  - [2.1 createSchema](#21-createcontext)
 - [3. Helper Utilities](#3-helper-utilities)
   - [3.1 createQueryHelpers](#31-createqueryhelpers)
 
@@ -34,9 +34,9 @@ Converts a query builder function into SQL and named parameters without executin
 
 ```typescript
 function selectStatement<TSchema, TParams, TResult>(
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
@@ -47,19 +47,19 @@ function selectStatement<TSchema, TParams, TResult>(
 **Example (PostgreSQL)**
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; age: number };
 }
 
-const ctx = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const { sql, params } = selectStatement(
-  ctx,
-  (ctx, p, _helpers) =>
-    ctx
+  schema,
+  (q, p, _helpers) =>
+    q
       .from("users")
       .where((u) => u.age >= p.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
@@ -80,8 +80,8 @@ async function executeSelect<
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase | BetterSqlite3Database,
-  dbContext: DatabaseContext<TSchema>,
-  queryBuilder: (ctx: QueryDSL<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
+  schema: DatabaseSchema<TSchema>,
+  queryBuilder: (ctx: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<
@@ -98,20 +98,20 @@ async function executeSelect<
 **Example (PostgreSQL)**
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; age: number };
 }
 
-const ctx = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const users = await executeSelect(
   db,
-  ctx,
-  (ctx, p, _helpers) =>
-    ctx
+  schema,
+  (q, p, _helpers) =>
+    q
       .from("users")
       .where((u) => u.age >= p.minAge)
       .orderBy((u) => u.name),
@@ -129,9 +129,9 @@ async function executeSelectSimple<
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: PgDatabase | BetterSqlite3Database,
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: Record<string, never>,
     helpers: QueryHelpers,
   ) => TQuery,
@@ -150,16 +150,16 @@ async function executeSelectSimple<
 **Example**
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string };
 }
 
-const ctx = createContext<Schema>();
+const schema = createSchema<Schema>();
 
-const allUsers = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) => ctx.from("users"));
+const allUsers = await executeSelectSimple(db, schema, (q, _params, _helpers) => q.from("users"));
 ```
 
 ### 1.4 insertStatement & executeInsert
@@ -168,9 +168,9 @@ Generate and execute INSERT statements with optional RETURNING clauses. The quer
 
 ```typescript
 function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
@@ -179,9 +179,9 @@ function insertStatement<TSchema, TParams, TTable, TReturning = never>(
 
 async function executeInsert<TSchema, TParams, TTable>(
   db: PgDatabase | BetterSqlite3Database,
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => Insertable<TTable>,
@@ -191,9 +191,9 @@ async function executeInsert<TSchema, TParams, TTable>(
 
 async function executeInsert<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase | BetterSqlite3Database,
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => InsertableWithReturning<TTable, TReturning>,
@@ -205,27 +205,27 @@ async function executeInsert<TSchema, TParams, TTable, TReturning>(
 **Example**
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string };
 }
 
-const ctx = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const inserted = await executeInsert(
   db,
-  ctx,
-  (ctx, _params, _helpers) => ctx.insertInto("users").values({ name: "Alice" }),
+  schema,
+  (q, _params, _helpers) => q.insertInto("users").values({ name: "Alice" }),
   {},
 );
 
 const createdUsers = await executeInsert(
   db,
-  ctx,
-  (ctx, _params, _helpers) =>
-    ctx
+  schema,
+  (q, _params, _helpers) =>
+    q
       .insertInto("users")
       .values({ name: "Bob" })
       .returning((u) => ({ id: u.id, name: u.name })),
@@ -239,9 +239,9 @@ Generate and execute UPDATE statements with optional RETURNING clauses. The quer
 
 ```typescript
 function updateStatement<TSchema, TParams, TTable, TReturning = never>(
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) =>
@@ -253,9 +253,9 @@ function updateStatement<TSchema, TParams, TTable, TReturning = never>(
 
 async function executeUpdate<TSchema, TParams, TTable>(
   db: PgDatabase | BetterSqlite3Database,
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
@@ -265,9 +265,9 @@ async function executeUpdate<TSchema, TParams, TTable>(
 
 async function executeUpdate<TSchema, TParams, TTable, TReturning>(
   db: PgDatabase | BetterSqlite3Database,
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => UpdatableWithReturning<TTable, TReturning>,
@@ -279,20 +279,20 @@ async function executeUpdate<TSchema, TParams, TTable, TReturning>(
 **Example**
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; lastLogin: Date; status: string };
 }
 
-const ctx = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const updatedRows = await executeUpdate(
   db,
-  ctx,
-  (ctx, p, _helpers) =>
-    ctx
+  schema,
+  (q, p, _helpers) =>
+    q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < p.cutoff),
@@ -306,9 +306,9 @@ Generate and execute DELETE statements. The query builder receives a DSL context
 
 ```typescript
 function deleteStatement<TSchema, TParams, TResult>(
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => Deletable<TResult> | DeletableComplete<TResult>,
@@ -317,9 +317,9 @@ function deleteStatement<TSchema, TParams, TResult>(
 
 async function executeDelete<TSchema, TParams, TResult>(
   db: PgDatabase | BetterSqlite3Database,
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryDSL<TSchema>,
+    ctx: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => Deletable<TResult> | DeletableComplete<TResult>,
@@ -331,19 +331,19 @@ async function executeDelete<TSchema, TParams, TResult>(
 **Example**
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; status: string };
 }
 
-const ctx = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const deletedCount = await executeDelete(
   db,
-  ctx,
-  (ctx, _params, _helpers) => ctx.deleteFrom("users").where((u) => u.status === "inactive"),
+  schema,
+  (q, _params, _helpers) => q.deleteFrom("users").where((u) => u.status === "inactive"),
   {},
 );
 ```
@@ -363,14 +363,14 @@ function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<
 **Example (SQLite)**
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { toSql } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
   products: { id: number; name: string; price: number; inStock: number };
 }
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 // Create a queryable using the DSL
 const queryable = ctx.dsl
@@ -403,19 +403,19 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 
 ## 2. Type-Safe Contexts
 
-### 2.1 createContext
+### 2.1 createSchema
 
-Creates a phantom-typed `DatabaseContext` that ties table names to row types and provides a DSL for building queries. The context object includes a `dsl` property that exposes query builder methods.
+Creates a phantom-typed `DatabaseSchema` that ties table names to row types and provides a DSL for building queries. The context object includes a `dsl` property that exposes query builder methods.
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 interface Schema {
   users: { id: number; name: string; email: string };
   posts: { id: number; userId: number; title: string };
 }
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 
 // Access the DSL through ctx.dsl
 const queryable = ctx.dsl
@@ -431,8 +431,8 @@ When using execution functions like `executeSelect`, the DSL is passed as the fi
 ```typescript
 const results = await executeSelect(
   db,
-  ctx,
-  (ctx, _params, _helpers) => ctx.from("users").where((u) => u.email.endsWith("@example.com")),
+  schema,
+  (q, _params, _helpers) => q.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```
@@ -446,19 +446,19 @@ const results = await executeSelect(
 Provides helper functions for case-insensitive comparisons and string searches. Helpers are automatically passed as the third parameter to query builder functions.
 
 ```typescript
-import { createContext, createQueryHelpers } from "@webpods/tinqer";
+import { createSchema, createQueryHelpers } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string };
 }
 
-const ctx = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const result = selectStatement(
-  ctx,
-  (ctx, _params, helpers) =>
-    ctx.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  schema,
+  (q, _params, helpers) =>
+    q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 ```

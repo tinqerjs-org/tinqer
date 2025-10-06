@@ -6,7 +6,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery } from "../dist/index.js";
-import type { QueryDSL } from "../dist/index.js";
+import type { QueryBuilder } from "../dist/index.js";
 import {
   asGroupByOperation,
   asSelectOperation,
@@ -18,7 +18,7 @@ import { type TestSchema } from "./test-schema.js";
 describe("GROUP BY Operation", () => {
   describe("groupBy()", () => {
     it("should parse simple groupBy with column selector", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("products").groupBy((x) => x.category);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("products").groupBy((x) => x.category);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("groupBy");
@@ -27,8 +27,8 @@ describe("GROUP BY Operation", () => {
     });
 
     it("should parse groupBy with different column", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
-        ctx.from("employees").groupBy((x) => x.department);
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("employees").groupBy((x) => x.department);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("groupBy");
@@ -37,8 +37,8 @@ describe("GROUP BY Operation", () => {
     });
 
     it("should parse groupBy after where", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("products")
           .where((x) => x.inStock)
           .groupBy((x) => x.category);
@@ -50,8 +50,8 @@ describe("GROUP BY Operation", () => {
     });
 
     it("should parse groupBy before select", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("products")
           .groupBy((x) => x.category)
           .select((g) => ({ category: g.key }));
@@ -63,8 +63,8 @@ describe("GROUP BY Operation", () => {
     });
 
     it("should parse groupBy with ordering", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("products")
           .groupBy((x) => x.category)
           .orderBy((g) => g.key);

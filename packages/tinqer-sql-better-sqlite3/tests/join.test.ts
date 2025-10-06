@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 interface User {
   id: number;
@@ -51,18 +51,18 @@ interface Schema {
   locations: Location;
 }
 
-const db = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 describe("Join SQL Generation", () => {
   describe("INNER JOIN", () => {
     it("should generate INNER JOIN with proper syntax", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.departmentId,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -78,13 +78,13 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with WHERE clause", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .where((u) => u.id > 100)
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (u) => u.id,
               (o) => o.userId,
               (u, o) => ({ u, o }),
@@ -101,12 +101,12 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with complex inner query", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("orders").where((o) => o.amount > 1000),
+              q.from("orders").where((o) => o.amount > 1000),
               (u) => u.id,
               (o) => o.userId,
               (u, o) => ({ u, o }),
@@ -123,12 +123,12 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with GROUP BY", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (u) => u.id,
               (o) => o.userId,
               (u, o) => ({ u, o }),
@@ -148,12 +148,12 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with DISTINCT", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.departmentId,
               (d) => d.id,
               (_u, d) => ({ u: _u, d }),
@@ -170,12 +170,12 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with ORDER BY and TAKE", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (u) => u.id,
               (o) => o.userId,
               (u, o) => ({ u, o }),
@@ -196,18 +196,18 @@ describe("Join SQL Generation", () => {
   describe("Multiple JOINs", () => {
     it("should handle multiple JOINs (3 tables)", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.departmentId,
               (d) => d.id,
               (u, d) => ({ u, d }),
             )
             .join(
-              ctx.from("locations"),
+              q.from("locations"),
               (joined) => joined.d.id,
               (l) => l.id,
               (joined, l) => ({ ...joined, l }),
@@ -226,24 +226,24 @@ describe("Join SQL Generation", () => {
 
     it("should handle 4-table JOIN chain", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("orders")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (o) => o.userId,
               (u) => u.id,
               (o, u) => ({ o, u }),
             )
             .join(
-              ctx.from("products"),
+              q.from("products"),
               (joined) => joined.o.productId,
               (p) => p.id,
               (joined, p) => ({ ...joined, p }),
             )
             .join(
-              ctx.from("categories"),
+              q.from("categories"),
               (joined) => joined.p.categoryId,
               (c) => c.id,
               (joined, c) => ({ ...joined, c }),
@@ -267,12 +267,12 @@ describe("Join SQL Generation", () => {
   describe("Self JOIN", () => {
     it("should handle self JOIN for hierarchical data", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("users").where((m) => m.managerId != null),
+              q.from("users").where((m) => m.managerId != null),
               (e) => e.managerId,
               (m) => m.id,
               (e, m) => ({ e, m }),
@@ -290,12 +290,12 @@ describe("Join SQL Generation", () => {
   describe("Complex JOIN scenarios", () => {
     it("should handle JOIN with aggregates", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (u) => u.id,
               (o) => o.userId,
               (u, o) => ({ u, o }),
@@ -317,12 +317,12 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with complex conditions", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (u) => u.id,
               (o) => o.userId,
               (u, o) => ({ u, o }),
@@ -339,13 +339,13 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with complex WHERE and ORDER BY", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .where((u) => u.id > 50)
             .join(
-              ctx.from("orders").where((o) => o.status == "completed"),
+              q.from("orders").where((o) => o.status == "completed"),
               (u) => u.id,
               (o) => o.userId,
               (u, o) => ({ u, o }),
@@ -372,12 +372,12 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with pagination", () => {
       const result = selectStatement(
-        db,
-        (ctx, p: { page: number; pageSize: number }) =>
-          ctx
+        schema,
+        (q, p: { page: number; pageSize: number }) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.departmentId,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -400,12 +400,12 @@ describe("Join SQL Generation", () => {
   describe("LINQ-style joins", () => {
     it("should translate groupJoin/selectMany/defaultIfEmpty into LEFT OUTER JOIN", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .groupJoin(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.departmentId,
               (d) => d.id,
               (u, deptGroup) => ({ user: u, deptGroup }),
@@ -427,12 +427,12 @@ describe("Join SQL Generation", () => {
   describe("CROSS JOIN", () => {
     it("should generate CROSS JOIN when collection selector returns a query", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("departments")
             .selectMany(
-              () => ctx.from("users"),
+              () => q.from("users"),
               (department, user) => ({ department, user }),
             )
             .select((row) => ({

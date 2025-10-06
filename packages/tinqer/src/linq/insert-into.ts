@@ -3,7 +3,7 @@
  */
 
 import { Insertable } from "./insertable.js";
-import type { DatabaseContext } from "./database-context.js";
+import type { DatabaseSchema } from "./database-context.js";
 
 /**
  * Creates a new Insertable from a table name with explicit type
@@ -19,7 +19,7 @@ export function insertInto<T>(tableName: string): Insertable<T>;
  * @returns A new Insertable instance with inferred types
  */
 export function insertInto<TSchema, K extends keyof TSchema & string>(
-  context: DatabaseContext<TSchema>,
+  context: DatabaseSchema<TSchema>,
   tableName: K,
 ): Insertable<TSchema[K]>;
 

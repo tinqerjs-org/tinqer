@@ -5,7 +5,7 @@
 
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 interface User {
   id: number;
@@ -18,14 +18,14 @@ interface Schema {
   users: User;
 }
 
-const db = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 describe("NULL Handling", () => {
   describe("IS NULL generation", () => {
     it("should generate IS NULL for == null comparison", () => {
       const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => u.middleName == null),
+        schema,
+        (q) => q.from("users").where((u) => u.middleName == null),
         {},
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "middleName" IS NULL');
@@ -34,8 +34,8 @@ describe("NULL Handling", () => {
 
     it("should generate IS NULL for === null comparison", () => {
       const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => u.age === null),
+        schema,
+        (q) => q.from("users").where((u) => u.age === null),
         {},
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" IS NULL');
@@ -44,8 +44,8 @@ describe("NULL Handling", () => {
 
     it("should generate IS NULL with null on left side", () => {
       const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => null == u.name),
+        schema,
+        (q) => q.from("users").where((u) => null == u.name),
         {},
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" IS NULL');
@@ -56,8 +56,8 @@ describe("NULL Handling", () => {
   describe("IS NOT NULL generation", () => {
     it("should generate IS NOT NULL for != null comparison", () => {
       const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => u.middleName != null),
+        schema,
+        (q) => q.from("users").where((u) => u.middleName != null),
         {},
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "middleName" IS NOT NULL');
@@ -66,8 +66,8 @@ describe("NULL Handling", () => {
 
     it("should generate IS NOT NULL for !== null comparison", () => {
       const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => u.age !== null),
+        schema,
+        (q) => q.from("users").where((u) => u.age !== null),
         {},
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" IS NOT NULL');
@@ -76,8 +76,8 @@ describe("NULL Handling", () => {
 
     it("should generate IS NOT NULL with null on left side", () => {
       const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => null != u.name),
+        schema,
+        (q) => q.from("users").where((u) => null != u.name),
         {},
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" IS NOT NULL');
@@ -88,8 +88,8 @@ describe("NULL Handling", () => {
   describe("Complex NULL conditions", () => {
     it("should handle NULL checks with AND", () => {
       const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => u.name != null && u.age == null),
+        schema,
+        (q) => q.from("users").where((u) => u.name != null && u.age == null),
         {},
       );
       expect(result.sql).to.equal(
@@ -100,8 +100,8 @@ describe("NULL Handling", () => {
 
     it("should handle NULL checks with OR", () => {
       const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => u.middleName == null || u.age == null),
+        schema,
+        (q) => q.from("users").where((u) => u.middleName == null || u.age == null),
         {},
       );
       expect(result.sql).to.equal(
@@ -112,8 +112,8 @@ describe("NULL Handling", () => {
 
     it("should handle NULL checks in complex conditions", () => {
       const result = selectStatement(
-        db,
-        (ctx) => ctx.from("users").where((u) => u.id > 10 && u.middleName != null),
+        schema,
+        (q) => q.from("users").where((u) => u.id > 10 && u.middleName != null),
         {},
       );
       expect(result.sql).to.equal(

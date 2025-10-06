@@ -2,7 +2,7 @@
  * Database schema types and context for Better SQLite3 integration tests
  */
 
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 /**
  * Database schema types matching the SQLite tables
@@ -207,4 +207,4 @@ export type Article = TestDatabaseSchema["articles"];
 /**
  * Typed database context for use with from() function
  */
-export const dbContext = createContext<TestDatabaseSchema>();
+export const schema = createSchema<TestDatabaseSchema>();

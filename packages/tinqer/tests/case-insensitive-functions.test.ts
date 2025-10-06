@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery } from "../dist/parser/parse-query.js";
-import type { QueryDSL } from "../dist/index.js";
+import type { QueryBuilder } from "../dist/index.js";
 import { createQueryHelpers } from "../dist/linq/functions.js";
 import type { WhereOperation, SelectOperation } from "../dist/query-tree/operations.js";
 import type {
@@ -32,10 +32,10 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should parse _.functions.iequals correctly", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => _.functions.iequals(u.name, "John")),
+        ) => q.from("users").where((u) => _.functions.iequals(u.name, "John")),
       );
 
       expect(result).to.not.be.null;
@@ -54,10 +54,10 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should handle alternative parameter naming", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _params: Record<string, never>,
           helpers: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => helpers.functions.iequals(u.email, "admin@test.com")),
+        ) => q.from("users").where((u) => helpers.functions.iequals(u.email, "admin@test.com")),
       );
 
       expect(result).to.not.be.null;
@@ -73,10 +73,10 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should auto-parameterize string literals", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _params: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => _.functions.iequals(u.name, "TestUser")),
+        ) => q.from("users").where((u) => _.functions.iequals(u.name, "TestUser")),
       );
 
       expect(result).to.not.be.null;
@@ -91,10 +91,10 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should parse _.functions.istartsWith correctly", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _params: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => _.functions.istartsWith(u.name, "J")),
+        ) => q.from("users").where((u) => _.functions.istartsWith(u.name, "J")),
       );
 
       expect(result).to.not.be.null;
@@ -110,10 +110,10 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should handle column comparison", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _params: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => _.functions.istartsWith(u.email, u.name)),
+        ) => q.from("users").where((u) => _.functions.istartsWith(u.email, u.name)),
       );
 
       expect(result).to.not.be.null;
@@ -130,10 +130,10 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should parse _.functions.iendsWith correctly", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _params: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => _.functions.iendsWith(u.email, ".com")),
+        ) => q.from("users").where((u) => _.functions.iendsWith(u.email, ".com")),
       );
 
       expect(result).to.not.be.null;
@@ -150,10 +150,10 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should parse _.functions.icontains correctly", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => _.functions.icontains(u.bio!, "developer")),
+        ) => q.from("users").where((u) => _.functions.icontains(u.bio!, "developer")),
       );
 
       expect(result).to.not.be.null;
@@ -168,10 +168,10 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should handle query parameters", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           p: { searchTerm: string },
           _: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => _.functions.icontains(u.bio!, p.searchTerm)),
+        ) => q.from("users").where((u) => _.functions.icontains(u.bio!, p.searchTerm)),
       );
 
       expect(result).to.not.be.null;
@@ -188,10 +188,10 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should handle multiple conditions with AND", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => _.functions.iequals(u.name, "John") && u.age > 18),
+        ) => q.from("users").where((u) => _.functions.iequals(u.name, "John") && u.age > 18),
       );
 
       expect(result).to.not.be.null;
@@ -206,11 +206,11 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should handle multiple conditions with OR", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
         ) =>
-          ctx
+          q
             .from("users")
             .where(
               (u) => _.functions.istartsWith(u.name, "A") || _.functions.istartsWith(u.name, "B"),
@@ -229,11 +229,11 @@ describe("Case-Insensitive Functions - Parser", () => {
     it("should work with select projection", () => {
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
         ) =>
-          ctx
+          q
             .from("users")
             .where((u) => _.functions.icontains(u.email, "admin"))
             .select((u) => ({
@@ -255,8 +255,8 @@ describe("Case-Insensitive Functions - Parser", () => {
 
   describe("Error cases", () => {
     it("should parse but not recognize without second parameter", () => {
-      const result = parseQuery((ctx: QueryDSL<TestSchema>) =>
-        ctx.from("users").where((u) => u.name === "John"),
+      const result = parseQuery((q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((u) => u.name === "John"),
       );
 
       expect(result).to.not.be.null;
@@ -268,10 +268,10 @@ describe("Case-Insensitive Functions - Parser", () => {
       // This will parse as a coalesce expression due to the ?? operator
       const result = parseQuery(
         (
-          ctx: QueryDSL<TestSchema>,
+          q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
           _: ReturnType<typeof createQueryHelpers>,
-        ) => ctx.from("users").where((u) => u.name === "test" || false),
+        ) => q.from("users").where((u) => u.name === "test" || false),
       );
 
       expect(result).to.not.be.null;

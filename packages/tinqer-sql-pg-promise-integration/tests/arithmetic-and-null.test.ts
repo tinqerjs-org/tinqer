@@ -6,12 +6,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { db as dbClient } from "./shared-db.js";
+import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
   before(async () => {
-    await setupTestDatabase(db);
+    await setupTestDatabase(dbClient);
   });
 
   describe("Arithmetic operations", () => {
@@ -19,10 +19,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx.from("products").select((p) => ({
+        dbClient,
+        schema,
+        (q) =>
+          q.from("products").select((p) => ({
             name: p.name,
             price: p.price,
             priceWithTax: p.price * 1.1,
@@ -53,10 +53,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx.from("order_items").select((oi) => ({
+        dbClient,
+        schema,
+        (q) =>
+          q.from("order_items").select((oi) => ({
             orderId: oi.order_id,
             quantity: oi.quantity,
             unitPrice: oi.unit_price,
@@ -88,10 +88,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("products")
             .select((p) => ({
               name: p.name,
@@ -125,10 +125,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       const evenUsers = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .where((u) => u.id % 2 === 0)
             .select((u) => ({ id: u.id, name: u.name })),
@@ -140,10 +140,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       const oddUsers = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .where((u) => u.id % 2 === 1)
             .select((u) => ({ id: u.id, name: u.name })),
@@ -176,10 +176,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("products")
             .where((p) => (p.price * p.stock) / 100 > 10)
             .select((p) => ({
@@ -212,10 +212,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("order_items")
             .groupBy((oi) => oi.order_id)
             .select((g) => ({
@@ -253,16 +253,16 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       // First, let's insert a user with NULL age for testing
-      await db.none(`
+      await dbClient.none(`
         INSERT INTO users (name, email, age, department_id, is_active)
         VALUES ('Test Null User', 'testnull@example.com', NULL, 1, true)
         ON CONFLICT (email) DO UPDATE SET age = NULL
       `);
 
       const nullAgeUsers = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) => ctx.from("users").where((u) => u.age === null),
+        dbClient,
+        schema,
+        (q) => q.from("users").where((u) => u.age === null),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -271,9 +271,9 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       const nonNullAgeUsers = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) => ctx.from("users").where((u) => u.age !== null),
+        dbClient,
+        schema,
+        (q) => q.from("users").where((u) => u.age !== null),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -301,7 +301,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       });
 
       // Clean up
-      await db.none(`DELETE FROM users WHERE email = 'testnull@example.com'`);
+      await dbClient.none(`DELETE FROM users WHERE email = 'testnull@example.com'`);
     });
 
     it("should handle NULL in arithmetic operations", async () => {
@@ -310,10 +310,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       // Test NULL handling in arithmetic with nullable columns
       // Since stock is NOT NULL, we'll test with nullable category and arithmetic
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx.from("products").select((p) => ({
+        dbClient,
+        schema,
+        (q) =>
+          q.from("products").select((p) => ({
             name: p.name,
             // Test NULL-safe arithmetic with coalescing
             totalValue: p.stock * p.price,
@@ -354,17 +354,17 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Insert test data
-      await db.none(`
+      await dbClient.none(`
         INSERT INTO departments (id, name, budget)
         VALUES (999, 'Test Dept', NULL)
         ON CONFLICT (id) DO UPDATE SET budget = NULL
       `);
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("departments")
             .where((d) => d.id === 999)
             .select((d) => ({
@@ -390,7 +390,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       }
 
       // Clean up
-      await db.none(`DELETE FROM departments WHERE id = 999`);
+      await dbClient.none(`DELETE FROM departments WHERE id = 999`);
     });
 
     it("should handle NULL in string operations", async () => {
@@ -398,17 +398,17 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Test that NULL descriptions are handled properly
-      await db.none(`
+      await dbClient.none(`
         INSERT INTO products (id, name, price, stock, category, description)
         VALUES (999, 'No Description Product', 49.99, 10, 'Test', NULL)
         ON CONFLICT (id) DO UPDATE SET description = NULL
       `);
 
       const withDescription = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("products")
             .where((p) => p.description !== null && p.description.includes("laptop")),
         {
@@ -419,9 +419,9 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       const withoutDescription = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) => ctx.from("products").where((p) => p.description === null),
+        dbClient,
+        schema,
+        (q) => q.from("products").where((p) => p.description === null),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -451,27 +451,27 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       });
 
       // Clean up
-      await db.none(`DELETE FROM products WHERE id = 999`);
+      await dbClient.none(`DELETE FROM products WHERE id = 999`);
     });
 
     it("should handle NULL in JOIN conditions", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Users with NULL department_id shouldn't appear in inner join
-      await db.none(`
+      await dbClient.none(`
         INSERT INTO users (id, name, email, age, department_id, is_active)
         VALUES (999, 'No Dept User', 'nodept@example.com', 30, NULL, true)
         ON CONFLICT (id) DO UPDATE SET department_id = NULL
       `);
 
       const joinResults = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -498,7 +498,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       expect(hasNoDeptUser).to.be.false;
 
       // Clean up
-      await db.none(`DELETE FROM users WHERE id = 999`);
+      await dbClient.none(`DELETE FROM users WHERE id = 999`);
     });
 
     it("should handle NULL in aggregates", async () => {
@@ -507,7 +507,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql3: { sql: string; params: Record<string, unknown> } | undefined;
 
       // Insert test data with some NULL ages
-      await db.none(`
+      await dbClient.none(`
         INSERT INTO users (id, name, email, age, department_id, is_active)
         VALUES
           (997, 'Null Age 1', 'nullage1@example.com', NULL, 1, true),
@@ -517,9 +517,9 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
       // COUNT should count rows with NULL
       const totalCount = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) => ctx.from("users").count(),
+        dbClient,
+        schema,
+        (q) => q.from("users").count(),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -529,10 +529,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
       // AVG, SUM, MIN, MAX ignore NULL values
       const avgAge = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null)
             .average((u) => u.age!),
@@ -556,10 +556,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
 
       // Average should only consider non-NULL values
       const nonNullAges = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .where((u) => u.age !== null)
             .select((u) => ({ age: u.age })),
@@ -580,7 +580,7 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       expect(avgAge).to.be.closeTo(manualAvg, 0.1);
 
       // Clean up
-      await db.none(`DELETE FROM users WHERE id IN (997, 998)`);
+      await dbClient.none(`DELETE FROM users WHERE id IN (997, 998)`);
     });
   });
 
@@ -590,9 +590,9 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       const activeUsers = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) => ctx.from("users").where((u) => u.is_active),
+        dbClient,
+        schema,
+        (q) => q.from("users").where((u) => u.is_active),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -601,9 +601,9 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       );
 
       const inactiveUsers = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) => ctx.from("users").where((u) => !u.is_active),
+        dbClient,
+        schema,
+        (q) => q.from("users").where((u) => !u.is_active),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -635,10 +635,9 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx.from("users").where((u) => u.is_active === true && u.age !== null && u.age >= 30),
+        dbClient,
+        schema,
+        (q) => q.from("users").where((u) => u.is_active === true && u.age !== null && u.age >= 30),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -664,10 +663,10 @@ describe("PostgreSQL Integration - Arithmetic and NULL Operations", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .where(
               (u) =>

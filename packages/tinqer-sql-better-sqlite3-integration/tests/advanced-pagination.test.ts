@@ -7,12 +7,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { dbClient } from "./shared-db.js";
+import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - Advanced Pagination", () => {
   before(() => {
-    setupTestDatabase(db);
+    setupTestDatabase(dbClient);
   });
 
   describe("Offset-based pagination", () => {
@@ -23,10 +23,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .orderBy((p) => p.id)
             .skip(params.offset)
@@ -58,10 +58,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .orderByDescending((p) => p.created_at)
             .skip(params.offset)
@@ -88,10 +88,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .orderBy((p) => p.name)
             .take(params.pageSize),
@@ -122,10 +122,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .orderBy((p) => p.id)
             .skip(params.offset)
@@ -155,10 +155,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.category == params.category)
             .orderByDescending((p) => p.price)
@@ -192,10 +192,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.id > params.lastId)
             .orderBy((p) => p.id)
@@ -230,10 +230,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.id < params.firstId)
             .orderByDescending((p) => p.id)
@@ -270,10 +270,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("articles")
             .where(
               (a) =>
@@ -309,10 +309,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.price > params.lastPrice)
             .orderBy((p) => p.price)
@@ -344,10 +344,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("articles")
             .where(
               (a) =>
@@ -382,10 +382,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .groupBy((p) => p.category)
             .select((g) => ({
@@ -425,10 +425,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       // Note: having clause not directly supported, filter after grouping
       const allResults = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("products")
             .groupBy((p) => p.category)
             .select((g) => ({
@@ -474,13 +474,13 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("orders")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -522,10 +522,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .select((p) => ({ category: p.category }))
             .distinct()
@@ -561,10 +561,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .orderByDescending((p) => p.created_at)
             .take(params.actualSize),
@@ -592,10 +592,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .orderBy((p) => p.id)
             .skip(params.skipCount)
@@ -629,10 +629,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       // Select only indexed columns for better performance
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .select((p) => ({
               id: p.id,
@@ -673,10 +673,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.id > params.lastSeenId)
             .orderBy((p) => p.id)
@@ -710,10 +710,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
 
       // Forward
       const forwardResults = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.id > params.currentId)
             .orderBy((p) => p.id)
@@ -742,10 +742,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       // Backward
       capturedSql = undefined;
       const backwardResults = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .where((p) => p.id < params.currentId)
             .orderByDescending((p) => p.id)
@@ -786,10 +786,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .where(
               (p) =>
@@ -837,10 +837,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("articles")
             .orderByDescending((a) => a.is_featured) // Featured first
             .thenByDescending((a) => a.views) // Then by views
@@ -874,10 +874,10 @@ describe("Better SQLite3 Integration - Advanced Pagination", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .from("articles")
             .where(
               (a) =>

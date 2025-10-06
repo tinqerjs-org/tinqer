@@ -5,20 +5,20 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("SELECT SQL Generation", () => {
   it("should generate SELECT with single column", () => {
-    const result = selectStatement(db, (ctx) => ctx.from("users").select((x) => x.name), {});
+    const result = selectStatement(schema, (q) => q.from("users").select((x) => x.name), {});
 
     expect(result.sql).to.equal('SELECT "name" FROM "users"');
   });
 
   it("should generate SELECT with object projection", () => {
     const result = selectStatement(
-      db,
-      (ctx) =>
-        ctx.from("users").select((x) => ({
+      schema,
+      (q) =>
+        q.from("users").select((x) => ({
           userId: x.id,
           userName: x.name,
         })),
@@ -32,9 +32,9 @@ describe("SELECT SQL Generation", () => {
 
   it("should generate SELECT after WHERE", () => {
     const result = selectStatement(
-      db,
-      (ctx) =>
-        ctx
+      schema,
+      (q) =>
+        q
           .from("users")
           .where((x) => x.age >= 18)
           .select((x) => ({ id: x.id, name: x.name })),

@@ -175,7 +175,7 @@ npm test
 ```typescript
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 describe("Queryable", () => {
   it("should filter with WHERE clause", () => {
@@ -183,7 +183,7 @@ describe("Queryable", () => {
       users: { id: number; name: string; age: number };
     }
 
-    const ctx = createContext<Schema>();
+    const ctx = createSchema<Schema>();
     const query = ctx.dsl
       .from("users")
       .where((u) => u.age >= 18)
@@ -200,11 +200,11 @@ describe("Queryable", () => {
 ```typescript
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
-const ctx = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 describe("PostgreSQL Integration", () => {
   beforeEach(async () => {
@@ -213,8 +213,8 @@ describe("PostgreSQL Integration", () => {
   });
 
   it("should execute SELECT query", async () => {
-    const results = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) =>
-      ctx
+    const results = await executeSelectSimple(db, schema, (q, _params, _helpers) =>
+      q
         .from("users")
         .where((u) => u.age >= 25)
         .select((u) => u.name),
@@ -467,9 +467,9 @@ Error: Unsupported AST node type: TemplateLiteral
 // Correct - use params with executeSelectSimple
 await executeSelectSimple(
   db,
-  ctx,
-  (ctx, p, _helpers) =>
-    ctx.from("users").where((u) => u.name === p.name),
+  schema,
+  (q, p, _helpers) =>
+    q.from("users").where((u) => u.name === p.name),
   { name: `User ${userId}` }
 );
 ```
@@ -490,9 +490,9 @@ const minAge = 18;
 // Correct - params pattern with executeSelectSimple
 await executeSelectSimple(
   db,
-  ctx,
-  (ctx, p, _helpers) =>
-    ctx.from("users").where((u) => u.age >= p.minAge),
+  schema,
+  (q, p, _helpers) =>
+    q.from("users").where((u) => u.age >= p.minAge),
   { minAge: 18 }
 );
 ```
@@ -503,18 +503,18 @@ await executeSelectSimple(
 
 ```typescript
 // Type inference fails without schema context
-const ctx = createContext(); // No schema type provided
+const ctx = createSchema(); // No schema type provided
 const query = ctx.dsl.from("users"); // Type is Queryable<unknown>
 ```
 
-**Solution:** Provide explicit schema type to createContext:
+**Solution:** Provide explicit schema type to createSchema:
 
 ```typescript
 interface Schema {
   users: { id: number; name: string };
 }
 
-const ctx = createContext<Schema>();
+const ctx = createSchema<Schema>();
 const query = ctx.dsl.from("users"); // Fully typed from schema
 ```
 

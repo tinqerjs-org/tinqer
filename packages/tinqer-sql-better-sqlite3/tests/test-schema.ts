@@ -2,7 +2,7 @@
  * Test schema for SQL generator tests
  */
 
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 // Define the test database schema
 export interface TestSchema {
@@ -185,4 +185,4 @@ export interface TestSchema {
 }
 
 // Create the database context
-export const db = createContext<TestSchema>();
+export const schema = createSchema<TestSchema>();

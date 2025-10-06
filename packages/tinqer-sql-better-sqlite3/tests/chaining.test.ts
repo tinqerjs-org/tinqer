@@ -5,14 +5,14 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("Complex Query Chaining", () => {
   it("should generate complex query with WHERE, SELECT, ORDER BY, TAKE", () => {
     const result = selectStatement(
-      db,
-      (ctx, p: { minAge: number }) =>
-        ctx
+      schema,
+      (q, p: { minAge: number }) =>
+        q
           .from("users")
           .where((x) => x.age >= p.minAge && x.isActive)
           .select((x) => ({ id: x.id, name: x.name }))
@@ -29,9 +29,9 @@ describe("Complex Query Chaining", () => {
 
   it("should generate query with SKIP and TAKE for pagination", () => {
     const result = selectStatement(
-      db,
-      (ctx, p: { page: number; pageSize: number }) =>
-        ctx
+      schema,
+      (q, p: { page: number; pageSize: number }) =>
+        q
           .from("products")
           .orderBy((x) => x.name)
           .skip(p.page * p.pageSize)
@@ -47,9 +47,9 @@ describe("Complex Query Chaining", () => {
 
   it("should generate query with multiple WHERE clauses combined with AND", () => {
     const result = selectStatement(
-      db,
-      (ctx) =>
-        ctx
+      schema,
+      (q) =>
+        q
           .from("users")
           .where((x) => x.age >= 18)
           .where((x) => x.role == "admin"),
@@ -62,9 +62,9 @@ describe("Complex Query Chaining", () => {
 
   it("should generate query with DISTINCT", () => {
     const result = selectStatement(
-      db,
-      (ctx) =>
-        ctx
+      schema,
+      (q) =>
+        q
           .from("products")
           .select((x) => x.category)
           .distinct(),
@@ -76,9 +76,9 @@ describe("Complex Query Chaining", () => {
 
   it("should generate query with GROUP BY and COUNT aggregate", () => {
     const result = selectStatement(
-      db,
-      (ctx) =>
-        ctx
+      schema,
+      (q) =>
+        q
           .from("employees")
           .groupBy((x) => x.department)
           .select((g) => ({ department: g.key, count: g.count() })),

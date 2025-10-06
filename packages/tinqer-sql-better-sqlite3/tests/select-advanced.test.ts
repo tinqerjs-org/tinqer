@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { selectStatement } from "../dist/index.js";
 
 interface User {
@@ -43,7 +43,7 @@ interface Schema {
   departments: Department;
 }
 
-const db = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 describe("Advanced SELECT Projection SQL Generation", () => {
   describe("Complex object projections", () => {
@@ -51,9 +51,9 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
     it("should handle deeply nested projections", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx.from("products").select((p) => ({
+        schema,
+        (q) =>
+          q.from("products").select((p) => ({
             basic: {
               id: p.id,
               name: p.name,
@@ -93,9 +93,9 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
     it("should project after filtering", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("products")
             .where((p) => p.stock > 0 && p.price > 10)
             .select((p) => ({
@@ -122,12 +122,12 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
     it("should work with JOIN and GROUP BY", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.departmentId,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -149,9 +149,9 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
     it("should work with DISTINCT", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx
+        schema,
+        (q) =>
+          q
             .from("products")
             .select((p) => ({
               category: p.categoryId,
@@ -175,9 +175,9 @@ describe("Advanced SELECT Projection SQL Generation", () => {
   describe("Edge cases in SELECT", () => {
     it("should handle SELECT with only literals", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx.from("users").select(() => ({
+        schema,
+        (q) =>
+          q.from("users").select(() => ({
             constant: 42,
             message: "Hello World",
             flag: true,
@@ -198,16 +198,16 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Test removed: Very complex nested arithmetic no longer supported in SELECT
 
     it("should handle SELECT with no projection (identity)", () => {
-      const result = selectStatement(db, (ctx) => ctx.from("users").select((u) => u), {});
+      const result = selectStatement(schema, (q) => q.from("users").select((u) => u), {});
 
       expect(result.sql).to.contain("SELECT * FROM");
     });
 
     it("should handle SELECT with renamed fields", () => {
       const result = selectStatement(
-        db,
-        (ctx) =>
-          ctx.from("users").select((u) => ({
+        schema,
+        (q) =>
+          q.from("users").select((u) => ({
             userId: u.id,
             userFirstName: u.firstName,
             userLastName: u.lastName,
@@ -230,9 +230,9 @@ describe("Advanced SELECT Projection SQL Generation", () => {
   describe("SELECT with special cases", () => {
     it("should handle SELECT with pagination pattern", () => {
       const result = selectStatement(
-        db,
-        (ctx, params) =>
-          ctx
+        schema,
+        (q, params) =>
+          q
             .from("products")
             .select((p) => ({
               id: p.id,

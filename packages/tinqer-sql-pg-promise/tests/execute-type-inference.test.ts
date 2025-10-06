@@ -3,7 +3,7 @@
  */
 
 import { executeSelect } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 // Mock database for type testing
 const mockDb = {
@@ -38,13 +38,13 @@ async function typeTests() {
     username: string;
     active: boolean;
     deptId: number;
-  }[] = await executeSelect(mockDb, db, (ctx) => ctx.from("users"), {});
+  }[] = await executeSelect(mockDb, schema, (q) => q.from("users"), {});
 
   // With select, returns projected array
   const userNames: { id: number; name: string }[] = await executeSelect(
     mockDb,
-    db,
-    (ctx) => ctx.from("users").select((u) => ({ id: u.id, name: u.name })),
+    schema,
+    (q) => q.from("users").select((u) => ({ id: u.id, name: u.name })),
     {},
   );
 
@@ -66,7 +66,7 @@ async function typeTests() {
     username: string;
     active: boolean;
     deptId: number;
-  } = await executeSelect(mockDb, db, (ctx) => ctx.from("users").first(), {});
+  } = await executeSelect(mockDb, schema, (q) => q.from("users").first(), {});
 
   // firstOrDefault() returns item or undefined
   const maybeUser:
@@ -88,19 +88,19 @@ async function typeTests() {
         active: boolean;
         deptId: number;
       }
-    | undefined = await executeSelect(mockDb, db, (ctx) => ctx.from("users").firstOrDefault(), {});
+    | undefined = await executeSelect(mockDb, schema, (q) => q.from("users").firstOrDefault(), {});
 
   // count() returns number
-  const count: number = await executeSelect(mockDb, db, (ctx) => ctx.from("users").count(), {});
+  const count: number = await executeSelect(mockDb, schema, (q) => q.from("users").count(), {});
 
   // any() returns boolean
-  const hasUsers: boolean = await executeSelect(mockDb, db, (ctx) => ctx.from("users").any(), {});
+  const hasUsers: boolean = await executeSelect(mockDb, schema, (q) => q.from("users").any(), {});
 
   // sum() returns number
   const totalAge: number = await executeSelect(
     mockDb,
-    db,
-    (ctx) => ctx.from("users").sum((u) => u.age),
+    schema,
+    (q) => q.from("users").sum((u) => u.age),
     {},
   );
 

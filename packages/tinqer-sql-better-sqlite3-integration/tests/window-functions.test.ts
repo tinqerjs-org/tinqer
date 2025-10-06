@@ -6,21 +6,21 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { dbClient } from "./shared-db.js";
+import { schema } from "./database-schema.js";
 
 describe("Window Functions - SQLite Integration", () => {
   before(() => {
-    setupTestDatabase(db);
+    setupTestDatabase(dbClient);
   });
 
   describe("ROW_NUMBER()", () => {
     it("should assign unique row numbers within each department ordered by salary DESC", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -63,10 +63,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should handle ROW_NUMBER without PARTITION BY", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -93,10 +93,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should work with WHERE clause filtering", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -126,10 +126,10 @@ describe("Window Functions - SQLite Integration", () => {
   describe("RANK()", () => {
     it("should handle ties in salary with gaps in rank", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -160,13 +160,15 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should show rank gaps when there are ties", () => {
       // Create a tie scenario: Set Diana and Grace to same salary
-      db.exec("UPDATE users SET salary = 110000 WHERE name IN ('Diana Prince', 'Grace Hopper')");
+      dbClient.exec(
+        "UPDATE users SET salary = 110000 WHERE name IN ('Diana Prince', 'Grace Hopper')",
+      );
 
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -193,21 +195,23 @@ describe("Window Functions - SQLite Integration", () => {
       expect(result[3]!.rank).to.equal(4); // Gap
 
       // Reset
-      db.exec("UPDATE users SET salary = 110000 WHERE name = 'Diana Prince'");
-      db.exec("UPDATE users SET salary = 105000 WHERE name = 'Grace Hopper'");
+      dbClient.exec("UPDATE users SET salary = 110000 WHERE name = 'Diana Prince'");
+      dbClient.exec("UPDATE users SET salary = 105000 WHERE name = 'Grace Hopper'");
     });
   });
 
   describe("DENSE_RANK()", () => {
     it("should handle ties without gaps in rank", () => {
       // Create a tie scenario
-      db.exec("UPDATE users SET salary = 110000 WHERE name IN ('Diana Prince', 'Grace Hopper')");
+      dbClient.exec(
+        "UPDATE users SET salary = 110000 WHERE name IN ('Diana Prince', 'Grace Hopper')",
+      );
 
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -234,16 +238,16 @@ describe("Window Functions - SQLite Integration", () => {
       expect(result[3]!.dense_rank).to.equal(3); // NO gap
 
       // Reset
-      db.exec("UPDATE users SET salary = 110000 WHERE name = 'Diana Prince'");
-      db.exec("UPDATE users SET salary = 105000 WHERE name = 'Grace Hopper'");
+      dbClient.exec("UPDATE users SET salary = 110000 WHERE name = 'Diana Prince'");
+      dbClient.exec("UPDATE users SET salary = 105000 WHERE name = 'Grace Hopper'");
     });
 
     it("should work across all departments", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -271,10 +275,10 @@ describe("Window Functions - SQLite Integration", () => {
   describe("Multiple Window Functions", () => {
     it("should support multiple window functions in the same query", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -320,10 +324,10 @@ describe("Window Functions - SQLite Integration", () => {
   describe("Real-world Scenarios", () => {
     it("should find the top earner in each department", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -353,10 +357,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should rank employees by salary within department with age as tiebreaker", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -382,10 +386,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should assign sequential numbers for pagination-like scenarios", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -410,10 +414,10 @@ describe("Window Functions - SQLite Integration", () => {
   describe("Complex Ordering", () => {
     it("should handle multiple ORDER BY columns in window function", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -441,10 +445,10 @@ describe("Window Functions - SQLite Integration", () => {
   describe("Filtering on Window Function Results", () => {
     it("should filter on ROW_NUMBER to get top 1 per department", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -473,10 +477,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should filter on ROW_NUMBER to get top 3 per department", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -505,10 +509,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should filter on RANK to get all rank 1 employees", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -535,10 +539,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should combine window filter with regular WHERE conditions", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -567,10 +571,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should handle spread operator with window functions", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -600,10 +604,10 @@ describe("Window Functions - SQLite Integration", () => {
   describe("Recursive Nesting - Multiple Window Filters", () => {
     it("should handle double nesting: top-3 per department, then top-1 overall", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -640,10 +644,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should handle triple nesting: salary -> performance -> name", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -687,10 +691,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should handle nested filters with different window functions", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -728,10 +732,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should handle nested filters with spread operator preserving all columns", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               ...u,
@@ -769,10 +773,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should handle mixed regular WHERE and nested window filters", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .where((u) => u.is_active === 1) // Regular filter
             .select((u) => ({
@@ -810,10 +814,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should handle quadruple nesting (extreme case)", () => {
       const result = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               name: u.name,
@@ -864,10 +868,10 @@ describe("Window Functions - SQLite Integration", () => {
 
     it("should handle COUNT after window filter", () => {
       const count = executeSelect(
-        db,
-        dbContext,
-        (ctx, _, h) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _, h) =>
+          q
             .from("users")
             .select((u) => ({
               id: u.id,

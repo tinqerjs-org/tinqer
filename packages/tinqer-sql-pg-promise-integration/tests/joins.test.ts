@@ -6,12 +6,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { db as dbClient } from "./shared-db.js";
+import { schema } from "./database-schema.js";
 
 describe("PostgreSQL Integration - JOINs", () => {
   before(async () => {
-    await setupTestDatabase(db);
+    await setupTestDatabase(dbClient);
   });
 
   describe("INNER JOIN", () => {
@@ -19,13 +19,13 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
@@ -67,13 +67,13 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("orders")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -113,13 +113,13 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("orders")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -158,13 +158,13 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("orders")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (o) => o.user_id,
               (u) => u.id,
               (o, u) => ({ o, u }),
@@ -207,19 +207,19 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("order_items")
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (oi) => oi.order_id,
               (o) => o.id,
               (oi, o) => ({ oi, o }),
             )
             .join(
-              ctx.from("products"),
+              q.from("products"),
               (joined) => joined.oi.product_id,
               (p) => p.id,
               (joined, p) => ({ ...joined, p }),
@@ -265,19 +265,19 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
             )
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (joined) => joined.u.id,
               (o) => o.user_id,
               (joined, o) => ({ ...joined, o }),
@@ -321,13 +321,13 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (e) => e.manager_id,
               (m) => m.id,
               (e, m) => ({ employee: e, manager: m }),
@@ -379,13 +379,13 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("users"),
+              q.from("users"),
               (e) => e.manager_id,
               (m) => m.id,
               (e, m) => ({ employee: e, manager: m }),
@@ -432,13 +432,13 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .join(
-              ctx.from("orders"),
+              q.from("orders"),
               (u) => u.id,
               (o) => o.user_id,
               (u, o) => ({ u, o }),
@@ -482,13 +482,13 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("users")
             .groupJoin(
-              ctx.from("departments"),
+              q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, deptGroup) => ({ user: u, deptGroup }),
@@ -521,13 +521,13 @@ describe("PostgreSQL Integration - JOINs", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
-        db,
-        dbContext,
-        (ctx) =>
-          ctx
+        dbClient,
+        schema,
+        (q) =>
+          q
             .from("departments")
             .selectMany(
-              () => ctx.from("users"),
+              () => q.from("users"),
               (department, user) => ({ department, user }),
             )
             .select((row) => ({

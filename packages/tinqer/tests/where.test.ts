@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { parseQuery } from "../dist/index.js";
-import type { QueryDSL } from "../dist/index.js";
+import type { QueryBuilder } from "../dist/index.js";
 import { type TestSchema } from "./test-schema.js";
 import { expr } from "./test-utils/expr-helpers.js";
 import { asWhereOperation, getOperation } from "./test-utils/operation-helpers.js";
@@ -21,7 +21,7 @@ import type { ParamRef } from "../dist/query-tree/operations.js";
 describe("WHERE Operation", () => {
   describe("Comparison Operators", () => {
     it("should parse equality comparison (==)", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((x) => x.id == 1);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.id == 1);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("where");
@@ -31,7 +31,7 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse inequality comparison (!=)", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((x) => x.age != 30);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.age != 30);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -40,7 +40,7 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse greater than comparison (>)", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((x) => x.age > 18);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.age > 18);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -49,7 +49,7 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse greater than or equal comparison (>=)", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((x) => x.age >= 21);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.age >= 21);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -58,7 +58,7 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse less than comparison (<)", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((x) => x.age < 65);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.age < 65);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -67,7 +67,7 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse less than or equal comparison (<=)", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((x) => x.age <= 100);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.age <= 100);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -78,8 +78,8 @@ describe("WHERE Operation", () => {
 
   describe("Logical Operators", () => {
     it("should parse AND logical expression (&&)", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
-        ctx.from("users").where((x) => x.age >= 18 && x.isActive);
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((x) => x.age >= 18 && x.isActive);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -93,8 +93,8 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse OR logical expression (||)", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
-        ctx.from("users").where((x) => x.role == "admin" || x.isAdmin);
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((x) => x.role == "admin" || x.isAdmin);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -108,7 +108,7 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse NOT expression (!)", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((x) => !x.isActive);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => !x.isActive);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -116,8 +116,8 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse complex nested logical expressions", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
-        ctx.from("users").where((x) => (x.age >= 18 && x.isActive) || x.role == "admin");
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((x) => (x.age >= 18 && x.isActive) || x.role == "admin");
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -136,7 +136,7 @@ describe("WHERE Operation", () => {
 
   describe("Data Type Comparisons", () => {
     it("should parse string comparison", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((x) => x.name == "John");
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.name == "John");
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -150,8 +150,8 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse boolean literal comparison", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
-        ctx.from("users").where((x) => x.isActive == true);
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((x) => x.isActive == true);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -164,7 +164,7 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse null comparison", () => {
-      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").where((x) => x.email == null);
+      const query = (q: QueryBuilder<TestSchema>) => q.from("users").where((x) => x.email == null);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -180,8 +180,8 @@ describe("WHERE Operation", () => {
 
   describe("Multiple WHERE Clauses", () => {
     it("should parse multiple where clauses", () => {
-      const query = (ctx: QueryDSL<TestSchema>) =>
-        ctx
+      const query = (q: QueryBuilder<TestSchema>) =>
+        q
           .from("users")
           .where((x) => x.age >= 18)
           .where((x) => x.isActive);
@@ -202,8 +202,8 @@ describe("WHERE Operation", () => {
 
   describe("External Parameters", () => {
     it("should parse where with external parameters", () => {
-      const query = (ctx: QueryDSL<TestSchema>, p: { minAge: number }) =>
-        ctx.from("users").where((x) => x.age >= p.minAge);
+      const query = (q: QueryBuilder<TestSchema>, p: { minAge: number }) =>
+        q.from("users").where((x) => x.age >= p.minAge);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));
@@ -215,8 +215,8 @@ describe("WHERE Operation", () => {
     });
 
     it("should parse where with multiple external parameters", () => {
-      const query = (ctx: QueryDSL<TestSchema>, p: { minAge: number; maxAge: number }) =>
-        ctx.from("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge);
+      const query = (q: QueryBuilder<TestSchema>, p: { minAge: number; maxAge: number }) =>
+        q.from("users").where((x) => x.age >= p.minAge && x.age <= p.maxAge);
       const result = parseQuery(query);
 
       const whereOp = asWhereOperation(getOperation(result));

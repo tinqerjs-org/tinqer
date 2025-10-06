@@ -19,7 +19,7 @@ npm install @webpods/tinqer-sql-better-sqlite3
 ### PostgreSQL Example
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
@@ -34,10 +34,10 @@ interface Schema {
 
 const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
-const results = await executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
-  ctx
+const results = await executeSelectSimple(db, schema, (q, _params, _helpers) =>
+  q
     .from("users")
     .where((u) => u.age >= 18)
     .orderBy((u) => u.name)
@@ -50,7 +50,7 @@ const results = await executeSelectSimple(db, dbContext, (ctx, _params, _helpers
 
 ```typescript
 import Database from "better-sqlite3";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
@@ -63,13 +63,13 @@ interface Schema {
 }
 
 const db = new Database("./data.db");
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const results = executeSelect(
   db,
-  dbContext,
-  (ctx, params, _helpers) =>
-    ctx
+  schema,
+  (q, params, _helpers) =>
+    q
       .from("products")
       .where((p) => p.inStock === 1 && p.price < params.maxPrice)
       .orderByDescending((p) => p.price)
@@ -79,8 +79,8 @@ const results = executeSelect(
 
 // Need the raw SQL for logging or prepared statements? selectStatement is still available:
 const { sql, params } = selectStatement(
-  dbContext,
-  (ctx) => ctx.from("products").select((p) => p.name),
+  schema,
+  (q) => q.from("products").select((p) => p.name),
   {},
 );
 ```
@@ -90,11 +90,11 @@ const { sql, params } = selectStatement(
 ### Type-Safe Query Building
 
 ```typescript
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 // Full TypeScript type inference
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("users")
     .where((u) => u.age >= 18 && u.email.includes("@company.com"))
     .orderBy((u) => u.name)
@@ -116,13 +116,13 @@ interface Schema {
   departments: { id: number; name: string };
 }
 
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("users")
     .join(
-      ctx.from("departments"),
+      q.from("departments"),
       (user) => user.deptId,
       (department) => department.id,
       (user, department) => ({
@@ -136,11 +136,11 @@ const query = (ctx, _params, _helpers) =>
 #### Left Outer Join
 
 ```typescript
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("users")
     .groupJoin(
-      ctx.from("departments"),
+      q.from("departments"),
       (user) => user.deptId,
       (department) => department.id,
       (user, deptGroup) => ({ user, deptGroup }),
@@ -161,11 +161,11 @@ const query = (ctx, _params, _helpers) =>
 #### Cross Join
 
 ```typescript
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("departments")
     .selectMany(
-      () => ctx.from("users"),
+      () => q.from("users"),
       (department, user) => ({ department, user }),
     )
     .select((row) => ({
@@ -179,8 +179,8 @@ Right and full outer joins still require manual SQL, just as in LINQ-to-Objects.
 ### Grouping and Aggregation
 
 ```typescript
-const query = (ctx, _params, _helpers) =>
-  ctx
+const query = (q, _params, _helpers) =>
+  q
     .from("orders")
     .groupBy((o) => o.product_id)
     .select((g) => ({
@@ -200,9 +200,9 @@ Window functions enable calculations across rows related to the current row. Tin
 // Get top earner per department (automatically wrapped in subquery)
 const topEarners = await executeSelect(
   db,
-  dbContext,
-  (ctx, _params, h) =>
-    ctx
+  schema,
+  (q, _params, h) =>
+    q
       .from("employees")
       .select((e) => ({
         ...e,
@@ -231,17 +231,17 @@ See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed 
 ### CRUD Operations
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 // INSERT
 const insertedRows = await executeInsert(
   db,
-  dbContext,
-  (ctx, _params) =>
-    ctx.insertInto("users").values({
+  schema,
+  (q, _params) =>
+    q.insertInto("users").values({
       name: "Alice",
       email: "alice@example.com",
     }),
@@ -251,9 +251,9 @@ const insertedRows = await executeInsert(
 // UPDATE with RETURNING
 const inactiveUsers = await executeUpdate(
   db,
-  dbContext,
-  (ctx, params) =>
-    ctx
+  schema,
+  (q, params) =>
+    q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoffDate)
@@ -264,8 +264,8 @@ const inactiveUsers = await executeUpdate(
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  dbContext,
-  (ctx, _params) => ctx.deleteFrom("users").where((u) => u.status === "deleted"),
+  schema,
+  (q, _params) => q.deleteFrom("users").where((u) => u.status === "deleted"),
   {},
 );
 
@@ -278,12 +278,12 @@ All literal values are automatically parameterized to prevent SQL injection:
 
 ```typescript
 // External parameters via params object
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 const sample = selectStatement(
-  dbContext,
-  (ctx, p) =>
-    ctx
+  schema,
+  (q, p) =>
+    q
       .from("users")
       .where((u) => u.age >= p.minAge)
       .select((u) => u),
@@ -294,9 +294,9 @@ const sample = selectStatement(
 
 // Literals auto-parameterized automatically
 const literals = selectStatement(
-  dbContext,
-  (ctx) =>
-    ctx
+  schema,
+  (q) =>
+    q
       .from("users")
       .where((u) => u.age >= 18)
       .select((u) => u),
@@ -308,12 +308,12 @@ const literals = selectStatement(
 ### Case-Insensitive String Operations
 
 ```typescript
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
-const dbContext = createContext<Schema>();
+const schema = createSchema<Schema>();
 
-const query = (ctx, _params, helpers) =>
-  ctx
+const query = (q, _params, helpers) =>
+  q
     .from("users")
     .where((u) => helpers.contains(u.name, "alice")) // Case-insensitive substring match
     .select((u) => u);

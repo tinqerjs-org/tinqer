@@ -4,12 +4,12 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
 // Use isolated in-memory database for INSERT tests
-const db: Database.Database = new Database(":memory:");
+const dbClient: Database.Database = new Database(":memory:");
 
 // Define types for test tables
 // Note: SQLite doesn't have a boolean type, it uses INTEGER (0/1)
@@ -44,20 +44,20 @@ interface TestSchema {
   };
 }
 
-const dbContext = createContext<TestSchema>();
+const schema = createSchema<TestSchema>();
 
 describe("INSERT Operations - SQLite Integration", () => {
   before(() => {
     // Enable foreign key constraints in SQLite
-    db.exec("PRAGMA foreign_keys = ON");
+    dbClient.exec("PRAGMA foreign_keys = ON");
 
     // Drop existing tables to ensure fresh schema
-    db.exec("DROP TABLE IF EXISTS orders");
-    db.exec("DROP TABLE IF EXISTS products");
-    db.exec("DROP TABLE IF EXISTS customers");
+    dbClient.exec("DROP TABLE IF EXISTS orders");
+    dbClient.exec("DROP TABLE IF EXISTS products");
+    dbClient.exec("DROP TABLE IF EXISTS customers");
 
     // Create test tables for INSERT operations
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -70,7 +70,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       )
     `);
 
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         customer_id INTEGER NOT NULL,
@@ -83,7 +83,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       )
     `);
 
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE customers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
@@ -97,29 +97,29 @@ describe("INSERT Operations - SQLite Integration", () => {
 
   after(() => {
     // Drop test tables
-    db.exec("DROP TABLE IF EXISTS orders");
-    db.exec("DROP TABLE IF EXISTS products");
-    db.exec("DROP TABLE IF EXISTS customers");
+    dbClient.exec("DROP TABLE IF EXISTS orders");
+    dbClient.exec("DROP TABLE IF EXISTS products");
+    dbClient.exec("DROP TABLE IF EXISTS customers");
     // Close isolated database
-    db.close();
+    dbClient.close();
   });
 
   beforeEach(() => {
     // Clear tables before each test
-    db.exec("DELETE FROM orders");
-    db.exec("DELETE FROM products");
-    db.exec("DELETE FROM customers");
+    dbClient.exec("DELETE FROM orders");
+    dbClient.exec("DELETE FROM products");
+    dbClient.exec("DELETE FROM customers");
     // Reset auto-increment counters
-    db.exec("DELETE FROM sqlite_sequence WHERE name IN ('orders', 'products', 'customers')");
+    dbClient.exec("DELETE FROM sqlite_sequence WHERE name IN ('orders', 'products', 'customers')");
   });
 
   describe("Basic INSERT operations", () => {
     it("should insert a single row with all columns", () => {
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Laptop",
             price: 999.99,
             category: "Electronics",
@@ -132,7 +132,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       assert.equal(rowCount, 1);
 
       // Verify the insert
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE name = ?")
         .get("Laptop") as TestSchema["products"];
       assert.equal(product.name, "Laptop");
@@ -144,10 +144,10 @@ describe("INSERT Operations - SQLite Integration", () => {
 
     it("should insert with partial columns (nullable columns)", () => {
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Basic Item",
             price: 10.0,
           }),
@@ -156,7 +156,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE name = ?")
         .get("Basic Item") as TestSchema["products"];
       assert.equal(product.name, "Basic Item");
@@ -173,10 +173,10 @@ describe("INSERT Operations - SQLite Integration", () => {
       };
 
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, p: typeof params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, p: typeof params) =>
+          q.insertInto("products").values({
             name: p.productName,
             price: p.productPrice,
             category: p.productCategory,
@@ -187,7 +187,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE name = ?")
         .get("Tablet") as TestSchema["products"];
       assert.equal(product.name, "Tablet");
@@ -196,10 +196,10 @@ describe("INSERT Operations - SQLite Integration", () => {
 
     it("should handle boolean values correctly", () => {
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Out of Stock Item",
             price: 50.0,
             in_stock: 0, // SQLite uses 0/1 for boolean values
@@ -209,7 +209,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE name = ?")
         .get("Out of Stock Item") as TestSchema["products"];
       assert.equal(product.in_stock, 0); // false = 0 in SQLite
@@ -217,10 +217,10 @@ describe("INSERT Operations - SQLite Integration", () => {
 
     it("should handle NULL values explicitly", () => {
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Minimal Product",
             price: 25.0,
             category: null,
@@ -231,7 +231,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE name = ?")
         .get("Minimal Product") as TestSchema["products"];
       assert.equal(product.category, null);
@@ -242,10 +242,10 @@ describe("INSERT Operations - SQLite Integration", () => {
   describe("Complex INSERT scenarios", () => {
     it("should handle special characters in strings", () => {
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
             price: 100.0,
             description: "Description with\nnewlines\tand\ttabs",
@@ -255,7 +255,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE price = ?")
         .get(100.0) as TestSchema["products"];
       assert(product.name.includes("'quotes'"));
@@ -266,10 +266,10 @@ describe("INSERT Operations - SQLite Integration", () => {
 
     it("should handle Unicode characters", () => {
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
             price: 88.88,
             category: "Special ñ категория",
@@ -279,7 +279,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE price = ?")
         .get(88.88) as TestSchema["products"];
       assert(product.name.includes("🚀"));
@@ -289,10 +289,10 @@ describe("INSERT Operations - SQLite Integration", () => {
 
     it("should handle numeric edge cases", () => {
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Edge Case Product",
             price: 0.01, // Very small
           }),
@@ -301,7 +301,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE name = ?")
         .get("Edge Case Product") as TestSchema["products"];
       assert.equal(product.price, 0.01);
@@ -311,10 +311,10 @@ describe("INSERT Operations - SQLite Integration", () => {
       const testDate = new Date("2024-01-15T10:30:00Z").toISOString();
 
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx.insertInto("orders").values({
+        dbClient,
+        schema,
+        (q, params) =>
+          q.insertInto("orders").values({
             customer_id: 1,
             product_id: 1,
             quantity: 2,
@@ -328,7 +328,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const order = db
+      const order = dbClient
         .prepare("SELECT * FROM orders WHERE customer_id = ?")
         .get(1) as TestSchema["orders"];
       assert.equal(order.status, "completed");
@@ -347,10 +347,10 @@ describe("INSERT Operations - SQLite Integration", () => {
       };
 
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, params) =>
+          q.insertInto("products").values({
             name: "Product with Metadata",
             price: 199.99,
             metadata: params.metadataJson,
@@ -360,7 +360,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE name = ?")
         .get("Product with Metadata") as TestSchema["products"];
       const parsedMetadata = JSON.parse(product.metadata!);
@@ -372,10 +372,10 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle unique constraint violations gracefully", () => {
       // First insert
       executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("customers").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("customers").values({
             email: "test@example.com",
             name: "Test User",
             age: 30,
@@ -386,10 +386,10 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Second insert with same email should fail
       try {
         executeInsert(
-          db,
-          dbContext,
-          (ctx, _params) =>
-            ctx.insertInto("customers").values({
+          dbClient,
+          schema,
+          (q, _params) =>
+            q.insertInto("customers").values({
               email: "test@example.com",
               name: "Another User",
               age: 25,
@@ -407,10 +407,10 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle multiple inserts in sequence", () => {
       // Insert customer
       const customerCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("customers").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("customers").values({
             email: "john@example.com",
             name: "John Doe",
             age: 35,
@@ -421,17 +421,17 @@ describe("INSERT Operations - SQLite Integration", () => {
       assert.equal(customerCount, 1);
 
       // Get the inserted customer ID
-      const customer = db
+      const customer = dbClient
         .prepare("SELECT id FROM customers WHERE email = ?")
         .get("john@example.com") as TestSchema["customers"];
       const customerId: number = customer.id!;
 
       // Insert product
       const productCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Test Product",
             price: 49.99,
             category: "Test",
@@ -442,17 +442,17 @@ describe("INSERT Operations - SQLite Integration", () => {
       assert.equal(productCount, 1);
 
       // Get the inserted product ID
-      const product = db
+      const product = dbClient
         .prepare("SELECT id FROM products WHERE name = ?")
         .get("Test Product") as TestSchema["products"];
       const productId: number = product.id!;
 
       // Insert order referencing both
       const orderCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx.insertInto("orders").values({
+        dbClient,
+        schema,
+        (q, params) =>
+          q.insertInto("orders").values({
             customer_id: params.customerId,
             product_id: params.productId,
             quantity: 3,
@@ -465,7 +465,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       assert.equal(orderCount, 1);
 
       // Verify all inserts
-      const order = db
+      const order = dbClient
         .prepare("SELECT * FROM orders WHERE customer_id = ? AND product_id = ?")
         .get(customerId, productId) as TestSchema["orders"];
       assert.equal(order.quantity, 3);
@@ -478,10 +478,10 @@ describe("INSERT Operations - SQLite Integration", () => {
       // Insert multiple products
       for (let i = 1; i <= 3; i++) {
         executeInsert(
-          db,
-          dbContext,
-          (ctx, params) =>
-            ctx.insertInto("products").values({
+          dbClient,
+          schema,
+          (q, params) =>
+            q.insertInto("products").values({
               name: params.name,
               price: params.price,
             }),
@@ -489,7 +489,7 @@ describe("INSERT Operations - SQLite Integration", () => {
         );
       }
 
-      const products = db.prepare("SELECT id, name FROM products ORDER BY id").all() as {
+      const products = dbClient.prepare("SELECT id, name FROM products ORDER BY id").all() as {
         id: number;
       }[];
       assert.equal(products.length, 3);
@@ -502,10 +502,10 @@ describe("INSERT Operations - SQLite Integration", () => {
     it("should handle SQLite's flexible typing", () => {
       // SQLite allows flexible types
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("products").values({
             name: "Flexible Type Product",
             price: "99.99" as unknown as number, // String that can be coerced to number
             category: 123 as unknown as string, // Number in text field
@@ -515,7 +515,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM products WHERE name = ?")
         .get("Flexible Type Product") as TestSchema["products"];
       // SQLite will store these as provided
@@ -525,10 +525,10 @@ describe("INSERT Operations - SQLite Integration", () => {
 
     it("should handle CURRENT_TIMESTAMP default", () => {
       const rowCount = executeInsert(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("customers").values({
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.insertInto("customers").values({
             email: "timestamp@test.com",
             name: "Timestamp Test",
           }),
@@ -537,7 +537,7 @@ describe("INSERT Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const customer = db
+      const customer = dbClient
         .prepare("SELECT * FROM customers WHERE email = ?")
         .get("timestamp@test.com") as TestSchema["customers"];
       assert(customer.created_at); // Should have a timestamp

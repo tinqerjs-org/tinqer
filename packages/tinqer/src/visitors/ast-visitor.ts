@@ -22,7 +22,7 @@ export function visitAstToQueryOperation(
     ast,
     visitorContext?.autoParamCounter,
     visitorContext?.autoParams,
-    visitorContext?.dslParam, // Pass the existing DSL param
+    visitorContext?.queryBuilderParam, // Pass the existing DSL param
   );
 
   if (!result || !result.operation) {

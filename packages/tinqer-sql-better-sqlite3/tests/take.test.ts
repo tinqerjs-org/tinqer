@@ -1,18 +1,18 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("Take SQL Generation", () => {
   it("should generate LIMIT clause", () => {
-    const result = selectStatement(db, (ctx) => ctx.from("users").take(10), {});
+    const result = selectStatement(schema, (q) => q.from("users").take(10), {});
 
     expect(result.sql).to.equal('SELECT * FROM "users" LIMIT @__p1');
     expect(result.params).to.deep.equal({ __p1: 10 });
   });
 
   it("should handle take(1)", () => {
-    const result = selectStatement(db, (ctx) => ctx.from("users").take(1), {});
+    const result = selectStatement(schema, (q) => q.from("users").take(1), {});
 
     expect(result.sql).to.equal('SELECT * FROM "users" LIMIT @__p1');
     expect(result.params).to.deep.equal({ __p1: 1 });
@@ -20,9 +20,9 @@ describe("Take SQL Generation", () => {
 
   it("should combine take with where", () => {
     const result = selectStatement(
-      db,
-      (ctx) =>
-        ctx
+      schema,
+      (q) =>
+        q
           .from("users")
           .where((u) => u.age > 18)
           .take(5),
@@ -35,9 +35,9 @@ describe("Take SQL Generation", () => {
 
   it("should combine take with orderBy", () => {
     const result = selectStatement(
-      db,
-      (ctx) =>
-        ctx
+      schema,
+      (q) =>
+        q
           .from("users")
           .orderBy((u) => u.name)
           .take(3),

@@ -5,7 +5,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 
 type User = {
   id: number;
@@ -20,14 +20,14 @@ interface Schema {
   users: User;
 }
 
-const db = createContext<Schema>();
+const schema = createSchema<Schema>();
 
 describe("Case-Insensitive Functions - SQL Generation", () => {
   describe("iequals function", () => {
     it("should generate LOWER() = LOWER() for iequals", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) => ctx.from("users").where((u) => _.functions.iequals(u.name, "John")),
+        schema,
+        (q, _params, _) => q.from("users").where((u) => _.functions.iequals(u.name, "John")),
         { users: [] },
       );
 
@@ -37,8 +37,8 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should handle column-to-column comparison", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) => ctx.from("users").where((u) => _.functions.iequals(u.name, u.email)),
+        schema,
+        (q, _params, _) => q.from("users").where((u) => _.functions.iequals(u.name, u.email)),
         { users: [] },
       );
 
@@ -48,9 +48,9 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should handle query parameters", () => {
       const result = selectStatement(
-        db,
-        (ctx, params, _) =>
-          ctx.from("users").where((u) => _.functions.iequals(u.name, params.searchName)),
+        schema,
+        (q, params, _) =>
+          q.from("users").where((u) => _.functions.iequals(u.name, params.searchName)),
         { users: [], searchName: "Alice" },
       );
 
@@ -64,8 +64,8 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
   describe("istartsWith function", () => {
     it("should generate LOWER() LIKE LOWER() || '%' for istartsWith", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) => ctx.from("users").where((u) => _.functions.istartsWith(u.name, "J")),
+        schema,
+        (q, _params, _) => q.from("users").where((u) => _.functions.istartsWith(u.name, "J")),
         { users: [] },
       );
 
@@ -77,9 +77,8 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should handle complex prefix values", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) =>
-          ctx.from("users").where((u) => _.functions.istartsWith(u.email, "admin@")),
+        schema,
+        (q, _params, _) => q.from("users").where((u) => _.functions.istartsWith(u.email, "admin@")),
         { users: [] },
       );
 
@@ -93,8 +92,8 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
   describe("iendsWith function", () => {
     it("should generate LOWER() LIKE '%' || LOWER() for iendsWith", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) => ctx.from("users").where((u) => _.functions.iendsWith(u.email, ".com")),
+        schema,
+        (q, _params, _) => q.from("users").where((u) => _.functions.iendsWith(u.email, ".com")),
         { users: [] },
       );
 
@@ -108,9 +107,8 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
   describe("icontains function", () => {
     it("should generate LOWER() LIKE '%' || LOWER() || '%' for icontains", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) =>
-          ctx.from("users").where((u) => _.functions.icontains(u.bio!, "developer")),
+        schema,
+        (q, _params, _) => q.from("users").where((u) => _.functions.icontains(u.bio!, "developer")),
         { users: [] },
       );
 
@@ -122,9 +120,8 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should handle null-safe navigation", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) =>
-          ctx.from("users").where((u) => _.functions.icontains(u.bio!, "engineer")),
+        schema,
+        (q, _params, _) => q.from("users").where((u) => _.functions.icontains(u.bio!, "engineer")),
         { users: [] },
       );
 
@@ -138,9 +135,9 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
   describe("Complex queries with case-insensitive functions", () => {
     it("should handle AND conditions", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) =>
-          ctx.from("users").where((u) => _.functions.iequals(u.name, "John") && u.age > 18),
+        schema,
+        (q, _params, _) =>
+          q.from("users").where((u) => _.functions.iequals(u.name, "John") && u.age > 18),
         { users: [] },
       );
 
@@ -152,9 +149,9 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should handle OR conditions", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) =>
-          ctx
+        schema,
+        (q, _params, _) =>
+          q
             .from("users")
             .where(
               (u) => _.functions.istartsWith(u.name, "A") || _.functions.istartsWith(u.name, "B"),
@@ -170,9 +167,9 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should handle mixed case-sensitive and case-insensitive operations", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) =>
-          ctx
+        schema,
+        (q, _params, _) =>
+          q
             .from("users")
             .where((u) => _.functions.icontains(u.email, "admin") && u.email.endsWith(".com")),
         { users: [] },
@@ -186,9 +183,9 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should work with select projection", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) =>
-          ctx
+        schema,
+        (q, _params, _) =>
+          q
             .from("users")
             .where((u) => _.functions.iequals(u.role!, "ADMIN"))
             .select((u) => ({
@@ -207,9 +204,9 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should work with orderBy", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) =>
-          ctx
+        schema,
+        (q, _params, _) =>
+          q
             .from("users")
             .where((u) => _.functions.icontains(u.bio!, "software"))
             .orderBy((u) => u.name),
@@ -226,8 +223,8 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
   describe("NOT operator with case-insensitive functions", () => {
     it("should handle NOT with iequals", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) => ctx.from("users").where((u) => !_.functions.iequals(u.role!, "admin")),
+        schema,
+        (q, _params, _) => q.from("users").where((u) => !_.functions.iequals(u.role!, "admin")),
         { users: [] },
       );
 
@@ -239,9 +236,9 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should handle complex NOT conditions", () => {
       const result = selectStatement(
-        db,
-        (ctx, _params, _) =>
-          ctx
+        schema,
+        (q, _params, _) =>
+          q
             .from("users")
             .where(
               (u) =>

@@ -6,12 +6,12 @@ import { describe, it, before } from "mocha";
 import { expect } from "chai";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
-import { dbContext } from "./database-schema.js";
+import { dbClient } from "./shared-db.js";
+import { schema } from "./database-schema.js";
 
 describe("Better SQLite3 Integration - Basic Queries", () => {
   before(() => {
-    setupTestDatabase(db);
+    setupTestDatabase(dbClient);
   });
 
   describe("SELECT queries", () => {
@@ -19,9 +19,9 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) => ctx.from("users"),
+        dbClient,
+        schema,
+        (q, _params, _helpers) => q.from("users"),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -44,10 +44,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx.from("users").select((u) => ({
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q.from("users").select((u) => ({
             id: u.id,
             name: u.name,
           })),
@@ -73,10 +73,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx.from("users").select((u) => ({
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q.from("users").select((u) => ({
             userId: u.id,
             fullName: u.name,
             userEmail: u.email,
@@ -105,9 +105,9 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) => ctx.from("users").where((u) => u.age !== null && u.age >= 30),
+        dbClient,
+        schema,
+        (q, _params, _helpers) => q.from("users").where((u) => u.age !== null && u.age >= 30),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -134,10 +134,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx.from("users").where((u) => u.age !== null && u.age >= 25 && u.is_active === 1),
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q.from("users").where((u) => u.age !== null && u.age >= 25 && u.is_active === 1),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -163,10 +163,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx.from("users").where((u) => (u.age !== null && u.age < 30) || u.department_id === 4),
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q.from("users").where((u) => (u.age !== null && u.age < 30) || u.department_id === 4),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -191,10 +191,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelect(
-        db,
-        dbContext,
-        (ctx, params, _helpers) =>
-          ctx.from("users").where((u) => u.age !== null && u.age >= params.minAge),
+        dbClient,
+        schema,
+        (q, params, _helpers) =>
+          q.from("users").where((u) => u.age !== null && u.age >= params.minAge),
         { minAge: 35 },
         {
           onSql: (result) => {
@@ -222,9 +222,9 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) => ctx.from("users").orderBy((u) => u.name),
+        dbClient,
+        schema,
+        (q, _params, _helpers) => q.from("users").orderBy((u) => u.name),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -247,10 +247,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q
             .from("users")
             .where((u) => u.age !== null)
             .orderByDescending((u) => u.age!),
@@ -278,10 +278,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q
             .from("users")
             .where((u) => u.age !== null && u.department_id !== null)
             .orderBy((u) => u.department_id!)
@@ -318,9 +318,9 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) => ctx.from("users").orderBy((u) => u.is_active),
+        dbClient,
+        schema,
+        (q, _params, _helpers) => q.from("users").orderBy((u) => u.is_active),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -351,9 +351,9 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) => ctx.from("users").orderByDescending((u) => u.is_active),
+        dbClient,
+        schema,
+        (q, _params, _helpers) => q.from("users").orderByDescending((u) => u.is_active),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -384,10 +384,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q
             .from("users")
             .orderBy((u) => u.is_active)
             .thenBy((u) => u.name),
@@ -431,9 +431,9 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) => ctx.from("users").take(5),
+        dbClient,
+        schema,
+        (q, _params, _helpers) => q.from("users").take(5),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -449,17 +449,17 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
     });
 
     it("should skip results", () => {
-      const allResults = executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
-        ctx.from("users").orderBy((u) => u.id),
+      const allResults = executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+        q.from("users").orderBy((u) => u.id),
       );
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const skippedResults = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q
             .from("users")
             .orderBy((u) => u.id)
             .skip(3),
@@ -480,8 +480,8 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
     });
 
     it("should paginate results", () => {
-      const page1 = executeSelectSimple(db, dbContext, (ctx, _params, _helpers) =>
-        ctx
+      const page1 = executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+        q
           .from("users")
           .orderBy((u) => u.id)
           .take(3),
@@ -490,10 +490,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const page2 = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q
             .from("users")
             .orderBy((u) => u.id)
             .skip(3)
@@ -522,10 +522,10 @@ describe("Better SQLite3 Integration - Basic Queries", () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = executeSelectSimple(
-        db,
-        dbContext,
-        (ctx, _params, _helpers) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params, _helpers) =>
+          q
             .from("users")
             .select((u) => ({ department_id: u.department_id }))
             .distinct(),

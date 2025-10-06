@@ -4,12 +4,12 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeUpdate } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
 // Use isolated in-memory database for UPDATE tests
-const db: Database.Database = new Database(":memory:");
+const dbClient: Database.Database = new Database(":memory:");
 
 // Define types for test tables
 // Note: SQLite doesn't have a boolean type, it uses INTEGER (0/1)
@@ -51,20 +51,20 @@ interface TestSchema {
   };
 }
 
-const dbContext = createContext<TestSchema>();
+const schema = createSchema<TestSchema>();
 
 describe("UPDATE Operations - SQLite Integration", () => {
   before(() => {
     // Enable foreign key constraints in SQLite
-    db.exec("PRAGMA foreign_keys = ON");
+    dbClient.exec("PRAGMA foreign_keys = ON");
 
     // Drop existing tables to ensure fresh schema
-    db.exec("DROP TABLE IF EXISTS product_reviews");
-    db.exec("DROP TABLE IF EXISTS user_profiles");
-    db.exec("DROP TABLE IF EXISTS inventory");
+    dbClient.exec("DROP TABLE IF EXISTS product_reviews");
+    dbClient.exec("DROP TABLE IF EXISTS user_profiles");
+    dbClient.exec("DROP TABLE IF EXISTS inventory");
 
     // Create test tables for UPDATE operations
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE inventory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_name TEXT NOT NULL,
@@ -78,7 +78,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       )
     `);
 
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE user_profiles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -94,7 +94,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       )
     `);
 
-    db.exec(`
+    dbClient.exec(`
       CREATE TABLE product_reviews (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER NOT NULL,
@@ -111,25 +111,25 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
   after(() => {
     // Drop test tables
-    db.exec("DROP TABLE IF EXISTS inventory");
-    db.exec("DROP TABLE IF EXISTS user_profiles");
-    db.exec("DROP TABLE IF EXISTS product_reviews");
+    dbClient.exec("DROP TABLE IF EXISTS inventory");
+    dbClient.exec("DROP TABLE IF EXISTS user_profiles");
+    dbClient.exec("DROP TABLE IF EXISTS product_reviews");
     // Close isolated database
-    db.close();
+    dbClient.close();
   });
 
   beforeEach(() => {
     // Clear and seed test data
-    db.exec("DELETE FROM inventory");
-    db.exec("DELETE FROM user_profiles");
-    db.exec("DELETE FROM product_reviews");
+    dbClient.exec("DELETE FROM inventory");
+    dbClient.exec("DELETE FROM user_profiles");
+    dbClient.exec("DELETE FROM product_reviews");
     // Reset auto-increment counters
-    db.exec(
+    dbClient.exec(
       "DELETE FROM sqlite_sequence WHERE name IN ('inventory', 'user_profiles', 'product_reviews')",
     );
 
     // Seed inventory data
-    db.exec(`
+    dbClient.exec(`
       INSERT INTO inventory (product_name, quantity, price, status, warehouse_location)
       VALUES
         ('Laptop', 10, 999.99, 'available', 'Warehouse A'),
@@ -140,7 +140,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     `);
 
     // Seed user profiles
-    db.exec(`
+    dbClient.exec(`
       INSERT INTO user_profiles (username, email, full_name, age, bio, is_verified)
       VALUES
         ('john_doe', 'john@example.com', 'John Doe', 30, 'Software developer', 1),
@@ -150,7 +150,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
     `);
 
     // Seed product reviews
-    db.exec(`
+    dbClient.exec(`
       INSERT INTO product_reviews (product_id, user_id, rating, review_text, is_verified_purchase)
       VALUES
         (1, 1, 5, 'Excellent product!', 1),
@@ -163,10 +163,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
   describe("Basic UPDATE operations", () => {
     it("should update single column with WHERE clause", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ quantity: 20 })
             .where((i) => i.product_name === "Laptop"),
@@ -175,7 +175,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
         .get("Laptop") as TestSchema["inventory"];
       assert.equal(product.quantity, 20);
@@ -183,10 +183,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should update multiple columns", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({
               quantity: 15,
@@ -199,7 +199,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
         .get("Keyboard") as TestSchema["inventory"];
       assert.equal(product.quantity, 15);
@@ -215,10 +215,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
       };
 
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, p: typeof params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, p: typeof params) =>
+          q
             .update("inventory")
             .set({
               quantity: p.newQuantity,
@@ -230,7 +230,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
         .get(params.productName) as TestSchema["inventory"];
       assert.equal(product.quantity, 100);
@@ -239,10 +239,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should update boolean values", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("user_profiles")
             .set({ is_verified: 1 }) // SQLite uses 0/1 for boolean values
             .where((u) => u.username === "jane_smith"),
@@ -251,7 +251,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = db
+      const user = dbClient
         .prepare("SELECT * FROM user_profiles WHERE username = ?")
         .get("jane_smith") as TestSchema["user_profiles"];
       assert.equal(user.is_verified, 1); // true = 1 in SQLite
@@ -259,10 +259,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should update with NULL values", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("user_profiles")
             .set({ bio: null, age: null })
             .where((u) => u.username === "john_doe"),
@@ -271,7 +271,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = db
+      const user = dbClient
         .prepare("SELECT * FROM user_profiles WHERE username = ?")
         .get("john_doe") as TestSchema["user_profiles"];
       assert.equal(user.bio, null);
@@ -282,10 +282,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
   describe("UPDATE with complex WHERE clauses", () => {
     it("should update with AND conditions", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ status: "reorder_needed" })
             .where((i) => i.quantity < 10 && i.status === "low_stock"),
@@ -294,7 +294,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1); // Only Monitor matches
 
-      const monitor = db
+      const monitor = dbClient
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
         .get("Monitor") as TestSchema["inventory"];
       assert.equal(monitor.status, "reorder_needed");
@@ -302,10 +302,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should update with OR conditions", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ warehouse_location: "Warehouse D" })
             .where((i) => i.status === "out_of_stock" || i.quantity < 6),
@@ -314,12 +314,12 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 2); // Keyboard (out_of_stock) and Monitor (quantity = 5)
 
-      const keyboard = db
+      const keyboard = dbClient
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
         .get("Keyboard") as TestSchema["inventory"];
       assert.equal(keyboard.warehouse_location, "Warehouse D");
 
-      const monitor = db
+      const monitor = dbClient
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
         .get("Monitor") as TestSchema["inventory"];
       assert.equal(monitor.warehouse_location, "Warehouse D");
@@ -327,10 +327,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should update with complex nested conditions", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ is_active: 0 }) // SQLite uses 0/1 for boolean values
             .where(
@@ -344,7 +344,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       // Keyboard (quantity=0 && status="out_of_stock") should be updated
       assert.equal(rowCount, 1);
 
-      const keyboard = db
+      const keyboard = dbClient
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
         .get("Keyboard") as TestSchema["inventory"];
       assert.equal(keyboard.is_active, 0); // false = 0 in SQLite
@@ -352,10 +352,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should update with string operations", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ notes: "Premium product" })
             .where((i) => i.product_name.startsWith("L")),
@@ -364,7 +364,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1); // Only Laptop
 
-      const laptop = db
+      const laptop = dbClient
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
         .get("Laptop") as TestSchema["inventory"];
       assert.equal(laptop.notes, "Premium product");
@@ -374,10 +374,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const targetProducts = ["Mouse", "Keyboard", "Headphones"];
 
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, p: { products: string[] }) =>
-          ctx
+        dbClient,
+        schema,
+        (q, p: { products: string[] }) =>
+          q
             .update("inventory")
             .set({ warehouse_location: "Warehouse E" })
             .where((i) => p.products.includes(i.product_name)),
@@ -386,7 +386,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 3);
 
-      const results = db
+      const results = dbClient
         .prepare("SELECT product_name FROM inventory WHERE warehouse_location = ?")
         .all("Warehouse E") as { product_name: string }[];
       assert.equal(results.length, 3);
@@ -398,10 +398,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
   describe("UPDATE multiple rows", () => {
     it("should update all matching rows", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("user_profiles")
             .set({ is_verified: 1 }) // SQLite uses 0/1 for boolean values
             .where((u) => u.is_verified === 0), // SQLite uses 0 for false
@@ -410,7 +410,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 2); // jane_smith and alice_jones
 
-      const unverifiedCount = db
+      const unverifiedCount = dbClient
         .prepare("SELECT COUNT(*) as count FROM user_profiles WHERE is_verified = 0")
         .get() as { count: number };
       assert.equal(unverifiedCount.count, 0);
@@ -418,16 +418,16 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should update with allowFullTableUpdate", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
+        dbClient,
+        schema,
+        (q, _params) =>
+          q.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
         {},
       );
 
       assert.equal(rowCount, 4); // All reviews
 
-      const totalHelpful = db
+      const totalHelpful = dbClient
         .prepare("SELECT SUM(helpful_count) as total FROM product_reviews")
         .get() as { total: number | null };
       assert.equal(totalHelpful.total, 0);
@@ -436,9 +436,9 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should throw error when UPDATE has no WHERE and no allow flag", () => {
       try {
         executeUpdate(
-          db,
-          dbContext,
-          (ctx, _params) => ctx.update("inventory").set({ quantity: 0 }),
+          dbClient,
+          schema,
+          (q, _params) => q.update("inventory").set({ quantity: 0 }),
           {},
         );
         assert.fail("Should have thrown error for missing WHERE clause");
@@ -456,10 +456,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const newDate = new Date("2024-06-01T12:00:00Z").toISOString();
 
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .update("user_profiles")
             .set({ last_login: params.newDate })
             .where((u) => u.username === "bob_wilson"),
@@ -468,7 +468,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = db
+      const user = dbClient
         .prepare("SELECT * FROM user_profiles WHERE username = ?")
         .get("bob_wilson") as TestSchema["user_profiles"];
       // SQLite stores dates as strings
@@ -481,10 +481,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const currentTime = new Date().toISOString();
 
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .update("inventory")
             .set({
               quantity: 50,
@@ -496,7 +496,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM inventory WHERE product_name = ?")
         .get("Headphones") as TestSchema["inventory"];
       // Verify the timestamp was updated (as string in SQLite)
@@ -519,10 +519,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
       };
 
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, params) =>
+          q
             .update("user_profiles")
             .set({ settings: params.settingsJson })
             .where((u) => u.username === "alice_jones"),
@@ -531,7 +531,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = db
+      const user = dbClient
         .prepare("SELECT * FROM user_profiles WHERE username = ?")
         .get("alice_jones") as TestSchema["user_profiles"];
       const parsedSettings = JSON.parse(user.settings!);
@@ -542,10 +542,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
   describe("UPDATE with special characters", () => {
     it("should handle special characters in strings", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({
               notes: "Special chars: 'quotes' \"double\" \n newline \t tab",
@@ -556,7 +556,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM inventory WHERE id = ?")
         .get(1) as TestSchema["inventory"];
       assert(product.notes!.includes("'quotes'"));
@@ -567,10 +567,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should handle Unicode characters", () => {
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("user_profiles")
             .set({
               bio: "Unicode test: 你好 🎉 Здравствуйте émoji",
@@ -581,7 +581,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const user = db
+      const user = dbClient
         .prepare("SELECT * FROM user_profiles WHERE id = ?")
         .get(2) as TestSchema["user_profiles"];
       assert(user.bio!.includes("你好"));
@@ -594,10 +594,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should handle SQLite's type coercion", () => {
       // SQLite allows flexible typing
       const rowCount = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({
               quantity: "50" as unknown as number, // String that will be coerced to number
@@ -609,7 +609,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount, 1);
 
-      const product = db
+      const product = dbClient
         .prepare("SELECT * FROM inventory WHERE id = ?")
         .get(1) as TestSchema["inventory"];
       // SQLite will coerce types based on column affinity
@@ -620,10 +620,10 @@ describe("UPDATE Operations - SQLite Integration", () => {
     it("should handle boolean as 0/1", () => {
       // Test updating with explicit 0/1 and boolean
       const rowCount1 = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ is_active: 0 })
             .where((i) => i.id === 1),
@@ -632,16 +632,16 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount1, 1);
 
-      const product1 = db.prepare("SELECT is_active FROM inventory WHERE id = ?").get(1) as {
+      const product1 = dbClient.prepare("SELECT is_active FROM inventory WHERE id = ?").get(1) as {
         is_active: number;
       };
       assert.equal(product1.is_active, 0);
 
       const rowCount2 = executeUpdate(
-        db,
-        dbContext,
-        (ctx, _params) =>
-          ctx
+        dbClient,
+        schema,
+        (q, _params) =>
+          q
             .update("inventory")
             .set({ is_active: 1 }) // SQLite uses 0/1 for boolean values
             .where((i) => i.id === 1),
@@ -650,7 +650,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
       assert.equal(rowCount2, 1);
 
-      const product2 = db.prepare("SELECT is_active FROM inventory WHERE id = ?").get(1) as {
+      const product2 = dbClient.prepare("SELECT is_active FROM inventory WHERE id = ?").get(1) as {
         is_active: number;
       };
       assert.equal(product2.is_active, 1);

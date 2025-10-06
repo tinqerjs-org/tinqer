@@ -202,7 +202,7 @@ export interface FromOperation extends QueryOperation {
 }
 ```
 
-**User-Facing API**: `(dsl, _params) => dsl.from("users")`
+**User-Facing API**: `(q, _params) => q.from("users")`
 
 **Internal Representation**:
 
@@ -482,8 +482,8 @@ The parser uses OXC to convert lambda expressions into an Abstract Syntax Tree (
 **Input**: Lambda expression with DSL parameter pattern
 
 ```typescript
-(dsl, _params, _helpers) =>
-  dsl
+(q, _params, _helpers) =>
+  q
     .from("employees")
     .select((e) => ({ ...e, rn: window.rowNumber() }))
     .where((r) => r.rn === 1);
@@ -676,7 +676,7 @@ normalizedOperation = normalizeXYZ(normalizedOperation); // New pass
 
 ```typescript
 // Database context provides DSL access
-interface DatabaseContext<TSchema> {
+interface DatabaseSchema<TSchema> {
   dsl: DSL<TSchema>;
   // ... other context properties
 }
@@ -703,9 +703,9 @@ class TerminalQuery<T> {
   private _phantom?: T;
 }
 
-// Query functions receive (dsl, params, helpers)
+// Query functions receive (q, params, helpers)
 type QueryFunction<TParams, TResult> = (
-  dsl: DSL<TSchema>,
+  q: QueryBuilder<TSchema>,
   params: TParams,
   helpers: Helpers,
 ) => Queryable<TResult> | TerminalQuery<TResult>;
@@ -734,7 +734,7 @@ function convertAstToQueryOperation(ast: unknown): QueryOperation;
 ```typescript
 // Main execution functions (in adapters)
 function selectStatement<TParams, TResult>(
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (
     dsl: DSL<TSchema>,
     params: TParams,
@@ -744,7 +744,7 @@ function selectStatement<TParams, TResult>(
 ): Promise<TResult[]>;
 
 function insertStatement<TParams>(
-  dbContext: DatabaseContext<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   queryBuilder: (dsl: DSL<TSchema>, params: TParams, helpers: Helpers) => InsertQuery,
   params: TParams,
 ): Promise<void>;
@@ -763,13 +763,13 @@ function generateSql(operation: QueryOperation, params: unknown): string;
 
 ```typescript
 // Create database context
-const ctx = createContext<Schema>();
+const schema = createSchema<Schema>();
 
-// Execute query with DSL parameter pattern
+// Execute query with parameter pattern
 const result = await selectStatement(
-  ctx,
-  (dsl, p: { minAge: number; dept: string }) =>
-    dsl
+  schema,
+  (q, p: { minAge: number; dept: string }) =>
+    q
       .from("users")
       .where((x) => x.age >= p.minAge && x.department === p.dept)
       .select((x) => ({ id: x.id, name: x.name, age: x.age }))

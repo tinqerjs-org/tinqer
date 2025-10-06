@@ -3,7 +3,7 @@
  */
 
 import { Deletable } from "./deletable.js";
-import type { DatabaseContext } from "./database-context.js";
+import type { DatabaseSchema } from "./database-context.js";
 
 /**
  * Creates a new Deletable from a table name with explicit type
@@ -19,7 +19,7 @@ export function deleteFrom<T>(tableName: string): Deletable<T>;
  * @returns A new Deletable instance with inferred types
  */
 export function deleteFrom<TSchema, K extends keyof TSchema & string>(
-  context: DatabaseContext<TSchema>,
+  context: DatabaseSchema<TSchema>,
   tableName: K,
 ): Deletable<TSchema[K]>;
 
