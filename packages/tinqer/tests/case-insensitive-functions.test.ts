@@ -29,13 +29,13 @@ interface TestSchema {
 
 describe("Case-Insensitive Functions - Parser", () => {
   describe("iequals function", () => {
-    it("should parse _.functions.iequals correctly", () => {
+    it("should parse h.functions.iequals correctly", () => {
       const result = parseQuery(
         (
           q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
-        ) => q.from("users").where((u) => _.functions.iequals(u.name, "John")),
+          h: ReturnType<typeof createQueryHelpers>,
+        ) => q.from("users").where((u) => h.functions.iequals(u.name, "John")),
       );
 
       expect(result).to.not.be.null;
@@ -75,8 +75,8 @@ describe("Case-Insensitive Functions - Parser", () => {
         (
           q: QueryBuilder<TestSchema>,
           _params: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
-        ) => q.from("users").where((u) => _.functions.iequals(u.name, "TestUser")),
+          h: ReturnType<typeof createQueryHelpers>,
+        ) => q.from("users").where((u) => h.functions.iequals(u.name, "TestUser")),
       );
 
       expect(result).to.not.be.null;
@@ -88,13 +88,13 @@ describe("Case-Insensitive Functions - Parser", () => {
   });
 
   describe("istartsWith function", () => {
-    it("should parse _.functions.istartsWith correctly", () => {
+    it("should parse h.functions.istartsWith correctly", () => {
       const result = parseQuery(
         (
           q: QueryBuilder<TestSchema>,
           _params: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
-        ) => q.from("users").where((u) => _.functions.istartsWith(u.name, "J")),
+          h: ReturnType<typeof createQueryHelpers>,
+        ) => q.from("users").where((u) => h.functions.istartsWith(u.name, "J")),
       );
 
       expect(result).to.not.be.null;
@@ -112,8 +112,8 @@ describe("Case-Insensitive Functions - Parser", () => {
         (
           q: QueryBuilder<TestSchema>,
           _params: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
-        ) => q.from("users").where((u) => _.functions.istartsWith(u.email, u.name)),
+          h: ReturnType<typeof createQueryHelpers>,
+        ) => q.from("users").where((u) => h.functions.istartsWith(u.email, u.name)),
       );
 
       expect(result).to.not.be.null;
@@ -127,13 +127,13 @@ describe("Case-Insensitive Functions - Parser", () => {
   });
 
   describe("iendsWith function", () => {
-    it("should parse _.functions.iendsWith correctly", () => {
+    it("should parse h.functions.iendsWith correctly", () => {
       const result = parseQuery(
         (
           q: QueryBuilder<TestSchema>,
           _params: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
-        ) => q.from("users").where((u) => _.functions.iendsWith(u.email, ".com")),
+          h: ReturnType<typeof createQueryHelpers>,
+        ) => q.from("users").where((u) => h.functions.iendsWith(u.email, ".com")),
       );
 
       expect(result).to.not.be.null;
@@ -147,13 +147,13 @@ describe("Case-Insensitive Functions - Parser", () => {
   });
 
   describe("icontains function", () => {
-    it("should parse _.functions.icontains correctly", () => {
+    it("should parse h.functions.icontains correctly", () => {
       const result = parseQuery(
         (
           q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
-        ) => q.from("users").where((u) => _.functions.icontains(u.bio!, "developer")),
+          h: ReturnType<typeof createQueryHelpers>,
+        ) => q.from("users").where((u) => h.functions.icontains(u.bio!, "developer")),
       );
 
       expect(result).to.not.be.null;
@@ -170,8 +170,8 @@ describe("Case-Insensitive Functions - Parser", () => {
         (
           q: QueryBuilder<TestSchema>,
           p: { searchTerm: string },
-          _: ReturnType<typeof createQueryHelpers>,
-        ) => q.from("users").where((u) => _.functions.icontains(u.bio!, p.searchTerm)),
+          h: ReturnType<typeof createQueryHelpers>,
+        ) => q.from("users").where((u) => h.functions.icontains(u.bio!, p.searchTerm)),
       );
 
       expect(result).to.not.be.null;
@@ -190,8 +190,8 @@ describe("Case-Insensitive Functions - Parser", () => {
         (
           q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
-        ) => q.from("users").where((u) => _.functions.iequals(u.name, "John") && u.age > 18),
+          h: ReturnType<typeof createQueryHelpers>,
+        ) => q.from("users").where((u) => h.functions.iequals(u.name, "John") && u.age > 18),
       );
 
       expect(result).to.not.be.null;
@@ -208,12 +208,12 @@ describe("Case-Insensitive Functions - Parser", () => {
         (
           q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
+          h: ReturnType<typeof createQueryHelpers>,
         ) =>
           q
             .from("users")
             .where(
-              (u) => _.functions.istartsWith(u.name, "A") || _.functions.istartsWith(u.name, "B"),
+              (u) => h.functions.istartsWith(u.name, "A") || h.functions.istartsWith(u.name, "B"),
             ),
       );
 
@@ -231,11 +231,11 @@ describe("Case-Insensitive Functions - Parser", () => {
         (
           q: QueryBuilder<TestSchema>,
           _p: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
+          h: ReturnType<typeof createQueryHelpers>,
         ) =>
           q
             .from("users")
-            .where((u) => _.functions.icontains(u.email, "admin"))
+            .where((u) => h.functions.icontains(u.email, "admin"))
             .select((u) => ({
               id: u.id,
               name: u.name,
@@ -266,12 +266,8 @@ describe("Case-Insensitive Functions - Parser", () => {
 
     it("should not recognize invalid function names as case-insensitive", () => {
       // This will parse as a coalesce expression due to the ?? operator
-      const result = parseQuery(
-        (
-          q: QueryBuilder<TestSchema>,
-          _p: Record<string, never>,
-          _: ReturnType<typeof createQueryHelpers>,
-        ) => q.from("users").where((u) => u.name === "test" || false),
+      const result = parseQuery((q: QueryBuilder<TestSchema>) =>
+        q.from("users").where((u) => u.name === "test" || false),
       );
 
       expect(result).to.not.be.null;
