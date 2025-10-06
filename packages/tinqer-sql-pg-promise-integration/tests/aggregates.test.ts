@@ -18,16 +18,11 @@ describe("PostgreSQL Integration - Aggregates", () => {
     it("should count all users", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = await executeSelectSimple(
-        dbClient,
-        schema,
-        (q, _params, _helpers) => q.from("users").count(),
-        {
-          onSql: (result) => {
-            capturedSql = result;
-          },
+      const count = await executeSelectSimple(dbClient, schema, (q) => q.from("users").count(), {
+        onSql: (result) => {
+          capturedSql = result;
         },
-      );
+      });
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal('SELECT COUNT(*) FROM "users"');

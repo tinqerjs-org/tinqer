@@ -278,26 +278,14 @@ All literal values are automatically parameterized to prevent SQL injection:
 // External parameters via params object
 const schema = createSchema<Schema>();
 
-const sample = selectStatement(
-  schema,
-  (q, p) =>
-    q
-      .from("users")
-      .where((u) => u.age >= p.minAge),
-  { minAge: 18 },
-);
+const sample = selectStatement(schema, (q, p) => q.from("users").where((u) => u.age >= p.minAge), {
+  minAge: 18,
+});
 // SQL (PostgreSQL): SELECT * FROM "users" WHERE "age" >= $(minAge)
 // params: { minAge: 18 }
 
 // Literals auto-parameterized automatically
-const literals = selectStatement(
-  schema,
-  (q) =>
-    q
-      .from("users")
-      .where((u) => u.age >= 18),
-  {},
-);
+const literals = selectStatement(schema, (q) => q.from("users").where((u) => u.age >= 18), {});
 // params: { __p1: 18 }
 ```
 
@@ -309,9 +297,7 @@ import { createSchema } from "@webpods/tinqer";
 const schema = createSchema<Schema>();
 
 const query = (q, params, helpers) =>
-  q
-    .from("users")
-    .where((u) => helpers.contains(u.name, "alice")); // Case-insensitive substring match
+  q.from("users").where((u) => helpers.contains(u.name, "alice")); // Case-insensitive substring match
 
 // PostgreSQL: WHERE u.name ILIKE $1 (param: "%alice%")
 // SQLite: WHERE LOWER(u.name) LIKE LOWER(?) (param: "%alice%")

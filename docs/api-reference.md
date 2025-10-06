@@ -446,7 +446,8 @@ const schema = createSchema<Schema>();
 
 const result = selectStatement(
   schema,
-  (q, params, helpers) => q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  (q, params, helpers) =>
+    q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 ```

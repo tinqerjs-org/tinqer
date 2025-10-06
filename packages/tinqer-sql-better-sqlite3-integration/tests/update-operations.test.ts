@@ -165,7 +165,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({ quantity: 20 })
@@ -185,7 +185,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({
@@ -241,7 +241,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("user_profiles")
             .set({ is_verified: 1 }) // SQLite uses 0/1 for boolean values
@@ -261,7 +261,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("user_profiles")
             .set({ bio: null, age: null })
@@ -284,7 +284,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({ status: "reorder_needed" })
@@ -304,7 +304,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({ warehouse_location: "Warehouse D" })
@@ -329,7 +329,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({ is_active: 0 }) // SQLite uses 0/1 for boolean values
@@ -354,7 +354,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({ notes: "Premium product" })
@@ -400,7 +400,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("user_profiles")
             .set({ is_verified: 1 }) // SQLite uses 0/1 for boolean values
@@ -420,8 +420,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
-          q.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
+        (q) => q.update("product_reviews").set({ helpful_count: 0 }).allowFullTableUpdate(),
         {},
       );
 
@@ -435,12 +434,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", () => {
       try {
-        executeUpdate(
-          dbClient,
-          schema,
-          (q, _params) => q.update("inventory").set({ quantity: 0 }),
-          {},
-        );
+        executeUpdate(dbClient, schema, (q) => q.update("inventory").set({ quantity: 0 }), {});
         assert.fail("Should have thrown error for missing WHERE clause");
       } catch (error: unknown) {
         assert(
@@ -544,7 +538,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({
@@ -569,7 +563,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("user_profiles")
             .set({
@@ -596,7 +590,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({
@@ -622,7 +616,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount1 = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({ is_active: 0 })
@@ -640,7 +634,7 @@ describe("UPDATE Operations - SQLite Integration", () => {
       const rowCount2 = executeUpdate(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q
             .update("inventory")
             .set({ is_active: 1 }) // SQLite uses 0/1 for boolean values

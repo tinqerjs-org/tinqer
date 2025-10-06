@@ -118,7 +118,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Laptop",
             price: 999.99,
@@ -146,7 +146,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Basic Item",
             price: 10.0,
@@ -198,7 +198,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Out of Stock Item",
             price: 50.0,
@@ -219,7 +219,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Minimal Product",
             price: 25.0,
@@ -244,7 +244,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Product with 'quotes' and \"double quotes\"",
             price: 100.0,
@@ -268,7 +268,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Product with émoji 🚀 and 中文",
             price: 88.88,
@@ -291,7 +291,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Edge Case Product",
             price: 0.01, // Very small
@@ -374,7 +374,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("customers").values({
             email: "test@example.com",
             name: "Test User",
@@ -388,7 +388,7 @@ describe("INSERT Operations - SQLite Integration", () => {
         executeInsert(
           dbClient,
           schema,
-          (q, _params) =>
+          (q) =>
             q.insertInto("customers").values({
               email: "test@example.com",
               name: "Another User",
@@ -409,7 +409,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const customerCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("customers").values({
             email: "john@example.com",
             name: "John Doe",
@@ -430,7 +430,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const productCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Test Product",
             price: 49.99,
@@ -504,7 +504,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("products").values({
             name: "Flexible Type Product",
             price: "99.99" as unknown as number, // String that can be coerced to number
@@ -527,7 +527,7 @@ describe("INSERT Operations - SQLite Integration", () => {
       const rowCount = executeInsert(
         dbClient,
         schema,
-        (q, _params) =>
+        (q) =>
           q.insertInto("customers").values({
             email: "timestamp@test.com",
             name: "Timestamp Test",

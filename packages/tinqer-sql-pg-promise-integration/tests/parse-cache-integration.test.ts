@@ -4,7 +4,6 @@ import {
   setParseCacheConfig,
   getParseCacheConfig,
   type QueryBuilder,
-  type QueryHelpers,
 } from "@webpods/tinqer";
 import {
   executeSelect,
@@ -40,13 +39,13 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
   describe("SELECT query caching", () => {
     it("should cache repeated SELECT queries", async () => {
       // First execution - should parse
-      const result1 = await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      const result1 = await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
       expect(parseCache.size()).to.equal(1);
 
       // Second execution - should hit cache (same function code)
-      const result2 = await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      const result2 = await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
       expect(parseCache.size()).to.equal(1);
@@ -60,7 +59,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
       await executeSelect(
         dbClient,
         schema,
-        (q, p, _helpers) => q.from("users").where((u) => u.age !== null && u.age >= p.minAge),
+        (q, p) => q.from("users").where((u) => u.age !== null && u.age >= p.minAge),
         { minAge: 21 },
       );
       expect(parseCache.size()).to.equal(1);
@@ -69,7 +68,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
       await executeSelect(
         dbClient,
         schema,
-        (q, p, _helpers) => q.from("users").where((u) => u.age !== null && u.age >= p.minAge),
+        (q, p) => q.from("users").where((u) => u.age !== null && u.age >= p.minAge),
         { minAge: 30 },
       );
       expect(parseCache.size()).to.equal(1);
@@ -77,7 +76,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
 
     it("should bypass cache when cache option is false", async () => {
       // First execution with cache
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
 
@@ -85,7 +84,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
       await executeSelectSimple(
         dbClient,
         schema,
-        (q, _params, _helpers) => q.from("users").where((u) => u.age !== null && u.age >= 18),
+        (q) => q.from("users").where((u) => u.age !== null && u.age >= 18),
         { cache: false },
       );
 
@@ -94,10 +93,10 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     });
 
     it("should cache different queries separately", async () => {
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 21),
       );
 
@@ -105,7 +104,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     });
 
     it("should cache complex queries with joins", async () => {
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q
           .from("users")
           .join(
@@ -121,7 +120,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
       );
       expect(parseCache.size()).to.equal(1);
 
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q
           .from("users")
           .join(
@@ -139,10 +138,8 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     });
 
     it("should cache terminal operations (count, sum, etc.)", async () => {
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
-        q.from("users").count(),
-      );
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) => q.from("users").count());
+      await executeSelectSimple(dbClient, schema, (q) =>
         q
           .from("users")
           .where((u) => u.age !== null)
@@ -152,10 +149,8 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
       expect(parseCache.size()).to.equal(2);
 
       // Re-execute should hit cache
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
-        q.from("users").count(),
-      );
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) => q.from("users").count());
+      await executeSelectSimple(dbClient, schema, (q) =>
         q
           .from("users")
           .where((u) => u.age !== null)
@@ -424,10 +419,10 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     it("should respect disabled cache in real queries", async () => {
       setParseCacheConfig({ enabled: false });
 
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
 
@@ -437,15 +432,15 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
     it("should respect capacity limit in real queries", async () => {
       setParseCacheConfig({ capacity: 2 });
 
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 21),
       );
       expect(parseCache.size()).to.equal(2);
 
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 25),
       );
       expect(parseCache.size()).to.equal(2); // Should evict oldest
@@ -454,7 +449,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
 
   describe("Mixed operation caching", () => {
     it("should cache different operation types separately", async () => {
-      await executeSelectSimple(dbClient, schema, (q, _params, _helpers) =>
+      await executeSelectSimple(dbClient, schema, (q) =>
         q.from("users").where((u) => u.age !== null && u.age >= 18),
       );
       await executeInsert(
@@ -486,11 +481,7 @@ describe("Parse Cache Integration Tests (PostgreSQL)", () => {
   describe("Performance verification", () => {
     it("should demonstrate cache performance benefit", async () => {
       // Define query once so all uses have identical code
-      const testQuery = (
-        q: QueryBuilder<TestDatabaseSchema>,
-        _params: Record<string, never>,
-        _helpers: QueryHelpers,
-      ) =>
+      const testQuery = (q: QueryBuilder<TestDatabaseSchema>) =>
         q
           .from("users")
           .where((u) => u.age !== null && u.age >= 18)

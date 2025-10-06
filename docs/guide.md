@@ -1586,7 +1586,8 @@ const dynamicMembership = selectStatement(
 ```typescript
 const ic = selectStatement(
   schema,
-  (q, params, helpers) => q.from("users").where((u) => helpers.functions.icontains(u.email, "support")),
+  (q, params, helpers) =>
+    q.from("users").where((u) => helpers.functions.icontains(u.email, "support")),
   {},
 );
 ```
