@@ -176,21 +176,25 @@ npm test
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
 import { createSchema } from "@webpods/tinqer";
+import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
-describe("Queryable", () => {
-  it("should filter with WHERE clause", () => {
+describe("SQL Generation", () => {
+  it("should generate SQL with WHERE clause", () => {
     interface Schema {
       users: { id: number; name: string; age: number };
     }
 
-    const ctx = createSchema<Schema>();
-    const query = ctx.dsl
-      .from("users")
-      .where((u) => u.age >= 18)
-      .select((u) => u);
+    const schema = createSchema<Schema>();
+    const result = selectStatement(schema, (q) =>
+      q
+        .from("users")
+        .where((u) => u.age >= 18)
+        .select((u) => u),
+    );
 
-    // Assert expression tree structure (simplified example)
-    assert.ok(query);
+    // Assert SQL and parameters
+    assert.ok(result.sql.includes("WHERE"));
+    assert.ok(result.params);
   });
 });
 ```
@@ -503,8 +507,14 @@ await executeSelectSimple(
 
 ```typescript
 // Type inference fails without schema context
-const ctx = createSchema(); // No schema type provided
-const query = ctx.dsl.from("users"); // Type is Queryable<unknown>
+const schema = createSchema(); // No schema type provided
+
+// Types will be 'unknown' without schema
+const result = await executeSelect(
+  db,
+  schema,
+  (q) => q.from("users"), // Type is Queryable<unknown>
+);
 ```
 
 **Solution:** Provide explicit schema type to createSchema:
@@ -514,8 +524,14 @@ interface Schema {
   users: { id: number; name: string };
 }
 
-const ctx = createSchema<Schema>();
-const query = ctx.dsl.from("users"); // Fully typed from schema
+const schema = createSchema<Schema>();
+
+// Now fully typed from schema
+const result = await executeSelect(
+  db,
+  schema,
+  (q) => q.from("users"), // Fully typed: Queryable<{ id: number; name: string }>
+);
 ```
 
 **Issue: Property Does Not Exist**

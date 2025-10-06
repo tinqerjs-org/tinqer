@@ -348,37 +348,39 @@ const deletedCount = await executeDelete(
 );
 ```
 
-### 1.7 toSql
+### 1.7 Statement Functions (selectStatement, insertStatement, etc.)
 
-Generates SQL and parameters from a pre-built queryable without executing it. This function works with queryables created using the DSL pattern.
+Generate SQL and parameters without executing them. These functions are useful for debugging, testing, or when you need the SQL before execution.
 
 ```typescript
-function toSql<T>(queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>): {
-  text: string;
-  parameters: Record<string, unknown>;
-  _resultType?: T;
-};
+function selectStatement<TSchema, TResult>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>) => Queryable<TResult>,
+): SqlResult<Record<string, unknown>, TResult>;
 ```
 
 **Example (SQLite)**
 
 ```typescript
 import { createSchema } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-better-sqlite3";
+import { selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
   products: { id: number; name: string; price: number; inStock: number };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
-// Create a queryable using the DSL
-const queryable = ctx.dsl
-  .from("products")
-  .where((p) => p.inStock === 1)
-  .orderByDescending((p) => p.price);
+// Generate SQL without executing
+const result = selectStatement(schema, (q) =>
+  q
+    .from("products")
+    .where((p) => p.inStock === 1)
+    .orderByDescending((p) => p.price),
+);
 
-const { text, parameters } = toSql(queryable);
+// result.sql contains the SQL string
+// result.params contains the parameters
 ```
 
 ### 1.8 ExecuteOptions & SqlResult
@@ -405,35 +407,22 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 
 ### 2.1 createSchema
 
-Creates a phantom-typed `DatabaseSchema` that ties table names to row types and provides a DSL for building queries. The context object includes a `dsl` property that exposes query builder methods.
+Creates a phantom-typed `DatabaseSchema` that ties table names to row types. The schema is passed to execution functions, which provide a type-safe query builder through the lambda's first parameter.
 
 ```typescript
 import { createSchema } from "@webpods/tinqer";
+import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; email: string };
   posts: { id: number; userId: number; title: string };
 }
 
-const ctx = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
-// Access the DSL through ctx.dsl
-const queryable = ctx.dsl
-  .from("users")
-  .where((u) => u.email.endsWith("@example.com"))
-  .select((u) => ({ id: u.id, name: u.name }));
-```
-
-**Using with Execution Functions**
-
-When using execution functions like `executeSelect`, the DSL is passed as the first parameter to the query builder:
-
-```typescript
-const results = await executeSelect(
-  db,
-  schema,
-  (q, _params, _helpers) => q.from("users").where((u) => u.email.endsWith("@example.com")),
-  {},
+// Schema is passed to execute functions, which provide the query builder 'q' parameter
+const results = await executeSelect(db, schema, (q) =>
+  q.from("users").where((u) => u.email.endsWith("@example.com")),
 );
 ```
 
