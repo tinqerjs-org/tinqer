@@ -4,7 +4,8 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery, from } from "../dist/index.js";
+import { parseQuery } from "../dist/index.js";
+import type { QueryDSL } from "../dist/index.js";
 import {
   asFromOperation,
   asWhereOperation,
@@ -16,12 +17,13 @@ import {
 } from "./test-utils/operation-helpers.js";
 import type { ComparisonExpression, ColumnExpression } from "../dist/expressions/expression.js";
 import type { ParamRef } from "../dist/query-tree/operations.js";
-import { db } from "./test-schema.js";
+import { type TestSchema } from "./test-schema.js";
 
 describe("Operation Chaining", () => {
   it("should parse from().where().select() chain", () => {
-    const query = () =>
-      from(db, "users")
+    const query = (ctx: QueryDSL<TestSchema>) =>
+      ctx
+        .from("users")
         .where((x) => x.age >= 18 && x.isActive)
         .select((x) => ({ id: x.id, name: x.name }));
     const result = parseQuery(query);
@@ -36,8 +38,9 @@ describe("Operation Chaining", () => {
   });
 
   it("should parse complex chain with multiple where operations", () => {
-    const query = () =>
-      from(db, "users")
+    const query = (ctx: QueryDSL<TestSchema>) =>
+      ctx
+        .from("users")
         .where((x) => x.age >= 18)
         .where((x) => x.role == "admin")
         .select((x) => ({ id: x.id, name: x.name }));
@@ -58,8 +61,9 @@ describe("Operation Chaining", () => {
   });
 
   it("should parse chain with select-where-select", () => {
-    const query = () =>
-      from(db, "users")
+    const query = (ctx: QueryDSL<TestSchema>) =>
+      ctx
+        .from("users")
         .select((x) => ({ id: x.id, firstName: x.firstName, lastName: x.lastName, age: x.age }))
         .where((x) => x.age >= 18)
         .select((x) => ({ userId: x.id, firstName: x.firstName, lastName: x.lastName }));
@@ -77,8 +81,9 @@ describe("Operation Chaining", () => {
   });
 
   it("should parse pagination with filtering and ordering", () => {
-    const query = () =>
-      from(db, "products")
+    const query = (ctx: QueryDSL<TestSchema>) =>
+      ctx
+        .from("products")
         .where((x) => x.inStock)
         .orderByDescending((x) => x.price)
         .skip(10)

@@ -18,6 +18,13 @@ export async function setupTestDatabase(db: IDatabase<any>) {
     DROP TABLE IF EXISTS accounts CASCADE;
     DROP TABLE IF EXISTS users CASCADE;
     DROP TABLE IF EXISTS departments CASCADE;
+    DROP TABLE IF EXISTS test_nulls CASCADE;
+    DROP TABLE IF EXISTS test_nulls_category CASCADE;
+    DROP TABLE IF EXISTS test_minmax CASCADE;
+    DROP TABLE IF EXISTS test_groupby CASCADE;
+    DROP TABLE IF EXISTS test_agg_simple CASCADE;
+    DROP TABLE IF EXISTS test_agg_category CASCADE;
+    DROP TABLE IF EXISTS test_agg_price CASCADE;
   `);
 
   // Create departments table
@@ -290,5 +297,90 @@ export async function setupTestDatabase(db: IDatabase<any>) {
     ('Database Optimization Tips', 'Optimizing database performance is crucial...', 'Bob Johnson', 'database,performance,optimization', '2024-01-14 09:00:00', 1200, true),
     ('Web Security Best Practices', 'Security should be a top priority...', 'Alice Brown', 'security,web,best-practices', '2024-01-16 11:00:00', 3000, false),
     ('React Hooks Explained', 'React hooks revolutionized functional components...', 'Charlie Wilson', 'react,javascript,hooks', '2024-01-18 15:00:00', 1800, false);
+  `);
+
+  // Create test tables for aggregate operations
+  await db.none(`
+    CREATE TABLE test_nulls (
+      id INTEGER PRIMARY KEY,
+      value NUMERIC
+    );
+  `);
+
+  await db.none(`
+    INSERT INTO test_nulls (id, value) VALUES (1, 10.0), (2, 20.0), (3, NULL), (4, 30.0);
+  `);
+
+  await db.none(`
+    CREATE TABLE test_nulls_category (
+      id INTEGER PRIMARY KEY,
+      category TEXT
+    );
+  `);
+
+  await db.none(`
+    INSERT INTO test_nulls_category (id, category) VALUES
+      (1, 'A'), (2, 'B'), (3, NULL), (4, 'A'), (5, NULL), (6, 'C');
+  `);
+
+  await db.none(`
+    CREATE TABLE test_minmax (
+      id INTEGER PRIMARY KEY,
+      value INTEGER
+    );
+  `);
+
+  await db.none(`
+    INSERT INTO test_minmax (id, value) VALUES (1, 50), (2, NULL), (3, 10), (4, NULL), (5, 30);
+  `);
+
+  await db.none(`
+    CREATE TABLE test_groupby (
+      id INTEGER PRIMARY KEY,
+      category TEXT,
+      value INTEGER
+    );
+  `);
+
+  await db.none(`
+    INSERT INTO test_groupby (id, category, value) VALUES
+      (1, 'A', 10), (2, NULL, 20), (3, 'A', 30), (4, NULL, 40), (5, 'B', 50);
+  `);
+
+  await db.none(`
+    CREATE TABLE test_agg_simple (
+      id INTEGER PRIMARY KEY,
+      value INTEGER
+    );
+  `);
+
+  await db.none(`
+    INSERT INTO test_agg_simple (id, value) VALUES (1, 10), (2, 20), (3, 30), (4, 40);
+  `);
+
+  await db.none(`
+    CREATE TABLE test_agg_category (
+      id INTEGER PRIMARY KEY,
+      category TEXT,
+      value INTEGER
+    );
+  `);
+
+  await db.none(`
+    INSERT INTO test_agg_category (id, category, value) VALUES
+      (1, 'A', 10), (2, 'A', 50), (3, 'B', 20), (4, 'B', 30);
+  `);
+
+  await db.none(`
+    CREATE TABLE test_agg_price (
+      id INTEGER PRIMARY KEY,
+      price NUMERIC,
+      quantity INTEGER
+    );
+  `);
+
+  await db.none(`
+    INSERT INTO test_agg_price (id, price, quantity) VALUES
+      (1, 10.5, 2), (2, 20.0, 3), (3, 15.5, 1);
   `);
 }

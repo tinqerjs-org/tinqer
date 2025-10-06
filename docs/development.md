@@ -175,7 +175,7 @@ npm test
 ```typescript
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { createContext, from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 
 describe("Queryable", () => {
   it("should filter with WHERE clause", () => {
@@ -184,7 +184,8 @@ describe("Queryable", () => {
     }
 
     const ctx = createContext<Schema>();
-    const query = from(ctx, "users")
+    const query = ctx.dsl
+      .from("users")
       .where((u) => u.age >= 18)
       .select((u) => u);
 
@@ -199,7 +200,7 @@ describe("Queryable", () => {
 ```typescript
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createContext, from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -212,8 +213,9 @@ describe("PostgreSQL Integration", () => {
   });
 
   it("should execute SELECT query", async () => {
-    const results = await executeSelectSimple(db, () =>
-      from(ctx, "users")
+    const results = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) =>
+      ctx
+        .from("users")
         .where((u) => u.age >= 25)
         .select((u) => u.name),
     );
@@ -462,9 +464,14 @@ Error: Unsupported AST node type: TemplateLiteral
 // Incorrect - template literal in lambda
 .where(u => u.name === `User ${userId}`)
 
-// Correct - use params
-.where((u, params: { name: string }) => u.name === params.name)
-// Pass: { name: `User ${userId}` }
+// Correct - use params with executeSelectSimple
+await executeSelectSimple(
+  db,
+  ctx,
+  (ctx, p, _helpers) =>
+    ctx.from("users").where((u) => u.name === p.name),
+  { name: `User ${userId}` }
+);
 ```
 
 **Issue: Unknown Identifier**
@@ -480,9 +487,14 @@ Error: Unknown identifier 'externalVar'
 const minAge = 18;
 .where(u => u.age >= minAge)
 
-// Correct - params pattern
-.where((u, params: { minAge: number }) => u.age >= params.minAge)
-// Pass: { minAge: 18 }
+// Correct - params pattern with executeSelectSimple
+await executeSelectSimple(
+  db,
+  ctx,
+  (ctx, p, _helpers) =>
+    ctx.from("users").where((u) => u.age >= p.minAge),
+  { minAge: 18 }
+);
 ```
 
 ### 6.3 Type Errors
@@ -490,17 +502,20 @@ const minAge = 18;
 **Issue: Type Inference Not Working**
 
 ```typescript
-const query = from("users"); // Type is Queryable<unknown>
+// Type inference fails without schema context
+const ctx = createContext(); // No schema type provided
+const query = ctx.dsl.from("users"); // Type is Queryable<unknown>
 ```
 
-**Solution:** Provide explicit schema type:
+**Solution:** Provide explicit schema type to createContext:
 
 ```typescript
 interface Schema {
   users: { id: number; name: string };
 }
 
-const query = from<Schema["users"]>("users"); // Fully typed
+const ctx = createContext<Schema>();
+const query = ctx.dsl.from("users"); // Fully typed from schema
 ```
 
 **Issue: Property Does Not Exist**

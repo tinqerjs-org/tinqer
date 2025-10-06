@@ -54,6 +54,7 @@ export interface AutoParamInfo {
  */
 export interface VisitorContext {
   // Parameter tracking
+  dslParam?: string; // DSL parameter name (ctx in (ctx, p, h) => ctx.from("users"))
   tableParams: Set<string>; // Table parameter names (x in x => x.name)
   queryParams: Set<string>; // Query parameter names (p in (p) => p.minAge)
   helpersParam?: string; // Helpers parameter name (_ in (p, _) => _.functions.iequals)

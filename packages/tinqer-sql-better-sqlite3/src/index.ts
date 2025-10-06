@@ -8,6 +8,8 @@ import {
   type OrderedQueryable,
   type TerminalQuery,
   type QueryHelpers,
+  type QueryDSL,
+  type DatabaseContext,
   type Insertable,
   type InsertableWithReturning,
   type UpdatableWithSet,
@@ -40,13 +42,16 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
 
 /**
  * Generate SQL from a query builder function
- * @param queryBuilder Function that builds the query using LINQ operations with helpers
+ * @param dbContext Database context with schema information
+ * @param queryBuilder Function that builds the query using LINQ operations with DSL, params, and helpers
  * @param params Parameters to pass to the query builder
  * @param options Parse options including cache control
  * @returns SQL string and merged params (user params + auto-extracted params)
  */
-export function selectStatement<TParams, TResult>(
+export function selectStatement<TSchema, TParams, TResult>(
+  _dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
+    dsl: QueryDSL<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
@@ -122,17 +127,20 @@ interface BetterSqlite3Database {
 /**
  * Execute a query and return typed results
  * @param db Better SQLite3 database instance
- * @param queryBuilder Function that builds the query using LINQ operations with helpers
+ * @param dbContext Database context with schema information
+ * @param queryBuilder Function that builds the query using LINQ operations with DSL, params, and helpers
  * @param params Parameters to pass to the query builder
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Query results, properly typed based on the query
  */
 export function executeSelect<
+  TSchema,
   TParams,
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: BetterSqlite3Database,
-  queryBuilder: (params: TParams, helpers: QueryHelpers) => TQuery,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (dsl: QueryDSL<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
 ): TQuery extends Queryable<infer T>
@@ -150,7 +158,8 @@ export function executeSelect<
         : TQuery extends TerminalQuery<infer T>
           ? T
           : never;
-  const { sql, params: sqlParams } = selectStatement(queryBuilder, params, options);
+
+  const { sql, params: sqlParams } = selectStatement(dbContext, queryBuilder, params, options);
 
   // Call onSql callback if provided
   if (options.onSql) {
@@ -272,15 +281,22 @@ export function executeSelect<
 /**
  * Execute a query with no parameters
  * @param db Better SQLite3 database instance
- * @param queryBuilder Function that builds the query using LINQ operations with helpers
+ * @param dbContext Database context with schema information
+ * @param queryBuilder Function that builds the query using LINQ operations with DSL and helpers
  * @param options Optional execution options (e.g., SQL inspection callback)
  * @returns Query results, properly typed based on the query
  */
 export function executeSelectSimple<
+  TSchema,
   TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
 >(
   db: BetterSqlite3Database,
-  queryBuilder: (_params: Record<string, never>, helpers: QueryHelpers) => TQuery,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    dsl: QueryDSL<TSchema>,
+    _params: Record<string, never>,
+    helpers: QueryHelpers,
+  ) => TQuery,
   options: ExecuteOptions & ParseQueryOptions = {},
 ): TQuery extends Queryable<infer T>
   ? T[]
@@ -289,7 +305,7 @@ export function executeSelectSimple<
     : TQuery extends TerminalQuery<infer T>
       ? T
       : never {
-  return executeSelect(db, queryBuilder, {}, options);
+  return executeSelect(db, dbContext, queryBuilder, {}, options);
 }
 
 // ==================== INSERT Statement & Execution ====================
@@ -298,8 +314,10 @@ export function executeSelectSimple<
  * Generate INSERT SQL statement
  * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
  */
-export function insertStatement<TParams, TTable, TReturning = never>(
+export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
+  _dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
+    dsl: QueryDSL<TSchema>,
     params: TParams,
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
@@ -330,9 +348,10 @@ export function insertStatement<TParams, TTable, TReturning = never>(
 /**
  * Execute INSERT and return row count
  */
-export function executeInsert<TParams, TTable>(
+export function executeInsert<TSchema, TParams, TTable>(
   db: BetterSqlite3Database,
-  queryBuilder: (params: TParams) => Insertable<TTable>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (dsl: QueryDSL<TSchema>, params: TParams) => Insertable<TTable>,
   params: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): number;
@@ -341,23 +360,29 @@ export function executeInsert<TParams, TTable>(
  * Execute INSERT with RETURNING (not supported by SQLite)
  * Note: SQLite does not support RETURNING clause, throws error
  */
-export function executeInsert<TParams, TTable, TReturning>(
+export function executeInsert<TSchema, TParams, TTable, TReturning>(
   db: BetterSqlite3Database,
-  queryBuilder: (params: TParams) => InsertableWithReturning<TTable, TReturning>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    dsl: QueryDSL<TSchema>,
+    params: TParams,
+  ) => InsertableWithReturning<TTable, TReturning>,
   params: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): never;
 
 // Implementation
-export function executeInsert<TParams, TTable, TReturning = never>(
+export function executeInsert<TSchema, TParams, TTable, TReturning = never>(
   db: BetterSqlite3Database,
+  dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
+    dsl: QueryDSL<TSchema>,
     params: TParams,
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
 ): number {
-  const { sql, params: sqlParams } = insertStatement(queryBuilder, params, options);
+  const { sql, params: sqlParams } = insertStatement(dbContext, queryBuilder, params, options);
 
   if (options.onSql) {
     options.onSql({ sql, params: sqlParams });
@@ -374,8 +399,10 @@ export function executeInsert<TParams, TTable, TReturning = never>(
  * Generate UPDATE SQL statement
  * Note: SQLite doesn't support RETURNING at runtime, but we still generate the SQL
  */
-export function updateStatement<TParams, TTable, TReturning = never>(
+export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
+  _dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
+    dsl: QueryDSL<TSchema>,
     params: TParams,
   ) =>
     | UpdatableWithSet<TTable>
@@ -409,9 +436,13 @@ export function updateStatement<TParams, TTable, TReturning = never>(
 /**
  * Execute UPDATE and return row count
  */
-export function executeUpdate<TParams, TTable>(
+export function executeUpdate<TSchema, TParams, TTable>(
   db: BetterSqlite3Database,
-  queryBuilder: (params: TParams) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    dsl: QueryDSL<TSchema>,
+    params: TParams,
+  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
   params: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): number;
@@ -420,17 +451,23 @@ export function executeUpdate<TParams, TTable>(
  * Execute UPDATE with RETURNING (not supported by SQLite)
  * Note: SQLite does not support RETURNING clause, throws error
  */
-export function executeUpdate<TParams, TTable, TReturning>(
+export function executeUpdate<TSchema, TParams, TTable, TReturning>(
   db: BetterSqlite3Database,
-  queryBuilder: (params: TParams) => UpdatableWithReturning<TTable, TReturning>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    dsl: QueryDSL<TSchema>,
+    params: TParams,
+  ) => UpdatableWithReturning<TTable, TReturning>,
   params: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): never;
 
 // Implementation
-export function executeUpdate<TParams, TTable, TReturning = never>(
+export function executeUpdate<TSchema, TParams, TTable, TReturning = never>(
   db: BetterSqlite3Database,
+  dbContext: DatabaseContext<TSchema>,
   queryBuilder: (
+    dsl: QueryDSL<TSchema>,
     params: TParams,
   ) =>
     | UpdatableWithSet<TTable>
@@ -439,7 +476,7 @@ export function executeUpdate<TParams, TTable, TReturning = never>(
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
 ): number {
-  const { sql, params: sqlParams } = updateStatement(queryBuilder, params, options);
+  const { sql, params: sqlParams } = updateStatement(dbContext, queryBuilder, params, options);
 
   if (options.onSql) {
     options.onSql({ sql, params: sqlParams });
@@ -455,8 +492,12 @@ export function executeUpdate<TParams, TTable, TReturning = never>(
 /**
  * Generate DELETE SQL statement
  */
-export function deleteStatement<TParams, TResult>(
-  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+export function deleteStatement<TSchema, TParams, TResult>(
+  _dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    dsl: QueryDSL<TSchema>,
+    params: TParams,
+  ) => Deletable<TResult> | DeletableComplete<TResult>,
   params: TParams,
   options: ParseQueryOptions = {},
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
@@ -482,13 +523,17 @@ export function deleteStatement<TParams, TResult>(
 /**
  * Execute DELETE and return row count
  */
-export function executeDelete<TParams, TResult>(
+export function executeDelete<TSchema, TParams, TResult>(
   db: BetterSqlite3Database,
-  queryBuilder: (params: TParams) => Deletable<TResult> | DeletableComplete<TResult>,
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    dsl: QueryDSL<TSchema>,
+    params: TParams,
+  ) => Deletable<TResult> | DeletableComplete<TResult>,
   params: TParams,
   options: ExecuteOptions & ParseQueryOptions = {},
 ): number {
-  const { sql, params: sqlParams } = deleteStatement(queryBuilder, params, options);
+  const { sql, params: sqlParams } = deleteStatement(dbContext, queryBuilder, params, options);
 
   if (options.onSql) {
     options.onSql({ sql, params: sqlParams });

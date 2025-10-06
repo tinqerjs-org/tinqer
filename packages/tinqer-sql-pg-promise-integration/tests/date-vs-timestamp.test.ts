@@ -5,7 +5,6 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
@@ -30,7 +29,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       // All three should match the same DATE value
       const results1 = await executeSelect(
         db,
-        (params) => from(dbContext, "orders").where((o) => o.order_date == params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.targetDate),
         { targetDate: date1 },
         {
           onSql: (result) => {
@@ -41,7 +41,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
 
       const results2 = await executeSelect(
         db,
-        (params) => from(dbContext, "orders").where((o) => o.order_date == params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.targetDate),
         { targetDate: date2 },
         {
           onSql: (result) => {
@@ -52,7 +53,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
 
       const results3 = await executeSelect(
         db,
-        (params) => from(dbContext, "orders").where((o) => o.order_date == params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.targetDate),
         { targetDate: date3 },
         {
           onSql: (result) => {
@@ -96,7 +98,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
 
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "orders").where((o) => o.order_date != params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("orders").where((o) => o.order_date != params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -131,7 +134,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
 
       const resultsMidnight = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date == params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.targetDate),
         { targetDate: midnight },
         {
           onSql: (result) => {
@@ -142,7 +146,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
 
       const resultsActual = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date == params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.targetDate),
         { targetDate: actual },
         {
           onSql: (result) => {
@@ -179,7 +184,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
 
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date != params.targetDate),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date != params.targetDate),
         { targetDate },
         {
           onSql: (result) => {
@@ -210,7 +216,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       // DATE column: Simple equality works
       const ordersOnDate = await executeSelect(
         db,
-        (params) => from(dbContext, "orders").where((o) => o.order_date == params.searchDate),
+        dbContext,
+        (ctx, params) => ctx.from("orders").where((o) => o.order_date == params.searchDate),
         { searchDate },
         {
           onSql: (result) => {
@@ -230,7 +237,8 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       // TIMESTAMP column: Simple equality doesn't work (would need range)
       const eventsOnDate = await executeSelect(
         db,
-        (params) => from(dbContext, "events").where((e) => e.start_date == params.searchDate),
+        dbContext,
+        (ctx, params) => ctx.from("events").where((e) => e.start_date == params.searchDate),
         { searchDate },
         {
           onSql: (result) => {
@@ -252,10 +260,11 @@ describe("PostgreSQL Integration - DATE vs TIMESTAMP Columns", () => {
       const endOfDay = new Date("2024-01-16");
       const eventsInRange = await executeSelect(
         db,
-        (params) =>
-          from(dbContext, "events").where(
-            (e) => e.start_date >= params.startOfDay && e.start_date < params.endOfDay,
-          ),
+        dbContext,
+        (ctx, params) =>
+          ctx
+            .from("events")
+            .where((e) => e.start_date >= params.startOfDay && e.start_date < params.endOfDay),
         { startOfDay, endOfDay },
         {
           onSql: (result) => {

@@ -5,18 +5,19 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db, from } from "./test-schema.js";
+import { db } from "./test-schema.js";
 
 describe("ORDER BY SQL Generation", () => {
   it("should generate ORDER BY with simple column", () => {
-    const result = selectStatement(() => from(db, "users").orderBy((x) => x.name), {});
+    const result = selectStatement(db, (ctx) => ctx.from("users").orderBy((x) => x.name), {});
 
     expect(result.sql).to.equal('SELECT * FROM "users" ORDER BY "name" ASC');
   });
 
   it("should generate ORDER BY DESC", () => {
     const result = selectStatement(
-      () => from(db, "posts").orderByDescending((x) => x.createdAt),
+      db,
+      (ctx) => ctx.from("posts").orderByDescending((x) => x.createdAt),
       {},
     );
 
@@ -25,8 +26,10 @@ describe("ORDER BY SQL Generation", () => {
 
   it("should generate ORDER BY with THEN BY", () => {
     const result = selectStatement(
-      () =>
-        from(db, "products")
+      db,
+      (ctx) =>
+        ctx
+          .from("products")
           .orderBy((x) => x.category)
           .thenBy((x) => x.name),
       {},
@@ -37,8 +40,10 @@ describe("ORDER BY SQL Generation", () => {
 
   it("should generate mixed ORDER BY and THEN BY DESC", () => {
     const result = selectStatement(
-      () =>
-        from(db, "products")
+      db,
+      (ctx) =>
+        ctx
+          .from("products")
           .orderBy((x) => x.category)
           .thenByDescending((x) => x.rating)
           .thenBy((x) => x.price),

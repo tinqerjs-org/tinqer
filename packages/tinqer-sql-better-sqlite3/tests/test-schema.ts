@@ -151,10 +151,38 @@ export interface TestSchema {
     timestamp: Date;
     sensorId: string;
   };
+
+  test: {
+    id: number;
+    name: string;
+    value: number | null;
+    data: unknown | null;
+    flag: boolean;
+    "special-column": string | null;
+    column_with_underscore: string | null;
+    UPPERCASE_COLUMN: string | null;
+  };
+
+  reserved: {
+    select: number;
+    from: string;
+    where: boolean;
+    group: string;
+    order: number;
+    having: string;
+    limit: number;
+    offset: number;
+    join: string;
+    union: string;
+  };
+
+  // Schema-prefixed table for testing
+  "main.users": {
+    id: number;
+    name: string;
+    age: number;
+  };
 }
 
 // Create the database context
 export const db = createContext<TestSchema>();
-
-// Re-export from for use with db context
-export { from } from "@webpods/tinqer";

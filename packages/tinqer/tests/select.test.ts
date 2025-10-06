@@ -4,15 +4,16 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery, from } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { parseQuery } from "../dist/index.js";
+import type { QueryDSL } from "../dist/index.js";
+import { type TestSchema } from "./test-schema.js";
 import { asSelectOperation, getOperation } from "./test-utils/operation-helpers.js";
 import type { ObjectExpression, ColumnExpression } from "../dist/expressions/expression.js";
 
 describe("SELECT Operation", () => {
   describe("Simple Projections", () => {
     it("should parse simple property selection", () => {
-      const query = () => from(db, "users").select((x) => x.name);
+      const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").select((x) => x.name);
       const result = parseQuery(query);
 
       expect(getOperation(result)?.operationType).to.equal("select");
@@ -23,8 +24,8 @@ describe("SELECT Operation", () => {
     });
 
     it("should parse object projection", () => {
-      const query = () =>
-        from(db, "users").select((x) => ({
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx.from("users").select((x) => ({
           userId: x.id,
           userName: x.name,
         }));
@@ -44,8 +45,8 @@ describe("SELECT Operation", () => {
 
   describe("Nested Projections", () => {
     it("should parse nested object projection", () => {
-      const query = () =>
-        from(db, "users").select((x) => ({
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx.from("users").select((x) => ({
           id: x.id,
           details: {
             name: x.name,
@@ -77,8 +78,9 @@ describe("SELECT Operation", () => {
 
   describe("Chained SELECT Operations", () => {
     it("should parse select after where", () => {
-      const query = () =>
-        from(db, "users")
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .from("users")
           .where((x) => x.age >= 18)
           .select((x) => ({ id: x.id, name: x.name }));
       const result = parseQuery(query);
@@ -89,8 +91,9 @@ describe("SELECT Operation", () => {
     });
 
     it("should parse multiple select operations", () => {
-      const query = () =>
-        from(db, "users")
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .from("users")
           .select((x) => ({ userId: x.id, userName: x.name, userAge: x.age }))
           .select((x) => ({ id: x.userId, displayName: x.userName }));
       const result = parseQuery(query);

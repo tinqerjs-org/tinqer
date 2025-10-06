@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 
 describe("Advanced Edge Cases and Corner Scenarios", () => {
   interface TestTable {
@@ -13,10 +13,17 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
     createdAt: Date;
   }
 
+  interface Schema {
+    items: TestTable;
+  }
+
+  const db = createContext<Schema>();
+
   describe("NULL value edge cases", () => {
     it("should handle NULL in arithmetic with COALESCE", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => (i.value ?? 0) + 10 > 20),
+        db,
+        (ctx) => ctx.from("items").where((i) => (i.value ?? 0) + 10 > 20),
         {},
       );
 
@@ -26,8 +33,9 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle NULL in string concatenation", () => {
       const result = selectStatement(
-        () =>
-          from<TestTable>("items").select((i) => ({
+        db,
+        (ctx) =>
+          ctx.from("items").select((i) => ({
             combined: (i.text ?? "") + "_suffix",
           })),
         {},
@@ -39,10 +47,9 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle multiple NULL checks in complex conditions", () => {
       const result = selectStatement(
-        () =>
-          from<TestTable>("items").where(
-            (i) => i.value === null || (i.text === null && i.flag === true),
-          ),
+        db,
+        (ctx) =>
+          ctx.from("items").where((i) => i.value === null || (i.text === null && i.flag === true)),
         {},
       );
 
@@ -53,10 +60,9 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle NULL in BETWEEN-like conditions", () => {
       const result = selectStatement(
-        () =>
-          from<TestTable>("items").where(
-            (i) => i.value !== null && i.value >= 10 && i.value <= 100,
-          ),
+        db,
+        (ctx) =>
+          ctx.from("items").where((i) => i.value !== null && i.value >= 10 && i.value <= 100),
         {},
       );
 
@@ -74,14 +80,21 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
         "last@name": string;
       }
 
-      const result = selectStatement(() => from<SpecialTable>("user-accounts"), {});
+      interface SpecialSchema {
+        "user-accounts": SpecialTable;
+      }
+
+      const specialDb = createContext<SpecialSchema>();
+
+      const result = selectStatement(specialDb, (ctx) => ctx.from("user-accounts"), {});
 
       expect(result.sql).to.include('"user-accounts"');
     });
 
     it("should escape quotes in string literals", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.text === "O'Reilly's \"Book\""),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.text === "O'Reilly's \"Book\""),
         {},
       );
 
@@ -90,7 +103,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle Unicode characters in strings", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.text !== null && i.text.includes("😀🎉")),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.text !== null && i.text.includes("😀🎉")),
         {},
       );
 
@@ -99,7 +113,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle newlines and tabs in string literals", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.text === "line1\nline2\ttab"),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.text === "line1\nline2\ttab"),
         {},
       );
 
@@ -110,7 +125,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
   describe("Numeric edge cases", () => {
     it("should handle JavaScript MAX_SAFE_INTEGER", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.value === Number.MAX_SAFE_INTEGER),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.value === Number.MAX_SAFE_INTEGER),
         {},
       );
 
@@ -119,7 +135,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle negative values", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.value !== null && i.value > -1000),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.value !== null && i.value > -1000),
         {},
       );
 
@@ -128,7 +145,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle floating point precision", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.value !== null && i.value === 0.3),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.value !== null && i.value === 0.3),
         {},
       );
 
@@ -137,7 +155,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle scientific notation", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.value !== null && i.value > 1e10),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.value !== null && i.value > 1e10),
         {},
       );
 
@@ -147,7 +166,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
   describe("Boolean operation edge cases", () => {
     it("should handle double negation", () => {
-      const result = selectStatement(() => from<TestTable>("items").where((i) => !!i.flag), {});
+      const result = selectStatement(db, (ctx) => ctx.from("items").where((i) => !!i.flag), {});
 
       expect(result.sql).to.include('"flag"');
       expect(result.sql).not.to.include("NOT NOT");
@@ -155,7 +174,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle boolean field with explicit true/false comparison", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.flag === true || i.flag === false),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.flag === true || i.flag === false),
         {},
       );
 
@@ -166,12 +186,15 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle complex boolean algebra", () => {
       const result = selectStatement(
-        () =>
-          from<TestTable>("items").where(
-            (i) =>
-              (i.flag && i.value !== null && i.value > 0) ||
-              (!i.flag && i.value !== null && i.value < 0),
-          ),
+        db,
+        (ctx) =>
+          ctx
+            .from("items")
+            .where(
+              (i) =>
+                (i.flag && i.value !== null && i.value > 0) ||
+                (!i.flag && i.value !== null && i.value < 0),
+            ),
         {},
       );
 
@@ -185,13 +208,13 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
     it("should not support external variables (must use params)", () => {
       const testDate = new Date("2024-01-01");
       expect(() => {
-        selectStatement(() => from<TestTable>("items").where((i) => i.createdAt > testDate), {});
+        selectStatement(db, (ctx) => ctx.from("items").where((i) => i.createdAt > testDate), {});
       }).to.throw();
 
       // Correct way: pass via params
       const result = selectStatement(
-        (params: { testDate: Date }) =>
-          from<TestTable>("items").where((i) => i.createdAt > params.testDate),
+        db,
+        (ctx, params) => ctx.from("items").where((i) => i.createdAt > params.testDate),
         { testDate },
       );
       expect(result.sql).to.include('"createdAt" > $(testDate)');
@@ -200,8 +223,9 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
     it("should not support date arithmetic methods", () => {
       expect(() => {
         selectStatement(
-          () =>
-            from<TestTable>("items").select((i) => ({
+          db,
+          (ctx) =>
+            ctx.from("items").select((i) => ({
               daysSince: (Date.now() - i.createdAt.getTime()) / (1000 * 60 * 60 * 24),
             })),
           {},
@@ -213,10 +237,9 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
   describe("Complex nested operations", () => {
     it("should handle deeply nested arithmetic", () => {
       const result = selectStatement(
-        () =>
-          from<TestTable>("items").where(
-            (i) => i.value !== null && ((i.value + 10) * 2 - 5) / 3 > 10,
-          ),
+        db,
+        (ctx) =>
+          ctx.from("items").where((i) => i.value !== null && ((i.value + 10) * 2 - 5) / 3 > 10),
         {},
       );
 
@@ -229,8 +252,9 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle nested ternary operations", () => {
       const result = selectStatement(
-        () =>
-          from<TestTable>("items").select((i) => ({
+        db,
+        (ctx) =>
+          ctx.from("items").select((i) => ({
             category:
               i.value !== null
                 ? i.value < 10
@@ -250,8 +274,9 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle nested object projections", () => {
       const result = selectStatement(
-        () =>
-          from<TestTable>("items").select((i) => ({
+        db,
+        (ctx) =>
+          ctx.from("items").select((i) => ({
             data: {
               id: i.id,
               metadata: {
@@ -269,15 +294,17 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
   describe("Parameter edge cases", () => {
     it("should handle empty parameter object", () => {
-      const result = selectStatement(() => from<TestTable>("items"), {});
+      const result = selectStatement(db, (ctx) => ctx.from("items"), {});
 
       expect(result.params).to.deep.equal({});
     });
 
     it("should handle parameter name collision with auto-params", () => {
       const result = selectStatement(
-        (params: { threshold: number }) =>
-          from<TestTable>("items")
+        db,
+        (ctx, params) =>
+          ctx
+            .from("items")
             .where((i) => i.value !== null && i.value > params.threshold)
             .where((i) => i.value !== null && i.value < 100),
         { threshold: 50 },
@@ -294,7 +321,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
   describe("SQL injection prevention", () => {
     it("should parameterize dangerous strings", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.text === "'; DROP TABLE users; --"),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.text === "'; DROP TABLE users; --"),
         {},
       );
 
@@ -309,8 +337,15 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
         WHERE: boolean;
       }
 
+      interface DangerousSchema {
+        dangerous: DangerousTable;
+      }
+
+      const dangerousDb = createContext<DangerousSchema>();
+
       const result = selectStatement(
-        () => from<DangerousTable>("dangerous").select((d) => ({ value: d.SELECT })),
+        dangerousDb,
+        (ctx) => ctx.from("dangerous").select((d) => ({ value: d.SELECT })),
         {},
       );
 
@@ -319,7 +354,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should parameterize hex strings", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.text === "0x1234ABCD"),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.text === "0x1234ABCD"),
         {},
       );
 
@@ -330,7 +366,8 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
   describe("Type coercion edge cases", () => {
     it("should handle string to number comparison", () => {
       const result = selectStatement(
-        () => from<TestTable>("items").where((i) => i.text === "123"),
+        db,
+        (ctx) => ctx.from("items").where((i) => i.text === "123"),
         {},
       );
 
@@ -341,8 +378,9 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
     it("should not support expressions without table context in select", () => {
       expect(() => {
         selectStatement(
-          () =>
-            from<TestTable>("items").select(() => ({
+          db,
+          (ctx) =>
+            ctx.from("items").select(() => ({
               mixed: "prefix" + "_suffix", // No table parameter reference
             })),
           {},
@@ -351,8 +389,9 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
       // Correct way: use table parameter
       const result = selectStatement(
-        () =>
-          from<TestTable>("items").select((i) => ({
+        db,
+        (ctx) =>
+          ctx.from("items").select((i) => ({
             mixed: (i.text ?? "prefix") + "_suffix",
           })),
         {},
@@ -376,9 +415,17 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
         union: string;
       }
 
+      interface ReservedSchema {
+        reserved: ReservedTable;
+      }
+
+      const reservedDb = createContext<ReservedSchema>();
+
       const result = selectStatement(
-        () =>
-          from<ReservedTable>("reserved")
+        reservedDb,
+        (ctx) =>
+          ctx
+            .from("reserved")
             .where((r) => r.select > 0)
             .select((r) => ({
               selectCol: r.select,

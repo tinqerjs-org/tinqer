@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 
 describe("Distinct SQL Generation", () => {
   interface Product {
@@ -11,16 +11,24 @@ describe("Distinct SQL Generation", () => {
     price: number;
   }
 
+  interface Schema {
+    products: Product;
+  }
+
+  const db = createContext<Schema>();
+
   it("should generate DISTINCT for all columns", () => {
-    const result = selectStatement(() => from<Product>("products").distinct(), {});
+    const result = selectStatement(db, (ctx) => ctx.from("products").distinct(), {});
 
     expect(result.sql).to.equal('SELECT DISTINCT * FROM "products"');
   });
 
   it("should combine DISTINCT with WHERE", () => {
     const result = selectStatement(
-      () =>
-        from<Product>("products")
+      db,
+      (ctx) =>
+        ctx
+          .from("products")
           .where((p) => p.price > 100)
           .distinct(),
       {},
@@ -32,8 +40,10 @@ describe("Distinct SQL Generation", () => {
 
   it("should combine DISTINCT with SELECT projection", () => {
     const result = selectStatement(
-      () =>
-        from<Product>("products")
+      db,
+      (ctx) =>
+        ctx
+          .from("products")
           .select((p) => ({ category: p.category }))
           .distinct(),
       {},
@@ -44,8 +54,10 @@ describe("Distinct SQL Generation", () => {
 
   it("should work with DISTINCT, WHERE, and ORDER BY", () => {
     const result = selectStatement(
-      () =>
-        from<Product>("products")
+      db,
+      (ctx) =>
+        ctx
+          .from("products")
           .where((p) => p.price < 500)
           .distinct()
           .orderBy((p) => p.brand),

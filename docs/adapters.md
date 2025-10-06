@@ -34,7 +34,7 @@ npm install @webpods/tinqer-sql-pg-promise pg-promise
 
 ```typescript
 import pgPromise from "pg-promise";
-import { createContext, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import {
   executeSelect,
   executeSelectSimple,
@@ -53,8 +53,9 @@ const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const ctx = createContext<Schema>();
 
 // Execute without external params
-const activeUsers = await executeSelectSimple(db, () =>
-  from(ctx, "users")
+const activeUsers = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) =>
+  ctx
+    .from("users")
     .where((u) => u.active)
     .orderBy((u) => u.name),
 );
@@ -62,8 +63,10 @@ const activeUsers = await executeSelectSimple(db, () =>
 // Execute with params
 const matchingUsers = await executeSelect(
   db,
-  (p: { minAge: number }) =>
-    from(ctx, "users")
+  ctx,
+  (ctx, p, _helpers) =>
+    ctx
+      .from("users")
       .where((u) => u.age >= p.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
   { minAge: 21 },
@@ -72,8 +75,10 @@ const matchingUsers = await executeSelect(
 // INSERT with RETURNING
 const createdUsers = await executeInsert(
   db,
-  () =>
-    insertInto(ctx, "users")
+  ctx,
+  (ctx, _params, _helpers) =>
+    ctx
+      .insertInto("users")
       .values({ name: "Alice", email: "alice@example.com", age: 30, active: true })
       .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
   {},
@@ -82,8 +87,10 @@ const createdUsers = await executeInsert(
 // UPDATE
 const updatedCount = await executeUpdate(
   db,
-  () =>
-    update(ctx, "users")
+  ctx,
+  (ctx, _params, _helpers) =>
+    ctx
+      .update("users")
       .set({ active: false })
       .where((u) => u.age > 65),
   {},
@@ -92,13 +99,15 @@ const updatedCount = await executeUpdate(
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  () => deleteFrom(ctx, "users").where((u) => !u.active),
+  ctx,
+  (ctx, _params, _helpers) => ctx.deleteFrom("users").where((u) => !u.active),
   {},
 );
 
 // Generate SQL without executing
 const { sql, params } = selectStatement(
-  () => from(ctx, "users").where((u) => u.email.endsWith("@example.com")),
+  ctx,
+  (ctx, _params, _helpers) => ctx.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```
@@ -125,7 +134,7 @@ npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
 
 ```typescript
 import Database from "better-sqlite3";
-import { createContext, from, insertInto, update, deleteFrom } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
@@ -153,15 +162,19 @@ db.exec(`
 
 const inserted = executeInsert(
   db,
-  () => insertInto(ctx, "users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
+  ctx,
+  (ctx, _params, _helpers) =>
+    ctx.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
   {},
 );
 // inserted === 1
 
 const users = executeSelect(
   db,
-  (params: { active: number }) =>
-    from(ctx, "users")
+  ctx,
+  (ctx, params, _helpers) =>
+    ctx
+      .from("users")
       .where((u) => u.isActive === params.active)
       .orderBy((u) => u.name),
   { active: 1 },
@@ -169,8 +182,10 @@ const users = executeSelect(
 
 const updated = executeUpdate(
   db,
-  () =>
-    update(ctx, "users")
+  ctx,
+  (ctx, _params, _helpers) =>
+    ctx
+      .update("users")
       .set({ isActive: 0 })
       .where((u) => u.age > 60),
   {},
@@ -178,13 +193,15 @@ const updated = executeUpdate(
 
 const removed = executeDelete(
   db,
-  (p: { cutoff: number }) => deleteFrom(ctx, "users").where((u) => u.age < p.cutoff),
+  ctx,
+  (ctx, p, _helpers) => ctx.deleteFrom("users").where((u) => u.age < p.cutoff),
   { cutoff: 18 },
 );
 
 // Need the SQL text for custom execution?
 const { sql, params } = selectStatement(
-  () => from(ctx, "users").where((u) => u.name.startsWith("S")),
+  ctx,
+  (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.startsWith("S")),
   {},
 );
 const rows = db.prepare(sql).all(params);
@@ -221,17 +238,22 @@ const rows = db.prepare(sql).all(params);
 
 ### 3.3 Case-Insensitive Matching
 
-Use `createQueryHelpers` for portable case-insensitive comparisons:
+Use query helpers for portable case-insensitive comparisons:
 
 ```typescript
-import { createContext, createQueryHelpers, from } from "@webpods/tinqer";
+import { createContext } from "@webpods/tinqer";
 import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
 
+interface Schema {
+  users: { id: number; name: string; email: string };
+}
+
 const ctx = createContext<Schema>();
-const helpers = createQueryHelpers<Schema>();
 
 const { sql } = selectStatement(
-  (_params, h = helpers) => from(ctx, "users").where((u) => h.functions.icontains(u.name, "alice")),
+  ctx,
+  (ctx, _params, helpers) =>
+    dsl.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 // PostgreSQL: WHERE "name" ILIKE $(__p1)

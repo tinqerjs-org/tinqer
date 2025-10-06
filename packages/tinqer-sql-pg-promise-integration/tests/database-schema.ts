@@ -103,6 +103,61 @@ export interface TestDatabaseSchema {
     views: number;
     is_featured: boolean;
   };
+
+  // Test tables for aggregate operations
+  test_nulls: {
+    id: number;
+    value: number | null;
+  };
+
+  test_nulls_category: {
+    id: number;
+    category: string | null;
+  };
+
+  test_minmax: {
+    id: number;
+    value: number | null;
+  };
+
+  test_groupby: {
+    id: number;
+    category: string | null;
+    value: number;
+  };
+
+  test_agg_simple: {
+    id: number;
+    value: number;
+  };
+
+  test_agg_category: {
+    id: number;
+    category: string;
+    value: number;
+  };
+
+  test_agg_price: {
+    id: number;
+    price: number;
+    quantity: number;
+  };
+
+  // Test tables for string operations
+  test_special_chars: {
+    id: number;
+    text: string;
+  };
+
+  test_backslash: {
+    id: number;
+    text: string;
+  };
+
+  test_mixed_chars: {
+    id: number;
+    text: string;
+  };
 }
 
 // Type aliases for convenience

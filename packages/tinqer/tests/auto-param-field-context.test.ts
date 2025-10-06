@@ -4,12 +4,19 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery, from } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { parseQuery } from "../dist/index.js";
+import type { QueryDSL } from "../dist/index.js";
+
+interface TestSchema {
+  users: { age: number; name: string };
+  products: { price: number; cost: number };
+  items: { value: number };
+}
 
 describe("Auto-Parameter Field Context", () => {
   it("should store field context for comparison operations", () => {
-    const query = () => from(db, "users").where((x) => x.age >= 18 && x.name == "John");
+    const query = (ctx: QueryDSL<TestSchema>) =>
+      ctx.from("users").where((x) => x.age >= 18 && x.name == "John");
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({
@@ -34,7 +41,7 @@ describe("Auto-Parameter Field Context", () => {
   });
 
   it("should store field context for TAKE/SKIP operations", () => {
-    const query = () => from(db, "users").skip(10).take(25);
+    const query = (ctx: QueryDSL<TestSchema>) => ctx.from("users").skip(10).take(25);
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({
@@ -59,7 +66,8 @@ describe("Auto-Parameter Field Context", () => {
   });
 
   it("should store field context for arithmetic expressions", () => {
-    const query = () => from(db, "products").where((x) => x.price + 10 > 100);
+    const query = (ctx: QueryDSL<TestSchema>) =>
+      ctx.from("products").where((x) => x.price + 10 > 100);
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({
@@ -84,7 +92,7 @@ describe("Auto-Parameter Field Context", () => {
   });
 
   it("should store field context for negative numbers", () => {
-    const query = () => from(db, "items").where((x) => x.value > -1000);
+    const query = (ctx: QueryDSL<TestSchema>) => ctx.from("items").where((x) => x.value > -1000);
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({
@@ -102,7 +110,7 @@ describe("Auto-Parameter Field Context", () => {
   });
 
   it("should handle constants without field context", () => {
-    const query = () => from(db, "items").where((_x) => 5 < 10);
+    const query = (ctx: QueryDSL<TestSchema>) => ctx.from("items").where((_x) => 5 < 10);
     const result = parseQuery(query);
 
     expect(result?.autoParams).to.deep.equal({

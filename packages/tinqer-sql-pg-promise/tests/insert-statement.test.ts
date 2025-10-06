@@ -4,7 +4,6 @@
 
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { insertInto } from "@webpods/tinqer";
 import { insertStatement } from "../dist/index.js";
 import { db } from "./test-schema.js";
 
@@ -12,8 +11,9 @@ describe("INSERT Statement Generation", () => {
   describe("Basic INSERT", () => {
     it("should generate INSERT with all columns", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users").values({
+        db,
+        (ctx) =>
+          ctx.insertInto("users").values({
             name: "Alice",
             age: 30,
             email: "alice@example.com",
@@ -34,8 +34,9 @@ describe("INSERT Statement Generation", () => {
 
     it("should generate INSERT with partial columns", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users").values({
+        db,
+        (ctx) =>
+          ctx.insertInto("users").values({
             name: "Bob",
             age: 25,
           }),
@@ -51,8 +52,9 @@ describe("INSERT Statement Generation", () => {
 
     it("should generate INSERT with schema prefix in table name", () => {
       const result = insertStatement(
-        () =>
-          insertInto<{ name: string; age: number }>("public.users").values({
+        db,
+        (ctx) =>
+          ctx.insertInto("public.users").values({
             name: "Charlie",
             age: 35,
           }),
@@ -69,8 +71,9 @@ describe("INSERT Statement Generation", () => {
   describe("INSERT with parameters", () => {
     it("should use external parameters", () => {
       const result = insertStatement(
-        (p: { name: string; age: number }) =>
-          insertInto(db, "users").values({
+        db,
+        (ctx, p: { name: string; age: number }) =>
+          ctx.insertInto("users").values({
             name: p.name,
             age: p.age,
           }),
@@ -86,8 +89,9 @@ describe("INSERT Statement Generation", () => {
 
     it("should mix external parameters with literals", () => {
       const result = insertStatement(
-        (p: { name: string }) =>
-          insertInto(db, "users").values({
+        db,
+        (ctx, p: { name: string }) =>
+          ctx.insertInto("users").values({
             name: p.name,
             age: 25,
             email: "default@example.com",
@@ -110,8 +114,10 @@ describe("INSERT Statement Generation", () => {
   describe("INSERT with RETURNING", () => {
     it("should generate INSERT with RETURNING single column", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users")
+        db,
+        (ctx) =>
+          ctx
+            .insertInto("users")
             .values({ name: "Frank", age: 45 })
             .returning((u) => u.id),
         {},
@@ -125,8 +131,10 @@ describe("INSERT Statement Generation", () => {
 
     it("should generate INSERT with RETURNING multiple columns", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users")
+        db,
+        (ctx) =>
+          ctx
+            .insertInto("users")
             .values({ name: "Grace", age: 50 })
             .returning((u) => ({ id: u.id, name: u.name })),
         {},
@@ -140,8 +148,10 @@ describe("INSERT Statement Generation", () => {
 
     it("should generate INSERT with RETURNING all columns (*)", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users")
+        db,
+        (ctx) =>
+          ctx
+            .insertInto("users")
             .values({ name: "Helen", age: 55 })
             .returning((u) => u),
         {},
@@ -157,8 +167,9 @@ describe("INSERT Statement Generation", () => {
   describe("INSERT with special values", () => {
     it("should handle boolean values", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users").values({
+        db,
+        (ctx) =>
+          ctx.insertInto("users").values({
             name: "Ian",
             age: 60,
             isActive: true,
@@ -179,8 +190,9 @@ describe("INSERT Statement Generation", () => {
 
     it("should handle null values", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users").values({
+        db,
+        (ctx) =>
+          ctx.insertInto("users").values({
             name: "Jane",
             age: 65,
             email: null,
@@ -200,8 +212,9 @@ describe("INSERT Statement Generation", () => {
 
     it("should handle numeric edge cases", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users").values({
+        db,
+        (ctx) =>
+          ctx.insertInto("users").values({
             name: "Kevin",
             age: 0,
             salary: -1000,
@@ -224,8 +237,9 @@ describe("INSERT Statement Generation", () => {
   describe("INSERT with special characters", () => {
     it("should handle strings with quotes", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users").values({
+        db,
+        (ctx) =>
+          ctx.insertInto("users").values({
             name: "O'Brien",
             email: 'test"email@example.com',
           }),
@@ -241,8 +255,9 @@ describe("INSERT Statement Generation", () => {
 
     it("should handle Unicode characters", () => {
       const result = insertStatement(
-        () =>
-          insertInto(db, "users").values({
+        db,
+        (ctx) =>
+          ctx.insertInto("users").values({
             name: "李明",
             email: "test@例え.com",
           }),

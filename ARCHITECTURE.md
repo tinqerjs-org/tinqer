@@ -9,7 +9,7 @@ The core package is adapter-agnostic; database-specific behavior lives in compan
 - `@webpods/tinqer-sql-pg-promise` – PostgreSQL integration built on pg-promise
 - `@webpods/tinqer-sql-better-sqlite3` – SQLite integration powered by better-sqlite3
 
-Both adapters expose the same `from`, `query`, and `execute` helpers so applications can switch databases without rewriting query code.
+Both adapters provide database context objects that expose a `dsl` property containing query builders (`from`, `query`, etc.). Applications receive the DSL through lambda parameters, allowing database switching without rewriting query code.
 
 ## Core Design Principles
 
@@ -202,8 +202,9 @@ export interface FromOperation extends QueryOperation {
 }
 ```
 
-**Example**: `from<User>("users")`
-**Output**:
+**User-Facing API**: `(dsl, _params) => dsl.from("users")`
+
+**Internal Representation**:
 
 ```typescript
 {
@@ -478,11 +479,12 @@ User Code → Parser → Normalization Passes → SQL Generator → SQL
 
 The parser uses OXC to convert lambda expressions into an Abstract Syntax Tree (AST), then transforms it into Tinqer's operation tree.
 
-**Input**: Lambda expression
+**Input**: Lambda expression with DSL parameter pattern
 
 ```typescript
-(e) =>
-  from(ctx, "employees")
+(dsl, _params, _helpers) =>
+  dsl
+    .from("employees")
     .select((e) => ({ ...e, rn: window.rowNumber() }))
     .where((r) => r.rn === 1);
 ```
@@ -673,6 +675,18 @@ normalizedOperation = normalizeXYZ(normalizedOperation); // New pass
 ### User-Facing API (Compile-Time)
 
 ```typescript
+// Database context provides DSL access
+interface DatabaseContext<TSchema> {
+  dsl: DSL<TSchema>;
+  // ... other context properties
+}
+
+// DSL object contains query builders
+interface DSL<TSchema> {
+  from<TTable extends keyof TSchema>(table: TTable): Queryable<TSchema[TTable]>;
+  query<TResult>(builder: QueryBuilder<TResult>): Queryable<TResult>;
+}
+
 // Queryable class for type-safe chaining
 class Queryable<T> {
   where(predicate: (item: T) => boolean): Queryable<T>;
@@ -689,8 +703,12 @@ class TerminalQuery<T> {
   private _phantom?: T;
 }
 
-// Entry point
-function from<T>(table: string): Queryable<T>;
+// Query functions receive (dsl, params, helpers)
+type QueryFunction<TParams, TResult> = (
+  dsl: DSL<TSchema>,
+  params: TParams,
+  helpers: Helpers,
+) => Queryable<TResult> | TerminalQuery<TResult>;
 ```
 
 ### Parser API (Runtime)
@@ -714,13 +732,24 @@ function convertAstToQueryOperation(ast: unknown): QueryOperation;
 ### SQL Adapter API
 
 ```typescript
-// Main query function (in adapters)
-function query<TParams, TResult>(
-  queryBuilder: (params: TParams) => Queryable<TResult> | TerminalQuery<TResult>,
+// Main execution functions (in adapters)
+function selectStatement<TParams, TResult>(
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (
+    dsl: DSL<TSchema>,
+    params: TParams,
+    helpers: Helpers,
+  ) => Queryable<TResult> | TerminalQuery<TResult>,
   params: TParams,
-): { sql: string; params: TParams };
+): Promise<TResult[]>;
 
-// SQL generation
+function insertStatement<TParams>(
+  dbContext: DatabaseContext<TSchema>,
+  queryBuilder: (dsl: DSL<TSchema>, params: TParams, helpers: Helpers) => InsertQuery,
+  params: TParams,
+): Promise<void>;
+
+// SQL generation (internal)
 function generateSql(operation: QueryOperation, params: unknown): string;
 ```
 
@@ -733,9 +762,15 @@ function generateSql(operation: QueryOperation, params: unknown): string;
 ### User Code
 
 ```typescript
-const result = selectStatement(
-  (p: { minAge: number; dept: string }) =>
-    from<User>("users")
+// Create database context
+const ctx = createContext<Schema>();
+
+// Execute query with DSL parameter pattern
+const result = await selectStatement(
+  ctx,
+  (dsl, p: { minAge: number; dept: string }) =>
+    dsl
+      .from("users")
       .where((x) => x.age >= p.minAge && x.department === p.dept)
       .select((x) => ({ id: x.id, name: x.name, age: x.age }))
       .orderBy((x) => x.name)

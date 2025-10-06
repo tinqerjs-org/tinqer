@@ -5,27 +5,22 @@
 
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { from } from "@webpods/tinqer";
-
-interface User {
-  id: number;
-  name: string;
-  age: number;
-  isActive: boolean;
-}
+import { db } from "./test-schema.js";
 
 describe("Basic Terminal Operations", () => {
   describe("COUNT operations", () => {
     it("should generate SQL for count()", () => {
-      const result = selectStatement(() => from<User>("users").count(), {});
+      const result = selectStatement(db, (ctx) => ctx.from("users").count(), {});
       expect(result.sql).to.equal('SELECT COUNT(*) FROM "users"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for count() with WHERE", () => {
       const result = selectStatement(
-        () =>
-          from<User>("users")
+        db,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.isActive)
             .count(),
         {},

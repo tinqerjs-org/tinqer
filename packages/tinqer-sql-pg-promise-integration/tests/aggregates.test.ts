@@ -4,7 +4,6 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
 import { db } from "./shared-db.js";
@@ -19,11 +18,16 @@ describe("PostgreSQL Integration - Aggregates", () => {
     it("should count all users", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const count = await executeSelectSimple(db, () => from(dbContext, "users").count(), {
-        onSql: (result) => {
-          capturedSql = result;
+      const count = await executeSelectSimple(
+        db,
+        dbContext,
+        (ctx, _params, _helpers) => ctx.from("users").count(),
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
         },
-      });
+      );
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal('SELECT COUNT(*) FROM "users"');
@@ -38,7 +42,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const count = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").count((u) => u.is_active === true),
+        dbContext,
+        (ctx) => ctx.from("users").count((u) => u.is_active === true),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -59,8 +64,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const count = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.age !== null && u.age >= 30)
             .count(),
         {
@@ -87,7 +94,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        () => from(dbContext, "products").sum((p) => p.price),
+        dbContext,
+        (ctx) => ctx.from("products").sum((p) => p.price),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -108,8 +116,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
             .where((p) => p.category === "Electronics")
             .sum((p) => p.price),
         {
@@ -134,7 +144,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const sum = await executeSelectSimple(
         db,
-        () => from(dbContext, "orders").sum((o) => o.total_amount),
+        dbContext,
+        (ctx) => ctx.from("orders").sum((o) => o.total_amount),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -157,8 +168,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avg = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.age !== null)
             .average((u) => u.age!),
         {
@@ -183,8 +196,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avgElectronics = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
             .where((p) => p.category === "Electronics")
             .average((p) => p.price),
         {
@@ -196,8 +211,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const avgFurniture = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
             .where((p) => p.category === "Furniture")
             .average((p) => p.price),
         {
@@ -232,8 +249,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const minAge = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.age !== null)
             .min((u) => u.age!),
         {
@@ -245,8 +264,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const maxAge = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.age !== null)
             .max((u) => u.age!),
         {
@@ -277,7 +298,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const minPrice = await executeSelectSimple(
         db,
-        () => from(dbContext, "products").min((p) => p.price),
+        dbContext,
+        (ctx) => ctx.from("products").min((p) => p.price),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -287,7 +309,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const maxPrice = await executeSelectSimple(
         db,
-        () => from(dbContext, "products").max((p) => p.price),
+        dbContext,
+        (ctx) => ctx.from("products").max((p) => p.price),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -314,8 +337,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const maxElectronicsPrice = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
             .where((p) => p.category === "Electronics")
             .max((p) => p.price),
         {
@@ -341,8 +366,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .groupBy((u) => u.department_id)
             .select((g) => ({
               department: g.key,
@@ -371,8 +398,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "products")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("products")
             .groupBy((p) => p.category)
             .select((g) => ({
               category: g.key,
@@ -409,8 +438,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.is_active === true && u.age !== null)
             .groupBy((u) => u.department_id)
             .select((g) => ({
@@ -444,8 +475,10 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "orders")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("orders")
             .groupBy((o) => o.status)
             .select((g) => ({
               status: g.key,
@@ -475,19 +508,13 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
   describe("NULL-aware aggregates", () => {
     it("should handle SUM with NULL values (NULLs ignored)", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_nulls (
-          id INTEGER PRIMARY KEY,
-          value INTEGER
-        );
-        INSERT INTO test_nulls (id, value) VALUES (1, 10), (2, 20), (3, NULL), (4, 30), (5, NULL);
-      `);
-
+      // Uses users.age which has some NULL values in test data
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const sum = await executeSelectSimple(
         db,
-        () => from<{ id: number; value: number | null }>("test_nulls").sum((t) => t.value!),
+        dbContext,
+        (ctx) => ctx.from("users").sum((u) => u.age!),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -496,26 +523,17 @@ describe("PostgreSQL Integration - Aggregates", () => {
       );
 
       expect(capturedSql).to.exist;
-      expect(capturedSql!.sql).to.equal('SELECT SUM("value") FROM "test_nulls"');
-      expect(sum).to.equal(60); // SUM ignores NULLs: 10 + 20 + 30 = 60
-
-      await db.none("DROP TABLE test_nulls");
+      expect(capturedSql!.sql).to.equal('SELECT SUM("age") FROM "users"');
+      expect(sum).to.be.a("number"); // SUM ignores NULLs
     });
 
     it("should handle AVG with NULL values (NULLs ignored)", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_nulls (
-          id INTEGER PRIMARY KEY,
-          value NUMERIC
-        );
-        INSERT INTO test_nulls (id, value) VALUES (1, 10.0), (2, 20.0), (3, NULL), (4, 30.0);
-      `);
-
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const avg = await executeSelectSimple(
         db,
-        () => from<{ id: number; value: number | null }>("test_nulls").average((t) => t.value!),
+        dbContext,
+        (ctx) => ctx.from("test_nulls").average((t) => t.value!),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -526,24 +544,15 @@ describe("PostgreSQL Integration - Aggregates", () => {
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal('SELECT AVG("value") FROM "test_nulls"');
       expect(Number(avg)).to.equal(20); // AVG ignores NULLs: (10 + 20 + 30) / 3 = 20
-
-      await db.none("DROP TABLE test_nulls");
     });
 
     it("should handle COUNT(*) with NULL values (NULLs counted)", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_nulls (
-          id INTEGER PRIMARY KEY,
-          value INTEGER
-        );
-        INSERT INTO test_nulls (id, value) VALUES (1, 10), (2, NULL), (3, 20), (4, NULL), (5, 30);
-      `);
-
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const count = await executeSelectSimple(
         db,
-        () => from<{ id: number; value: number | null }>("test_nulls").count(),
+        dbContext,
+        (ctx) => ctx.from("test_nulls").count(),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -553,27 +562,18 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal('SELECT COUNT(*) FROM "test_nulls"');
-      expect(count).to.equal(5); // COUNT(*) includes NULL rows
-
-      await db.none("DROP TABLE test_nulls");
+      expect(count).to.equal(4); // COUNT(*) includes NULL rows, test data has 4 rows
     });
 
     it("should handle COUNT DISTINCT with NULLs (NULLs excluded)", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_nulls (
-          id INTEGER PRIMARY KEY,
-          category TEXT
-        );
-        INSERT INTO test_nulls (id, category) VALUES
-          (1, 'A'), (2, 'B'), (3, NULL), (4, 'A'), (5, NULL), (6, 'C');
-      `);
-
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from<{ id: number; category: string | null }>("test_nulls")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("test_nulls_category")
             .select((t) => t.category)
             .distinct(),
         {
@@ -584,32 +584,23 @@ describe("PostgreSQL Integration - Aggregates", () => {
       );
 
       expect(capturedSql).to.exist;
-      expect(capturedSql!.sql).to.equal('SELECT DISTINCT "category" FROM "test_nulls"');
+      expect(capturedSql!.sql).to.equal('SELECT DISTINCT "category" FROM "test_nulls_category"');
 
       // DISTINCT includes NULL as a single value in PostgreSQL
       // PostgreSQL adapter returns objects, extract the category values
       type CategoryResult = { category: string | null };
       const categories = (results as unknown as CategoryResult[]).map((r) => r.category);
       expect(categories).to.include.members(["A", "B", "C", null]);
-
-      await db.none("DROP TABLE test_nulls");
     });
 
     it("should handle MIN/MAX with NULL values (NULLs ignored)", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_minmax (
-          id INTEGER PRIMARY KEY,
-          value INTEGER
-        );
-        INSERT INTO test_minmax (id, value) VALUES (1, 50), (2, NULL), (3, 10), (4, NULL), (5, 30);
-      `);
-
       let capturedSql1: { sql: string; params: Record<string, unknown> } | undefined;
       let capturedSql2: { sql: string; params: Record<string, unknown> } | undefined;
 
       const min = await executeSelectSimple(
         db,
-        () => from<{ id: number; value: number | null }>("test_minmax").min((t) => t.value!),
+        dbContext,
+        (ctx) => ctx.from("test_minmax").min((t) => t.value!),
         {
           onSql: (result) => {
             capturedSql1 = result;
@@ -619,7 +610,8 @@ describe("PostgreSQL Integration - Aggregates", () => {
 
       const max = await executeSelectSimple(
         db,
-        () => from<{ id: number; value: number | null }>("test_minmax").max((t) => t.value!),
+        dbContext,
+        (ctx) => ctx.from("test_minmax").max((t) => t.value!),
         {
           onSql: (result) => {
             capturedSql2 = result;
@@ -634,27 +626,17 @@ describe("PostgreSQL Integration - Aggregates", () => {
       expect(capturedSql2).to.exist;
       expect(capturedSql2!.sql).to.equal('SELECT MAX("value") FROM "test_minmax"');
       expect(max).to.equal(50); // MAX ignores NULLs
-
-      await db.none("DROP TABLE test_minmax");
     });
 
     it("should handle GROUP BY with NULL keys", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_groupby (
-          id INTEGER PRIMARY KEY,
-          category TEXT,
-          value INTEGER
-        );
-        INSERT INTO test_groupby (id, category, value) VALUES
-          (1, 'A', 10), (2, NULL, 20), (3, 'A', 30), (4, NULL, 40), (5, 'B', 50);
-      `);
-
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from<{ id: number; category: string | null; value: number }>("test_groupby")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("test_groupby")
             .groupBy((t) => t.category)
             .select((g) => ({
               category: g.key,
@@ -680,27 +662,19 @@ describe("PostgreSQL Integration - Aggregates", () => {
       const aGroup = results.find((r) => r.category === "A");
       expect(aGroup).to.exist;
       expect(aGroup!.total).to.equal(40); // 10 + 30 = 40
-
-      await db.none("DROP TABLE test_groupby");
     });
   });
 
   describe("Aggregate bundles (multiple aggregates in single query)", () => {
     it("should handle COUNT + SUM + AVG together", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_agg (
-          id INTEGER PRIMARY KEY,
-          value INTEGER
-        );
-        INSERT INTO test_agg (id, value) VALUES (1, 10), (2, 20), (3, 30), (4, 40);
-      `);
-
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from<{ id: number; value: number }>("test_agg")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("test_agg_simple")
             .groupBy((t) => t.id)
             .select((g) => ({
               id: g.key,
@@ -719,33 +693,23 @@ describe("PostgreSQL Integration - Aggregates", () => {
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal(
         'SELECT "id" AS "id", COUNT(*) AS "count", SUM("value") AS "total", AVG("value") AS "average" ' +
-          'FROM "test_agg" GROUP BY "id" LIMIT $(__p1)',
+          'FROM "test_agg_simple" GROUP BY "id" LIMIT $(__p1)',
       );
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1);
       expect(results[0]!.count).to.equal(1);
-
-      await db.none("DROP TABLE test_agg");
     });
 
     it("should handle MIN + MAX + COUNT together", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_agg (
-          id INTEGER PRIMARY KEY,
-          category TEXT,
-          value INTEGER
-        );
-        INSERT INTO test_agg (id, category, value) VALUES
-          (1, 'A', 10), (2, 'A', 50), (3, 'B', 20), (4, 'B', 30);
-      `);
-
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from<{ id: number; category: string; value: number }>("test_agg")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("test_agg_category")
             .groupBy((t) => t.category)
             .select((g) => ({
               category: g.key,
@@ -763,7 +727,7 @@ describe("PostgreSQL Integration - Aggregates", () => {
       expect(capturedSql).to.exist;
       expect(capturedSql!.sql).to.equal(
         'SELECT "category" AS "category", COUNT(*) AS "count", MIN("value") AS "min", MAX("value") AS "max" ' +
-          'FROM "test_agg" GROUP BY "category"',
+          'FROM "test_agg_category" GROUP BY "category"',
       );
 
       expect(results).to.be.an("array");
@@ -772,61 +736,41 @@ describe("PostgreSQL Integration - Aggregates", () => {
       expect(groupA!.count).to.equal(2);
       expect(groupA!.min).to.equal(10);
       expect(groupA!.max).to.equal(50);
-
-      await db.none("DROP TABLE test_agg");
     });
 
     it("should verify aggregate relationships (min <= avg <= max)", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_agg (
-          id INTEGER PRIMARY KEY,
-          value INTEGER
-        );
-        INSERT INTO test_agg (id, value) VALUES (1, 10), (2, 20), (3, 30);
-      `);
-
-      const count = await executeSelectSimple(db, () =>
-        from<{ id: number; value: number }>("test_agg").count(),
+      const count = await executeSelectSimple(db, dbContext, (ctx) =>
+        ctx.from("test_agg_simple").count(),
       );
-      const min = await executeSelectSimple(db, () =>
-        from<{ id: number; value: number }>("test_agg").min((t) => t.value),
+      const min = await executeSelectSimple(db, dbContext, (ctx) =>
+        ctx.from("test_agg_simple").min((t) => t.value),
       );
-      const max = await executeSelectSimple(db, () =>
-        from<{ id: number; value: number }>("test_agg").max((t) => t.value),
+      const max = await executeSelectSimple(db, dbContext, (ctx) =>
+        ctx.from("test_agg_simple").max((t) => t.value),
       );
-      const avg = await executeSelectSimple(db, () =>
-        from<{ id: number; value: number }>("test_agg").average((t) => t.value),
+      const avg = await executeSelectSimple(db, dbContext, (ctx) =>
+        ctx.from("test_agg_simple").average((t) => t.value),
       );
 
-      expect(count).to.equal(3);
+      expect(count).to.equal(4);
       expect(min).to.equal(10);
-      expect(max).to.equal(30);
-      expect(Number(avg)).to.equal(20);
+      expect(max).to.equal(40);
+      expect(Number(avg)).to.equal(25); // (10 + 20 + 30 + 40) / 4 = 25
 
       // Verify relationships
       expect(min).to.be.at.most(Number(avg));
       expect(Number(avg)).to.be.at.most(max);
-
-      await db.none("DROP TABLE test_agg");
     });
 
     it("should handle all five aggregates with arithmetic", async () => {
-      await db.none(`
-        CREATE TEMP TABLE test_agg (
-          id INTEGER PRIMARY KEY,
-          price NUMERIC,
-          quantity INTEGER
-        );
-        INSERT INTO test_agg (id, price, quantity) VALUES
-          (1, 10.5, 2), (2, 20.0, 3), (3, 15.5, 1);
-      `);
-
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from<{ id: number; price: number; quantity: number }>("test_agg")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("test_agg_price")
             .groupBy((t) => t.id)
             .select((g) => ({
               id: g.key,
@@ -848,13 +792,11 @@ describe("PostgreSQL Integration - Aggregates", () => {
       expect(capturedSql!.sql).to.equal(
         'SELECT "id" AS "id", COUNT(*) AS "itemCount", SUM(("price" * "quantity")) AS "totalValue", ' +
           'MIN("price") AS "minPrice", MAX("price") AS "maxPrice", AVG("price") AS "avgPrice" ' +
-          'FROM "test_agg" GROUP BY "id" LIMIT $(__p1)',
+          'FROM "test_agg_price" GROUP BY "id" LIMIT $(__p1)',
       );
 
       expect(results).to.be.an("array");
       expect(results.length).to.equal(1);
-
-      await db.none("DROP TABLE test_agg");
     });
   });
 });

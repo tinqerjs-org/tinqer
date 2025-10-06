@@ -3,7 +3,7 @@
  * ONLY BASIC SQL OPERATIONS + single, last, contains, union, reverse
  */
 
-import type { IGrouping } from "./igrouping.js";
+import type { Grouping } from "./grouping.js";
 import { TerminalQuery } from "./terminal-query.js";
 
 /**
@@ -42,7 +42,7 @@ export class Queryable<T> {
     _inner: Queryable<TInner>,
     _outerKeySelector: (_outer: T) => TKey,
     _innerKeySelector: (_inner: TInner) => TKey,
-    _resultSelector: (_outer: T, _innerGroup: IGrouping<TKey, TInner>) => TResult,
+    _resultSelector: (_outer: T, _innerGroup: Grouping<TKey, TInner>) => TResult,
   ): Queryable<TResult> {
     return new Queryable<TResult>();
   }
@@ -65,8 +65,8 @@ export class Queryable<T> {
 
   // ==================== Grouping ====================
 
-  groupBy<TKey>(_keySelector: (_item: T) => TKey): Queryable<IGrouping<TKey, T>> {
-    return new Queryable<IGrouping<TKey, T>>();
+  groupBy<TKey>(_keySelector: (_item: T) => TKey): Queryable<Grouping<TKey, T>> {
+    return new Queryable<Grouping<TKey, T>>();
   }
 
   // ==================== Ordering ====================

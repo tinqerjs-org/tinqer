@@ -17,11 +17,12 @@ export function visitAstToQueryOperation(
   _queryParams: Set<string>,
   visitorContext?: VisitorContext,
 ): { operation: QueryOperation | null; autoParams: Record<string, unknown> } | null {
-  // Pass existing context to preserve auto-param counter and existing params
+  // Pass existing context to preserve auto-param counter, existing params, and DSL param
   const result = convertAstToQueryOperationWithParams(
     ast,
     visitorContext?.autoParamCounter,
     visitorContext?.autoParams,
+    visitorContext?.dslParam, // Pass the existing DSL param
   );
 
   if (!result || !result.operation) {

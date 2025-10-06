@@ -4,11 +4,10 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { from } from "@webpods/tinqer";
 import { executeSelect, executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
 import { setupTestDatabase } from "./test-setup.js";
-import { db } from "./shared-db.js";
 import { dbContext } from "./database-schema.js";
+import { db } from "./shared-db.js";
 
 describe("PostgreSQL Integration - Basic Queries", () => {
   before(async () => {
@@ -19,7 +18,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should select all users", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSelectSimple(db, () => from(dbContext, "users"), {
+      const results = await executeSelectSimple(db, dbContext, (ctx) => ctx.from("users"), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -41,8 +40,9 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users").select((u) => ({
+        dbContext,
+        (ctx) =>
+          ctx.from("users").select((u) => ({
             id: u.id,
             name: u.name,
           })),
@@ -69,8 +69,9 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users").select((u) => ({
+        dbContext,
+        (ctx) =>
+          ctx.from("users").select((u) => ({
             userId: u.id,
             fullName: u.name,
             userEmail: u.email,
@@ -100,7 +101,8 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").where((u) => u.age !== null && u.age >= 30),
+        dbContext,
+        (ctx) => ctx.from("users").where((u) => u.age !== null && u.age >= 30),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -128,10 +130,9 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users").where(
-            (u) => u.age !== null && u.age >= 25 && u.is_active === true,
-          ),
+        dbContext,
+        (ctx) =>
+          ctx.from("users").where((u) => u.age !== null && u.age >= 25 && u.is_active === true),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -158,10 +159,9 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users").where(
-            (u) => (u.age !== null && u.age < 30) || u.department_id === 4,
-          ),
+        dbContext,
+        (ctx) =>
+          ctx.from("users").where((u) => (u.age !== null && u.age < 30) || u.department_id === 4),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -187,7 +187,8 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelect(
         db,
-        (params) => from(dbContext, "users").where((u) => u.age !== null && u.age >= params.minAge),
+        dbContext,
+        (ctx, params) => ctx.from("users").where((u) => u.age !== null && u.age >= params.minAge),
         { minAge: 35 },
         {
           onSql: (result) => {
@@ -216,7 +217,8 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").orderBy((u) => u.name),
+        dbContext,
+        (ctx) => ctx.from("users").orderBy((u) => u.name),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -240,8 +242,10 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.age !== null)
             .orderByDescending((u) => u.age!),
         {
@@ -269,8 +273,10 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .where((u) => u.age !== null && u.department_id !== null)
             .orderBy((u) => u.department_id!)
             .thenByDescending((u) => u.age!),
@@ -307,7 +313,8 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").orderBy((u) => u.is_active),
+        dbContext,
+        (ctx) => ctx.from("users").orderBy((u) => u.is_active),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -335,7 +342,8 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () => from(dbContext, "users").orderByDescending((u) => u.is_active),
+        dbContext,
+        (ctx) => ctx.from("users").orderByDescending((u) => u.is_active),
         {
           onSql: (result) => {
             capturedSql = result;
@@ -363,8 +371,10 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .orderByDescending((u) => u.is_active)
             .thenBy((u) => u.name),
         {
@@ -401,7 +411,7 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     it("should limit results", async () => {
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
-      const results = await executeSelectSimple(db, () => from(dbContext, "users").take(5), {
+      const results = await executeSelectSimple(db, dbContext, (ctx) => ctx.from("users").take(5), {
         onSql: (result) => {
           capturedSql = result;
         },
@@ -415,16 +425,18 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should skip results", async () => {
-      const allResults = await executeSelectSimple(db, () =>
-        from(dbContext, "users").orderBy((u) => u.id),
+      const allResults = await executeSelectSimple(db, dbContext, (ctx) =>
+        ctx.from("users").orderBy((u) => u.id),
       );
 
       let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
 
       const skippedResults = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .orderBy((u) => u.id)
             .skip(3),
         {
@@ -442,8 +454,9 @@ describe("PostgreSQL Integration - Basic Queries", () => {
     });
 
     it("should paginate results", async () => {
-      const page1 = await executeSelectSimple(db, () =>
-        from(dbContext, "users")
+      const page1 = await executeSelectSimple(db, dbContext, (ctx) =>
+        ctx
+          .from("users")
           .orderBy((u) => u.id)
           .take(3),
       );
@@ -452,8 +465,10 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const page2 = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .orderBy((u) => u.id)
             .skip(3)
             .take(3),
@@ -482,8 +497,10 @@ describe("PostgreSQL Integration - Basic Queries", () => {
 
       const results = await executeSelectSimple(
         db,
-        () =>
-          from(dbContext, "users")
+        dbContext,
+        (ctx) =>
+          ctx
+            .from("users")
             .select((u) => ({ department_id: u.department_id }))
             .distinct(),
         {

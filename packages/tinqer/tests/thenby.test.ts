@@ -4,20 +4,22 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { parseQuery, from } from "../dist/index.js";
+import { parseQuery } from "../dist/index.js";
+import type { QueryDSL } from "../dist/index.js";
 import {
   asOrderByOperation,
   asThenByOperation,
   getOperation,
 } from "./test-utils/operation-helpers.js";
 import type { ArithmeticExpression } from "../dist/expressions/expression.js";
-import { db } from "./test-schema.js";
+import { type TestSchema } from "./test-schema.js";
 
 describe("THEN BY Operations", () => {
   describe("thenBy()", () => {
     it("should parse orderBy followed by thenBy", () => {
-      const query = () =>
-        from(db, "products")
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .from("products")
           .orderBy((x) => x.category)
           .thenBy((x) => x.name);
       const result = parseQuery(query);
@@ -33,8 +35,9 @@ describe("THEN BY Operations", () => {
     });
 
     it("should parse multiple thenBy operations", () => {
-      const query = () =>
-        from(db, "users")
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .from("users")
           .orderBy((x) => x.country)
           .thenBy((x) => x.city)
           .thenBy((x) => x.name);
@@ -54,8 +57,9 @@ describe("THEN BY Operations", () => {
     });
 
     it("should parse thenBy with computed expression", () => {
-      const query = () =>
-        from(db, "products")
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .from("products")
           .orderBy((x) => x.category)
           .thenBy((x) => x.price - x.cost);
       const result = parseQuery(query);
@@ -70,8 +74,9 @@ describe("THEN BY Operations", () => {
 
   describe("thenByDescending()", () => {
     it("should parse orderBy followed by thenByDescending", () => {
-      const query = () =>
-        from(db, "employees")
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .from("employees")
           .orderBy((x) => x.department)
           .thenByDescending((x) => x.salary);
       const result = parseQuery(query);
@@ -83,8 +88,9 @@ describe("THEN BY Operations", () => {
     });
 
     it("should parse mixed thenBy and thenByDescending", () => {
-      const query = () =>
-        from(db, "products")
+      const query = (ctx: QueryDSL<TestSchema>) =>
+        ctx
+          .from("products")
           .orderBy((x) => x.category)
           .thenByDescending((x) => x.price)
           .thenBy((x) => x.cost);
