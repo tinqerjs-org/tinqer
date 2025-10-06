@@ -88,4 +88,4 @@ export interface TestSchema {
 }
 
 // Shared database context for all tests
-export const db = createSchema<TestSchema>();
+export const schema = createSchema<TestSchema>();

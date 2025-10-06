@@ -51,13 +51,13 @@ interface Schema {
   locations: Location;
 }
 
-const db = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 describe("Join SQL Generation", () => {
   describe("INNER JOIN", () => {
     it("should generate INNER JOIN with proper syntax", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -78,7 +78,7 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with WHERE clause", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -101,7 +101,7 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with complex inner query", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -123,7 +123,7 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with GROUP BY", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -148,7 +148,7 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with DISTINCT", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -170,7 +170,7 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with ORDER BY and TAKE", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -196,7 +196,7 @@ describe("Join SQL Generation", () => {
   describe("Multiple JOINs", () => {
     it("should handle multiple JOINs (3 tables)", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -226,7 +226,7 @@ describe("Join SQL Generation", () => {
 
     it("should handle 4-table JOIN chain", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("orders")
@@ -267,7 +267,7 @@ describe("Join SQL Generation", () => {
   describe("Self JOIN", () => {
     it("should handle self JOIN for hierarchical data", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -290,7 +290,7 @@ describe("Join SQL Generation", () => {
   describe("Complex JOIN scenarios", () => {
     it("should handle JOIN with aggregates", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -317,7 +317,7 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with complex conditions", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -339,7 +339,7 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with complex WHERE and ORDER BY", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -372,7 +372,7 @@ describe("Join SQL Generation", () => {
 
     it("should handle JOIN with pagination", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q, p: { page: number; pageSize: number }) =>
           q
             .from("users")
@@ -400,7 +400,7 @@ describe("Join SQL Generation", () => {
   describe("LINQ-style joins", () => {
     it("should translate groupJoin/selectMany/defaultIfEmpty into LEFT OUTER JOIN", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -427,7 +427,7 @@ describe("Join SQL Generation", () => {
   describe("CROSS JOIN", () => {
     it("should generate CROSS JOIN when collection selector returns a query", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("departments")

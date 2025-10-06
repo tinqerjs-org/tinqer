@@ -5,12 +5,12 @@
 
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("ANY and ALL Operations", () => {
   describe("ANY operations", () => {
     it("should generate SQL for any() without predicate", () => {
-      const result = selectStatement(db, (q) => q.from("users").any(), {});
+      const result = selectStatement(schema, (q) => q.from("users").any(), {});
       expect(result.sql).to.equal(
         'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users") THEN 1 ELSE 0 END',
       );
@@ -18,7 +18,7 @@ describe("ANY and ALL Operations", () => {
     });
 
     it("should generate SQL for any() with predicate", () => {
-      const result = selectStatement(db, (q) => q.from("users").any((u) => u.age >= 18), {});
+      const result = selectStatement(schema, (q) => q.from("users").any((u) => u.age >= 18), {});
       expect(result.sql).to.equal(
         'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "age" >= @__p1) THEN 1 ELSE 0 END',
       );
@@ -26,7 +26,7 @@ describe("ANY and ALL Operations", () => {
     });
 
     it("should generate SQL for any() with boolean column", () => {
-      const result = selectStatement(db, (q) => q.from("users").any((u) => u.isActive), {});
+      const result = selectStatement(schema, (q) => q.from("users").any((u) => u.isActive), {});
       expect(result.sql).to.equal(
         'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "isActive") THEN 1 ELSE 0 END',
       );
@@ -35,7 +35,7 @@ describe("ANY and ALL Operations", () => {
 
     it("should combine WHERE with any() predicate", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -52,7 +52,7 @@ describe("ANY and ALL Operations", () => {
 
   describe("ALL operations", () => {
     it("should generate SQL for all() with predicate", () => {
-      const result = selectStatement(db, (q) => q.from("users").all((u) => u.age >= 18), {});
+      const result = selectStatement(schema, (q) => q.from("users").all((u) => u.age >= 18), {});
       expect(result.sql).to.equal(
         'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("age" >= @__p1)) THEN 1 ELSE 0 END',
       );
@@ -60,7 +60,7 @@ describe("ANY and ALL Operations", () => {
     });
 
     it("should generate SQL for all() with boolean column", () => {
-      const result = selectStatement(db, (q) => q.from("users").all((u) => u.isActive), {});
+      const result = selectStatement(schema, (q) => q.from("users").all((u) => u.isActive), {});
       expect(result.sql).to.equal(
         'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("isActive")) THEN 1 ELSE 0 END',
       );
@@ -69,7 +69,7 @@ describe("ANY and ALL Operations", () => {
 
     it("should combine WHERE with all() predicate", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -87,7 +87,7 @@ describe("ANY and ALL Operations", () => {
   describe("Complex ANY/ALL scenarios", () => {
     it("should handle any() with complex conditions", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").any((u) => u.age > 18 && u.isActive && u.name != "test"),
         {},
       );
@@ -99,7 +99,7 @@ describe("ANY and ALL Operations", () => {
 
     it("should handle all() with complex conditions", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").all((u) => u.age > 0 || u.name == "admin"),
         {},
       );
@@ -111,7 +111,7 @@ describe("ANY and ALL Operations", () => {
 
     it("should work with SELECT and any()", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")

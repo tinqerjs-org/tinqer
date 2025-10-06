@@ -44,14 +44,14 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     departments: Department;
   }
 
-  const db = createSchema<Schema>();
+  const schema = createSchema<Schema>();
 
   describe("Complex object projections", () => {
     // Removed: nested object structures with || operator
 
     it("should handle deeply nested projections", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q.from("products").select((p) => ({
             basic: {
@@ -93,7 +93,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
     it("should project after filtering", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("products")
@@ -161,7 +161,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
     it("should work with DISTINCT", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("products")
@@ -187,7 +187,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
   describe("Edge cases in SELECT", () => {
     it("should handle SELECT with only literals", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q.from("users").select(() => ({
             constant: 42,
@@ -210,14 +210,14 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Test removed: Very complex nested arithmetic no longer supported in SELECT
 
     it("should handle SELECT with no projection (identity)", () => {
-      const result = selectStatement(db, (q) => q.from("users").select((u) => u), {});
+      const result = selectStatement(schema, (q) => q.from("users").select((u) => u), {});
 
       expect(result.sql).to.contain("SELECT * FROM");
     });
 
     it("should handle SELECT with renamed fields", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q.from("users").select((u) => ({
             userId: u.id,
@@ -242,7 +242,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
   describe("SELECT with special cases", () => {
     it("should handle SELECT with pagination pattern", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q, params) =>
           q
             .from("products")

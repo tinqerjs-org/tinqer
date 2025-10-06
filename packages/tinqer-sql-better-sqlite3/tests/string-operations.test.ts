@@ -26,13 +26,13 @@ interface Schema {
   products: Product;
 }
 
-const db = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 describe("String Operations SQL Generation", () => {
   describe("startsWith", () => {
     it("should generate SQL for startsWith", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.name.startsWith("John")),
         {},
       );
@@ -43,7 +43,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle startsWith with parameter", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q, p: { prefix: string }) => q.from("users").where((u) => u.email.startsWith(p.prefix)),
         { prefix: "admin@" },
       );
@@ -54,7 +54,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle multiple startsWith conditions", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("products").where((p) => p.name.startsWith("Pro") || p.sku.startsWith("SKU")),
         {},
       );
@@ -68,7 +68,7 @@ describe("String Operations SQL Generation", () => {
   describe("endsWith", () => {
     it("should generate SQL for endsWith", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.email.endsWith(".com")),
         {},
       );
@@ -79,7 +79,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle endsWith with parameter", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q, p: { suffix: string }) => q.from("users").where((u) => u.name.endsWith(p.suffix)),
         { suffix: "son" },
       );
@@ -90,7 +90,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle endsWith in combination with other conditions", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.id > 100 && u.email.endsWith("@example.com")),
         {},
       );
@@ -104,7 +104,7 @@ describe("String Operations SQL Generation", () => {
   describe("contains", () => {
     it("should generate SQL for contains", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("products").where((p) => p.description.includes("premium")),
         {},
       );
@@ -117,7 +117,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle contains with parameter", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q, p: { keyword: string }) =>
           q.from("products").where((pr) => pr.name.includes(p.keyword)),
         { keyword: "laptop" },
@@ -131,7 +131,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle multiple contains conditions", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("products")
@@ -151,7 +151,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle string operations with SELECT", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -168,7 +168,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle string operations with ORDER BY and TAKE", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("products")
@@ -186,7 +186,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle string operations with GROUP BY", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("products")
@@ -204,7 +204,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle case-sensitive string operations", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q.from("users").where((u) => u.email.startsWith("Admin") || u.email.startsWith("admin")),
         {},
@@ -216,7 +216,7 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle empty string checks", () => {
-      const result = selectStatement(db, (q) => q.from("users").where((u) => u.bio == ""), {});
+      const result = selectStatement(schema, (q) => q.from("users").where((u) => u.bio == ""), {});
 
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "bio" = @__p1');
       expect(result.params).to.deep.equal({ __p1: "" });
@@ -224,7 +224,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle string operations in JOIN", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -253,7 +253,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle string concatenation in WHERE", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.name + u.email == "johnsmith@test.com"),
         {},
       );
@@ -265,7 +265,11 @@ describe("String Operations SQL Generation", () => {
 
   describe("Null string handling", () => {
     it("should handle nullable string comparisons", () => {
-      const result = selectStatement(db, (q) => q.from("users").where((u) => u.bio == null), {});
+      const result = selectStatement(
+        schema,
+        (q) => q.from("users").where((u) => u.bio == null),
+        {},
+      );
 
       expect(result.sql).to.equal(`SELECT * FROM "users" WHERE "bio" IS NULL`);
       expect(result.params).to.deep.equal({});
@@ -273,7 +277,7 @@ describe("String Operations SQL Generation", () => {
 
     it("should handle nullable string with string operations", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.bio != null && u.bio.includes("developer")),
         {},
       );

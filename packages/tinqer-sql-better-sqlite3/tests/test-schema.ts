@@ -185,4 +185,4 @@ export interface TestSchema {
 }
 
 // Create the database context
-export const db = createSchema<TestSchema>();
+export const schema = createSchema<TestSchema>();

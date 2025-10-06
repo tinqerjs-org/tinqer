@@ -18,13 +18,13 @@ interface Schema {
   users: User;
 }
 
-const db = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 describe("NULL Handling", () => {
   describe("IS NULL generation", () => {
     it("should generate IS NULL for == null comparison", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.middleName == null),
         {},
       );
@@ -33,13 +33,21 @@ describe("NULL Handling", () => {
     });
 
     it("should generate IS NULL for === null comparison", () => {
-      const result = selectStatement(db, (q) => q.from("users").where((u) => u.age === null), {});
+      const result = selectStatement(
+        schema,
+        (q) => q.from("users").where((u) => u.age === null),
+        {},
+      );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" IS NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NULL with null on left side", () => {
-      const result = selectStatement(db, (q) => q.from("users").where((u) => null == u.name), {});
+      const result = selectStatement(
+        schema,
+        (q) => q.from("users").where((u) => null == u.name),
+        {},
+      );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" IS NULL');
       expect(result.params).to.deep.equal({});
     });
@@ -48,7 +56,7 @@ describe("NULL Handling", () => {
   describe("IS NOT NULL generation", () => {
     it("should generate IS NOT NULL for != null comparison", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.middleName != null),
         {},
       );
@@ -57,13 +65,21 @@ describe("NULL Handling", () => {
     });
 
     it("should generate IS NOT NULL for !== null comparison", () => {
-      const result = selectStatement(db, (q) => q.from("users").where((u) => u.age !== null), {});
+      const result = selectStatement(
+        schema,
+        (q) => q.from("users").where((u) => u.age !== null),
+        {},
+      );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" IS NOT NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NOT NULL with null on left side", () => {
-      const result = selectStatement(db, (q) => q.from("users").where((u) => null != u.name), {});
+      const result = selectStatement(
+        schema,
+        (q) => q.from("users").where((u) => null != u.name),
+        {},
+      );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" IS NOT NULL');
       expect(result.params).to.deep.equal({});
     });
@@ -72,7 +88,7 @@ describe("NULL Handling", () => {
   describe("Complex NULL conditions", () => {
     it("should handle NULL checks with AND", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.name != null && u.age == null),
         {},
       );
@@ -84,7 +100,7 @@ describe("NULL Handling", () => {
 
     it("should handle NULL checks with OR", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.middleName == null || u.age == null),
         {},
       );
@@ -96,7 +112,7 @@ describe("NULL Handling", () => {
 
     it("should handle NULL checks in complex conditions", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) => q.from("users").where((u) => u.id > 10 && u.middleName != null),
         {},
       );

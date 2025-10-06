@@ -5,13 +5,13 @@
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
 import { updateStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("UPDATE Statement Generation", () => {
   describe("Basic UPDATE", () => {
     it("should generate UPDATE with WHERE clause", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -29,7 +29,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should generate UPDATE with multiple columns", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -51,7 +51,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should generate UPDATE with schema prefix in table name", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("public.users")
@@ -67,7 +67,7 @@ describe("UPDATE Statement Generation", () => {
   describe("UPDATE with complex WHERE clauses", () => {
     it("should handle AND conditions", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -84,7 +84,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should handle OR conditions", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -101,7 +101,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should handle complex nested conditions", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -120,7 +120,7 @@ describe("UPDATE Statement Generation", () => {
   describe("UPDATE with parameters", () => {
     it("should use external parameters in SET", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q, p: { newAge: number; userId: number }) =>
           q
             .update("users")
@@ -138,7 +138,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should mix external parameters with literals", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q, p: { userId: number }) =>
           q
             .update("users")
@@ -162,7 +162,7 @@ describe("UPDATE Statement Generation", () => {
   describe("UPDATE with RETURNING", () => {
     it("should generate UPDATE with RETURNING single column", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -180,7 +180,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should generate UPDATE with RETURNING multiple columns", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -198,7 +198,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should generate UPDATE with RETURNING all columns (*)", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -218,7 +218,7 @@ describe("UPDATE Statement Generation", () => {
   describe("UPDATE with allowFullTableUpdate", () => {
     it("should generate UPDATE without WHERE when allowed", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) => q.update("users").set({ isActive: true }).allowFullTableUpdate(),
         {},
       );
@@ -228,7 +228,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", () => {
       assert.throws(() => {
-        updateStatement(db, (q) => q.update("users").set({ isActive: true }), {});
+        updateStatement(schema, (q) => q.update("users").set({ isActive: true }), {});
       }, /UPDATE requires a WHERE clause or explicit allowFullTableUpdate/);
     });
   });
@@ -236,7 +236,7 @@ describe("UPDATE Statement Generation", () => {
   describe("UPDATE with special values", () => {
     it("should handle boolean values", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -253,7 +253,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should handle null values", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -267,7 +267,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should handle numeric edge cases", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -287,7 +287,7 @@ describe("UPDATE Statement Generation", () => {
   describe("UPDATE with string operations in WHERE", () => {
     it("should handle startsWith in WHERE", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")
@@ -304,7 +304,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should handle contains in WHERE", () => {
       const result = updateStatement(
-        db,
+        schema,
         (q) =>
           q
             .update("users")

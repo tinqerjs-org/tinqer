@@ -5,12 +5,12 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("Null Coalescing Operator (??) with query", () => {
   it("should generate COALESCE for ?? operator in WHERE clause", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) => q.from("users").where((u) => (u.city ?? "active") === "active"),
       {},
     );
@@ -21,7 +21,7 @@ describe("Null Coalescing Operator (??) with query", () => {
 
   it("should work with numeric values", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) => q.from("orders").where((o) => (o.quantity ?? 5) < 3),
       {},
     );

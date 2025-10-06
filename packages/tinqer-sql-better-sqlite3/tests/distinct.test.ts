@@ -15,17 +15,17 @@ describe("Distinct SQL Generation", () => {
     products: Product;
   }
 
-  const db = createSchema<Schema>();
+  const schema = createSchema<Schema>();
 
   it("should generate DISTINCT for all columns", () => {
-    const result = selectStatement(db, (q) => q.from("products").distinct(), {});
+    const result = selectStatement(schema, (q) => q.from("products").distinct(), {});
 
     expect(result.sql).to.equal('SELECT DISTINCT * FROM "products"');
   });
 
   it("should combine DISTINCT with WHERE", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) =>
         q
           .from("products")
@@ -40,7 +40,7 @@ describe("Distinct SQL Generation", () => {
 
   it("should combine DISTINCT with SELECT projection", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) =>
         q
           .from("products")
@@ -54,7 +54,7 @@ describe("Distinct SQL Generation", () => {
 
   it("should work with DISTINCT, WHERE, and ORDER BY", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) =>
         q
           .from("products")

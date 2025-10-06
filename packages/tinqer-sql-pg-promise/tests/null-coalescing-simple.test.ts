@@ -17,10 +17,10 @@ describe("Null Coalescing Operator (??) with query", () => {
       users: User;
     }
 
-    const db = createSchema<Schema>();
+    const schema = createSchema<Schema>();
 
     const result = selectStatement(
-      db,
+      schema,
       (q) => q.from("users").where((u) => (u.status ?? "active") === "active"),
       {},
     );
@@ -38,10 +38,10 @@ describe("Null Coalescing Operator (??) with query", () => {
       orders: Order;
     }
 
-    const db = createSchema<Schema>();
+    const schema = createSchema<Schema>();
 
     const result = selectStatement(
-      db,
+      schema,
       (q) => q.from("orders").where((o) => (o.priority ?? 5) < 3),
       {},
     );

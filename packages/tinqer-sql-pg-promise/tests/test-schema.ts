@@ -161,7 +161,4 @@ export interface TestSchema {
 }
 
 // Create the database context
-export const db = createSchema<TestSchema>();
-
-// Re-export from for use with db context
-export { from } from "@webpods/tinqer";
+export const schema = createSchema<TestSchema>();

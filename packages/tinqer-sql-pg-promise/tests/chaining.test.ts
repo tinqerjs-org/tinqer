@@ -5,12 +5,12 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("Complex Query Chaining", () => {
   it("should generate complex query with WHERE, SELECT, ORDER BY, TAKE", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q, p: { minAge: number }) =>
         q
           .from("users")
@@ -29,7 +29,7 @@ describe("Complex Query Chaining", () => {
 
   it("should generate query with SKIP and TAKE for pagination", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q, p: { page: number; pageSize: number }) =>
         q
           .from("products")
@@ -47,7 +47,7 @@ describe("Complex Query Chaining", () => {
 
   it("should generate query with multiple WHERE clauses combined with AND", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) =>
         q
           .from("users")
@@ -64,7 +64,7 @@ describe("Complex Query Chaining", () => {
 
   it("should generate query with DISTINCT", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) =>
         q
           .from("products")
@@ -78,7 +78,7 @@ describe("Complex Query Chaining", () => {
 
   it("should generate query with GROUP BY and COUNT aggregate", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) =>
         q
           .from("employees")

@@ -18,13 +18,13 @@ interface Schema {
   sales: Sale;
 }
 
-const db = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 describe("GROUP BY with Composite Keys", () => {
   describe("Composite key GROUP BY", () => {
     it("should group by object with two properties", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -44,7 +44,7 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should group by object with three properties", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -66,7 +66,7 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should handle composite key with computed properties", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -87,7 +87,7 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should group by mixed expressions", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -114,7 +114,7 @@ describe("GROUP BY with Composite Keys", () => {
   describe("GROUP BY with WHERE and composite keys", () => {
     it("should filter before grouping with composite key", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -136,7 +136,7 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should handle multiple WHERE with composite GROUP BY", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -160,7 +160,7 @@ describe("GROUP BY with Composite Keys", () => {
   describe("GROUP BY with ORDER BY and composite keys", () => {
     it("should order by grouped composite key properties", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -180,7 +180,7 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should order by aggregate with composite GROUP BY", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -201,7 +201,7 @@ describe("GROUP BY with Composite Keys", () => {
   describe("GROUP BY with TAKE/SKIP and composite keys", () => {
     it("should limit results with composite GROUP BY", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -224,7 +224,7 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should paginate grouped results with composite keys", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -256,7 +256,7 @@ describe("GROUP BY with Composite Keys", () => {
   describe("Complex GROUP BY scenarios", () => {
     it("should handle GROUP BY with method calls in key", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -320,7 +320,7 @@ describe("GROUP BY with Composite Keys", () => {
 
     it("should handle GROUP BY with all aggregate functions", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")

@@ -5,19 +5,19 @@
 
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("Basic Terminal Operations", () => {
   describe("COUNT operations", () => {
     it("should generate SQL for count()", () => {
-      const result = selectStatement(db, (q) => q.from("users").count(), {});
+      const result = selectStatement(schema, (q) => q.from("users").count(), {});
       expect(result.sql).to.equal('SELECT COUNT(*) FROM "users"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for count() with WHERE", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")

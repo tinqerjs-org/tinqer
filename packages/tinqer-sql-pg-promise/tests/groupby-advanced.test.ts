@@ -38,12 +38,12 @@ describe("Advanced GROUP BY SQL Generation", () => {
     employees: Employee;
   }
 
-  const db = createSchema<Schema>();
+  const schema = createSchema<Schema>();
 
   describe("GROUP BY with all aggregate functions", () => {
     it("should use all aggregate functions together", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -66,7 +66,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should handle different columns for different aggregates", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -93,7 +93,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
   describe("GROUP BY with complex WHERE conditions", () => {
     it("should filter before grouping", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -115,7 +115,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should handle multiple WHERE clauses before GROUP BY", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("employees")
@@ -139,7 +139,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
   describe("GROUP BY with ORDER BY", () => {
     it("should order by aggregated values", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -159,7 +159,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should order by group key", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -179,7 +179,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should handle ORDER BY DESC with GROUP BY", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -201,7 +201,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
   describe("GROUP BY with TAKE and SKIP", () => {
     it("should limit grouped results", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -223,7 +223,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should paginate grouped results", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("employees")
@@ -302,7 +302,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
   describe("GROUP BY with parameters", () => {
     it("should handle parameters in WHERE before GROUP BY", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q, params) =>
           q
             .from("sales")
@@ -323,7 +323,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should mix parameters with auto-params in GROUP BY queries", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q, params) =>
           q
             .from("sales")
@@ -353,7 +353,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
   describe("Complex GROUP BY scenarios", () => {
     it("should handle GROUP BY with all query operations", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -385,7 +385,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should handle nested GROUP BY logic", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -419,7 +419,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
   describe("GROUP BY edge cases", () => {
     it("should handle GROUP BY with no aggregates", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -435,7 +435,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should handle GROUP BY with only COUNT", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")
@@ -451,7 +451,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should handle GROUP BY with DISTINCT", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("sales")

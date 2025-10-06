@@ -3,7 +3,7 @@
  */
 
 import { executeSelect } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 // Mock database for type testing
 const mockDb = {
@@ -42,12 +42,12 @@ function typeTests() {
     username: string;
     active: boolean;
     deptId: number;
-  }[] = executeSelect(mockDb, db, (q) => q.from("users"), {});
+  }[] = executeSelect(mockDb, schema, (q) => q.from("users"), {});
 
   // With select, returns projected array
   const userNames: { id: number; name: string }[] = executeSelect(
     mockDb,
-    db,
+    schema,
     (q) => q.from("users").select((u) => ({ id: u.id, name: u.name })),
     {},
   );
@@ -70,7 +70,7 @@ function typeTests() {
     username: string;
     active: boolean;
     deptId: number;
-  } = executeSelect(mockDb, db, (q) => q.from("users").first(), {});
+  } = executeSelect(mockDb, schema, (q) => q.from("users").first(), {});
 
   // firstOrDefault() returns item or undefined
   const maybeUser:
@@ -92,16 +92,21 @@ function typeTests() {
         active: boolean;
         deptId: number;
       }
-    | undefined = executeSelect(mockDb, db, (q) => q.from("users").firstOrDefault(), {});
+    | undefined = executeSelect(mockDb, schema, (q) => q.from("users").firstOrDefault(), {});
 
   // count() returns number
-  const count: number = executeSelect(mockDb, db, (q) => q.from("users").count(), {});
+  const count: number = executeSelect(mockDb, schema, (q) => q.from("users").count(), {});
 
   // any() returns boolean
-  const hasUsers: boolean = executeSelect(mockDb, db, (q) => q.from("users").any(), {});
+  const hasUsers: boolean = executeSelect(mockDb, schema, (q) => q.from("users").any(), {});
 
   // sum() returns number
-  const totalAge: number = executeSelect(mockDb, db, (q) => q.from("users").sum((u) => u.age), {});
+  const totalAge: number = executeSelect(
+    mockDb,
+    schema,
+    (q) => q.from("users").sum((u) => u.age),
+    {},
+  );
 
   // Use the variables to avoid unused variable warnings
   console.log(users, userNames, firstUser, maybeUser, count, hasUsers, totalAge);

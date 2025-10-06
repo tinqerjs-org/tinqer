@@ -5,13 +5,13 @@
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
 import { insertStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("INSERT Statement Generation (SQLite)", () => {
   describe("Basic INSERT", () => {
     it("should generate INSERT with all columns using @param format", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q.insertInto("users").values({
             name: "Alice",
@@ -34,7 +34,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
     it("should generate INSERT with partial columns", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q.insertInto("users").values({
             name: "Bob",
@@ -52,7 +52,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
     it("should generate INSERT with schema prefix in table name", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q.insertInto("user_accounts").values({
             username: "Charlie",
@@ -67,7 +67,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
   describe("INSERT with parameters", () => {
     it("should use external parameters", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q, p: { name: string; age: number }) =>
           q.insertInto("users").values({
             name: p.name,
@@ -85,7 +85,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
     it("should mix external parameters with literals", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q, p: { name: string }) =>
           q.insertInto("users").values({
             name: p.name,
@@ -110,7 +110,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
   describe("INSERT with RETURNING", () => {
     it("should generate INSERT with RETURNING single column", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q
             .insertInto("users")
@@ -127,7 +127,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
     it("should generate INSERT with RETURNING multiple columns", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q
             .insertInto("users")
@@ -144,7 +144,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
     it("should generate INSERT with RETURNING all columns (*)", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q
             .insertInto("users")
@@ -163,7 +163,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
   describe("INSERT with special values", () => {
     it("should handle boolean values (converted to 1/0 in SQLite)", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q.insertInto("users").values({
             name: "Ian",
@@ -186,7 +186,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
     it("should handle null values", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q.insertInto("users").values({
             name: "Jane",
@@ -208,7 +208,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
     it("should handle numeric edge cases", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q.insertInto("users").values({
             name: "Kevin",
@@ -233,7 +233,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
   describe("INSERT with special characters", () => {
     it("should handle strings with quotes", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q.insertInto("users").values({
             name: "O'Brien",
@@ -251,7 +251,7 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
     it("should handle Unicode characters", () => {
       const result = insertStatement(
-        db,
+        schema,
         (q) =>
           q.insertInto("users").values({
             name: "李明",

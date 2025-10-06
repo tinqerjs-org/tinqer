@@ -43,13 +43,13 @@ interface Schema {
   products: Product;
 }
 
-const db = createSchema<Schema>();
+const schema = createSchema<Schema>();
 
 describe("JOIN with Table References", () => {
   describe("Basic table reference returns", () => {
     it("should support (u, d) => ({ u, d }) pattern", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -81,7 +81,7 @@ describe("JOIN with Table References", () => {
 
     it("should support accessing nested properties after table reference JOIN", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -108,7 +108,7 @@ describe("JOIN with Table References", () => {
 
     it("should support WHERE clause with table references", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -140,7 +140,7 @@ describe("JOIN with Table References", () => {
   describe("Chained JOINs with table references", () => {
     it("should support chaining JOINs with table references", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -183,7 +183,7 @@ describe("JOIN with Table References", () => {
 
     it("should correctly resolve properties through chained table references", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -214,7 +214,7 @@ describe("JOIN with Table References", () => {
 
     it("should handle three-way JOINs with table references", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -257,7 +257,7 @@ describe("JOIN with Table References", () => {
       // This test verifies that mixing table references with field selections is not allowed
       expect(() => {
         selectStatement(
-          db,
+          schema,
           (q) =>
             q
               .from("users")
@@ -284,7 +284,7 @@ describe("JOIN with Table References", () => {
   describe("Aggregations with table references", () => {
     it("should support GROUP BY with table references", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -314,7 +314,7 @@ describe("JOIN with Table References", () => {
 
     it("should support complex aggregations with chained table references", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -352,7 +352,7 @@ describe("JOIN with Table References", () => {
     it("should throw error when SELECT is missing after JOIN with result selector", () => {
       expect(() => {
         selectStatement(
-          db,
+          schema,
           (q) =>
             q.from("users").join(
               q.from("departments"),
@@ -369,7 +369,7 @@ describe("JOIN with Table References", () => {
 
     it("should handle empty object in result selector with SELECT", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -394,7 +394,7 @@ describe("JOIN with Table References", () => {
 
     it("should handle single table reference return", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -419,7 +419,7 @@ describe("JOIN with Table References", () => {
 
     it("should support ORDER BY with table references", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")
@@ -449,7 +449,7 @@ describe("JOIN with Table References", () => {
 
     it("should support DISTINCT with table references", () => {
       const result = selectStatement(
-        db,
+        schema,
         (q) =>
           q
             .from("users")

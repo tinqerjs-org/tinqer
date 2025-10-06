@@ -5,12 +5,12 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { selectStatement } from "../dist/index.js";
-import { db } from "./test-schema.js";
+import { schema } from "./test-schema.js";
 
 describe("Auto-Parameterization SQL Generation", () => {
   it("should generate SQL with auto-parameterized constants", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) => q.from("users").where((x) => x.age >= 18 && x.name == "John"),
       {},
     );
@@ -24,7 +24,7 @@ describe("Auto-Parameterization SQL Generation", () => {
 
   it("should merge user params with auto-params", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q, p: { role: string }) => q.from("users").where((x) => x.age >= 21 && x.role == p.role),
       { role: "admin" },
     );
@@ -38,7 +38,7 @@ describe("Auto-Parameterization SQL Generation", () => {
 
   it("should handle take and skip auto-parameterization", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) =>
         q
           .from("posts")
@@ -57,7 +57,7 @@ describe("Auto-Parameterization SQL Generation", () => {
 
   it("should handle complex query with multiple auto-params", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q, p: { category: string }) =>
         q
           .from("products")
@@ -89,7 +89,11 @@ describe("Auto-Parameterization SQL Generation", () => {
   });
 
   it("should handle null comparisons with IS NULL/IS NOT NULL", () => {
-    const result = selectStatement(db, (q) => q.from("users").where((x) => x.email != null), {});
+    const result = selectStatement(
+      schema,
+      (q) => q.from("users").where((x) => x.email != null),
+      {},
+    );
 
     expect(result.sql).to.equal('SELECT * FROM "users" WHERE "email" IS NOT NULL');
     expect(result.params).to.deep.equal({});
@@ -97,7 +101,7 @@ describe("Auto-Parameterization SQL Generation", () => {
 
   it("should handle multiple uses of same column", () => {
     const result = selectStatement(
-      db,
+      schema,
       (q) =>
         q
           .from("users")
@@ -122,7 +126,7 @@ describe("Auto-Parameterization SQL Generation", () => {
     // Even if we had a way to pass strings that look like SQL injection,
     // they would be parameterized
     const result = selectStatement(
-      db,
+      schema,
       (q) => q.from("users").where((x) => x.username == "admin' OR '1'='1"),
       {},
     );

@@ -3,6 +3,6 @@
  */
 import { createSchema } from "@webpods/tinqer";
 // Create the database context
-export const db = createSchema();
+export const schema = createSchema();
 // Re-export from for use with db context
 export { from } from "@webpods/tinqer";
