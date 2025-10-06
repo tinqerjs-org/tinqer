@@ -267,7 +267,7 @@ Negating the predicate (`!array.includes(...)`) yields `NOT IN`.
 ```typescript
 const advancedFilter = selectStatement(
   dbContext,
-  (ctx, params: { minAge: number; categories: string[] }, helpers) =>
+  (ctx, params, helpers) =>
     ctx
       .from("users")
       .where((u) => u.age >= params.minAge)
@@ -1224,7 +1224,7 @@ const empDeptContext = createContext<EmployeeDeptSchema>();
 const top3Engineering = await executeSelect(
   db,
   empDeptContext,
-  (ctx, params: { deptId: number }, helpers) =>
+  (ctx, params, helpers) =>
     ctx
       .from("employees")
       .select((e) => ({
@@ -1507,7 +1507,7 @@ Tinqer automatically parameterizes all values to prevent SQL injection and enabl
 ```typescript
 const filtered = selectStatement(
   dbContext,
-  (ctx, params: { minAge: number; role: string }) =>
+  (ctx, params) =>
     ctx
       .from("users")
       .where((u) => u.age >= params.minAge)
@@ -1585,8 +1585,7 @@ Parameterized array example:
 ```typescript
 const dynamicMembership = selectStatement(
   dbContext,
-  (ctx, params: { allowed: readonly number[] }) =>
-    ctx.from("users").where((u) => params.allowed.includes(u.id)),
+  (ctx, params) => ctx.from("users").where((u) => params.allowed.includes(u.id)),
   { allowed: [5, 8] },
 );
 ```
@@ -1673,7 +1672,7 @@ External variables must be passed via the params object - closure variables are 
 ```typescript
 const insert = insertStatement(
   dbContext,
-  (ctx, p: { name: string; age: number }) =>
+  (ctx, p) =>
     ctx.insertInto("users").values({
       name: p.name,
       age: p.age,
@@ -1778,7 +1777,7 @@ External variables must be passed via the params object:
 ```typescript
 const updateStmt = updateStatement(
   dbContext,
-  (ctx, p: { newAge: number }) =>
+  (ctx, p) =>
     ctx
       .update("users")
       .set({ age: p.newAge })
@@ -1878,7 +1877,7 @@ const del = deleteStatement(
 ```typescript
 const del = deleteStatement(
   dbContext,
-  (ctx, p: { userIds: number[] }) => ctx.deleteFrom("users").where((u) => p.userIds.includes(u.id)),
+  (ctx, p) => ctx.deleteFrom("users").where((u) => p.userIds.includes(u.id)),
   { userIds: [1, 2, 3, 4, 5] },
 );
 ```

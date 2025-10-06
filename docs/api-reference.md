@@ -58,8 +58,8 @@ const ctx = createContext<Schema>();
 
 const { sql, params } = selectStatement(
   ctx,
-  (dsl, p: { minAge: number }, _helpers) =>
-    dsl
+  (ctx, p, _helpers) =>
+    ctx
       .from("users")
       .where((u) => u.age >= p.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
@@ -110,8 +110,8 @@ const ctx = createContext<Schema>();
 const users = await executeSelect(
   db,
   ctx,
-  (dsl, p: { minAge: number }, _helpers) =>
-    dsl
+  (ctx, p, _helpers) =>
+    ctx
       .from("users")
       .where((u) => u.age >= p.minAge)
       .orderBy((u) => u.name),
@@ -159,7 +159,7 @@ interface Schema {
 
 const ctx = createContext<Schema>();
 
-const allUsers = await executeSelectSimple(db, ctx, (dsl, _params, _helpers) => dsl.from("users"));
+const allUsers = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) => ctx.from("users"));
 ```
 
 ### 1.4 insertStatement & executeInsert
@@ -217,15 +217,15 @@ const ctx = createContext<Schema>();
 const inserted = await executeInsert(
   db,
   ctx,
-  (dsl, _params, _helpers) => dsl.insertInto("users").values({ name: "Alice" }),
+  (ctx, _params, _helpers) => ctx.insertInto("users").values({ name: "Alice" }),
   {},
 );
 
 const createdUsers = await executeInsert(
   db,
   ctx,
-  (dsl, _params, _helpers) =>
-    dsl
+  (ctx, _params, _helpers) =>
+    ctx
       .insertInto("users")
       .values({ name: "Bob" })
       .returning((u) => ({ id: u.id, name: u.name })),
@@ -291,8 +291,8 @@ const ctx = createContext<Schema>();
 const updatedRows = await executeUpdate(
   db,
   ctx,
-  (dsl, p: { cutoff: Date }, _helpers) =>
-    dsl
+  (ctx, p, _helpers) =>
+    ctx
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < p.cutoff),
@@ -343,7 +343,7 @@ const ctx = createContext<Schema>();
 const deletedCount = await executeDelete(
   db,
   ctx,
-  (dsl, _params, _helpers) => dsl.deleteFrom("users").where((u) => u.status === "inactive"),
+  (ctx, _params, _helpers) => ctx.deleteFrom("users").where((u) => u.status === "inactive"),
   {},
 );
 ```
@@ -432,7 +432,7 @@ When using execution functions like `executeSelect`, the DSL is passed as the fi
 const results = await executeSelect(
   db,
   ctx,
-  (dsl, _params, _helpers) => dsl.from("users").where((u) => u.email.endsWith("@example.com")),
+  (ctx, _params, _helpers) => ctx.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```
@@ -457,8 +457,8 @@ const ctx = createContext<Schema>();
 
 const result = selectStatement(
   ctx,
-  (dsl, _params, helpers) =>
-    dsl.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  (ctx, _params, helpers) =>
+    ctx.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );
 ```

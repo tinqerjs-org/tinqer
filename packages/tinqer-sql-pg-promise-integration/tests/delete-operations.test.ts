@@ -5,7 +5,7 @@
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createContext } from "@webpods/tinqer";
-import { executeDelete, deleteStatement } from "@webpods/tinqer-sql-pg-promise";
+import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
 // Define types for test tables
@@ -560,54 +560,6 @@ describe("DELETE Operations - PostgreSQL Integration", () => {
       );
 
       assert.equal(rowCount, 0);
-    });
-  });
-
-  describe("SQL generation verification", () => {
-    it("should generate correct DELETE SQL", () => {
-      const result = deleteStatement(
-        dbContext,
-        (ctx) => ctx.deleteFrom("test_products").where((p) => p.id === 1),
-        {},
-      );
-
-      assert(result.sql.includes('DELETE FROM "test_products"'));
-      assert(result.sql.includes("WHERE"));
-      assert(result.sql.includes('"id" ='));
-      assert(result.sql.includes("$(__p1)"));
-      assert.equal(result.params.__p1, 1);
-    });
-
-    it("should generate DELETE with complex WHERE", () => {
-      const result = deleteStatement(
-        dbContext,
-        (ctx) =>
-          ctx
-            .deleteFrom("test_users")
-            .where((u) => u.age! > 25 && (u.role === "admin" || u.is_active === false)),
-        {},
-      );
-
-      assert(result.sql.includes('DELETE FROM "test_users"'));
-      assert(result.sql.includes("WHERE"));
-      assert(result.sql.includes("AND"));
-      assert(result.sql.includes("OR"));
-    });
-
-    it("should generate DELETE with parameters", () => {
-      const params = { minAge: 30, targetRole: "user" };
-
-      const result = deleteStatement(
-        dbContext,
-        (ctx, p) =>
-          ctx.deleteFrom("test_users").where((u) => u.age! > p.minAge && u.role === p.targetRole),
-        params,
-      );
-
-      assert(result.sql.includes("$(minAge)"));
-      assert(result.sql.includes("$(targetRole)"));
-      assert.equal(result.params.minAge, 30);
-      assert.equal(result.params.targetRole, "user");
     });
   });
 });

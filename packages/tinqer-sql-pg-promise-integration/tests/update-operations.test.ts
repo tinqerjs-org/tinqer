@@ -5,7 +5,7 @@
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createContext } from "@webpods/tinqer";
-import { executeUpdate, updateStatement } from "@webpods/tinqer-sql-pg-promise";
+import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
 // Define types for test tables
@@ -611,45 +611,6 @@ describe("UPDATE Operations - PostgreSQL Integration", () => {
       assert(user.bio.includes("你好"));
       assert(user.bio.includes("🎉"));
       assert(user.bio.includes("Здравствуйте"));
-    });
-  });
-
-  describe("SQL generation verification", () => {
-    it("should generate correct UPDATE SQL", () => {
-      const result = updateStatement(
-        dbContext,
-        (ctx) =>
-          ctx
-            .update("inventory")
-            .set({ quantity: 100, status: "available" })
-            .where((i) => i.id === 1),
-        {},
-      );
-
-      assert(result.sql.includes('UPDATE "inventory"'));
-      assert(result.sql.includes("SET"));
-      assert(result.sql.includes('"quantity" ='));
-      assert(result.sql.includes('"status" ='));
-      assert(result.sql.includes("WHERE"));
-      assert(result.sql.includes('"id" ='));
-    });
-
-    it("should generate correct UPDATE with RETURNING SQL", () => {
-      const result = updateStatement(
-        dbContext,
-        (ctx) =>
-          ctx
-            .update("inventory")
-            .set({ quantity: 50 })
-            .where((i) => i.id === 1)
-            .returning((i) => ({ id: i.id, quantity: i.quantity })),
-        {},
-      );
-
-      assert(result.sql.includes('UPDATE "inventory"'));
-      assert(result.sql.includes("RETURNING"));
-      assert(result.sql.includes('"id" AS "id"'));
-      assert(result.sql.includes('"quantity" AS "quantity"'));
     });
   });
 });

@@ -213,8 +213,8 @@ describe("PostgreSQL Integration", () => {
   });
 
   it("should execute SELECT query", async () => {
-    const results = await executeSelectSimple(db, ctx, (dsl, _params, _helpers) =>
-      dsl
+    const results = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) =>
+      ctx
         .from("users")
         .where((u) => u.age >= 25)
         .select((u) => u.name),
@@ -468,8 +468,8 @@ Error: Unsupported AST node type: TemplateLiteral
 await executeSelectSimple(
   db,
   ctx,
-  (dsl, p: { name: string }, _helpers) =>
-    dsl.from("users").where((u) => u.name === p.name),
+  (ctx, p, _helpers) =>
+    ctx.from("users").where((u) => u.name === p.name),
   { name: `User ${userId}` }
 );
 ```
@@ -491,8 +491,8 @@ const minAge = 18;
 await executeSelectSimple(
   db,
   ctx,
-  (dsl, p: { minAge: number }, _helpers) =>
-    dsl.from("users").where((u) => u.age >= p.minAge),
+  (ctx, p, _helpers) =>
+    ctx.from("users").where((u) => u.age >= p.minAge),
   { minAge: 18 }
 );
 ```

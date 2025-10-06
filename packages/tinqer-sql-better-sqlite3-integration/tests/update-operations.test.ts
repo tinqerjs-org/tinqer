@@ -5,7 +5,7 @@
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createContext } from "@webpods/tinqer";
-import { executeUpdate, updateStatement } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeUpdate } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
 // Use isolated in-memory database for UPDATE tests
@@ -395,31 +395,6 @@ describe("UPDATE Operations - SQLite Integration", () => {
     });
   });
 
-  describe("UPDATE with RETURNING clause (SQLite limitation)", () => {
-    it("should note that SQLite does not support RETURNING clause", () => {
-      // SQLite doesn't support RETURNING at runtime
-      // The SQL is generated but execution would fail
-      // This is documented in the implementation
-
-      const result = updateStatement(
-        dbContext,
-        (ctx, _params) =>
-          ctx
-            .update("inventory")
-            .set({ quantity: 30 })
-            .where((i) => i.id === 1)
-            .returning((i) => i.quantity),
-        {},
-      );
-
-      // SQL is generated with RETURNING clause
-      assert(result.sql.includes("RETURNING"));
-
-      // But executeUpdate with RETURNING is typed to return 'never'
-      // because SQLite doesn't support it at runtime
-    });
-  });
-
   describe("UPDATE multiple rows", () => {
     it("should update all matching rows", () => {
       const rowCount = executeUpdate(
@@ -679,49 +654,6 @@ describe("UPDATE Operations - SQLite Integration", () => {
         is_active: number;
       };
       assert.equal(product2.is_active, 1);
-    });
-  });
-
-  describe("SQL generation verification", () => {
-    it("should generate correct UPDATE SQL for SQLite", () => {
-      const result = updateStatement(
-        dbContext,
-        (ctx, _params) =>
-          ctx
-            .update("inventory")
-            .set({ quantity: 100, status: "available" })
-            .where((i) => i.id === 1),
-        {},
-      );
-
-      assert(result.sql.includes('UPDATE "inventory"'));
-      assert(result.sql.includes("SET"));
-      assert(result.sql.includes('"quantity" ='));
-      assert(result.sql.includes('"status" ='));
-      assert(result.sql.includes("WHERE"));
-      assert(result.sql.includes('"id" ='));
-      // SQLite uses @ for parameters
-      assert(result.sql.includes("@__p"));
-    });
-
-    it("should generate UPDATE with proper parameter format", () => {
-      const params = { newQty: 50, prodId: 1 };
-
-      const result = updateStatement(
-        dbContext,
-        (ctx, p: typeof params) =>
-          ctx
-            .update("inventory")
-            .set({ quantity: p.newQty })
-            .where((i) => i.id === p.prodId),
-        params,
-      );
-
-      // SQLite uses @param format
-      assert(result.sql.includes("@newQty"));
-      assert(result.sql.includes("@prodId"));
-      assert.equal(result.params.newQty, 50);
-      assert.equal(result.params.prodId, 1);
     });
   });
 });

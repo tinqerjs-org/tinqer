@@ -68,7 +68,7 @@ const dbContext = createContext<Schema>();
 const results = executeSelect(
   db,
   dbContext,
-  (ctx, params: { maxPrice: number }, _helpers) =>
+  (ctx, params, _helpers) =>
     ctx
       .from("products")
       .where((p) => p.inStock === 1 && p.price < params.maxPrice)
@@ -252,7 +252,7 @@ const insertedRows = await executeInsert(
 const inactiveUsers = await executeUpdate(
   db,
   dbContext,
-  (ctx, params: { cutoffDate: Date }) =>
+  (ctx, params) =>
     ctx
       .update("users")
       .set({ status: "inactive" })
@@ -282,7 +282,7 @@ const dbContext = createContext<Schema>();
 
 const sample = selectStatement(
   dbContext,
-  (ctx, p: { minAge: number }) =>
+  (ctx, p) =>
     ctx
       .from("users")
       .where((u) => u.age >= p.minAge)

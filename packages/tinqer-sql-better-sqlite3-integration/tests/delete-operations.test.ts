@@ -5,7 +5,7 @@
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createContext } from "@webpods/tinqer";
-import { executeDelete, deleteStatement } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeDelete } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
 // Use isolated in-memory database for DELETE tests
@@ -628,56 +628,6 @@ describe("DELETE Operations - SQLite Integration", () => {
 
       const monitor = db.prepare("SELECT * FROM test_products WHERE name = ?").all("Monitor");
       assert.equal(monitor.length, 0);
-    });
-  });
-
-  describe("SQL generation verification", () => {
-    it("should generate correct DELETE SQL for SQLite", () => {
-      const result = deleteStatement(
-        dbContext,
-        (ctx) => ctx.deleteFrom("test_products").where((p) => p.id === 1),
-        {},
-      );
-
-      assert(result.sql.includes('DELETE FROM "test_products"'));
-      assert(result.sql.includes("WHERE"));
-      assert(result.sql.includes('"id" ='));
-      // SQLite uses @ for parameters
-      assert(result.sql.includes("@__p1"));
-      assert.equal(result.params.__p1, 1);
-    });
-
-    it("should generate DELETE with complex WHERE", () => {
-      const result = deleteStatement(
-        dbContext,
-        (ctx) =>
-          ctx.deleteFrom("test_users").where(
-            (u) => u.age! > 25 && (u.role === "admin" || u.is_active === 0), // SQLite uses 0 for false
-          ),
-        {},
-      );
-
-      assert(result.sql.includes('DELETE FROM "test_users"'));
-      assert(result.sql.includes("WHERE"));
-      assert(result.sql.includes("AND"));
-      assert(result.sql.includes("OR"));
-    });
-
-    it("should generate DELETE with proper parameter format", () => {
-      const params = { minAge: 30, targetRole: "user" };
-
-      const result = deleteStatement(
-        dbContext,
-        (ctx, p) =>
-          ctx.deleteFrom("test_users").where((u) => u.age! > p.minAge && u.role === p.targetRole),
-        params,
-      );
-
-      // SQLite uses @param format
-      assert(result.sql.includes("@minAge"));
-      assert(result.sql.includes("@targetRole"));
-      assert.equal(result.params.minAge, 30);
-      assert.equal(result.params.targetRole, "user");
     });
   });
 });

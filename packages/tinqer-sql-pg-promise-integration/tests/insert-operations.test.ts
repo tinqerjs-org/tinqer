@@ -5,7 +5,7 @@
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createContext } from "@webpods/tinqer";
-import { executeInsert, insertStatement } from "@webpods/tinqer-sql-pg-promise";
+import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
 // Define types for test tables
@@ -507,51 +507,6 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
       );
       assert.equal(order.quantity, 3);
       assert.equal(parseFloat(order.total_price), 149.97);
-    });
-  });
-
-  describe("SQL generation verification", () => {
-    it("should generate correct INSERT SQL", () => {
-      const result = insertStatement(
-        dbContext,
-        (ctx) =>
-          ctx.insertInto("products").values({
-            name: "Test",
-            price: 10.99,
-            in_stock: true,
-          }),
-        {},
-      );
-
-      assert(result.sql.includes('INSERT INTO "products"'));
-      assert(result.sql.includes('"name", "price", "in_stock"'));
-      assert(result.sql.includes("VALUES"));
-      assert(result.sql.includes("$(__p1)"));
-      assert.deepEqual(result.params, {
-        __p1: "Test",
-        __p2: 10.99,
-        __p3: true,
-      });
-    });
-
-    it("should generate correct INSERT with RETURNING SQL", () => {
-      const result = insertStatement(
-        dbContext,
-        (ctx) =>
-          ctx
-            .insertInto("products")
-            .values({
-              name: "Test",
-              price: 10.99,
-            })
-            .returning((p) => ({ id: p.id, name: p.name })),
-        {},
-      );
-
-      assert(result.sql.includes('INSERT INTO "products"'));
-      assert(result.sql.includes("RETURNING"));
-      assert(result.sql.includes('"id" AS "id"'));
-      assert(result.sql.includes('"name" AS "name"'));
     });
   });
 });

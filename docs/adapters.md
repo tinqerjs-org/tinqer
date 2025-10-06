@@ -53,8 +53,8 @@ const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const ctx = createContext<Schema>();
 
 // Execute without external params
-const activeUsers = await executeSelectSimple(db, ctx, (dsl, _params, _helpers) =>
-  dsl
+const activeUsers = await executeSelectSimple(db, ctx, (ctx, _params, _helpers) =>
+  ctx
     .from("users")
     .where((u) => u.active)
     .orderBy((u) => u.name),
@@ -64,8 +64,8 @@ const activeUsers = await executeSelectSimple(db, ctx, (dsl, _params, _helpers) 
 const matchingUsers = await executeSelect(
   db,
   ctx,
-  (dsl, p: { minAge: number }, _helpers) =>
-    dsl
+  (ctx, p, _helpers) =>
+    ctx
       .from("users")
       .where((u) => u.age >= p.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
@@ -76,8 +76,8 @@ const matchingUsers = await executeSelect(
 const createdUsers = await executeInsert(
   db,
   ctx,
-  (dsl, _params, _helpers) =>
-    dsl
+  (ctx, _params, _helpers) =>
+    ctx
       .insertInto("users")
       .values({ name: "Alice", email: "alice@example.com", age: 30, active: true })
       .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
@@ -88,8 +88,8 @@ const createdUsers = await executeInsert(
 const updatedCount = await executeUpdate(
   db,
   ctx,
-  (dsl, _params, _helpers) =>
-    dsl
+  (ctx, _params, _helpers) =>
+    ctx
       .update("users")
       .set({ active: false })
       .where((u) => u.age > 65),
@@ -100,14 +100,14 @@ const updatedCount = await executeUpdate(
 const deletedCount = await executeDelete(
   db,
   ctx,
-  (dsl, _params, _helpers) => dsl.deleteFrom("users").where((u) => !u.active),
+  (ctx, _params, _helpers) => ctx.deleteFrom("users").where((u) => !u.active),
   {},
 );
 
 // Generate SQL without executing
 const { sql, params } = selectStatement(
   ctx,
-  (dsl, _params, _helpers) => dsl.from("users").where((u) => u.email.endsWith("@example.com")),
+  (ctx, _params, _helpers) => ctx.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```
@@ -163,8 +163,8 @@ db.exec(`
 const inserted = executeInsert(
   db,
   ctx,
-  (dsl, _params, _helpers) =>
-    dsl.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
+  (ctx, _params, _helpers) =>
+    ctx.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
   {},
 );
 // inserted === 1
@@ -172,8 +172,8 @@ const inserted = executeInsert(
 const users = executeSelect(
   db,
   ctx,
-  (dsl, params: { active: number }, _helpers) =>
-    dsl
+  (ctx, params, _helpers) =>
+    ctx
       .from("users")
       .where((u) => u.isActive === params.active)
       .orderBy((u) => u.name),
@@ -183,8 +183,8 @@ const users = executeSelect(
 const updated = executeUpdate(
   db,
   ctx,
-  (dsl, _params, _helpers) =>
-    dsl
+  (ctx, _params, _helpers) =>
+    ctx
       .update("users")
       .set({ isActive: 0 })
       .where((u) => u.age > 60),
@@ -194,14 +194,14 @@ const updated = executeUpdate(
 const removed = executeDelete(
   db,
   ctx,
-  (dsl, p: { cutoff: number }, _helpers) => dsl.deleteFrom("users").where((u) => u.age < p.cutoff),
+  (ctx, p, _helpers) => ctx.deleteFrom("users").where((u) => u.age < p.cutoff),
   { cutoff: 18 },
 );
 
 // Need the SQL text for custom execution?
 const { sql, params } = selectStatement(
   ctx,
-  (dsl, _params, _helpers) => dsl.from("users").where((u) => u.name.startsWith("S")),
+  (ctx, _params, _helpers) => ctx.from("users").where((u) => u.name.startsWith("S")),
   {},
 );
 const rows = db.prepare(sql).all(params);
@@ -252,7 +252,7 @@ const ctx = createContext<Schema>();
 
 const { sql } = selectStatement(
   ctx,
-  (dsl, _params, helpers) =>
+  (ctx, _params, helpers) =>
     dsl.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
   {},
 );

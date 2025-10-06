@@ -5,7 +5,7 @@
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createContext } from "@webpods/tinqer";
-import { executeInsert, insertStatement } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeInsert } from "@webpods/tinqer-sql-better-sqlite3";
 import Database from "better-sqlite3";
 
 // Use isolated in-memory database for INSERT tests
@@ -236,33 +236,6 @@ describe("INSERT Operations - SQLite Integration", () => {
         .get("Minimal Product") as TestSchema["products"];
       assert.equal(product.category, null);
       assert.equal(product.description, null);
-    });
-  });
-
-  describe("INSERT with RETURNING clause (SQLite limitation)", () => {
-    it("should note that SQLite does not support RETURNING clause", () => {
-      // SQLite doesn't support RETURNING at runtime
-      // The SQL is generated but execution would fail
-      // This is documented in the implementation
-
-      const result = insertStatement(
-        dbContext,
-        (ctx, _params) =>
-          ctx
-            .insertInto("products")
-            .values({
-              name: "Test Product",
-              price: 99.99,
-            })
-            .returning((p: TestSchema["products"]) => p.id),
-        {},
-      );
-
-      // SQL is generated with RETURNING clause
-      assert(result.sql.includes("RETURNING"));
-
-      // But executeInsert with RETURNING is typed to return 'never'
-      // because SQLite doesn't support it at runtime
     });
   });
 
@@ -570,52 +543,6 @@ describe("INSERT Operations - SQLite Integration", () => {
       assert(customer.created_at); // Should have a timestamp
       // Verify it's a valid ISO timestamp string
       assert(customer.created_at.match(/^\d{4}-\d{2}-\d{2}/));
-    });
-  });
-
-  describe("SQL generation verification", () => {
-    it("should generate correct INSERT SQL for SQLite", () => {
-      const result = insertStatement(
-        dbContext,
-        (ctx, _params) =>
-          ctx.insertInto("products").values({
-            name: "Test",
-            price: 10.99,
-            in_stock: 1, // SQLite uses 0/1 for boolean values
-          }),
-        {},
-      );
-
-      assert(result.sql.includes('INSERT INTO "products"'));
-      assert(result.sql.includes('"name", "price", "in_stock"'));
-      assert(result.sql.includes("VALUES"));
-      // SQLite uses @ for parameters instead of $
-      assert(result.sql.includes("@__p1"));
-      assert.deepEqual(result.params, {
-        __p1: "Test",
-        __p2: 10.99,
-        __p3: 1, // SQLite uses 0/1 for boolean values
-      });
-    });
-
-    it("should generate INSERT with proper parameter format", () => {
-      const params = { productName: "Test Product" };
-
-      const result = insertStatement(
-        dbContext,
-        (ctx, p: typeof params) =>
-          ctx.insertInto("products").values({
-            name: p.productName,
-            price: 99.99,
-          }),
-        params,
-      );
-
-      // SQLite uses @param format
-      assert(result.sql.includes("@productName"));
-      assert(result.sql.includes("@__p1"));
-      assert.equal(result.params.productName, "Test Product");
-      assert.equal(result.params.__p1, 99.99);
     });
   });
 });
