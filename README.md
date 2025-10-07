@@ -368,6 +368,10 @@ See [Database Adapters](docs/adapters.md) for detailed comparison.
 | `@webpods/tinqer-sql-pg-promise`     | PostgreSQL adapter with pg-promise                       |
 | `@webpods/tinqer-sql-better-sqlite3` | SQLite adapter with better-sqlite3                       |
 
+## Credits
+
+Tinqer uses [OXC](https://oxc.rs/) - a fast JavaScript/TypeScript parser written in Rust - to parse lambda expressions at runtime. OXC's speed and reliability make Tinqer's runtime lambda parsing practical and performant.
+
 ## License
 
 MIT
