@@ -53,7 +53,44 @@ const results = await executeSelect(
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
 ```
 
-### SQLite Example
+**The same query works with SQLite** - just change the adapter and database connection:
+
+```typescript
+import Database from "better-sqlite3";
+import { createSchema } from "@webpods/tinqer";
+import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
+
+// Same schema definition
+interface Schema {
+  users: {
+    id: number;
+    name: string;
+    email: string;
+    age: number;
+  };
+}
+
+const db = new Database("./data.db");
+const schema = createSchema<Schema>();
+
+// Identical query logic
+const results = executeSelect(
+  db,
+  schema,
+  (q, params) =>
+    q
+      .from("users")
+      .where((u) => u.age >= params.minAge)
+      .orderBy((u) => u.name)
+      .select((u) => ({ id: u.id, name: u.name })),
+  { minAge: 18 },
+);
+// results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
+```
+
+### Getting Raw SQL
+
+Need the generated SQL for debugging or logging? Use the statement functions:
 
 ```typescript
 import Database from "better-sqlite3";
