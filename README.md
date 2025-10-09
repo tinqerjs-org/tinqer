@@ -88,44 +88,57 @@ const results = executeSelect(
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
 ```
 
-### Getting Raw SQL
+### SQL Generation Without Execution
 
-Need the generated SQL for debugging or logging? Use the statement functions:
+**`execute*` functions** execute queries and return results. **`*Statement` functions** generate SQL and parameters without executing - useful for debugging, logging, or custom execution:
 
 ```typescript
-import Database from "better-sqlite3";
 import { createSchema } from "@webpods/tinqer";
-import { executeSelect, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
+import {
+  selectStatement,
+  insertStatement,
+  updateStatement,
+  deleteStatement,
+} from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
-  products: {
-    id: number;
-    name: string;
-    price: number;
-    inStock: number; // SQLite uses INTEGER (0/1) for boolean values
-  };
+  users: { id: number; name: string; age: number };
 }
 
-const db = new Database("./data.db");
 const schema = createSchema<Schema>();
 
-const results = executeSelect(
-  db,
+// SELECT - returns { sql, params }
+const select = selectStatement(
   schema,
-  (q, params) =>
-    q
-      .from("products")
-      .where((p) => p.inStock === 1 && p.price < params.maxPrice)
-      .orderByDescending((p) => p.price),
-  { maxPrice: 100 },
+  (q, params) => q.from("users").where((u) => u.age >= params.minAge),
+  { minAge: 18 },
 );
+// select.sql: SELECT * FROM "users" WHERE "age" >= $(minAge)
+// select.params: { minAge: 18 }
 
-// Need the raw SQL for logging or prepared statements? selectStatement is still available:
-const { sql, params } = selectStatement(
+// INSERT
+const insert = insertStatement(
   schema,
-  (q) => q.from("products").select((p) => p.name),
-  {},
+  (q, params) => q.insertInto("users").values({ name: params.name, age: params.age }),
+  { name: "Alice", age: 30 },
 );
+// insert.sql: INSERT INTO "users" ("name", "age") VALUES ($(name), $(age))
+
+// UPDATE
+const update = updateStatement(
+  schema,
+  (q, params) => q.update("users").set({ age: params.newAge }).where((u) => u.id === params.userId),
+  { newAge: 31, userId: 1 },
+);
+// update.sql: UPDATE "users" SET "age" = $(newAge) WHERE "id" = $(userId)
+
+// DELETE
+const del = deleteStatement(
+  schema,
+  (q, params) => q.deleteFrom("users").where((u) => u.age < params.minAge),
+  { minAge: 18 },
+);
+// del.sql: DELETE FROM "users" WHERE "age" < $(minAge)
 ```
 
 ## Core Features
