@@ -4,13 +4,16 @@ Runtime LINQ-to-SQL query builder for TypeScript. Queries are expressed as inlin
 
 ## Installation
 
-Install the adapter for your database:
+Install the core library and adapter for your database:
 
 ```bash
-# PostgreSQL (pg-promise)
+# Core library
+npm install @webpods/tinqer
+
+# PostgreSQL adapter (pg-promise)
 npm install @webpods/tinqer-sql-pg-promise
 
-# SQLite (better-sqlite3)
+# SQLite adapter (better-sqlite3)
 npm install @webpods/tinqer-sql-better-sqlite3
 ```
 
@@ -20,7 +23,7 @@ npm install @webpods/tinqer-sql-better-sqlite3
 
 ```typescript
 import { createSchema } from "@webpods/tinqer";
-import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
 interface Schema {
@@ -36,52 +39,106 @@ const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const schema = createSchema<Schema>();
 
-const results = await executeSelectSimple(db, schema, (q) =>
-  q
-    .from("users")
-    .where((u) => u.age >= 18)
-    .orderBy((u) => u.name)
-    .select((u) => ({ id: u.id, name: u.name })),
+const results = await executeSelect(
+  db,
+  schema,
+  (q, params) =>
+    q
+      .from("users")
+      .where((u) => u.age >= params.minAge)
+      .orderBy((u) => u.name)
+      .select((u) => ({ id: u.id, name: u.name })),
+  { minAge: 18 },
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
 ```
 
-### SQLite Example
+**The same query works with SQLite** - just change the adapter and database connection:
 
 ```typescript
 import Database from "better-sqlite3";
 import { createSchema } from "@webpods/tinqer";
-import { executeSelect, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 
+// Same schema definition
 interface Schema {
-  products: {
+  users: {
     id: number;
     name: string;
-    price: number;
-    inStock: number; // SQLite uses INTEGER (0/1) for boolean values
+    email: string;
+    age: number;
   };
 }
 
 const db = new Database("./data.db");
 const schema = createSchema<Schema>();
 
+// Identical query logic
 const results = executeSelect(
   db,
   schema,
   (q, params) =>
     q
-      .from("products")
-      .where((p) => p.inStock === 1 && p.price < params.maxPrice)
-      .orderByDescending((p) => p.price),
-  { maxPrice: 100 },
+      .from("users")
+      .where((u) => u.age >= params.minAge)
+      .orderBy((u) => u.name)
+      .select((u) => ({ id: u.id, name: u.name })),
+  { minAge: 18 },
 );
+// results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
+```
 
-// Need the raw SQL for logging or prepared statements? selectStatement is still available:
-const { sql, params } = selectStatement(
+### SQL Generation Without Execution
+
+**`execute*` functions** execute queries and return results. **`*Statement` functions** generate SQL and parameters without executing - useful for debugging, logging, or custom execution:
+
+```typescript
+import { createSchema } from "@webpods/tinqer";
+import {
+  selectStatement,
+  insertStatement,
+  updateStatement,
+  deleteStatement,
+} from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; age: number };
+}
+
+const schema = createSchema<Schema>();
+
+// SELECT - returns { sql, params }
+const select = selectStatement(
   schema,
-  (q) => q.from("products").select((p) => p.name),
-  {},
+  (q, params) => q.from("users").where((u) => u.age >= params.minAge),
+  { minAge: 18 },
 );
+// select.sql: SELECT * FROM "users" WHERE "age" >= $(minAge)
+// select.params: { minAge: 18 }
+
+// INSERT
+const insert = insertStatement(
+  schema,
+  (q, params) => q.insertInto("users").values({ name: params.name, age: params.age }),
+  { name: "Alice", age: 30 },
+);
+// insert.sql: INSERT INTO "users" ("name", "age") VALUES ($(name), $(age))
+
+// UPDATE
+const update = updateStatement(
+  schema,
+  (q, params) => q.update("users").set({ age: params.newAge }).where((u) => u.id === params.userId),
+  { newAge: 31, userId: 1 },
+);
+// update.sql: UPDATE "users" SET "age" = $(newAge) WHERE "id" = $(userId)
+
+// DELETE
+const del = deleteStatement(
+  schema,
+  (q, params) => q.deleteFrom("users").where((u) => u.age < params.minAge),
+  { minAge: 18 },
+);
+// del.sql: DELETE FROM "users" WHERE "age" < $(minAge)
 ```
 
 ## Core Features
@@ -278,9 +335,11 @@ All literal values are automatically parameterized to prevent SQL injection:
 // External parameters via params object
 const schema = createSchema<Schema>();
 
-const sample = selectStatement(schema, (q, p) => q.from("users").where((u) => u.age >= p.minAge), {
-  minAge: 18,
-});
+const sample = selectStatement(
+  schema,
+  (q, params) => q.from("users").where((u) => u.age >= params.minAge),
+  { minAge: 18 },
+);
 // SQL (PostgreSQL): SELECT * FROM "users" WHERE "age" >= $(minAge)
 // params: { minAge: 18 }
 
@@ -297,9 +356,9 @@ import { createSchema } from "@webpods/tinqer";
 const schema = createSchema<Schema>();
 
 const query = (q, params, helpers) =>
-  q.from("users").where((u) => helpers.contains(u.name, "alice")); // Case-insensitive substring match
+  q.from("users").where((u) => helpers.contains(u.name, params.searchTerm)); // Case-insensitive substring match
 
-// PostgreSQL: WHERE u.name ILIKE $1 (param: "%alice%")
+// PostgreSQL: WHERE u.name ILIKE $(searchTerm) (param: "%alice%")
 // SQLite: WHERE LOWER(u.name) LIKE LOWER(?) (param: "%alice%")
 ```
 

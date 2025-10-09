@@ -37,7 +37,6 @@ import pgPromise from "pg-promise";
 import { createSchema } from "@webpods/tinqer";
 import {
   executeSelect,
-  executeSelectSimple,
   executeInsert,
   executeUpdate,
   executeDelete,
@@ -52,22 +51,26 @@ const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const schema = createSchema<Schema>();
 
-// Execute without external params
-const activeUsers = await executeSelectSimple(db, schema, (q) =>
-  q
-    .from("users")
-    .where((u) => u.active)
-    .orderBy((u) => u.name),
+// Execute with params
+const activeUsers = await executeSelect(
+  db,
+  schema,
+  (q, params) =>
+    q
+      .from("users")
+      .where((u) => u.active && u.age >= params.minAge)
+      .orderBy((u) => u.name),
+  { minAge: 18 },
 );
 
 // Execute with params
 const matchingUsers = await executeSelect(
   db,
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .from("users")
-      .where((u) => u.age >= p.minAge)
+      .where((u) => u.age >= params.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
   { minAge: 21 },
 );
@@ -193,7 +196,7 @@ const updated = executeUpdate(
 const removed = executeDelete(
   db,
   schema,
-  (q, p) => q.deleteFrom("users").where((u) => u.age < p.cutoff),
+  (q, params) => q.deleteFrom("users").where((u) => u.age < params.cutoff),
   { cutoff: 18 },
 );
 
