@@ -322,7 +322,7 @@ Operations should build expression trees without immediate processing.
 const query = users.where((u) => u.age >= 18).select((u) => u.name);
 // No database hit yet
 
-// Execution happens when passed to executeSelect/executeSelectSimple
+// Execution happens when passed to executeSelect
 const results = await executeSelect(db, () => query, {});
 ```
 

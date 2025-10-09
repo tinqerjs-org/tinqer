@@ -9,12 +9,11 @@ Reference for adapter execution helpers, typed contexts, and query utilities.
 - [1. Execution APIs](#1-execution-apis)
   - [1.1 selectStatement](#11-selectstatement)
   - [1.2 executeSelect](#12-executeselect)
-  - [1.3 executeSelectSimple](#13-executeselectsimple)
-  - [1.4 insertStatement & executeInsert](#14-insertstatement--executeinsert)
-  - [1.5 updateStatement & executeUpdate](#15-updatestatement--executeupdate)
-  - [1.6 deleteStatement & executeDelete](#16-deletestatement--executedelete)
-  - [1.7 toSql](#17-tosql)
-  - [1.8 ExecuteOptions & SqlResult](#18-executeoptions--sqlresult)
+  - [1.3 insertStatement & executeInsert](#13-insertstatement--executeinsert)
+  - [1.4 updateStatement & executeUpdate](#14-updatestatement--executeupdate)
+  - [1.5 deleteStatement & executeDelete](#15-deletestatement--executedelete)
+  - [1.6 toSql](#16-tosql)
+  - [1.7 ExecuteOptions & SqlResult](#17-executeoptions--sqlresult)
 - [2. Type-Safe Contexts](#2-type-safe-contexts)
   - [2.1 createSchema](#21-createcontext)
 - [3. Helper Utilities](#3-helper-utilities)
@@ -58,10 +57,10 @@ const schema = createSchema<Schema>();
 
 const { sql, params } = selectStatement(
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .from("users")
-      .where((u) => u.age >= p.minAge)
+      .where((u) => u.age >= params.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
   { minAge: 18 },
 );
@@ -110,59 +109,16 @@ const schema = createSchema<Schema>();
 const users = await executeSelect(
   db,
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .from("users")
-      .where((u) => u.age >= p.minAge)
+      .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name),
   { minAge: 21 },
 );
 ```
 
-### 1.3 executeSelectSimple
-
-Convenience wrapper for queries that do not need external parameters. The query builder receives a DSL context, an empty params object, and helper functions.
-
-```typescript
-async function executeSelectSimple<
-  TSchema,
-  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
->(
-  db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
-    params: Record<string, never>,
-    helpers: QueryHelpers,
-  ) => TQuery,
-  options?: ExecuteOptions,
-): Promise<
-  TQuery extends Queryable<infer T>
-    ? T[]
-    : TQuery extends OrderedQueryable<infer T>
-      ? T[]
-      : TQuery extends TerminalQuery<infer T>
-        ? T
-        : never
->;
-```
-
-**Example**
-
-```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
-
-interface Schema {
-  users: { id: number; name: string };
-}
-
-const schema = createSchema<Schema>();
-
-const allUsers = await executeSelectSimple(db, schema, (q) => q.from("users"));
-```
-
-### 1.4 insertStatement & executeInsert
+### 1.3 insertStatement & executeInsert
 
 Generate and execute INSERT statements with optional RETURNING clauses. The query builder receives a DSL context, parameters, and helper functions.
 
@@ -233,7 +189,7 @@ const createdUsers = await executeInsert(
 );
 ```
 
-### 1.5 updateStatement & executeUpdate
+### 1.4 updateStatement & executeUpdate
 
 Generate and execute UPDATE statements with optional RETURNING clauses. The query builder receives a DSL context, parameters, and helper functions.
 
@@ -291,16 +247,16 @@ const schema = createSchema<Schema>();
 const updatedRows = await executeUpdate(
   db,
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .update("users")
       .set({ status: "inactive" })
-      .where((u) => u.lastLogin < p.cutoff),
+      .where((u) => u.lastLogin < params.cutoff),
   { cutoff: new Date("2024-01-01") },
 );
 ```
 
-### 1.6 deleteStatement & executeDelete
+### 1.5 deleteStatement & executeDelete
 
 Generate and execute DELETE statements. The query builder receives a DSL context, parameters, and helper functions.
 
@@ -348,7 +304,7 @@ const deletedCount = await executeDelete(
 );
 ```
 
-### 1.7 Statement Functions (selectStatement, insertStatement, etc.)
+### 1.6 Statement Functions (selectStatement, insertStatement, etc.)
 
 Generate SQL and parameters without executing them. These functions are useful for debugging, testing, or when you need the SQL before execution.
 
@@ -383,7 +339,7 @@ const result = selectStatement(schema, (q) =>
 // result.params contains the parameters
 ```
 
-### 1.8 ExecuteOptions & SqlResult
+### 1.7 ExecuteOptions & SqlResult
 
 Both adapters expose `ExecuteOptions` and `SqlResult` for inspection and typing.
 

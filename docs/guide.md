@@ -1659,10 +1659,10 @@ External variables must be passed via the params object - closure variables are 
 ```typescript
 const insert = insertStatement(
   schema,
-  (q, p) =>
+  (q, params) =>
     q.insertInto("users").values({
-      name: p.name,
-      age: p.age,
+      name: params.name,
+      age: params.age,
       email: "default@example.com",
     }),
   { name: "Bob", age: 25 },
@@ -1764,10 +1764,10 @@ External variables must be passed via the params object:
 ```typescript
 const updateStmt = updateStatement(
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .update("users")
-      .set({ age: p.newAge })
+      .set({ age: params.newAge })
       .where((u) => u.id === 1),
   { newAge: 32 },
 );
@@ -1860,7 +1860,7 @@ const del = deleteStatement(
 ```typescript
 const del = deleteStatement(
   schema,
-  (q, p) => q.deleteFrom("users").where((u) => p.userIds.includes(u.id)),
+  (q, params) => q.deleteFrom("users").where((u) => params.userIds.includes(u.id)),
   { userIds: [1, 2, 3, 4, 5] },
 );
 ```

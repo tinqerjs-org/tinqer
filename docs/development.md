@@ -200,7 +200,7 @@ describe("SQL Generation", () => {
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createSchema } from "@webpods/tinqer";
-import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
 const schema = createSchema<Schema>();
@@ -212,11 +212,15 @@ describe("PostgreSQL Integration", () => {
   });
 
   it("should execute SELECT query", async () => {
-    const results = await executeSelectSimple(db, schema, (q) =>
-      q
-        .from("users")
-        .where((u) => u.age >= 25)
-        .select((u) => u.name),
+    const results = await executeSelect(
+      db,
+      schema,
+      (q, params) =>
+        q
+          .from("users")
+          .where((u) => u.age >= params.minAge)
+          .select((u) => u.name),
+      { minAge: 25 },
     );
 
     assert.deepEqual(results, ["Alice", "Bob"]);
@@ -463,12 +467,12 @@ Error: Unsupported AST node type: TemplateLiteral
 // Incorrect - template literal in lambda
 .where(u => u.name === `User ${userId}`)
 
-// Correct - use params with executeSelectSimple
-await executeSelectSimple(
+// Correct - use params with executeSelect
+await executeSelect(
   db,
   schema,
-  (q, p) =>
-    q.from("users").where((u) => u.name === p.name),
+  (q, params) =>
+    q.from("users").where((u) => u.name === params.name),
   { name: `User ${userId}` }
 );
 ```
@@ -486,12 +490,12 @@ Error: Unknown identifier 'externalVar'
 const minAge = 18;
 .where(u => u.age >= minAge)
 
-// Correct - params pattern with executeSelectSimple
-await executeSelectSimple(
+// Correct - params pattern with executeSelect
+await executeSelect(
   db,
   schema,
-  (q, p) =>
-    q.from("users").where((u) => u.age >= p.minAge),
+  (q, params) =>
+    q.from("users").where((u) => u.age >= params.minAge),
   { minAge: 18 }
 );
 ```
