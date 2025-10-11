@@ -12,13 +12,16 @@ Runtime LINQ-to-SQL query builder for TypeScript. Queries are expressed as inlin
 
 ## Installation
 
-Install the adapter for your database:
+Install the core library and adapter for your database:
 
 ```bash
-# PostgreSQL (pg-promise)
+# Core library
+npm install @webpods/tinqer
+
+# PostgreSQL adapter (pg-promise)
 npm install @webpods/tinqer-sql-pg-promise
 
-# SQLite (better-sqlite3)
+# SQLite adapter (better-sqlite3)
 npm install @webpods/tinqer-sql-better-sqlite3
 ```
 
@@ -28,7 +31,7 @@ npm install @webpods/tinqer-sql-better-sqlite3
 
 ```typescript
 import { createSchema } from "@webpods/tinqer";
-import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
 interface Schema {
@@ -44,52 +47,106 @@ const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const schema = createSchema<Schema>();
 
-const results = await executeSelectSimple(db, schema, (q) =>
-  q
-    .from("users")
-    .where((u) => u.age >= 18)
-    .orderBy((u) => u.name)
-    .select((u) => ({ id: u.id, name: u.name })),
+const results = await executeSelect(
+  db,
+  schema,
+  (q, params) =>
+    q
+      .from("users")
+      .where((u) => u.age >= params.minAge)
+      .orderBy((u) => u.name)
+      .select((u) => ({ id: u.id, name: u.name })),
+  { minAge: 18 },
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
 ```
 
-### SQLite Example
+**The same query works with SQLite** - just change the adapter and database connection:
 
 ```typescript
 import Database from "better-sqlite3";
 import { createSchema } from "@webpods/tinqer";
-import { executeSelect, selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 
+// Same schema definition
 interface Schema {
-  products: {
+  users: {
     id: number;
     name: string;
-    price: number;
-    inStock: number; // SQLite uses INTEGER (0/1) for boolean values
+    email: string;
+    age: number;
   };
 }
 
 const db = new Database("./data.db");
 const schema = createSchema<Schema>();
 
+// Identical query logic
 const results = executeSelect(
   db,
   schema,
   (q, params) =>
     q
-      .from("products")
-      .where((p) => p.inStock === 1 && p.price < params.maxPrice)
-      .orderByDescending((p) => p.price),
-  { maxPrice: 100 },
+      .from("users")
+      .where((u) => u.age >= params.minAge)
+      .orderBy((u) => u.name)
+      .select((u) => ({ id: u.id, name: u.name })),
+  { minAge: 18 },
 );
+// results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
+```
 
-// Need the raw SQL for logging or prepared statements? selectStatement is still available:
-const { sql, params } = selectStatement(
+### SQL Generation Without Execution
+
+**`execute*` functions** execute queries and return results. **`*Statement` functions** generate SQL and parameters without executing - useful for debugging, logging, or custom execution:
+
+```typescript
+import { createSchema } from "@webpods/tinqer";
+import {
+  selectStatement,
+  insertStatement,
+  updateStatement,
+  deleteStatement,
+} from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; age: number };
+}
+
+const schema = createSchema<Schema>();
+
+// SELECT - returns { sql, params }
+const select = selectStatement(
   schema,
-  (q) => q.from("products").select((p) => p.name),
-  {},
+  (q, params) => q.from("users").where((u) => u.age >= params.minAge),
+  { minAge: 18 },
 );
+// select.sql: SELECT * FROM "users" WHERE "age" >= $(minAge)
+// select.params: { minAge: 18 }
+
+// INSERT
+const insert = insertStatement(
+  schema,
+  (q, params) => q.insertInto("users").values({ name: params.name, age: params.age }),
+  { name: "Alice", age: 30 },
+);
+// insert.sql: INSERT INTO "users" ("name", "age") VALUES ($(name), $(age))
+
+// UPDATE
+const update = updateStatement(
+  schema,
+  (q, params) => q.update("users").set({ age: params.newAge }).where((u) => u.id === params.userId),
+  { newAge: 31, userId: 1 },
+);
+// update.sql: UPDATE "users" SET "age" = $(newAge) WHERE "id" = $(userId)
+
+// DELETE
+const del = deleteStatement(
+  schema,
+  (q, params) => q.deleteFrom("users").where((u) => u.age < params.minAge),
+  { minAge: 18 },
+);
+// del.sql: DELETE FROM "users" WHERE "age" < $(minAge)
 ```
 
 ## Core Features
@@ -286,9 +343,11 @@ All literal values are automatically parameterized to prevent SQL injection:
 // External parameters via params object
 const schema = createSchema<Schema>();
 
-const sample = selectStatement(schema, (q, p) => q.from("users").where((u) => u.age >= p.minAge), {
-  minAge: 18,
-});
+const sample = selectStatement(
+  schema,
+  (q, params) => q.from("users").where((u) => u.age >= params.minAge),
+  { minAge: 18 },
+);
 // SQL (PostgreSQL): SELECT * FROM "users" WHERE "age" >= $(minAge)
 // params: { minAge: 18 }
 
@@ -305,9 +364,9 @@ import { createSchema } from "@webpods/tinqer";
 const schema = createSchema<Schema>();
 
 const query = (q, params, helpers) =>
-  q.from("users").where((u) => helpers.contains(u.name, "alice")); // Case-insensitive substring match
+  q.from("users").where((u) => helpers.contains(u.name, params.searchTerm)); // Case-insensitive substring match
 
-// PostgreSQL: WHERE u.name ILIKE $1 (param: "%alice%")
+// PostgreSQL: WHERE u.name ILIKE $(searchTerm) (param: "%alice%")
 // SQLite: WHERE LOWER(u.name) LIKE LOWER(?) (param: "%alice%")
 ```
 
@@ -376,6 +435,10 @@ See [Database Adapters](docs/adapters.md) for detailed comparison.
 | `@webpods/tinqer-sql-pg-promise`     | PostgreSQL adapter with pg-promise                       |
 | `@webpods/tinqer-sql-better-sqlite3` | SQLite adapter with better-sqlite3                       |
 
+## Credits
+
+Tinqer uses [OXC](https://oxc.rs/) - a fast JavaScript/TypeScript parser written in Rust - to parse lambda expressions at runtime. OXC's speed and reliability make Tinqer's runtime lambda parsing practical and performant.
+
 ## License
 
 MIT
@@ -422,7 +485,6 @@ import pgPromise from "pg-promise";
 import { createSchema } from "@webpods/tinqer";
 import {
   executeSelect,
-  executeSelectSimple,
   executeInsert,
   executeUpdate,
   executeDelete,
@@ -437,22 +499,26 @@ const pgp = pgPromise();
 const db = pgp("postgresql://user:pass@localhost:5432/mydb");
 const schema = createSchema<Schema>();
 
-// Execute without external params
-const activeUsers = await executeSelectSimple(db, schema, (q) =>
-  q
-    .from("users")
-    .where((u) => u.active)
-    .orderBy((u) => u.name),
+// Execute with params
+const activeUsers = await executeSelect(
+  db,
+  schema,
+  (q, params) =>
+    q
+      .from("users")
+      .where((u) => u.active && u.age >= params.minAge)
+      .orderBy((u) => u.name),
+  { minAge: 18 },
 );
 
 // Execute with params
 const matchingUsers = await executeSelect(
   db,
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .from("users")
-      .where((u) => u.age >= p.minAge)
+      .where((u) => u.age >= params.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
   { minAge: 21 },
 );
@@ -578,7 +644,7 @@ const updated = executeUpdate(
 const removed = executeDelete(
   db,
   schema,
-  (q, p) => q.deleteFrom("users").where((u) => u.age < p.cutoff),
+  (q, params) => q.deleteFrom("users").where((u) => u.age < params.cutoff),
   { cutoff: 18 },
 );
 
@@ -663,12 +729,11 @@ Reference for adapter execution helpers, typed contexts, and query utilities.
 - [1. Execution APIs](#1-execution-apis)
   - [1.1 selectStatement](#11-selectstatement)
   - [1.2 executeSelect](#12-executeselect)
-  - [1.3 executeSelectSimple](#13-executeselectsimple)
-  - [1.4 insertStatement & executeInsert](#14-insertstatement--executeinsert)
-  - [1.5 updateStatement & executeUpdate](#15-updatestatement--executeupdate)
-  - [1.6 deleteStatement & executeDelete](#16-deletestatement--executedelete)
-  - [1.7 toSql](#17-tosql)
-  - [1.8 ExecuteOptions & SqlResult](#18-executeoptions--sqlresult)
+  - [1.3 insertStatement & executeInsert](#13-insertstatement--executeinsert)
+  - [1.4 updateStatement & executeUpdate](#14-updatestatement--executeupdate)
+  - [1.5 deleteStatement & executeDelete](#15-deletestatement--executedelete)
+  - [1.6 toSql](#16-tosql)
+  - [1.7 ExecuteOptions & SqlResult](#17-executeoptions--sqlresult)
 - [2. Type-Safe Contexts](#2-type-safe-contexts)
   - [2.1 createSchema](#21-createcontext)
 - [3. Helper Utilities](#3-helper-utilities)
@@ -712,10 +777,10 @@ const schema = createSchema<Schema>();
 
 const { sql, params } = selectStatement(
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .from("users")
-      .where((u) => u.age >= p.minAge)
+      .where((u) => u.age >= params.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
   { minAge: 18 },
 );
@@ -764,59 +829,16 @@ const schema = createSchema<Schema>();
 const users = await executeSelect(
   db,
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .from("users")
-      .where((u) => u.age >= p.minAge)
+      .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name),
   { minAge: 21 },
 );
 ```
 
-### 1.3 executeSelectSimple
-
-Convenience wrapper for queries that do not need external parameters. The query builder receives a DSL context, an empty params object, and helper functions.
-
-```typescript
-async function executeSelectSimple<
-  TSchema,
-  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
->(
-  db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
-    params: Record<string, never>,
-    helpers: QueryHelpers,
-  ) => TQuery,
-  options?: ExecuteOptions,
-): Promise<
-  TQuery extends Queryable<infer T>
-    ? T[]
-    : TQuery extends OrderedQueryable<infer T>
-      ? T[]
-      : TQuery extends TerminalQuery<infer T>
-        ? T
-        : never
->;
-```
-
-**Example**
-
-```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
-
-interface Schema {
-  users: { id: number; name: string };
-}
-
-const schema = createSchema<Schema>();
-
-const allUsers = await executeSelectSimple(db, schema, (q) => q.from("users"));
-```
-
-### 1.4 insertStatement & executeInsert
+### 1.3 insertStatement & executeInsert
 
 Generate and execute INSERT statements with optional RETURNING clauses. The query builder receives a DSL context, parameters, and helper functions.
 
@@ -887,7 +909,7 @@ const createdUsers = await executeInsert(
 );
 ```
 
-### 1.5 updateStatement & executeUpdate
+### 1.4 updateStatement & executeUpdate
 
 Generate and execute UPDATE statements with optional RETURNING clauses. The query builder receives a DSL context, parameters, and helper functions.
 
@@ -945,16 +967,16 @@ const schema = createSchema<Schema>();
 const updatedRows = await executeUpdate(
   db,
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .update("users")
       .set({ status: "inactive" })
-      .where((u) => u.lastLogin < p.cutoff),
+      .where((u) => u.lastLogin < params.cutoff),
   { cutoff: new Date("2024-01-01") },
 );
 ```
 
-### 1.6 deleteStatement & executeDelete
+### 1.5 deleteStatement & executeDelete
 
 Generate and execute DELETE statements. The query builder receives a DSL context, parameters, and helper functions.
 
@@ -1002,7 +1024,7 @@ const deletedCount = await executeDelete(
 );
 ```
 
-### 1.7 Statement Functions (selectStatement, insertStatement, etc.)
+### 1.6 Statement Functions (selectStatement, insertStatement, etc.)
 
 Generate SQL and parameters without executing them. These functions are useful for debugging, testing, or when you need the SQL before execution.
 
@@ -1037,7 +1059,7 @@ const result = selectStatement(schema, (q) =>
 // result.params contains the parameters
 ```
 
-### 1.8 ExecuteOptions & SqlResult
+### 1.7 ExecuteOptions & SqlResult
 
 Both adapters expose `ExecuteOptions` and `SqlResult` for inspection and typing.
 
@@ -1332,7 +1354,7 @@ describe("SQL Generation", () => {
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
 import { createSchema } from "@webpods/tinqer";
-import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
 const schema = createSchema<Schema>();
@@ -1344,11 +1366,15 @@ describe("PostgreSQL Integration", () => {
   });
 
   it("should execute SELECT query", async () => {
-    const results = await executeSelectSimple(db, schema, (q) =>
-      q
-        .from("users")
-        .where((u) => u.age >= 25)
-        .select((u) => u.name),
+    const results = await executeSelect(
+      db,
+      schema,
+      (q, params) =>
+        q
+          .from("users")
+          .where((u) => u.age >= params.minAge)
+          .select((u) => u.name),
+      { minAge: 25 },
     );
 
     assert.deepEqual(results, ["Alice", "Bob"]);
@@ -1595,12 +1621,12 @@ Error: Unsupported AST node type: TemplateLiteral
 // Incorrect - template literal in lambda
 .where(u => u.name === `User ${userId}`)
 
-// Correct - use params with executeSelectSimple
-await executeSelectSimple(
+// Correct - use params with executeSelect
+await executeSelect(
   db,
   schema,
-  (q, p) =>
-    q.from("users").where((u) => u.name === p.name),
+  (q, params) =>
+    q.from("users").where((u) => u.name === params.name),
   { name: `User ${userId}` }
 );
 ```
@@ -1618,12 +1644,12 @@ Error: Unknown identifier 'externalVar'
 const minAge = 18;
 .where(u => u.age >= minAge)
 
-// Correct - params pattern with executeSelectSimple
-await executeSelectSimple(
+// Correct - params pattern with executeSelect
+await executeSelect(
   db,
   schema,
-  (q, p) =>
-    q.from("users").where((u) => u.age >= p.minAge),
+  (q, params) =>
+    q.from("users").where((u) => u.age >= params.minAge),
   { minAge: 18 }
 );
 ```
@@ -3369,10 +3395,10 @@ External variables must be passed via the params object - closure variables are 
 ```typescript
 const insert = insertStatement(
   schema,
-  (q, p) =>
+  (q, params) =>
     q.insertInto("users").values({
-      name: p.name,
-      age: p.age,
+      name: params.name,
+      age: params.age,
       email: "default@example.com",
     }),
   { name: "Bob", age: 25 },
@@ -3474,10 +3500,10 @@ External variables must be passed via the params object:
 ```typescript
 const updateStmt = updateStatement(
   schema,
-  (q, p) =>
+  (q, params) =>
     q
       .update("users")
-      .set({ age: p.newAge })
+      .set({ age: params.newAge })
       .where((u) => u.id === 1),
   { newAge: 32 },
 );
@@ -3570,7 +3596,7 @@ const del = deleteStatement(
 ```typescript
 const del = deleteStatement(
   schema,
-  (q, p) => q.deleteFrom("users").where((u) => p.userIds.includes(u.id)),
+  (q, params) => q.deleteFrom("users").where((u) => params.userIds.includes(u.id)),
   { userIds: [1, 2, 3, 4, 5] },
 );
 ```
