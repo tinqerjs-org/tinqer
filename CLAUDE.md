@@ -220,7 +220,7 @@ npm run test:grep -- "JOIN"
 
 1. **NEVER use `git push --force` or `git push -f`** - Force pushing destroys history
 2. **NEVER use `git push origin --delete`** - Never delete remote branches
-3. **NEVER use `git reset --hard`** - This is a destructive operation that discards changes
+3. **NEVER use `git reset` in ANY form** - This includes `--soft`, `--hard`, `--mixed`. NEVER use git reset
 4. **NEVER use `git clean -fd`** - This permanently deletes untracked files
 5. **NEVER use destructive rebase/amend without explicit permission** - These rewrite history
 6. **NEVER perform ANY destructive operations on remote repositories**
@@ -231,7 +231,12 @@ npm run test:grep -- "JOIN"
 
 **IMPORTANT**: NEVER commit, push, revert, or perform ANY git operations without explicit user permission. You are ONLY allowed to delete LOCAL branches with `git branch -D`, NEVER remote branches.
 
-**NEW BRANCH REQUIREMENT**: ALL changes must be made on a new feature branch, never directly on main.
+**BRANCH REQUIREMENTS**:
+
+1. **ALL changes MUST be made on a new feature branch, NEVER directly on main**
+2. **BEFORE committing, ALWAYS verify you are NOT on main branch** - Run `git branch --show-current` first
+3. **If accidentally on main**, create a new branch BEFORE committing: `git checkout -b feature/branch-name`
+4. **Branch naming**: Use descriptive names like `feat/feature-name`, `fix/bug-name`, `docs/doc-update`
 
 When the user asks you to commit and push:
 
