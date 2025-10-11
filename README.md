@@ -431,6 +431,10 @@ See [Database Adapters](docs/adapters.md) for detailed comparison.
 
 Tinqer uses [OXC](https://oxc.rs/) - a fast JavaScript/TypeScript parser written in Rust - to parse lambda expressions at runtime. OXC's speed and reliability make Tinqer's runtime lambda parsing practical and performant.
 
+## For AI/LLMs
+
+A consolidated documentation file for AI assistants is available at [`llms.txt`](llms.txt). This file includes all documentation in a single text format optimized for Large Language Model consumption.
+
 ## License
 
 MIT
