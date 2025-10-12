@@ -127,7 +127,11 @@ const insert = insertStatement(
 // UPDATE
 const update = updateStatement(
   schema,
-  (q, params) => q.update("users").set({ age: params.newAge }).where((u) => u.id === params.userId),
+  (q, params) =>
+    q
+      .update("users")
+      .set({ age: params.newAge })
+      .where((u) => u.id === params.userId),
   { newAge: 31, userId: 1 },
 );
 // update.sql: UPDATE "users" SET "age" = $(newAge) WHERE "id" = $(userId)
