@@ -785,4 +785,83 @@ describe("PostgreSQL Integration - Complex WHERE", () => {
       expect(activeResults.length + inactiveResults.length).to.equal(10);
     });
   });
+
+  describe("Optional parameter guards", () => {
+    it("should allow undefined parameters to bypass filters", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const params = { departmentId: undefined as number | undefined, isActive: true };
+
+      const results = await executeSelect(
+        dbClient,
+        schema,
+        (q, p) =>
+          q
+            .from("users")
+            .where(
+              (u) =>
+                (p.departmentId === undefined || u.department_id === p.departmentId) &&
+                (p.isActive === undefined || u.is_active === p.isActive),
+            )
+            .orderBy((u) => u.id),
+        params,
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE (($(departmentId) IS NULL OR "department_id" = $(departmentId)) AND ($(isActive) IS NULL OR "is_active" = $(isActive))) ORDER BY "id" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal(params);
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
+      results.forEach((user) => {
+        expect(user.is_active).to.be.true;
+      });
+    });
+
+    it("should apply filters when parameters are provided", async () => {
+      let capturedSql: { sql: string; params: Record<string, unknown> } | undefined;
+
+      const params = { departmentId: 1, isActive: true };
+
+      const results = await executeSelect(
+        dbClient,
+        schema,
+        (q, p) =>
+          q
+            .from("users")
+            .where(
+              (u) =>
+                (p.departmentId === undefined || u.department_id === p.departmentId) &&
+                (p.isActive === undefined || u.is_active === p.isActive),
+            )
+            .orderBy((u) => u.id),
+        params,
+        {
+          onSql: (result) => {
+            capturedSql = result;
+          },
+        },
+      );
+
+      expect(capturedSql).to.exist;
+      expect(capturedSql!.sql).to.equal(
+        'SELECT * FROM "users" WHERE (($(departmentId) IS NULL OR "department_id" = $(departmentId)) AND ($(isActive) IS NULL OR "is_active" = $(isActive))) ORDER BY "id" ASC',
+      );
+      expect(capturedSql!.params).to.deep.equal(params);
+
+      expect(results).to.be.an("array");
+      expect(results.length).to.be.greaterThan(0);
+      results.forEach((user) => {
+        expect(user.department_id).to.equal(1);
+        expect(user.is_active).to.be.true;
+      });
+    });
+  });
 });

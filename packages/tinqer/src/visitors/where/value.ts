@@ -13,6 +13,7 @@ import type {
   CaseExpression,
   InExpression,
   StringMethodExpression,
+  ConstantExpression,
 } from "../../expressions/expression.js";
 
 import type {
@@ -146,6 +147,16 @@ export function visitValue(
             type: "param",
             param: id.name,
           } as ParameterExpression,
+          counter: currentCounter,
+        };
+      }
+      if (id.name === "undefined") {
+        return {
+          value: {
+            type: "constant",
+            value: undefined,
+            valueType: "undefined",
+          } as ConstantExpression,
           counter: currentCounter,
         };
       }

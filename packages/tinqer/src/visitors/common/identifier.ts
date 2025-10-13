@@ -7,6 +7,7 @@ import type {
   Expression,
   ColumnExpression,
   ParameterExpression,
+  ConstantExpression,
 } from "../../expressions/expression.js";
 
 import type { Identifier } from "../../parser/ast-types.js";
@@ -18,6 +19,15 @@ import type { VisitorContext } from "../types.js";
  */
 export function visitIdentifier(node: Identifier, context: VisitorContext): Expression | null {
   const name = node.name;
+
+  // Treat bare `undefined` the same way JavaScript would – as an undefined literal.
+  if (name === "undefined") {
+    return {
+      type: "constant",
+      value: undefined,
+      valueType: "undefined",
+    } as ConstantExpression;
+  }
 
   // Check if it's a table parameter (e.g., 'x' in x => x.name)
   if (context.tableParams.has(name)) {
