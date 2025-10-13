@@ -109,4 +109,37 @@ describe("NULL Handling", () => {
       expect(result.params).to.deep.equal({ __p1: 10 });
     });
   });
+
+  describe("Undefined comparisons", () => {
+    it("should treat parameter equality against undefined as IS NULL", () => {
+      const result = selectStatement(
+        schema,
+        (q, params: { role?: string }) => q.from("users").where((_u) => params.role === undefined),
+        { role: undefined },
+      );
+
+      expect(result.sql).to.equal('SELECT * FROM "users" WHERE @role IS NULL');
+      expect(result.params).to.deep.equal({ role: undefined });
+    });
+
+    it("should allow optional guards that combine undefined checks with column comparisons", () => {
+      const result = selectStatement(
+        schema,
+        (q, params: { role?: string; city?: string }) =>
+          q
+            .from("users")
+            .where(
+              (u) =>
+                (params.role === undefined || u.role === params.role) &&
+                (params.city === undefined || u.city === params.city),
+            ),
+        { role: undefined, city: "Portland" },
+      );
+
+      expect(result.sql).to.equal(
+        'SELECT * FROM "users" WHERE ((@role IS NULL OR "role" = @role) AND (@city IS NULL OR "city" = @city))',
+      );
+      expect(result.params).to.deep.equal({ role: undefined, city: "Portland" });
+    });
+  });
 });

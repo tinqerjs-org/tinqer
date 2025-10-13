@@ -1,6 +1,6 @@
 {
   "name": "@webpods/tinqer-sql-better-sqlite3",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "Better SQLite3 SQL generator for Tinqer query builder",
   "type": "module",
   "main": "./dist/index.js",
@@ -19,7 +19,7 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@webpods/tinqer": "^0.0.15"
+    "@webpods/tinqer": "^0.0.16"
   },
   "devDependencies": {
     "@types/chai": "5.2.2",

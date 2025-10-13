@@ -445,7 +445,7 @@ function generateColumnExpression(expr: ColumnExpression, context: SqlContext): 
  * Generate SQL for constants
  */
 function generateConstantExpression(expr: ConstantExpression): string {
-  if (expr.value === null) {
+  if (expr.value === null || expr.value === undefined) {
     return "NULL";
   }
   if (typeof expr.value === "string") {
