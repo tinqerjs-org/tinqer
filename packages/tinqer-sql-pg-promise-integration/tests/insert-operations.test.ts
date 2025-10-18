@@ -222,6 +222,48 @@ describe("INSERT Operations - PostgreSQL Integration", () => {
     });
   });
 
+  describe("INSERT with optional fields", () => {
+    it("should skip undefined parameter values", async () => {
+      const rowCount = await executeInsert(
+        dbClient,
+        schema,
+        (q, p: { email: string; name: string; age?: number }) =>
+          q.insertInto("customers").values({
+            email: p.email,
+            name: p.name,
+            age: p.age,
+          }),
+        { email: "optional@example.com", name: "Optional Customer" },
+      );
+
+      assert.equal(rowCount, 1);
+
+      const customer = await dbClient.one(
+        "SELECT email, name, age FROM customers WHERE email = $1",
+        ["optional@example.com"],
+      );
+      assert.equal(customer.email, "optional@example.com");
+      assert.equal(customer.name, "Optional Customer");
+      assert.equal(customer.age, null);
+    });
+
+    it("should throw when all values are undefined", async () => {
+      await assert.rejects(
+        async () =>
+          executeInsert(
+            dbClient,
+            schema,
+            (q, p: { email?: string }) =>
+              q.insertInto("customers").values({
+                email: p.email,
+              }),
+            {},
+          ),
+        /All provided values were undefined/,
+      );
+    });
+  });
+
   describe("INSERT with RETURNING clause", () => {
     it("should return inserted row with RETURNING *", async () => {
       const results = await executeInsert(

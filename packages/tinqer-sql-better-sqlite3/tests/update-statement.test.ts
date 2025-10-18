@@ -157,6 +157,40 @@ describe("UPDATE Statement Generation (SQLite)", () => {
         userId: 6,
       });
     });
+
+    it("should skip assignments when parameter values are undefined", () => {
+      type UpdateParams = { userId: number; name: string; email?: string };
+      const result = updateStatement(
+        schema,
+        (q, p: UpdateParams) =>
+          q
+            .update("users")
+            .set({ email: p.email, name: p.name })
+            .where((u) => u.id === p.userId),
+        { userId: 9, name: "Updated Name" },
+      );
+
+      assert.equal(result.sql, `UPDATE "users" SET "name" = @name WHERE "id" = @userId`);
+      assert.deepEqual(result.params, {
+        userId: 9,
+        name: "Updated Name",
+      });
+    });
+
+    it("should throw when all assignments resolve to undefined", () => {
+      type UpdateParams = { userId: number; email?: string };
+      assert.throws(() => {
+        updateStatement(
+          schema,
+          (q, p: UpdateParams) =>
+            q
+              .update("users")
+              .set({ email: p.email })
+              .where((u) => u.id === p.userId),
+          { userId: 10 },
+        );
+      }, /All provided values were undefined/);
+    });
   });
 
   describe("UPDATE with RETURNING", () => {

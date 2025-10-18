@@ -2,9 +2,36 @@
  * UPDATE SQL generation for SQLite (better-sqlite3)
  */
 
-import type { UpdateOperation } from "@webpods/tinqer";
+import type {
+  UpdateOperation,
+  Expression,
+  ParameterExpression,
+  ConstantExpression,
+} from "@webpods/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateExpression, generateBooleanExpression } from "../expression-generator.js";
+
+function shouldSkipAssignment(valueExpr: Expression, context: SqlContext): boolean {
+  if (valueExpr.type === "param") {
+    const paramExpr = valueExpr as ParameterExpression;
+    const paramName = paramExpr.property || paramExpr.param;
+    const params = context.params;
+    if (!params) {
+      return false;
+    }
+    if (Object.prototype.hasOwnProperty.call(params, paramName)) {
+      return params[paramName] === undefined;
+    }
+    return true;
+  }
+
+  if (valueExpr.type === "constant") {
+    const constant = valueExpr as ConstantExpression;
+    return constant.value === undefined;
+  }
+
+  return false;
+}
 
 /**
  * Generate UPDATE SQL statement
@@ -20,13 +47,18 @@ export function generateUpdate(operation: UpdateOperation, context: SqlContext):
 
   if (operation.assignments.type === "object") {
     for (const [column, valueExpr] of Object.entries(operation.assignments.properties)) {
+      if (shouldSkipAssignment(valueExpr, context)) {
+        continue;
+      }
       const value = generateExpression(valueExpr, context);
       assignments.push(`"${column}" = ${value}`);
     }
   }
 
   if (assignments.length === 0) {
-    throw new Error("UPDATE must specify at least one column assignment");
+    throw new Error(
+      "UPDATE must specify at least one column assignment. All provided values were undefined.",
+    );
   }
 
   let sql = `UPDATE ${tableName} SET ${assignments.join(", ")}`;

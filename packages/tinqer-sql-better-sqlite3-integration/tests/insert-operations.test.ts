@@ -239,6 +239,47 @@ describe("INSERT Operations - SQLite Integration", () => {
     });
   });
 
+  describe("INSERT with optional fields", () => {
+    it("should skip undefined parameter values", () => {
+      const rowCount = executeInsert(
+        dbClient,
+        schema,
+        (q, p: { email: string; name: string; age?: number }) =>
+          q.insertInto("customers").values({
+            email: p.email,
+            name: p.name,
+            age: p.age,
+          }),
+        { email: "optional@example.com", name: "Optional Customer" },
+      );
+
+      assert.equal(rowCount, 1);
+
+      const customer = dbClient
+        .prepare("SELECT email, name, age FROM customers WHERE email = ?")
+        .get("optional@example.com") as TestSchema["customers"];
+      assert.equal(customer.email, "optional@example.com");
+      assert.equal(customer.name, "Optional Customer");
+      assert.equal(customer.age, null);
+    });
+
+    it("should throw when all values are undefined", () => {
+      assert.throws(
+        () =>
+          executeInsert(
+            dbClient,
+            schema,
+            (q, p: { email?: string }) =>
+              q.insertInto("customers").values({
+                email: p.email,
+              }),
+            {},
+          ),
+        /All provided values were undefined/,
+      );
+    });
+  });
+
   describe("Complex INSERT scenarios", () => {
     it("should handle special characters in strings", () => {
       const rowCount = executeInsert(

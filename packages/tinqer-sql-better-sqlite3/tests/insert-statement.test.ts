@@ -107,6 +107,35 @@ describe("INSERT Statement Generation (SQLite)", () => {
     });
   });
 
+  describe("INSERT with optional fields", () => {
+    it("should skip columns with undefined parameter values", () => {
+      type InsertParams = { name: string; email?: string };
+      const result = insertStatement(
+        schema,
+        (q, p: InsertParams) =>
+          q
+            .insertInto("users")
+            .values({ name: p.name, email: p.email })
+            .returning((u) => u.id),
+        { name: "Optional User" },
+      );
+
+      assert.equal(result.sql, `INSERT INTO "users" ("name") VALUES (@name) RETURNING "id"`);
+      assert.deepEqual(result.params, { name: "Optional User" });
+    });
+
+    it("should throw when all insert values are undefined", () => {
+      type InsertParams = { name?: string; email?: string };
+      assert.throws(() => {
+        insertStatement(
+          schema,
+          (q, p: InsertParams) => q.insertInto("users").values({ name: p.name, email: p.email }),
+          {},
+        );
+      }, /All provided values were undefined/);
+    });
+  });
+
   describe("INSERT with RETURNING", () => {
     it("should generate INSERT with RETURNING single column", () => {
       const result = insertStatement(

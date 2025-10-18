@@ -135,7 +135,11 @@ const insert = insertStatement(
 // UPDATE
 const update = updateStatement(
   schema,
-  (q, params) => q.update("users").set({ age: params.newAge }).where((u) => u.id === params.userId),
+  (q, params) =>
+    q
+      .update("users")
+      .set({ age: params.newAge })
+      .where((u) => u.id === params.userId),
   { newAge: 31, userId: 1 },
 );
 // update.sql: UPDATE "users" SET "age" = $(newAge) WHERE "id" = $(userId)
@@ -324,6 +328,8 @@ const inactiveUsers = await executeUpdate(
   { cutoffDate: new Date("2023-01-01") },
 );
 
+// Tip: undefined values in .set() or .values() are ignored; explicit null sets NULL.
+
 // DELETE
 const deletedCount = await executeDelete(
   db,
@@ -438,6 +444,10 @@ See [Database Adapters](docs/adapters.md) for detailed comparison.
 ## Credits
 
 Tinqer uses [OXC](https://oxc.rs/) - a fast JavaScript/TypeScript parser written in Rust - to parse lambda expressions at runtime. OXC's speed and reliability make Tinqer's runtime lambda parsing practical and performant.
+
+## For AI/LLMs
+
+A consolidated documentation file for AI assistants is available at [`llms.txt`](llms.txt). This file includes all documentation in a single text format optimized for Large Language Model consumption.
 
 ## License
 
@@ -3413,6 +3423,8 @@ VALUES ($(name), $(age), $(__p1))  -- PostgreSQL
 VALUES (@name, @age, @__p1)        -- SQLite
 ```
 
+> **Tip:** When a property in `.values()` evaluates to `undefined`, the column is omitted from the INSERT. Explicit `null` values still emit `NULL`. The insert throws if every value is `undefined`.
+
 #### INSERT with RETURNING Clause
 
 Both PostgreSQL and SQLite (3.35.0+) support the RETURNING clause to retrieve values from inserted rows:
@@ -3492,6 +3504,8 @@ UPDATE "users"
 SET "age" = @__p1, "lastModified" = @__p2
 WHERE "id" = @__p3
 ```
+
+> **Tip:** If any property in the `.set()` object evaluates to `undefined` (for example because a parameter was omitted), Tinqer simply skips that column. Explicit `null` values still generate `SET column = NULL`. The query builder throws if every assignment resolves to `undefined`.
 
 #### UPDATE with External Parameters
 

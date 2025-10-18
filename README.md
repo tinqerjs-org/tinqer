@@ -320,6 +320,8 @@ const inactiveUsers = await executeUpdate(
   { cutoffDate: new Date("2023-01-01") },
 );
 
+// Tip: undefined values in .set() or .values() are ignored; explicit null sets NULL.
+
 // DELETE
 const deletedCount = await executeDelete(
   db,
