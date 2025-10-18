@@ -279,6 +279,53 @@ describe("UPDATE Operations - SQLite Integration", () => {
     });
   });
 
+  describe("UPDATE with optional fields", () => {
+    it("should skip undefined parameter values", () => {
+      const rowCount = executeUpdate(
+        dbClient,
+        schema,
+        (q, p: { username: string; fullName?: string; bio?: string; age?: number }) =>
+          q
+            .update("user_profiles")
+            .set({
+              full_name: p.fullName,
+              bio: p.bio,
+              age: p.age,
+            })
+            .where((u) => u.username === p.username),
+        { username: "jane_smith", fullName: "Jane A. Smith" },
+      );
+
+      assert.equal(rowCount, 1);
+
+      const profile = dbClient
+        .prepare("SELECT full_name, bio, age FROM user_profiles WHERE username = ?")
+        .get("jane_smith") as TestSchema["user_profiles"];
+      assert.equal(profile.full_name, "Jane A. Smith");
+      assert.equal(profile.bio, "Designer");
+      assert.equal(profile.age, 25);
+    });
+
+    it("should throw when all values are undefined", () => {
+      assert.throws(
+        () =>
+          executeUpdate(
+            dbClient,
+            schema,
+            (q, p: { username: string; bio?: string }) =>
+              q
+                .update("user_profiles")
+                .set({
+                  bio: p.bio,
+                })
+                .where((u) => u.username === p.username),
+            { username: "john_doe" },
+          ),
+        /All provided values were undefined/,
+      );
+    });
+  });
+
   describe("UPDATE with complex WHERE clauses", () => {
     it("should update with AND conditions", () => {
       const rowCount = executeUpdate(

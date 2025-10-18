@@ -1677,6 +1677,8 @@ VALUES ($(name), $(age), $(__p1))  -- PostgreSQL
 VALUES (@name, @age, @__p1)        -- SQLite
 ```
 
+> **Tip:** When a property in `.values()` evaluates to `undefined`, the column is omitted from the INSERT. Explicit `null` values still emit `NULL`. The insert throws if every value is `undefined`.
+
 #### INSERT with RETURNING Clause
 
 Both PostgreSQL and SQLite (3.35.0+) support the RETURNING clause to retrieve values from inserted rows:
@@ -1756,6 +1758,8 @@ UPDATE "users"
 SET "age" = @__p1, "lastModified" = @__p2
 WHERE "id" = @__p3
 ```
+
+> **Tip:** If any property in the `.set()` object evaluates to `undefined` (for example because a parameter was omitted), Tinqer simply skips that column. Explicit `null` values still generate `SET column = NULL`. The query builder throws if every assignment resolves to `undefined`.
 
 #### UPDATE with External Parameters
 

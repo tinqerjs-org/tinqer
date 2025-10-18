@@ -2,9 +2,36 @@
  * INSERT SQL generation for PostgreSQL
  */
 
-import type { InsertOperation } from "@webpods/tinqer";
+import type {
+  InsertOperation,
+  Expression,
+  ParameterExpression,
+  ConstantExpression,
+} from "@webpods/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateExpression } from "../expression-generator.js";
+
+function shouldSkipValue(valueExpr: Expression, context: SqlContext): boolean {
+  if (valueExpr.type === "param") {
+    const paramExpr = valueExpr as ParameterExpression;
+    const paramName = paramExpr.property || paramExpr.param;
+    const params = context.params;
+    if (!params) {
+      return false;
+    }
+    if (Object.prototype.hasOwnProperty.call(params, paramName)) {
+      return params[paramName] === undefined;
+    }
+    return true;
+  }
+
+  if (valueExpr.type === "constant") {
+    const constant = valueExpr as ConstantExpression;
+    return constant.value === undefined;
+  }
+
+  return false;
+}
 
 /**
  * Generate INSERT SQL statement
@@ -20,13 +47,16 @@ export function generateInsert(operation: InsertOperation, context: SqlContext):
 
   if (operation.values.type === "object") {
     for (const [column, valueExpr] of Object.entries(operation.values.properties)) {
+      if (shouldSkipValue(valueExpr, context)) {
+        continue;
+      }
       columns.push(`"${column}"`);
       values.push(generateExpression(valueExpr, context));
     }
   }
 
   if (columns.length === 0) {
-    throw new Error("INSERT must specify at least one column");
+    throw new Error("INSERT must specify at least one column. All provided values were undefined.");
   }
 
   let sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${values.join(", ")})`;

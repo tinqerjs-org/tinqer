@@ -111,6 +111,25 @@ describe("CRUD Syntax - Direct Objects", () => {
       assert.equal(ageParam.param, "params");
       assert.equal(ageParam.property, "newAge");
     });
+
+    it("should capture undefined literals as constant expressions", () => {
+      const result = parseQuery((q: QueryBuilder<TestSchema>) =>
+        q
+          .update("users")
+          .set({ email: undefined, age: 42 })
+          .where((u) => u.id === 4),
+      );
+
+      assert(result);
+      const op = result.operation as UpdateOperation;
+      const emailConst = op.assignments.properties.email as ConstantExpression;
+      assert.equal(emailConst.type, "constant");
+      assert.strictEqual(emailConst.value, undefined);
+
+      const ageParam = op.assignments.properties.age as ParamRef;
+      assert.equal(ageParam.type, "param");
+      assert.equal(ageParam.param, "__p1");
+    });
   });
 
   describe("Mixed syntax scenarios", () => {
