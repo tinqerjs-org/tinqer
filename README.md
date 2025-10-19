@@ -261,7 +261,7 @@ Window functions enable calculations across rows related to the current row. Tin
 const topEarners = await executeSelect(
   db,
   schema,
-  (q, h) =>
+  (q, params, h) =>
     q
       .from("employees")
       .select((e) => ({
@@ -273,6 +273,7 @@ const topEarners = await executeSelect(
           .rowNumber(),
       }))
       .where((e) => e.rank === 1), // Filtering on window function result
+  {},
 );
 
 // Generated SQL (automatically wrapped):
