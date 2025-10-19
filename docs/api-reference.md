@@ -15,7 +15,7 @@ Reference for adapter execution helpers, typed contexts, and query utilities.
   - [1.6 toSql](#16-tosql)
   - [1.7 ExecuteOptions & SqlResult](#17-executeoptions--sqlresult)
 - [2. Type-Safe Contexts](#2-type-safe-contexts)
-  - [2.1 createSchema](#21-createcontext)
+  - [2.1 createSchema](#21-createschema)
 - [3. Helper Utilities](#3-helper-utilities)
   - [3.1 createQueryHelpers](#31-createqueryhelpers)
 
