@@ -169,7 +169,7 @@ export {
   SelectPlanHandle,
   SelectTerminalHandle,
   type SelectPlan,
-  type SelectPlanSql
+  type SelectPlanSql,
 } from "./plans/select-plan.js";
 
 export {
@@ -179,7 +179,7 @@ export {
   UpdatePlanHandleComplete,
   UpdatePlanHandleWithReturning,
   type UpdatePlan,
-  type UpdatePlanSql
+  type UpdatePlanSql,
 } from "./plans/update-plan.js";
 
 export {
@@ -188,7 +188,7 @@ export {
   InsertPlanHandleWithValues,
   InsertPlanHandleWithReturning,
   type InsertPlan,
-  type InsertPlanSql
+  type InsertPlanSql,
 } from "./plans/insert-plan.js";
 
 export {
@@ -196,7 +196,7 @@ export {
   DeletePlanHandleInitial,
   DeletePlanHandleComplete,
   type DeletePlan,
-  type DeletePlanSql
+  type DeletePlanSql,
 } from "./plans/delete-plan.js";
 
 export {
@@ -209,5 +209,5 @@ export {
   executeSelectPlan,
   executeUpdatePlan,
   executeInsertPlan,
-  executeDeletePlan
+  executeDeletePlan,
 } from "./plans/plan-execution.js";

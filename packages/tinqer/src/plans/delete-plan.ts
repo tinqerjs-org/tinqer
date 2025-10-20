@@ -1,4 +1,7 @@
 import type { DatabaseSchema } from "../linq/database-context.js";
+import type { QueryBuilder } from "../linq/query-builder.js";
+import type { QueryHelpers } from "../linq/functions.js";
+import type { Deletable, DeletableComplete } from "../linq/deletable.js";
 import type { ParseQueryOptions } from "../parser/types.js";
 import type { QueryOperation, DeleteOperation } from "../query-tree/operations.js";
 import type {
@@ -11,6 +14,7 @@ import { parseJavaScript } from "../parser/oxc-parser.js";
 import { normalizeJoins } from "../parser/normalize-joins.js";
 import { wrapWindowFilters } from "../parser/normalize-window-filters.js";
 import type { ParseResult } from "../parser/parse-query.js";
+import { parseQuery } from "../parser/parse-query.js";
 import {
   restoreVisitorContext,
   snapshotVisitorContext,
@@ -103,12 +107,23 @@ export class DeletePlanHandleInitial<TRecord, TParams> {
       this.state,
       predicate as unknown as (...args: unknown[]) => boolean,
     );
-    return new DeletePlanHandleComplete(nextState as DeletePlanState<TRecord, TParams & ExtraParams>);
+    return new DeletePlanHandleComplete(
+      nextState as DeletePlanState<TRecord, TParams & ExtraParams>,
+    );
   }
 
   allowFullTableDelete(): DeletePlanHandleComplete<TRecord, TParams> {
     const nextState = appendAllowFullDelete(this.state);
     return new DeletePlanHandleComplete(nextState);
+  }
+
+  toSql(_params: TParams): DeletePlanSql {
+    // Initial stage without WHERE clause - this would be dangerous SQL
+    throw new Error("DELETE statement requires where() or allowFullTableDelete() to be called before generating SQL");
+  }
+
+  toPlan(): DeletePlan<TRecord, TParams> {
+    return this.state;
   }
 }
 
@@ -137,34 +152,80 @@ export class DeletePlanHandleComplete<TRecord, TParams> {
 }
 
 // -----------------------------------------------------------------------------
-// Public entry point
+// Public entry points
 // -----------------------------------------------------------------------------
 
+// Type for builder function results
+type DeleteResult<TTable> = Deletable<TTable> | DeletableComplete<TTable>;
+
+// Type for builder functions
+type DeleteBuilder<TSchema, TParams, TTable> =
+  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => DeleteResult<TTable>)
+  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => DeleteResult<TTable>)
+  | ((queryBuilder: QueryBuilder<TSchema>) => DeleteResult<TTable>);
+
+// Combined overload for all builder functions
+export function defineDelete<TSchema, TParams, TTable>(
+  schema: DatabaseSchema<TSchema>,
+  builder: DeleteBuilder<TSchema, TParams, TTable>,
+  options?: ParseQueryOptions,
+): DeletePlanHandleInitial<TTable, TParams> | DeletePlanHandleComplete<TTable, TParams>;
+
+// Original overload for direct table name (kept for backward compatibility)
 export function defineDelete<TSchema, TParams, TTable extends keyof TSchema>(
-  _schema: DatabaseSchema<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   table: TTable,
   options?: ParseQueryOptions,
-): DeletePlanHandleInitial<TSchema[TTable], TParams> {
-  // For delete, we start with just the table
-  const initialOperation: DeleteOperation = {
-    type: "queryOperation",
-    operationType: "delete",
-    table: table as string,
-  };
+): DeletePlanHandleInitial<TSchema[TTable], TParams>;
 
-  const parseResult: ParseResult = {
-    operation: initialOperation,
-    autoParams: {},
-    contextSnapshot: snapshotVisitorContext({
-      tableParams: new Set<string>(),
-      queryParams: new Set<string>(),
-      autoParams: new Map<string, unknown>(),
-      autoParamCounter: 0,
-    }),
-  };
+// Implementation
+export function defineDelete<TSchema, TParams = Record<string, never>, TTable = unknown>(
+  _schema: DatabaseSchema<TSchema>,
+  builderOrTable: DeleteBuilder<TSchema, TParams, TTable> | keyof TSchema,
+  options?: ParseQueryOptions,
+): DeletePlanHandleInitial<TTable, TParams> | DeletePlanHandleComplete<TTable, TParams> {
+  // Check if it's a builder function or a table name
+  if (typeof builderOrTable === 'function') {
+    // Parse the builder function to get the operation
+    const parseResult = parseQuery(builderOrTable, options);
+    if (!parseResult || parseResult.operation.operationType !== 'delete') {
+      throw new Error("Failed to parse delete builder or not a delete operation");
+    }
 
-  const initialState = createInitialState<TSchema[TTable], TParams>(parseResult, options);
-  return new DeletePlanHandleInitial(initialState);
+    const initialState = createInitialState<TTable, TParams>(parseResult, options);
+
+    // Check the state of the parsed operation to return the appropriate handle
+    const deleteOp = parseResult.operation as DeleteOperation;
+
+    // Check if WHERE clause or allowFullTableDelete is present
+    if (deleteOp.predicate || deleteOp.allowFullTableDelete) {
+      return new DeletePlanHandleComplete(initialState);
+    }
+
+    return new DeletePlanHandleInitial(initialState);
+  } else {
+    // Original table name path
+    const table = builderOrTable as keyof TSchema;
+    const initialOperation: DeleteOperation = {
+      type: "queryOperation",
+      operationType: "delete",
+      table: table as string,
+    };
+
+    const parseResult: ParseResult = {
+      operation: initialOperation,
+      autoParams: {},
+      contextSnapshot: snapshotVisitorContext({
+        tableParams: new Set<string>(),
+        queryParams: new Set<string>(),
+        autoParams: new Map<string, unknown>(),
+        autoParamCounter: 0,
+      }),
+    };
+
+    const initialState = createInitialState<TTable, TParams>(parseResult, options);
+    return new DeletePlanHandleInitial(initialState);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -178,7 +239,11 @@ function appendWhereDelete<TRecord, TParams>(
   const visitorContext = restoreVisitorContext(state.contextSnapshot);
   const lambda = parseLambdaExpression(predicate, "where");
   const call = createMethodCall("where", lambda);
-  const result = visitWhereDeleteOperation(call, state.operation as DeleteOperation, visitorContext);
+  const result = visitWhereDeleteOperation(
+    call,
+    state.operation as DeleteOperation,
+    visitorContext,
+  );
 
   if (!result) {
     throw new Error("Failed to append where clause to delete plan");

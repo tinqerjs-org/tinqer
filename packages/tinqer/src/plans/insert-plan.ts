@@ -1,4 +1,7 @@
 import type { DatabaseSchema } from "../linq/database-context.js";
+import type { QueryBuilder } from "../linq/query-builder.js";
+import type { QueryHelpers } from "../linq/functions.js";
+import type { Insertable, InsertableWithReturning } from "../linq/insertable.js";
 import type { ParseQueryOptions } from "../parser/types.js";
 import type { QueryOperation, InsertOperation } from "../query-tree/operations.js";
 import type {
@@ -12,6 +15,7 @@ import { parseJavaScript } from "../parser/oxc-parser.js";
 import { normalizeJoins } from "../parser/normalize-joins.js";
 import { wrapWindowFilters } from "../parser/normalize-window-filters.js";
 import type { ParseResult } from "../parser/parse-query.js";
+import { parseQuery } from "../parser/parse-query.js";
 import {
   restoreVisitorContext,
   snapshotVisitorContext,
@@ -98,11 +102,17 @@ export class InsertPlanHandleInitial<TRecord, TParams> {
   constructor(private readonly state: InsertPlanState<TRecord, TParams>) {}
 
   values(values: Partial<TRecord>): InsertPlanHandleWithValues<TRecord, TParams> {
-    const nextState = appendValues(
-      this.state,
-      values as Record<string, unknown>,
-    );
+    const nextState = appendValues(this.state, values as Record<string, unknown>);
     return new InsertPlanHandleWithValues(nextState);
+  }
+
+  toSql(_params: TParams): InsertPlanSql {
+    // Initial stage without values - this would be invalid SQL
+    throw new Error("INSERT statement requires values() to be called before generating SQL");
+  }
+
+  toPlan(): InsertPlan<TRecord, TParams> {
+    return this.state;
   }
 }
 
@@ -165,38 +175,83 @@ export class InsertPlanHandleWithReturning<TResult, TParams> {
 }
 
 // -----------------------------------------------------------------------------
-// Public entry point
+// Public entry points
 // -----------------------------------------------------------------------------
 
+// Type for builder function results
+type InsertResult<TTable, TReturning = unknown> = Insertable<TTable> | InsertableWithReturning<TTable, TReturning>;
+
+// Type for builder functions
+type InsertBuilder<TSchema, TParams, TTable, TReturning = unknown> =
+  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => InsertResult<TTable, TReturning>)
+  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => InsertResult<TTable, TReturning>)
+  | ((queryBuilder: QueryBuilder<TSchema>) => InsertResult<TTable, TReturning>);
+
+// Combined overload for all builder functions
+export function defineInsert<TSchema, TParams, TTable, TReturning = unknown>(
+  schema: DatabaseSchema<TSchema>,
+  builder: InsertBuilder<TSchema, TParams, TTable, TReturning>,
+  options?: ParseQueryOptions,
+): InsertPlanHandleInitial<TTable, TParams> | InsertPlanHandleWithValues<TTable, TParams>;
+
+// Original overload for direct table name (kept for backward compatibility)
 export function defineInsert<TSchema, TParams, TTable extends keyof TSchema>(
-  _schema: DatabaseSchema<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   table: TTable,
   options?: ParseQueryOptions,
-): InsertPlanHandleInitial<TSchema[TTable], TParams> {
-  // For insert, we start with just the table
-  const initialOperation: InsertOperation = {
-    type: "queryOperation",
-    operationType: "insert",
-    table: table as string,
-    values: {
-      type: "object",
-      properties: {},
-    },
-  };
+): InsertPlanHandleInitial<TSchema[TTable], TParams>;
 
-  const parseResult: ParseResult = {
-    operation: initialOperation,
-    autoParams: {},
-    contextSnapshot: snapshotVisitorContext({
-      tableParams: new Set<string>(),
-      queryParams: new Set<string>(),
-      autoParams: new Map<string, unknown>(),
-      autoParamCounter: 0,
-    }),
-  };
+// Implementation
+export function defineInsert<TSchema, TParams = Record<string, never>, TTable = unknown>(
+  _schema: DatabaseSchema<TSchema>,
+  builderOrTable: InsertBuilder<TSchema, TParams, TTable> | keyof TSchema,
+  options?: ParseQueryOptions,
+): InsertPlanHandleInitial<TTable, TParams> | InsertPlanHandleWithValues<TTable, TParams> {
+  // Check if it's a builder function or a table name
+  if (typeof builderOrTable === 'function') {
+    // Parse the builder function to get the operation
+    const parseResult = parseQuery(builderOrTable, options);
+    if (!parseResult || parseResult.operation.operationType !== 'insert') {
+      throw new Error("Failed to parse insert builder or not an insert operation");
+    }
 
-  const initialState = createInitialState<TSchema[TTable], TParams>(parseResult, options);
-  return new InsertPlanHandleInitial(initialState);
+    const initialState = createInitialState<TTable, TParams>(parseResult, options);
+
+    // Check if values are already present in the parsed operation
+    const insertOp = parseResult.operation as InsertOperation;
+    if (insertOp.values && (insertOp.values as any).properties &&
+        Object.keys((insertOp.values as any).properties).length > 0) {
+      return new InsertPlanHandleWithValues(initialState);
+    }
+
+    return new InsertPlanHandleInitial(initialState);
+  } else {
+    // Original table name path
+    const table = builderOrTable as keyof TSchema;
+    const initialOperation: InsertOperation = {
+      type: "queryOperation",
+      operationType: "insert",
+      table: table as string,
+      values: {
+        type: "object",
+        properties: {},
+      },
+    };
+
+    const parseResult: ParseResult = {
+      operation: initialOperation,
+      autoParams: {},
+      contextSnapshot: snapshotVisitorContext({
+        tableParams: new Set<string>(),
+        queryParams: new Set<string>(),
+        autoParams: new Map<string, unknown>(),
+        autoParamCounter: 0,
+      }),
+    };
+
+    const initialState = createInitialState<TTable, TParams>(parseResult, options);
+    return new InsertPlanHandleInitial(initialState);
+  }
 }
 
 // -----------------------------------------------------------------------------

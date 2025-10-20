@@ -13,26 +13,13 @@ import type { TerminalQuery } from "../linq/terminal-query.js";
 import type { ParseQueryOptions } from "../parser/types.js";
 import type { QueryOperation } from "../query-tree/operations.js";
 
-import {
-  defineSelect,
-  SelectPlanHandle,
-  SelectTerminalHandle
-} from "./select-plan.js";
+import { defineSelect, SelectPlanHandle, SelectTerminalHandle } from "./select-plan.js";
 
-import {
-  defineUpdate,
-  UpdatePlanHandleInitial
-} from "./update-plan.js";
+import { defineUpdate, UpdatePlanHandleInitial } from "./update-plan.js";
 
-import {
-  defineInsert,
-  InsertPlanHandleInitial
-} from "./insert-plan.js";
+import { defineInsert, InsertPlanHandleInitial } from "./insert-plan.js";
 
-import {
-  defineDelete,
-  DeletePlanHandleInitial
-} from "./delete-plan.js";
+import { defineDelete, DeletePlanHandleInitial } from "./delete-plan.js";
 
 // Type for any query result
 type SelectResult = Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>;
@@ -46,9 +33,9 @@ export function createSelectPlan<TSchema>(
   builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params?: unknown,
-    helpers?: QueryHelpers
+    helpers?: QueryHelpers,
   ) => SelectResult,
-  options?: ParseQueryOptions
+  options?: ParseQueryOptions,
 ): SelectPlanHandle<unknown, unknown> | SelectTerminalHandle<unknown, unknown> {
   // Just delegate to defineSelect - no re-parsing!
   // Type assertion needed because the builder's return type (SelectResult)
@@ -65,7 +52,7 @@ export function createSelectPlan<TSchema>(
 export function createUpdatePlan<TSchema>(
   schema: DatabaseSchema<TSchema>,
   table: keyof TSchema,
-  options?: ParseQueryOptions
+  options?: ParseQueryOptions,
 ): UpdatePlanHandleInitial<unknown, unknown> {
   // Delegate to defineUpdate
   // TODO: When defineUpdate supports builders, update this
@@ -78,7 +65,7 @@ export function createUpdatePlan<TSchema>(
 export function createInsertPlan<TSchema>(
   schema: DatabaseSchema<TSchema>,
   table: keyof TSchema,
-  options?: ParseQueryOptions
+  options?: ParseQueryOptions,
 ): InsertPlanHandleInitial<unknown, unknown> {
   // Delegate to defineInsert
   return defineInsert(schema, table, options);
@@ -90,7 +77,7 @@ export function createInsertPlan<TSchema>(
 export function createDeletePlan<TSchema>(
   schema: DatabaseSchema<TSchema>,
   table: keyof TSchema,
-  options?: ParseQueryOptions
+  options?: ParseQueryOptions,
 ): DeletePlanHandleInitial<unknown, unknown> {
   // Delegate to defineDelete
   return defineDelete(schema, table, options);
@@ -103,9 +90,8 @@ export function createDeletePlan<TSchema>(
 export function planToSqlString(
   plan: { toSql(params: unknown): { operation: QueryOperation; params: Record<string, unknown> } },
   params: unknown,
-  generateSqlFn: (op: QueryOperation, params: Record<string, unknown>) => string
+  generateSqlFn: (op: QueryOperation, params: Record<string, unknown>) => string,
 ): { sql: string; params: Record<string, unknown> } {
-
   // Step 1: Get operation and merged params from plan
   const { operation, params: mergedParams } = plan.toSql(params);
 
@@ -119,7 +105,7 @@ export function planToSqlString(
  * Check if a plan is a terminal handle
  */
 export function isTerminalHandle(
-  plan: SelectPlanHandle<unknown, unknown> | SelectTerminalHandle<unknown, unknown>
+  plan: SelectPlanHandle<unknown, unknown> | SelectTerminalHandle<unknown, unknown>,
 ): plan is SelectTerminalHandle<unknown, unknown> {
   return plan instanceof SelectTerminalHandle;
 }
@@ -130,7 +116,7 @@ export function isTerminalHandle(
 export async function executeSelectPlan<TResult>(
   _db: unknown,
   _plan: SelectPlanHandle<unknown, unknown> | SelectTerminalHandle<unknown, unknown>,
-  _params: unknown
+  _params: unknown,
 ): Promise<TResult | TResult[]> {
   throw new Error("executeSelectPlan not yet implemented - coming with adapter refactor");
 }
@@ -141,7 +127,7 @@ export async function executeSelectPlan<TResult>(
 export async function executeUpdatePlan(
   _db: unknown,
   _plan: UpdatePlanHandleInitial<unknown, unknown>,
-  _params: unknown
+  _params: unknown,
 ): Promise<void> {
   throw new Error("executeUpdatePlan not yet implemented - coming with adapter refactor");
 }
@@ -152,7 +138,7 @@ export async function executeUpdatePlan(
 export async function executeInsertPlan<TResult>(
   _db: unknown,
   _plan: InsertPlanHandleInitial<unknown, unknown>,
-  _params: unknown
+  _params: unknown,
 ): Promise<TResult | void> {
   throw new Error("executeInsertPlan not yet implemented - coming with adapter refactor");
 }
@@ -163,7 +149,7 @@ export async function executeInsertPlan<TResult>(
 export async function executeDeletePlan(
   _db: unknown,
   _plan: DeletePlanHandleInitial<unknown, unknown>,
-  _params: unknown
+  _params: unknown,
 ): Promise<void> {
   throw new Error("executeDeletePlan not yet implemented - coming with adapter refactor");
 }

@@ -6,7 +6,7 @@ import type {
   FromOperation,
   WhereOperation,
   OrderByOperation,
-  TakeOperation
+  TakeOperation,
 } from "../src/query-tree/operations.js";
 
 // Test schema
@@ -23,10 +23,7 @@ const testSchema = createSchema<TestSchema>();
 describe("Plan API - Basic Tests", () => {
   describe("defineSelect", () => {
     it("should create a basic SELECT plan", () => {
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      );
+      const plan = defineSelect(testSchema, (q) => q.from("users"));
 
       expect(plan).to.be.instanceOf(SelectPlanHandle);
 
@@ -38,10 +35,7 @@ describe("Plan API - Basic Tests", () => {
     });
 
     it("should handle WHERE with auto-parameterization", () => {
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      ).where((u) => u.age > 21);
+      const plan = defineSelect(testSchema, (q) => q.from("users")).where((u) => u.age > 21);
 
       const planData = plan.toPlan();
       expect(planData.operation.operationType).to.equal("where");
@@ -50,30 +44,23 @@ describe("Plan API - Basic Tests", () => {
     });
 
     it("should handle SELECT projection", () => {
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      ).select((u) => ({ userName: u.name }));
+      const plan = defineSelect(testSchema, (q) => q.from("users")).select((u) => ({
+        userName: u.name,
+      }));
 
       const planData = plan.toPlan();
       expect(planData.operation.operationType).to.equal("select");
     });
 
     it("should handle ORDER BY", () => {
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      ).orderBy((u) => u.age);
+      const plan = defineSelect(testSchema, (q) => q.from("users")).orderBy((u) => u.age);
 
       const planData = plan.toPlan();
       expect(planData.operation.operationType).to.equal("orderBy");
     });
 
     it("should handle TAKE with auto-parameterization", () => {
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      ).take(10);
+      const plan = defineSelect(testSchema, (q) => q.from("users")).take(10);
 
       const planData = plan.toPlan();
       expect(planData.operation.operationType).to.equal("take");
@@ -81,10 +68,7 @@ describe("Plan API - Basic Tests", () => {
     });
 
     it("should handle SKIP with auto-parameterization", () => {
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      ).skip(20);
+      const plan = defineSelect(testSchema, (q) => q.from("users")).skip(20);
 
       const planData = plan.toPlan();
       expect(planData.operation.operationType).to.equal("skip");
@@ -92,10 +76,7 @@ describe("Plan API - Basic Tests", () => {
     });
 
     it("should chain multiple operations", () => {
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      )
+      const plan = defineSelect(testSchema, (q) => q.from("users"))
         .where((u) => u.age > 18)
         .orderBy((u) => u.name)
         .take(5);
@@ -116,15 +97,12 @@ describe("Plan API - Basic Tests", () => {
       expect(fromOp.operationType).to.equal("from");
 
       // Check auto-params
-      expect(planData.autoParams.__p1).to.equal(18);  // age > 18
-      expect(planData.autoParams.__p2).to.equal(5);   // take 5
+      expect(planData.autoParams.__p1).to.equal(18); // age > 18
+      expect(planData.autoParams.__p2).to.equal(5); // take 5
     });
 
     it("should maintain immutability", () => {
-      const plan1 = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      );
+      const plan1 = defineSelect(testSchema, (q) => q.from("users"));
 
       const plan2 = plan1.where((u) => u.age > 18);
 
@@ -141,9 +119,8 @@ describe("Plan API - Basic Tests", () => {
     it("should support external parameters in builder", () => {
       type Params = { minAge: number };
 
-      const plan = defineSelect(
-        testSchema,
-        (q, p: Params) => q.from("users").where((u) => u.age > p.minAge),
+      const plan = defineSelect(testSchema, (q, p: Params) =>
+        q.from("users").where((u) => u.age > p.minAge),
       );
 
       const sql = plan.toSql({ minAge: 18 });
@@ -154,11 +131,8 @@ describe("Plan API - Basic Tests", () => {
     it("should handle toSql parameter merging", () => {
       // Note: WHERE with external params (u, p) => ... is not yet supported by visitors
       // This test demonstrates auto-param merging with provided params
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      )
-        .where((u) => u.age > 21)  // Auto-param
+      const plan = defineSelect(testSchema, (q) => q.from("users"))
+        .where((u) => u.age > 21) // Auto-param
         .where((u) => u.name !== "Admin"); // Another auto-param
 
       const sql = plan.toSql({});
@@ -173,11 +147,9 @@ describe("Plan API - Basic Tests", () => {
       // Currently visitWhereOperation only processes the first parameter
       type Params = { searchName: string };
 
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      )
-        .where<Params>((u, p) => u.name === p.searchName);
+      const plan = defineSelect(testSchema, (q) => q.from("users")).where<Params>(
+        (u, p) => u.name === p.searchName,
+      );
 
       const sql = plan.toSql({ searchName: "John" });
       expect(sql.params.searchName).to.equal("John");
@@ -186,10 +158,7 @@ describe("Plan API - Basic Tests", () => {
 
   describe("Type safety", () => {
     it("SelectPlanHandle should extend Queryable", () => {
-      const plan = defineSelect(
-        testSchema,
-        (q) => q.from("users"),
-      );
+      const plan = defineSelect(testSchema, (q) => q.from("users"));
 
       // Test that plan has Queryable methods
       expect(plan.where).to.be.a("function");

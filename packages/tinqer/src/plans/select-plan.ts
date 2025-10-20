@@ -133,13 +133,17 @@ export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
     predicate: (item: TRecord, params: TParams & ExtraParams) => boolean,
   ): SelectPlanHandle<TRecord, TParams & ExtraParams>;
   where<ExtraParams extends object = Record<string, never>>(
-    predicate: ((item: TRecord) => boolean) | ((item: TRecord, params: TParams & ExtraParams) => boolean),
+    predicate:
+      | ((item: TRecord) => boolean)
+      | ((item: TRecord, params: TParams & ExtraParams) => boolean),
   ): SelectPlanHandle<TRecord, TParams | (TParams & ExtraParams)> {
     const nextState = appendWhere(
       this.state,
       predicate as unknown as (...args: unknown[]) => boolean,
     );
-    return new SelectPlanHandle(nextState as SelectPlanState<TRecord, TParams | (TParams & ExtraParams)>);
+    return new SelectPlanHandle(
+      nextState as SelectPlanState<TRecord, TParams | (TParams & ExtraParams)>,
+    );
   }
 
   select<TResult>(selector: (item: TRecord) => TResult): SelectPlanHandle<TResult, TParams> {
@@ -249,12 +253,16 @@ export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
     throw new Error("selectMany() is not yet implemented for plan handles. Coming soon.");
   }
 
-  groupBy<TKey>(keySelector: (item: TRecord) => TKey): SelectPlanHandle<Grouping<TKey, TRecord>, TParams> {
+  groupBy<TKey>(
+    keySelector: (item: TRecord) => TKey,
+  ): SelectPlanHandle<Grouping<TKey, TRecord>, TParams> {
     const nextState = appendGroupBy(
       this.state,
       keySelector as unknown as (item: unknown) => unknown,
     );
-    return new SelectPlanHandle(nextState as unknown as SelectPlanState<Grouping<TKey, TRecord>, TParams>);
+    return new SelectPlanHandle(
+      nextState as unknown as SelectPlanState<Grouping<TKey, TRecord>, TParams>,
+    );
   }
 
   // Terminal operations - these return terminal handles that cannot be chained further
@@ -328,14 +336,18 @@ export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
 
   min(): SelectTerminalHandle<TRecord, TParams>;
   min<TResult>(_selector: (item: TRecord) => TResult): SelectTerminalHandle<TResult, TParams>;
-  min<TResult = TRecord>(_selector?: (item: TRecord) => TResult): SelectTerminalHandle<TRecord | TResult, TParams> {
+  min<TResult = TRecord>(
+    _selector?: (item: TRecord) => TResult,
+  ): SelectTerminalHandle<TRecord | TResult, TParams> {
     // TODO: Implement min terminal operation
     throw new Error("min() is not yet implemented for plan handles. Coming soon.");
   }
 
   max(): SelectTerminalHandle<TRecord, TParams>;
   max<TResult>(_selector: (item: TRecord) => TResult): SelectTerminalHandle<TResult, TParams>;
-  max<TResult = TRecord>(_selector?: (item: TRecord) => TResult): SelectTerminalHandle<TRecord | TResult, TParams> {
+  max<TResult = TRecord>(
+    _selector?: (item: TRecord) => TResult,
+  ): SelectTerminalHandle<TRecord | TResult, TParams> {
     // TODO: Implement max terminal operation
     throw new Error("max() is not yet implemented for plan handles. Coming soon.");
   }
@@ -402,11 +414,7 @@ export function defineSelect<TSchema, TParams, TQuery extends SelectResult>(
 ): TQuery extends TerminalQuery<infer T>
   ? SelectTerminalHandle<T, TParams>
   : SelectPlanHandle<
-      TQuery extends Queryable<infer T>
-        ? T
-        : TQuery extends OrderedQueryable<infer T>
-          ? T
-          : never,
+      TQuery extends Queryable<infer T> ? T : TQuery extends OrderedQueryable<infer T> ? T : never,
       TParams
     >;
 
@@ -417,11 +425,7 @@ export function defineSelect<TSchema, TParams, TQuery extends SelectResult>(
 ): TQuery extends TerminalQuery<infer T>
   ? SelectTerminalHandle<T, TParams>
   : SelectPlanHandle<
-      TQuery extends Queryable<infer T>
-        ? T
-        : TQuery extends OrderedQueryable<infer T>
-          ? T
-          : never,
+      TQuery extends Queryable<infer T> ? T : TQuery extends OrderedQueryable<infer T> ? T : never,
       TParams
     >;
 
@@ -432,11 +436,7 @@ export function defineSelect<TSchema, TQuery extends SelectResult>(
 ): TQuery extends TerminalQuery<infer T>
   ? SelectTerminalHandle<T, Record<string, never>>
   : SelectPlanHandle<
-      TQuery extends Queryable<infer T>
-        ? T
-        : TQuery extends OrderedQueryable<infer T>
-          ? T
-          : never,
+      TQuery extends Queryable<infer T> ? T : TQuery extends OrderedQueryable<infer T> ? T : never,
       Record<string, never>
     >;
 

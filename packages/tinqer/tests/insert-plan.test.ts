@@ -1,6 +1,10 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { defineInsert, InsertPlanHandleInitial, InsertPlanHandleWithValues } from "../src/plans/insert-plan.js";
+import {
+  defineInsert,
+  InsertPlanHandleInitial,
+  InsertPlanHandleWithValues,
+} from "../src/plans/insert-plan.js";
 import { createSchema } from "../src/linq/database-context.js";
 import type { InsertOperation } from "../src/query-tree/operations.js";
 
@@ -29,10 +33,12 @@ describe("InsertPlanHandle", () => {
 
       expect(plan).to.be.instanceOf(InsertPlanHandleInitial);
 
-      const planData = plan.values({
-        name: "John",
-        email: "john@example.com",
-      }).toPlan();
+      const planData = plan
+        .values({
+          name: "John",
+          email: "john@example.com",
+        })
+        .toPlan();
 
       expect(planData).to.have.property("operation");
       expect(planData.operation.operationType).to.equal("insert");
@@ -58,11 +64,10 @@ describe("InsertPlanHandle", () => {
 
   describe("Values operation", () => {
     it("should accept object literal values", () => {
-      const plan = defineInsert(testSchema, "users")
-        .values({
-          name: "Bob",
-          email: "bob@example.com",
-        });
+      const plan = defineInsert(testSchema, "users").values({
+        name: "Bob",
+        email: "bob@example.com",
+      });
 
       const planData = plan.toPlan();
       const insertOp = planData.operation as InsertOperation;
@@ -73,12 +78,11 @@ describe("InsertPlanHandle", () => {
     });
 
     it("should auto-parameterize literal values", () => {
-      const plan = defineInsert(testSchema, "posts")
-        .values({
-          userId: 1,
-          title: "Hello World",
-          content: "This is a test post",
-        });
+      const plan = defineInsert(testSchema, "posts").values({
+        userId: 1,
+        title: "Hello World",
+        content: "This is a test post",
+      });
 
       const sql = plan.toSql({});
 
@@ -143,11 +147,10 @@ describe("InsertPlanHandle", () => {
     it("should merge provided params", () => {
       type Params = { defaultEmail: string };
 
-      const plan = defineInsert(testSchema, "users")
-        .values({
-          name: "Frank",
-          email: "frank@example.com", // In a real scenario, might use params.defaultEmail
-        });
+      const plan = defineInsert(testSchema, "users").values({
+        name: "Frank",
+        email: "frank@example.com", // In a real scenario, might use params.defaultEmail
+      });
 
       const sql = plan.toSql({ defaultEmail: "default@example.com" } as Params);
 
@@ -157,11 +160,10 @@ describe("InsertPlanHandle", () => {
     });
 
     it("should include operation and params in result", () => {
-      const plan = defineInsert(testSchema, "users")
-        .values({
-          name: "Grace",
-          email: "grace@example.com",
-        });
+      const plan = defineInsert(testSchema, "users").values({
+        name: "Grace",
+        email: "grace@example.com",
+      });
 
       const sql = plan.toSql({});
 

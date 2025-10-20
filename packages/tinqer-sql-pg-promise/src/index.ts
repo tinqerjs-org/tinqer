@@ -85,80 +85,6 @@ export function selectStatement<TSchema, TResult>(
 
 // Implementation
 export function selectStatement<TSchema, TParams, TResult>(
-  _schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-        helpers: QueryHelpers,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
-  // Parse the query to get the operation tree and auto-params
-  const parseResult = parseQuery(builder, options || {});
-
-  if (!parseResult) {
-    throw new Error("Failed to parse query");
-  }
-
-  // Merge user params with auto-extracted params
-  // User params take priority over auto-params to avoid collisions
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-
-  // Generate SQL from the operation tree
-  const sql = generateSql(parseResult.operation, mergedParams);
-
-  // Expand array parameters into indexed parameters for IN clause support
-  // e.g., { ids: [1, 2, 3] } becomes { ids: [1, 2, 3], "ids[0]": 1, "ids[1]": 2, "ids[2]": 3 }
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
-
-  return { sql, params: finalParams };
-}
-
-/**
- * PARALLEL IMPLEMENTATION USING PLAN API
- * Generate SQL from a query builder function using the plan API
- * This will eventually replace the implementation above
- */
-export function selectStatementWithPlan<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-    helpers: QueryHelpers,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult>;
-
-export function selectStatementWithPlan<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult>;
-
-export function selectStatementWithPlan<TSchema, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
-): SqlResult<Record<string, string | number | boolean | null>, TResult>;
-
-// Implementation
-export function selectStatementWithPlan<TSchema, TParams, TResult>(
   schema: DatabaseSchema<TSchema>,
   builder:
     | ((
@@ -183,7 +109,7 @@ export function selectStatementWithPlan<TSchema, TParams, TResult>(
   const plan = defineSelect(schema, builder as any, options);
 
   // Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.toSql(params || {} as TParams);
+  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
 
   // Generate SQL string using existing generator
   const sql = generateSql(operation, mergedParams);
@@ -529,171 +455,6 @@ export async function executeSelect<
           ? T
           : never;
 
-  // Call selectStatement with appropriate arguments based on whether params provided
-  const { sql, params: sqlParams } =
-    params !== undefined
-      ? selectStatement(schema, builder, params, options)
-      : selectStatement(schema, builder as (q: QueryBuilder<TSchema>) => TQuery);
-
-  // Call onSql callback if provided
-  if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
-  }
-
-  // Check if this is a terminal operation that returns a single value
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult) {
-    throw new Error("Failed to parse query");
-  }
-
-  const operationType = parseResult.operation.operationType;
-
-  // Handle different terminal operations
-  switch (operationType) {
-    case "first":
-    case "firstOrDefault":
-    case "single":
-    case "singleOrDefault":
-    case "last":
-    case "lastOrDefault": {
-      // These return a single item
-      const rows = await db.any(sql, sqlParams);
-      if (rows.length === 0) {
-        if (operationType.includes("OrDefault")) {
-          return null as ReturnType;
-        }
-        throw new Error(`No elements found for ${operationType} operation`);
-      }
-      if (operationType.startsWith("single") && rows.length > 1) {
-        throw new Error(`Multiple elements found for ${operationType} operation`);
-      }
-      return rows[0] as ReturnType;
-    }
-
-    case "count":
-    case "longCount": {
-      // These return a number - SQL is: SELECT COUNT(*) FROM ...
-      const countResult = (await db.one(sql, sqlParams)) as { count: string };
-      return parseInt(countResult.count, 10) as ReturnType;
-    }
-
-    case "sum":
-    case "average":
-    case "min":
-    case "max": {
-      // These return a single aggregate value - SQL is: SELECT SUM/AVG/MIN/MAX(column) FROM ...
-      // The result is in the first column of the row
-      const aggResult = (await db.one(sql, sqlParams)) as Record<string, unknown>;
-      // pg-promise returns the aggregate with the function name as key
-      const keys = Object.keys(aggResult);
-      if (keys.length > 0 && keys[0]) {
-        return aggResult[keys[0]] as ReturnType;
-      }
-      return null as ReturnType;
-    }
-
-    case "any": {
-      // Returns boolean - SQL is: SELECT CASE WHEN EXISTS(...) THEN 1 ELSE 0 END
-      const anyResult = (await db.one(sql, sqlParams)) as Record<string, unknown>;
-      const anyKeys = Object.keys(anyResult);
-      if (anyKeys.length > 0 && anyKeys[0]) {
-        return (anyResult[anyKeys[0]] === 1) as ReturnType;
-      }
-      return false as ReturnType;
-    }
-
-    case "all": {
-      // Returns boolean - SQL is: SELECT CASE WHEN NOT EXISTS(...) THEN 1 ELSE 0 END
-      const allResult = (await db.one(sql, sqlParams)) as Record<string, unknown>;
-      const allKeys = Object.keys(allResult);
-      if (allKeys.length > 0 && allKeys[0]) {
-        return (allResult[allKeys[0]] === 1) as ReturnType;
-      }
-      return false as ReturnType;
-    }
-
-    default:
-      // Regular query that returns an array
-      return (await db.any(sql, sqlParams)) as ReturnType;
-  }
-}
-
-/**
- * PARALLEL IMPLEMENTATION USING PLAN API
- * Execute a SELECT query using the plan API
- */
-export async function executeSelectWithPlan<
-  TSchema,
-  TParams,
-  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
->(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
-  params: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<
-  TQuery extends Queryable<infer T>
-    ? T[]
-    : TQuery extends OrderedQueryable<infer T>
-      ? T[]
-      : TQuery extends TerminalQuery<infer T>
-        ? T
-        : never
->;
-
-export async function executeSelectWithPlan<
-  TSchema,
-  TParams,
-  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
->(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>, params: TParams) => TQuery,
-  params: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<
-  TQuery extends Queryable<infer T>
-    ? T[]
-    : TQuery extends OrderedQueryable<infer T>
-      ? T[]
-      : TQuery extends TerminalQuery<infer T>
-        ? T
-        : never
->;
-
-// Implementation
-export async function executeSelectWithPlan<
-  TSchema,
-  TParams,
-  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
->(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery)
-    | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => TQuery)
-    | ((queryBuilder: QueryBuilder<TSchema>) => TQuery),
-  params?: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<
-  TQuery extends Queryable<infer T>
-    ? T[]
-    : TQuery extends OrderedQueryable<infer T>
-      ? T[]
-      : TQuery extends TerminalQuery<infer T>
-        ? T
-        : never
-> {
-  type ReturnType =
-    TQuery extends Queryable<infer T>
-      ? T[]
-      : TQuery extends OrderedQueryable<infer T>
-        ? T[]
-        : TQuery extends TerminalQuery<infer T>
-          ? T
-          : never;
-
   // Create plan using defineSelect
   // Type assertion needed due to complex overload resolution between
   // the builder's union return type and defineSelect's overloads
@@ -701,7 +462,7 @@ export async function executeSelectWithPlan<
   const plan = defineSelect(schema, builder as any, options);
 
   // Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.toSql(params || {} as TParams);
+  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
 
   // Generate SQL string using existing generator
   const sql = generateSql(operation, mergedParams);
@@ -854,7 +615,7 @@ export function insertStatement<TSchema, TTable, TReturning = never>(
 
 // Implementation
 export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  _schema: DatabaseSchema<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   builder:
     | ((
         queryBuilder: QueryBuilder<TSchema>,
@@ -869,23 +630,20 @@ export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
   TParams & Record<string, string | number | boolean | null>,
   TReturning extends never ? void : TReturning
 > {
-  const parseResult = parseQuery(builder, options || {});
+  // Create plan using defineInsert with builder function
+  const plan = defineInsert(schema, builder, options);
 
-  if (!parseResult) {
-    throw new Error("Failed to parse INSERT query");
-  }
+  // Get operation and merged params from plan
+  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
 
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-  const sql = generateSql(parseResult.operation, mergedParams);
+  // Generate SQL string using existing generator
+  const sql = generateSql(operation, mergedParams);
 
-  // Expand array parameters into indexed parameters for IN clause support
+  // Expand array parameters for pg-promise
   const finalParams = expandArrayParams(mergedParams) as TParams &
     Record<string, string | number | boolean | null>;
 
-  return {
-    sql,
-    params: finalParams,
-  };
+  return { sql, params: finalParams };
 }
 
 /**
@@ -1106,7 +864,7 @@ export function updateStatement<TSchema, TTable, TReturning = never>(
 
 // Implementation
 export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
-  _schema: DatabaseSchema<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   builder:
     | ((
         queryBuilder: QueryBuilder<TSchema>,
@@ -1127,23 +885,20 @@ export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
   TParams & Record<string, string | number | boolean | null>,
   TReturning extends never ? void : TReturning
 > {
-  const parseResult = parseQuery(builder, options || {});
+  // Create plan using defineUpdate with builder function
+  const plan = defineUpdate(schema, builder, options);
 
-  if (!parseResult) {
-    throw new Error("Failed to parse UPDATE query");
-  }
+  // Get operation and merged params from plan
+  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
 
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-  const sql = generateSql(parseResult.operation, mergedParams);
+  // Generate SQL string using existing generator
+  const sql = generateSql(operation, mergedParams);
 
-  // Expand array parameters into indexed parameters for IN clause support
+  // Expand array parameters for pg-promise
   const finalParams = expandArrayParams(mergedParams) as TParams &
     Record<string, string | number | boolean | null>;
 
-  return {
-    sql,
-    params: finalParams,
-  };
+  return { sql, params: finalParams };
 }
 
 /**
@@ -1375,7 +1130,7 @@ export function deleteStatement<TSchema, TResult>(
 
 // Implementation
 export function deleteStatement<TSchema, TParams, TResult>(
-  _schema: DatabaseSchema<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   builder:
     | ((
         queryBuilder: QueryBuilder<TSchema>,
@@ -1385,23 +1140,20 @@ export function deleteStatement<TSchema, TParams, TResult>(
   params?: TParams,
   options?: ParseQueryOptions,
 ): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
-  const parseResult = parseQuery(builder, options || {});
+  // Create plan using defineDelete with builder function
+  const plan = defineDelete(schema, builder, options);
 
-  if (!parseResult) {
-    throw new Error("Failed to parse DELETE query");
-  }
+  // Get operation and merged params from plan
+  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
 
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-  const sql = generateSql(parseResult.operation, mergedParams);
+  // Generate SQL string using existing generator
+  const sql = generateSql(operation, mergedParams);
 
-  // Expand array parameters into indexed parameters for IN clause support
+  // Expand array parameters for pg-promise
   const finalParams = expandArrayParams(mergedParams) as TParams &
     Record<string, string | number | boolean | null>;
 
-  return {
-    sql,
-    params: finalParams,
-  };
+  return { sql, params: finalParams };
 }
 
 /**

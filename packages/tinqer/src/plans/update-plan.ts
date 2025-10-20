@@ -1,4 +1,7 @@
 import type { DatabaseSchema } from "../linq/database-context.js";
+import type { QueryBuilder } from "../linq/query-builder.js";
+import type { QueryHelpers } from "../linq/functions.js";
+import type { Updatable, UpdatableWithSet, UpdatableComplete, UpdatableWithReturning } from "../linq/updatable.js";
 import type { ParseQueryOptions } from "../parser/types.js";
 import type { QueryOperation, UpdateOperation } from "../query-tree/operations.js";
 import type {
@@ -11,6 +14,7 @@ import { parseJavaScript } from "../parser/oxc-parser.js";
 import { normalizeJoins } from "../parser/normalize-joins.js";
 import { wrapWindowFilters } from "../parser/normalize-window-filters.js";
 import type { ParseResult } from "../parser/parse-query.js";
+import { parseQuery } from "../parser/parse-query.js";
 import {
   restoreVisitorContext,
   snapshotVisitorContext,
@@ -105,7 +109,18 @@ export class UpdatePlanHandleInitial<TRecord, TParams> {
       this.state,
       values as Partial<TRecord> | ((params: unknown) => Partial<TRecord>),
     );
-    return new UpdatePlanHandleWithSet(nextState as UpdatePlanState<TRecord, TParams & ExtraParams>);
+    return new UpdatePlanHandleWithSet(
+      nextState as UpdatePlanState<TRecord, TParams & ExtraParams>,
+    );
+  }
+
+  toSql(_params: TParams): UpdatePlanSql {
+    // Initial stage without SET clause - this would be invalid SQL
+    throw new Error("UPDATE statement requires set() to be called before generating SQL");
+  }
+
+  toPlan(): UpdatePlan<TRecord, TParams> {
+    return this.state;
   }
 }
 
@@ -120,7 +135,9 @@ export class UpdatePlanHandleWithSet<TRecord, TParams> {
       this.state,
       predicate as unknown as (...args: unknown[]) => boolean,
     );
-    return new UpdatePlanHandleComplete(nextState as UpdatePlanState<TRecord, TParams & ExtraParams>);
+    return new UpdatePlanHandleComplete(
+      nextState as UpdatePlanState<TRecord, TParams & ExtraParams>,
+    );
   }
 
   allowFullTableUpdate(): UpdatePlanHandleComplete<TRecord, TParams> {
@@ -217,38 +234,94 @@ export class UpdatePlanHandleWithReturning<TResult, TParams> {
 }
 
 // -----------------------------------------------------------------------------
-// Public entry point
+// Public entry points
 // -----------------------------------------------------------------------------
 
+// Type for builder function results
+type UpdateResult<TTable, TReturning = unknown> =
+  | Updatable<TTable>
+  | UpdatableWithSet<TTable>
+  | UpdatableComplete<TTable>
+  | UpdatableWithReturning<TTable, TReturning>;
+
+// Type for builder functions
+type UpdateBuilder<TSchema, TParams, TTable, TReturning = unknown> =
+  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => UpdateResult<TTable, TReturning>)
+  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => UpdateResult<TTable, TReturning>)
+  | ((queryBuilder: QueryBuilder<TSchema>) => UpdateResult<TTable, TReturning>);
+
+// Combined overload for all builder functions
+export function defineUpdate<TSchema, TParams, TTable, TReturning = unknown>(
+  schema: DatabaseSchema<TSchema>,
+  builder: UpdateBuilder<TSchema, TParams, TTable, TReturning>,
+  options?: ParseQueryOptions,
+): UpdatePlanHandleInitial<TTable, TParams> | UpdatePlanHandleWithSet<TTable, TParams> | UpdatePlanHandleComplete<TTable, TParams>;
+
+// Original overload for direct table name (kept for backward compatibility)
 export function defineUpdate<TSchema, TParams, TTable extends keyof TSchema>(
-  _schema: DatabaseSchema<TSchema>,
+  schema: DatabaseSchema<TSchema>,
   table: TTable,
   options?: ParseQueryOptions,
-): UpdatePlanHandleInitial<TSchema[TTable], TParams> {
-  // For update, we start with just the table
-  const initialOperation: UpdateOperation = {
-    type: "queryOperation",
-    operationType: "update",
-    table: table as string,
-    assignments: {
-      type: "object",
-      properties: {},
+): UpdatePlanHandleInitial<TSchema[TTable], TParams>;
+
+// Implementation
+export function defineUpdate<TSchema, TParams = Record<string, never>, TTable = unknown>(
+  _schema: DatabaseSchema<TSchema>,
+  builderOrTable: UpdateBuilder<TSchema, TParams, TTable> | keyof TSchema,
+  options?: ParseQueryOptions,
+): UpdatePlanHandleInitial<TTable, TParams> | UpdatePlanHandleWithSet<TTable, TParams> | UpdatePlanHandleComplete<TTable, TParams> {
+  // Check if it's a builder function or a table name
+  if (typeof builderOrTable === 'function') {
+    // Parse the builder function to get the operation
+    const parseResult = parseQuery(builderOrTable, options);
+    if (!parseResult || parseResult.operation.operationType !== 'update') {
+      throw new Error("Failed to parse update builder or not an update operation");
     }
-  };
 
-  const parseResult: ParseResult = {
-    operation: initialOperation,
-    autoParams: {},
-    contextSnapshot: snapshotVisitorContext({
-      tableParams: new Set<string>(),
-      queryParams: new Set<string>(),
-      autoParams: new Map<string, unknown>(),
-      autoParamCounter: 0,
-    }),
-  };
+    const initialState = createInitialState<TTable, TParams>(parseResult, options);
 
-  const initialState = createInitialState<TSchema[TTable], TParams>(parseResult, options);
-  return new UpdatePlanHandleInitial(initialState);
+    // Check the state of the parsed operation to return the appropriate handle
+    const updateOp = parseResult.operation as UpdateOperation;
+
+    // Check if WHERE clause is present
+    if (updateOp.predicate || updateOp.allowFullTableUpdate) {
+      return new UpdatePlanHandleComplete(initialState);
+    }
+
+    // Check if SET clause is present
+    if (updateOp.assignments && (updateOp.assignments as any).properties &&
+        Object.keys((updateOp.assignments as any).properties).length > 0) {
+      return new UpdatePlanHandleWithSet(initialState);
+    }
+
+    return new UpdatePlanHandleInitial(initialState);
+  } else {
+    // Original table name path
+    const table = builderOrTable as keyof TSchema;
+    const initialOperation: UpdateOperation = {
+      type: "queryOperation",
+      operationType: "update",
+      table: table as string,
+      assignments: {
+        type: "object",
+        properties: {},
+      },
+    };
+
+    const parseResult: ParseResult = {
+      operation: initialOperation,
+      autoParams: {},
+      contextSnapshot: snapshotVisitorContext({
+        tableParams: new Set<string>(),
+        queryParams: new Set<string>(),
+        autoParams: new Map<string, unknown>(),
+        autoParamCounter: 0,
+      }),
+    };
+
+    const initialState = createInitialState<TTable, TParams>(parseResult, options);
+    return new UpdatePlanHandleInitial(initialState);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -302,7 +375,11 @@ function appendWhereUpdate<TRecord, TParams>(
   const visitorContext = restoreVisitorContext(state.contextSnapshot);
   const lambda = parseLambdaExpression(predicate, "where");
   const call = createMethodCall("where", lambda);
-  const result = visitWhereUpdateOperation(call, state.operation as UpdateOperation, visitorContext);
+  const result = visitWhereUpdateOperation(
+    call,
+    state.operation as UpdateOperation,
+    visitorContext,
+  );
 
   if (!result) {
     throw new Error("Failed to append where clause to update plan");
@@ -334,7 +411,11 @@ function appendReturning<TRecord, TParams>(
   const visitorContext = restoreVisitorContext(state.contextSnapshot);
   const lambda = parseLambdaExpression(selector as (...args: unknown[]) => unknown, "returning");
   const call = createMethodCall("returning", lambda);
-  const result = visitReturningUpdateOperation(call, state.operation as UpdateOperation, visitorContext);
+  const result = visitReturningUpdateOperation(
+    call,
+    state.operation as UpdateOperation,
+    visitorContext,
+  );
 
   if (!result) {
     throw new Error("Failed to append returning clause to update plan");
