@@ -4,8 +4,8 @@
  */
 
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
-import { createSchema } from "@webpods/tinqer";
+import { defineSelect, createSchema } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 
 interface User {
   id: number;
@@ -23,27 +23,29 @@ const schema = createSchema<Schema>();
 describe("Terminal Operations", () => {
   describe("FIRST operations", () => {
     it("should generate SQL for first()", () => {
-      const result = selectStatement(schema, (q) => q.from("users").first(), {});
+      const result = toSql(defineSelect(schema, (q) => q.from("users").first()), {});
       expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for first() with predicate", () => {
-      const result = selectStatement(schema, (q) => q.from("users").first((u) => u.age > 18), {});
+      const result = toSql(defineSelect(schema, (q) => q.from("users").first((u) => u.age > 18)), {});
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" > $(__p1) LIMIT 1');
       expect(result.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should generate SQL for firstOrDefault()", () => {
-      const result = selectStatement(schema, (q) => q.from("users").firstOrDefault(), {});
+      const result = toSql(defineSelect(schema, (q) => q.from("users").firstOrDefault()), {});
       expect(result.sql).to.equal('SELECT * FROM "users" LIMIT 1');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for firstOrDefault() with predicate", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").firstOrDefault((u) => u.isActive),
+      const result = toSql(
+        defineSelect(
+          schema,
+          (q) => q.from("users").firstOrDefault((u) => u.isActive),
+        ),
         {},
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "isActive" LIMIT 1');
