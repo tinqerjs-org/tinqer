@@ -1,7 +1,8 @@
-import { Queryable } from "../linq/queryable.js";
+import type { Queryable } from "../linq/queryable.js";
 import type { QueryHelpers } from "../linq/functions.js";
 import type { QueryBuilder } from "../linq/query-builder.js";
 import type { DatabaseSchema } from "../linq/database-context.js";
+import type { Grouping } from "../linq/grouping.js";
 import type { ParseQueryOptions } from "../parser/types.js";
 import type { QueryOperation } from "../query-tree/operations.js";
 import type {
@@ -29,6 +30,7 @@ import { visitTakeOperation } from "../visitors/take-skip/take.js";
 import { visitSkipOperation } from "../visitors/take-skip/skip.js";
 import { visitDistinctOperation } from "../visitors/distinct/index.js";
 import { visitReverseOperation } from "../visitors/reverse/index.js";
+import { visitGroupByOperation } from "../visitors/groupby/index.js";
 
 // -----------------------------------------------------------------------------
 // Plan data
@@ -98,10 +100,8 @@ export interface SelectPlanSql {
   autoParamInfos?: Record<string, unknown>;
 }
 
-export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
-  constructor(private readonly state: SelectPlanState<TRecord, TParams>) {
-    super();
-  }
+export class SelectPlanHandle<TRecord, TParams> {
+  constructor(private readonly state: SelectPlanState<TRecord, TParams>) {}
 
   toSql(params: TParams): SelectPlanSql {
     const merged = mergeParams(this.state.autoParams, params);
@@ -194,7 +194,123 @@ export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
     return new SelectPlanHandle(nextState);
   }
 
-  // TODO: add remaining Queryable methods (join, groupBy, selectMany, terminal ops, etc.)
+  // Note: Join operations are complex and require further work to properly handle inner queries
+  // For now, these are placeholders that throw informative errors
+
+  join<TInner, TKey, TResult>(
+    _inner: Queryable<TInner>,
+    _outerKeySelector: (item: TRecord) => TKey,
+    _innerKeySelector: (item: TInner) => TKey,
+    _resultSelector: (outer: TRecord, inner: TInner) => TResult,
+  ): SelectPlanHandle<TResult, TParams> {
+    // TODO: Implement join support - requires handling inner query as plan or lambda
+    throw new Error("join() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  groupJoin<TInner, TKey, TResult>(
+    _inner: Queryable<TInner>,
+    _outerKeySelector: (item: TRecord) => TKey,
+    _innerKeySelector: (item: TInner) => TKey,
+    _resultSelector: (outer: TRecord, group: Queryable<TInner>) => TResult,
+  ): SelectPlanHandle<TResult, TParams> {
+    // TODO: Implement groupJoin support - requires handling inner query as plan or lambda
+    throw new Error("groupJoin() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  selectMany<TCollection, TResult>(
+    _collectionSelector: (item: TRecord) => Queryable<TCollection>,
+    _resultSelector: (item: TRecord, collection: TCollection) => TResult,
+  ): SelectPlanHandle<TResult, TParams> {
+    // TODO: Implement selectMany support - requires handling collection selector
+    throw new Error("selectMany() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  groupBy<TKey>(keySelector: (item: TRecord) => TKey): SelectPlanHandle<Grouping<TKey, TRecord>, TParams> {
+    const nextState = appendGroupBy(
+      this.state,
+      keySelector as unknown as (item: unknown) => unknown,
+    );
+    return new SelectPlanHandle(nextState as unknown as SelectPlanState<Grouping<TKey, TRecord>, TParams>);
+  }
+
+  // Terminal operations - these return terminal handles that cannot be chained further
+
+  count(_predicate?: (item: TRecord) => boolean): SelectTerminalHandle<number, TParams> {
+    // TODO: Implement count terminal operation
+    throw new Error("count() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  first(_predicate?: (item: TRecord) => boolean): SelectTerminalHandle<TRecord, TParams> {
+    // TODO: Implement first terminal operation
+    throw new Error("first() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  last(_predicate?: (item: TRecord) => boolean): SelectTerminalHandle<TRecord, TParams> {
+    // TODO: Implement last terminal operation
+    throw new Error("last() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  single(_predicate?: (item: TRecord) => boolean): SelectTerminalHandle<TRecord, TParams> {
+    // TODO: Implement single terminal operation
+    throw new Error("single() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  sum(_selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
+    // TODO: Implement sum terminal operation
+    throw new Error("sum() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  avg(_selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
+    // TODO: Implement avg terminal operation
+    throw new Error("avg() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  min(_selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
+    // TODO: Implement min terminal operation
+    throw new Error("min() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  max(_selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
+    // TODO: Implement max terminal operation
+    throw new Error("max() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  any(_predicate?: (item: TRecord) => boolean): SelectTerminalHandle<boolean, TParams> {
+    // TODO: Implement any terminal operation
+    throw new Error("any() is not yet implemented for plan handles. Coming soon.");
+  }
+
+  all(_predicate: (item: TRecord) => boolean): SelectTerminalHandle<boolean, TParams> {
+    // TODO: Implement all terminal operation
+    throw new Error("all() is not yet implemented for plan handles. Coming soon.");
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Terminal Handle
+// -----------------------------------------------------------------------------
+
+export class SelectTerminalHandle<TResult, TParams> {
+  constructor(private readonly state: SelectPlanState<TResult, TParams>) {}
+
+  toSql(params: TParams): SelectPlanSql {
+    const merged = mergeParams(this.state.autoParams, params);
+    return {
+      operation: this.state.operation,
+      params: merged,
+      autoParamInfos: this.state.autoParamInfos,
+    };
+  }
+
+  toPlan(): SelectPlan<TResult, TParams> {
+    return this.state;
+  }
+
+  execute(_params: TParams): Promise<TResult> {
+    return Promise.reject(
+      new Error("execute() is not implemented yet. Use executeSelectPlan helper once available."),
+    );
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -391,6 +507,28 @@ function appendReverse<TRecord, TParams>(
   }
 
   return createState(state, result.operation, visitorContext);
+}
+
+function appendGroupBy<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  keySelector: (item: unknown) => unknown,
+): SelectPlanState<unknown, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  const lambda = parseLambdaExpression(keySelector, "groupBy");
+  const call = createMethodCall("groupBy", lambda);
+  const result = visitGroupByOperation(call, state.operation, "groupBy", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append groupBy to plan");
+  }
+
+  visitorContext.autoParams = mergeAutoParams(visitorContext.autoParams, result.autoParams);
+
+  return createState(
+    state as unknown as SelectPlanState<unknown, TParams>,
+    result.operation,
+    visitorContext,
+  );
 }
 
 // -----------------------------------------------------------------------------
