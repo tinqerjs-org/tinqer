@@ -12,6 +12,8 @@ import type { createQueryHelpers } from "../linq/functions.js";
 import { parseCache, type CachedParseResult } from "./parse-cache.js";
 import { getParseCacheConfig } from "./parse-cache-config.js";
 import type { ParseQueryOptions } from "./types.js";
+import { snapshotVisitorContext } from "../visitors/types.js";
+import type { VisitorContextSnapshot } from "../visitors/types.js";
 
 /**
  * Result of parsing a query, including auto-extracted parameters
@@ -20,6 +22,7 @@ export interface ParseResult {
   operation: QueryOperation;
   autoParams: Record<string, string | number | boolean | null>;
   autoParamInfos?: Record<string, unknown>; // Enhanced field context information
+  contextSnapshot: VisitorContextSnapshot;
 }
 
 /**
@@ -46,6 +49,7 @@ function freezeParseResult(result: ParseResult): CachedParseResult {
     operation: result.operation,
     autoParams: result.autoParams,
     autoParamInfos: result.autoParamInfos,
+    contextSnapshot: result.contextSnapshot,
   });
 }
 
@@ -57,6 +61,7 @@ function cloneParseResult(cached: CachedParseResult): ParseResult {
     operation: cached.operation, // Frozen, safe to reuse
     autoParams: { ...cached.autoParams } as Record<string, string | number | boolean | null>, // Clone params object
     autoParamInfos: cached.autoParamInfos ? { ...cached.autoParamInfos } : undefined,
+    contextSnapshot: cached.contextSnapshot,
   };
 }
 
@@ -134,6 +139,7 @@ export function parseQuery<TContext, TParams, TQuery>(
       operation: normalizedOperation,
       autoParams: result.autoParams as Record<string, string | number | boolean | null>,
       autoParamInfos: result.autoParamInfos,
+      contextSnapshot: snapshotVisitorContext(result.visitorContext),
     };
 
     // Cache the result if caching is enabled

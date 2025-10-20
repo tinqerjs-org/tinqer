@@ -84,6 +84,7 @@ export function convertAstToQueryOperationWithParams(
     string,
     { value: unknown; fieldName?: string; tableName?: string; sourceTable?: number }
   >;
+  visitorContext: VisitorContext;
 } {
   // Extract parameter info from the lambda
   const extracted = extractParameters(ast);
@@ -119,6 +120,7 @@ export function convertAstToQueryOperationWithParams(
     operation,
     autoParams: allAutoParams,
     autoParamInfos,
+    visitorContext,
   };
 }
 

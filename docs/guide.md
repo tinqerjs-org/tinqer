@@ -1413,11 +1413,7 @@ SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "age" >= @__p1) THEN 1 ELSE 
 The `all` method emits a `NOT EXISTS` check:
 
 ```typescript
-const allActive = selectStatement(
-  schema,
-  (q) => q.from("users").all((u) => u.active === true),
-  {},
-);
+const allActive = selectStatement(schema, (q) => q.from("users").all((u) => u.active === true), {});
 ```
 
 ```sql

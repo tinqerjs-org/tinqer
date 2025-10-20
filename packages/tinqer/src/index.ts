@@ -160,3 +160,9 @@ export {
   clearParseCache,
 } from "./parser/parse-cache-config.js";
 export type { ParseCacheConfig } from "./parser/parse-cache-config.js";
+
+// ==================== Plan API ====================
+
+export { defineSelect, defineSelectPlan, SelectPlanHandle } from "./plans/select-plan.js";
+export type { SelectPlanSql } from "./plans/select-plan.js";
+export type { SelectPlan } from "./plans/select-plan.js";

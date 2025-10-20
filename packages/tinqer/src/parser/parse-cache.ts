@@ -3,6 +3,7 @@
  */
 
 import type { QueryOperation } from "../query-tree/operations.js";
+import type { VisitorContextSnapshot } from "../visitors/types.js";
 
 /**
  * Cached parse result containing the operation tree and auto-generated parameters
@@ -11,6 +12,7 @@ export interface CachedParseResult {
   operation: QueryOperation;
   autoParams: Record<string, unknown>;
   autoParamInfos?: Record<string, unknown>;
+  contextSnapshot: VisitorContextSnapshot;
 }
 
 /**

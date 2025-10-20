@@ -15,7 +15,7 @@ import type {
 
 import type { ASTNode, Expression as ASTExpression } from "../parser/ast-types.js";
 
-import type { ObjectShapeNode } from "../query-tree/operations.js";
+import type { ObjectShapeNode, ShapeNode } from "../query-tree/operations.js";
 
 // ==================== Visitor Type Definitions ====================
 
@@ -224,4 +224,165 @@ export function createAutoParam(
   }
 
   return paramName;
+}
+
+// ==================== Context Serialization ====================
+
+interface SerializedColumnShapeNode {
+  type: "column";
+  sourceTable: number;
+  columnName: string;
+}
+
+interface SerializedObjectShapeNode {
+  type: "object";
+  properties: Array<{ key: string; value: SerializedShapeNode }>;
+}
+
+interface SerializedReferenceShapeNode {
+  type: "reference";
+  sourceTable: number;
+}
+
+interface SerializedArrayShapeNode {
+  type: "array";
+  element: SerializedShapeNode;
+}
+
+type SerializedShapeNode =
+  | SerializedColumnShapeNode
+  | SerializedObjectShapeNode
+  | SerializedReferenceShapeNode
+  | SerializedArrayShapeNode;
+
+export interface VisitorContextSnapshot {
+  queryBuilderParam?: string;
+  tableParams: string[];
+  queryParams: string[];
+  helpersParam?: string;
+  groupingParams?: string[];
+  autoParams: Array<[string, unknown]>;
+  autoParamCounter: number;
+  autoParamInfos?: Array<[string, AutoParamInfo]>;
+  joinParams?: Array<[string, number]>;
+  joinResultParam?: string;
+  currentResultShape?: SerializedShapeNode;
+  currentTable?: string;
+  inSelectProjection?: boolean;
+  hasTableParam?: boolean;
+  expectedType?: "boolean" | "value" | "object" | "array" | "any";
+}
+
+function serializeShapeNode(node: ShapeNode): SerializedShapeNode {
+  switch (node.type) {
+    case "column":
+      return {
+        type: "column",
+        sourceTable: node.sourceTable,
+        columnName: node.columnName,
+      };
+    case "object": {
+      const entries: Array<[string, ShapeNode]> = Array.from(node.properties.entries());
+      return {
+        type: "object",
+        properties: entries.map(([key, value]) => ({
+          key,
+          value: serializeShapeNode(value),
+        })),
+      };
+    }
+    case "reference":
+      return {
+        type: "reference",
+        sourceTable: node.sourceTable,
+      };
+    case "array":
+      return {
+        type: "array",
+        element: serializeShapeNode(node.elementShape),
+      };
+    default:
+      throw new Error("Unsupported shape node type");
+  }
+}
+
+function deserializeShapeNode(serialized: SerializedShapeNode): ShapeNode {
+  switch (serialized.type) {
+    case "column":
+      return {
+        type: "column",
+        sourceTable: serialized.sourceTable,
+        columnName: serialized.columnName,
+      };
+    case "object": {
+      const properties = new Map<string, ShapeNode>();
+      for (const entry of serialized.properties) {
+        properties.set(entry.key, deserializeShapeNode(entry.value));
+      }
+      return {
+        type: "object",
+        properties,
+      };
+    }
+    case "reference":
+      return {
+        type: "reference",
+        sourceTable: serialized.sourceTable,
+      };
+    case "array":
+      return {
+        type: "array",
+        elementShape: deserializeShapeNode(serialized.element),
+      };
+    default:
+      throw new Error("Unsupported serialized shape node type");
+  }
+}
+
+export function snapshotVisitorContext(context: VisitorContext): VisitorContextSnapshot {
+  return {
+    queryBuilderParam: context.queryBuilderParam,
+    tableParams: Array.from(context.tableParams),
+    queryParams: Array.from(context.queryParams),
+    helpersParam: context.helpersParam,
+    groupingParams: context.groupingParams ? Array.from(context.groupingParams) : undefined,
+    autoParams: Array.from(context.autoParams.entries()),
+    autoParamCounter: context.autoParamCounter,
+    autoParamInfos: context.autoParamInfos
+      ? Array.from(context.autoParamInfos.entries())
+      : undefined,
+    joinParams: context.joinParams ? Array.from(context.joinParams.entries()) : undefined,
+    joinResultParam: context.joinResultParam,
+    currentResultShape: context.currentResultShape
+      ? serializeShapeNode(context.currentResultShape)
+      : undefined,
+    currentTable: context.currentTable,
+    inSelectProjection: context.inSelectProjection,
+    hasTableParam: context.hasTableParam,
+    expectedType: context.expectedType,
+  };
+}
+
+export function restoreVisitorContext(snapshot: VisitorContextSnapshot): VisitorContext {
+  const context: VisitorContext = {
+    queryBuilderParam: snapshot.queryBuilderParam,
+    tableParams: new Set(snapshot.tableParams),
+    queryParams: new Set(snapshot.queryParams),
+    helpersParam: snapshot.helpersParam,
+    groupingParams: snapshot.groupingParams ? new Set(snapshot.groupingParams) : undefined,
+    autoParams: new Map(snapshot.autoParams),
+    autoParamCounter: snapshot.autoParamCounter,
+    autoParamInfos: snapshot.autoParamInfos ? new Map(snapshot.autoParamInfos) : undefined,
+    joinParams: snapshot.joinParams ? new Map(snapshot.joinParams) : undefined,
+    joinResultParam: snapshot.joinResultParam,
+    currentResultShape: snapshot.currentResultShape
+      ? (deserializeShapeNode(snapshot.currentResultShape) as ObjectShapeNode)
+      : undefined,
+    currentTable: snapshot.currentTable,
+    inSelectProjection: snapshot.inSelectProjection,
+    hasTableParam: snapshot.hasTableParam,
+    expectedType: snapshot.expectedType,
+  };
+
+  return context;
 }
