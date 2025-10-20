@@ -171,3 +171,13 @@ export {
   type SelectPlan,
   type SelectPlanSql
 } from "./plans/select-plan.js";
+
+export {
+  defineUpdate,
+  UpdatePlanHandleInitial,
+  UpdatePlanHandleWithSet,
+  UpdatePlanHandleComplete,
+  UpdatePlanHandleWithReturning,
+  type UpdatePlan,
+  type UpdatePlanSql
+} from "./plans/update-plan.js";

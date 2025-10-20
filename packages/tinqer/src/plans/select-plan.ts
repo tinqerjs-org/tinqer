@@ -1,4 +1,5 @@
-import type { Queryable } from "../linq/queryable.js";
+import { Queryable } from "../linq/queryable.js";
+import { TerminalQuery } from "../linq/terminal-query.js";
 import type { QueryHelpers } from "../linq/functions.js";
 import type { QueryBuilder } from "../linq/query-builder.js";
 import type { DatabaseSchema } from "../linq/database-context.js";
@@ -100,8 +101,10 @@ export interface SelectPlanSql {
   autoParamInfos?: Record<string, unknown>;
 }
 
-export class SelectPlanHandle<TRecord, TParams> {
-  constructor(private readonly state: SelectPlanState<TRecord, TParams>) {}
+export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
+  constructor(private readonly state: SelectPlanState<TRecord, TParams>) {
+    super();
+  }
 
   toSql(params: TParams): SelectPlanSql {
     const merged = mergeParams(this.state.autoParams, params);
@@ -123,14 +126,19 @@ export class SelectPlanHandle<TRecord, TParams> {
     return this.state;
   }
 
+  // Overload to maintain Queryable compatibility
+  where(predicate: (item: TRecord) => boolean): SelectPlanHandle<TRecord, TParams>;
   where<ExtraParams extends object = Record<string, never>>(
     predicate: (item: TRecord, params: TParams & ExtraParams) => boolean,
-  ): SelectPlanHandle<TRecord, TParams & ExtraParams> {
+  ): SelectPlanHandle<TRecord, TParams & ExtraParams>;
+  where<ExtraParams extends object = Record<string, never>>(
+    predicate: ((item: TRecord) => boolean) | ((item: TRecord, params: TParams & ExtraParams) => boolean),
+  ): SelectPlanHandle<TRecord, TParams | (TParams & ExtraParams)> {
     const nextState = appendWhere(
       this.state,
       predicate as unknown as (...args: unknown[]) => boolean,
     );
-    return new SelectPlanHandle(nextState as SelectPlanState<TRecord, TParams & ExtraParams>);
+    return new SelectPlanHandle(nextState as SelectPlanState<TRecord, TParams | (TParams & ExtraParams)>);
   }
 
   select<TResult>(selector: (item: TRecord) => TResult): SelectPlanHandle<TResult, TParams> {
@@ -211,15 +219,24 @@ export class SelectPlanHandle<TRecord, TParams> {
     _inner: Queryable<TInner>,
     _outerKeySelector: (item: TRecord) => TKey,
     _innerKeySelector: (item: TInner) => TKey,
-    _resultSelector: (outer: TRecord, group: Queryable<TInner>) => TResult,
+    _resultSelector: (outer: TRecord, innerGroup: Grouping<TKey, TInner>) => TResult,
   ): SelectPlanHandle<TResult, TParams> {
     // TODO: Implement groupJoin support - requires handling inner query as plan or lambda
     throw new Error("groupJoin() is not yet implemented for plan handles. Coming soon.");
   }
 
+  selectMany<TCollection>(
+    _collectionSelector: (item: TRecord) => Queryable<TCollection> | Iterable<TCollection>,
+  ): SelectPlanHandle<TCollection, TParams>;
+
   selectMany<TCollection, TResult>(
-    _collectionSelector: (item: TRecord) => Queryable<TCollection>,
-    _resultSelector: (item: TRecord, collection: TCollection) => TResult,
+    _collectionSelector: (item: TRecord) => Queryable<TCollection> | Iterable<TCollection>,
+    _resultSelector: (item: TRecord, collectionItem: TCollection) => TResult,
+  ): SelectPlanHandle<TResult, TParams>;
+
+  selectMany<TCollection, TResult = TCollection>(
+    _collectionSelector: (item: TRecord) => Queryable<TCollection> | Iterable<TCollection>,
+    _resultSelector?: (item: TRecord, collectionItem: TCollection) => TResult,
   ): SelectPlanHandle<TResult, TParams> {
     // TODO: Implement selectMany support - requires handling collection selector
     throw new Error("selectMany() is not yet implemented for plan handles. Coming soon.");
@@ -265,12 +282,16 @@ export class SelectPlanHandle<TRecord, TParams> {
     throw new Error("avg() is not yet implemented for plan handles. Coming soon.");
   }
 
-  min(_selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
+  min(): SelectTerminalHandle<TRecord, TParams>;
+  min<TResult>(_selector: (item: TRecord) => TResult): SelectTerminalHandle<TResult, TParams>;
+  min<TResult = TRecord>(_selector?: (item: TRecord) => TResult): SelectTerminalHandle<TRecord | TResult, TParams> {
     // TODO: Implement min terminal operation
     throw new Error("min() is not yet implemented for plan handles. Coming soon.");
   }
 
-  max(_selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
+  max(): SelectTerminalHandle<TRecord, TParams>;
+  max<TResult>(_selector: (item: TRecord) => TResult): SelectTerminalHandle<TResult, TParams>;
+  max<TResult = TRecord>(_selector?: (item: TRecord) => TResult): SelectTerminalHandle<TRecord | TResult, TParams> {
     // TODO: Implement max terminal operation
     throw new Error("max() is not yet implemented for plan handles. Coming soon.");
   }
@@ -290,8 +311,10 @@ export class SelectPlanHandle<TRecord, TParams> {
 // Terminal Handle
 // -----------------------------------------------------------------------------
 
-export class SelectTerminalHandle<TResult, TParams> {
-  constructor(private readonly state: SelectPlanState<TResult, TParams>) {}
+export class SelectTerminalHandle<TResult, TParams> extends TerminalQuery<TResult> {
+  constructor(private readonly state: SelectPlanState<TResult, TParams>) {
+    super();
+  }
 
   toSql(params: TParams): SelectPlanSql {
     const merged = mergeParams(this.state.autoParams, params);
