@@ -181,3 +181,20 @@ export {
   type UpdatePlan,
   type UpdatePlanSql
 } from "./plans/update-plan.js";
+
+export {
+  defineInsert,
+  InsertPlanHandleInitial,
+  InsertPlanHandleWithValues,
+  InsertPlanHandleWithReturning,
+  type InsertPlan,
+  type InsertPlanSql
+} from "./plans/insert-plan.js";
+
+export {
+  defineDelete,
+  DeletePlanHandleInitial,
+  DeletePlanHandleComplete,
+  type DeletePlan,
+  type DeletePlanSql
+} from "./plans/delete-plan.js";
