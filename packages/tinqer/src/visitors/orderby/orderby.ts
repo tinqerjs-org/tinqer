@@ -69,6 +69,15 @@ export function visitOrderByOperation(
         extContext.joinResultParam = paramName;
       }
     }
+
+    // Check for second parameter (external params)
+    if (lambda.params.length > 1) {
+      const secondParam = lambda.params[1];
+      if (secondParam && secondParam.type === "Identifier") {
+        const paramName = (secondParam as Identifier).name;
+        context.queryParams.add(paramName);
+      }
+    }
   }
 
   // Extract body expression
@@ -108,7 +117,7 @@ export function visitOrderByOperation(
   return {
     operation: {
       type: "queryOperation",
-      operationType: "orderBy",
+      operationType: methodName === "orderByDescending" ? "orderByDescending" : "orderBy",
       source,
       keySelector: selector,
       descending: methodName === "orderByDescending",

@@ -56,6 +56,15 @@ export function visitThenByOperation(
       const paramName = (firstParam as Identifier).name;
       context.tableParams.add(paramName);
     }
+
+    // Check for second parameter (external params)
+    if (lambda.params.length > 1) {
+      const secondParam = lambda.params[1];
+      if (secondParam && secondParam.type === "Identifier") {
+        const paramName = (secondParam as Identifier).name;
+        context.queryParams.add(paramName);
+      }
+    }
   }
 
   // Extract body expression
@@ -95,7 +104,7 @@ export function visitThenByOperation(
   return {
     operation: {
       type: "queryOperation",
-      operationType: "thenBy",
+      operationType: methodName === "thenByDescending" ? "thenByDescending" : "thenBy",
       source,
       keySelector: selector,
       descending: methodName === "thenByDescending",

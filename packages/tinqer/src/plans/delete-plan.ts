@@ -119,7 +119,9 @@ export class DeletePlanHandleInitial<TRecord, TParams> {
 
   toSql(_params: TParams): DeletePlanSql {
     // Initial stage without WHERE clause - this would be dangerous SQL
-    throw new Error("DELETE statement requires where() or allowFullTableDelete() to be called before generating SQL");
+    throw new Error(
+      "DELETE statement requires where() or allowFullTableDelete() to be called before generating SQL",
+    );
   }
 
   toPlan(): DeletePlan<TRecord, TParams> {
@@ -160,7 +162,11 @@ type DeleteResult<TTable> = Deletable<TTable> | DeletableComplete<TTable>;
 
 // Type for builder functions
 type DeleteBuilder<TSchema, TParams, TTable> =
-  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => DeleteResult<TTable>)
+  | ((
+      queryBuilder: QueryBuilder<TSchema>,
+      params: TParams,
+      helpers: QueryHelpers,
+    ) => DeleteResult<TTable>)
   | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => DeleteResult<TTable>)
   | ((queryBuilder: QueryBuilder<TSchema>) => DeleteResult<TTable>);
 
@@ -185,10 +191,10 @@ export function defineDelete<TSchema, TParams = Record<string, never>, TTable = 
   options?: ParseQueryOptions,
 ): DeletePlanHandleInitial<TTable, TParams> | DeletePlanHandleComplete<TTable, TParams> {
   // Check if it's a builder function or a table name
-  if (typeof builderOrTable === 'function') {
+  if (typeof builderOrTable === "function") {
     // Parse the builder function to get the operation
     const parseResult = parseQuery(builderOrTable, options);
-    if (!parseResult || parseResult.operation.operationType !== 'delete') {
+    if (!parseResult || parseResult.operation.operationType !== "delete") {
       throw new Error("Failed to parse delete builder or not a delete operation");
     }
 

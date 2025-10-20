@@ -179,11 +179,17 @@ export class InsertPlanHandleWithReturning<TResult, TParams> {
 // -----------------------------------------------------------------------------
 
 // Type for builder function results
-type InsertResult<TTable, TReturning = unknown> = Insertable<TTable> | InsertableWithReturning<TTable, TReturning>;
+type InsertResult<TTable, TReturning = unknown> =
+  | Insertable<TTable>
+  | InsertableWithReturning<TTable, TReturning>;
 
 // Type for builder functions
 type InsertBuilder<TSchema, TParams, TTable, TReturning = unknown> =
-  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => InsertResult<TTable, TReturning>)
+  | ((
+      queryBuilder: QueryBuilder<TSchema>,
+      params: TParams,
+      helpers: QueryHelpers,
+    ) => InsertResult<TTable, TReturning>)
   | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => InsertResult<TTable, TReturning>)
   | ((queryBuilder: QueryBuilder<TSchema>) => InsertResult<TTable, TReturning>);
 
@@ -208,10 +214,10 @@ export function defineInsert<TSchema, TParams = Record<string, never>, TTable = 
   options?: ParseQueryOptions,
 ): InsertPlanHandleInitial<TTable, TParams> | InsertPlanHandleWithValues<TTable, TParams> {
   // Check if it's a builder function or a table name
-  if (typeof builderOrTable === 'function') {
+  if (typeof builderOrTable === "function") {
     // Parse the builder function to get the operation
     const parseResult = parseQuery(builderOrTable, options);
-    if (!parseResult || parseResult.operation.operationType !== 'insert') {
+    if (!parseResult || parseResult.operation.operationType !== "insert") {
       throw new Error("Failed to parse insert builder or not an insert operation");
     }
 
@@ -219,8 +225,11 @@ export function defineInsert<TSchema, TParams = Record<string, never>, TTable = 
 
     // Check if values are already present in the parsed operation
     const insertOp = parseResult.operation as InsertOperation;
-    if (insertOp.values && (insertOp.values as any).properties &&
-        Object.keys((insertOp.values as any).properties).length > 0) {
+    if (
+      insertOp.values &&
+      (insertOp.values as any).properties &&
+      Object.keys((insertOp.values as any).properties).length > 0
+    ) {
       return new InsertPlanHandleWithValues(initialState);
     }
 

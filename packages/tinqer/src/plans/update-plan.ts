@@ -1,7 +1,12 @@
 import type { DatabaseSchema } from "../linq/database-context.js";
 import type { QueryBuilder } from "../linq/query-builder.js";
 import type { QueryHelpers } from "../linq/functions.js";
-import type { Updatable, UpdatableWithSet, UpdatableComplete, UpdatableWithReturning } from "../linq/updatable.js";
+import type {
+  Updatable,
+  UpdatableWithSet,
+  UpdatableComplete,
+  UpdatableWithReturning,
+} from "../linq/updatable.js";
 import type { ParseQueryOptions } from "../parser/types.js";
 import type { QueryOperation, UpdateOperation } from "../query-tree/operations.js";
 import type {
@@ -246,7 +251,11 @@ type UpdateResult<TTable, TReturning = unknown> =
 
 // Type for builder functions
 type UpdateBuilder<TSchema, TParams, TTable, TReturning = unknown> =
-  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => UpdateResult<TTable, TReturning>)
+  | ((
+      queryBuilder: QueryBuilder<TSchema>,
+      params: TParams,
+      helpers: QueryHelpers,
+    ) => UpdateResult<TTable, TReturning>)
   | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => UpdateResult<TTable, TReturning>)
   | ((queryBuilder: QueryBuilder<TSchema>) => UpdateResult<TTable, TReturning>);
 
@@ -255,7 +264,10 @@ export function defineUpdate<TSchema, TParams, TTable, TReturning = unknown>(
   schema: DatabaseSchema<TSchema>,
   builder: UpdateBuilder<TSchema, TParams, TTable, TReturning>,
   options?: ParseQueryOptions,
-): UpdatePlanHandleInitial<TTable, TParams> | UpdatePlanHandleWithSet<TTable, TParams> | UpdatePlanHandleComplete<TTable, TParams>;
+):
+  | UpdatePlanHandleInitial<TTable, TParams>
+  | UpdatePlanHandleWithSet<TTable, TParams>
+  | UpdatePlanHandleComplete<TTable, TParams>;
 
 // Original overload for direct table name (kept for backward compatibility)
 export function defineUpdate<TSchema, TParams, TTable extends keyof TSchema>(
@@ -269,12 +281,15 @@ export function defineUpdate<TSchema, TParams = Record<string, never>, TTable = 
   _schema: DatabaseSchema<TSchema>,
   builderOrTable: UpdateBuilder<TSchema, TParams, TTable> | keyof TSchema,
   options?: ParseQueryOptions,
-): UpdatePlanHandleInitial<TTable, TParams> | UpdatePlanHandleWithSet<TTable, TParams> | UpdatePlanHandleComplete<TTable, TParams> {
+):
+  | UpdatePlanHandleInitial<TTable, TParams>
+  | UpdatePlanHandleWithSet<TTable, TParams>
+  | UpdatePlanHandleComplete<TTable, TParams> {
   // Check if it's a builder function or a table name
-  if (typeof builderOrTable === 'function') {
+  if (typeof builderOrTable === "function") {
     // Parse the builder function to get the operation
     const parseResult = parseQuery(builderOrTable, options);
-    if (!parseResult || parseResult.operation.operationType !== 'update') {
+    if (!parseResult || parseResult.operation.operationType !== "update") {
       throw new Error("Failed to parse update builder or not an update operation");
     }
 
@@ -289,8 +304,11 @@ export function defineUpdate<TSchema, TParams = Record<string, never>, TTable = 
     }
 
     // Check if SET clause is present
-    if (updateOp.assignments && (updateOp.assignments as any).properties &&
-        Object.keys((updateOp.assignments as any).properties).length > 0) {
+    if (
+      updateOp.assignments &&
+      (updateOp.assignments as any).properties &&
+      Object.keys((updateOp.assignments as any).properties).length > 0
+    ) {
       return new UpdatePlanHandleWithSet(initialState);
     }
 
