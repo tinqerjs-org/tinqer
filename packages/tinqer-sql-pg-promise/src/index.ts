@@ -106,7 +106,16 @@ export function selectStatement<TSchema, TParams, TResult>(
   // Type assertion needed due to complex overload resolution between
   // the builder's union return type and defineSelect's overloads
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const plan = defineSelect(schema, builder as any, options);
+  let plan;
+  try {
+    plan = defineSelect(schema, builder as any, options);
+  } catch (error) {
+    // Maintain backward compatibility with error messages
+    if (error instanceof Error && error.message === "Failed to parse select plan") {
+      throw new Error("Failed to parse query");
+    }
+    throw error;
+  }
 
   // Get operation and merged params from plan
   const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
@@ -459,7 +468,16 @@ export async function executeSelect<
   // Type assertion needed due to complex overload resolution between
   // the builder's union return type and defineSelect's overloads
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const plan = defineSelect(schema, builder as any, options);
+  let plan;
+  try {
+    plan = defineSelect(schema, builder as any, options);
+  } catch (error) {
+    // Maintain backward compatibility with error messages
+    if (error instanceof Error && error.message === "Failed to parse select plan") {
+      throw new Error("Failed to parse query");
+    }
+    throw error;
+  }
 
   // Get operation and merged params from plan
   const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
@@ -1144,7 +1162,18 @@ export function deleteStatement<TSchema, TParams, TResult>(
   const plan = defineDelete(schema, builder, options);
 
   // Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
+  let operation, mergedParams;
+  try {
+    const result = plan.toSql(params || ({} as TParams));
+    operation = result.operation;
+    mergedParams = result.params;
+  } catch (error) {
+    // Maintain backward compatibility with error messages for DELETE
+    if (error instanceof Error && error.message.includes("DELETE statement requires")) {
+      throw new Error("DELETE requires a WHERE clause or explicit allowFullTableDelete");
+    }
+    throw error;
+  }
 
   // Generate SQL string using existing generator
   const sql = generateSql(operation, mergedParams);
