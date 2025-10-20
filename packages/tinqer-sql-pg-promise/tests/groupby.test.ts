@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
-import { createSchema } from "@webpods/tinqer";
+import { defineSelect, createSchema } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 
 describe("GroupBy SQL Generation", () => {
   interface Sale {
@@ -19,19 +19,21 @@ describe("GroupBy SQL Generation", () => {
   const schema = createSchema<Schema>();
 
   it("should generate GROUP BY clause", () => {
-    const result = selectStatement(schema, (q) => q.from("sales").groupBy((s) => s.category), {});
+    const result = toSql(defineSelect(schema, (q) => q.from("sales").groupBy((s) => s.category)), {});
 
     expect(result.sql).to.equal('SELECT "category" FROM "sales" GROUP BY "category"');
   });
 
   it("should combine GROUP BY with WHERE", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("sales")
-          .where((s) => s.amount > 100)
-          .groupBy((s) => s.category),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("sales")
+            .where((s) => s.amount > 100)
+            .groupBy((s) => s.category),
+      ),
       {},
     );
 
@@ -42,13 +44,15 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with SELECT projection", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("sales")
-          .groupBy((s) => s.category)
-          .select((g) => ({ category: g.key })),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("sales")
+            .groupBy((s) => s.category)
+            .select((g) => ({ category: g.key })),
+      ),
       {},
     );
 
@@ -56,13 +60,15 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should work with GROUP BY and ORDER BY", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("sales")
-          .groupBy((s) => s.product)
-          .orderBy((g) => g.key),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("sales")
+            .groupBy((s) => s.product)
+            .orderBy((g) => g.key),
+      ),
       {},
     );
 
@@ -72,13 +78,15 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with COUNT aggregate", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("sales")
-          .groupBy((s) => s.category)
-          .select((g) => ({ category: g.key, count: g.count() })),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("sales")
+            .groupBy((s) => s.category)
+            .select((g) => ({ category: g.key, count: g.count() })),
+      ),
       {},
     );
 
@@ -88,16 +96,18 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with SUM aggregate", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("sales")
-          .groupBy((s) => s.category)
-          .select((g) => ({
-            category: g.key,
-            totalAmount: g.sum((s) => s.amount),
-          })),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("sales")
+            .groupBy((s) => s.category)
+            .select((g) => ({
+              category: g.key,
+              totalAmount: g.sum((s) => s.amount),
+            })),
+      ),
       {},
     );
 
@@ -107,18 +117,20 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with multiple aggregates", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("sales")
-          .groupBy((s) => s.category)
-          .select((g) => ({
-            category: g.key,
-            count: g.count(),
-            totalAmount: g.sum((s) => s.amount),
-            avgAmount: g.avg((s) => s.amount),
-          })),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("sales")
+            .groupBy((s) => s.category)
+            .select((g) => ({
+              category: g.key,
+              count: g.count(),
+              totalAmount: g.sum((s) => s.amount),
+              avgAmount: g.avg((s) => s.amount),
+            })),
+      ),
       {},
     );
 
@@ -128,19 +140,21 @@ describe("GroupBy SQL Generation", () => {
   });
 
   it("should handle GROUP BY with WHERE and aggregates", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("sales")
-          .where((s) => s.quantity > 10)
-          .groupBy((s) => s.product)
-          .select((g) => ({
-            product: g.key,
-            totalQuantity: g.sum((s) => s.quantity),
-            maxAmount: g.max((s) => s.amount),
-            minAmount: g.min((s) => s.amount),
-          })),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("sales")
+            .where((s) => s.quantity > 10)
+            .groupBy((s) => s.product)
+            .select((g) => ({
+              product: g.key,
+              totalQuantity: g.sum((s) => s.quantity),
+              maxAmount: g.max((s) => s.amount),
+              minAmount: g.min((s) => s.amount),
+            })),
+      ),
       {},
     );
 
