@@ -117,7 +117,7 @@ export function visitOrderByOperation(
   return {
     operation: {
       type: "queryOperation",
-      operationType: methodName === "orderByDescending" ? "orderByDescending" : "orderBy",
+      operationType: "orderBy",
       source,
       keySelector: selector,
       descending: methodName === "orderByDescending",

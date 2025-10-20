@@ -513,5 +513,35 @@ function mergeParams<TParams>(
 }
 
 function cloneOperationTree(operation: QueryOperation): QueryOperation {
-  return JSON.parse(JSON.stringify(operation)) as QueryOperation;
+  // Deep clone that preserves Maps and other complex structures
+  function deepClone(obj: unknown): unknown {
+    if (obj === null || typeof obj !== "object") {
+      return obj;
+    }
+
+    // Handle Map instances
+    if (obj instanceof Map) {
+      const clonedMap = new Map();
+      for (const [key, value] of obj) {
+        clonedMap.set(key, deepClone(value));
+      }
+      return clonedMap;
+    }
+
+    // Handle Array instances
+    if (Array.isArray(obj)) {
+      return obj.map((item) => deepClone(item));
+    }
+
+    // Handle regular objects
+    const clonedObj: Record<string, unknown> = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        clonedObj[key] = deepClone((obj as Record<string, unknown>)[key]);
+      }
+    }
+    return clonedObj;
+  }
+
+  return deepClone(operation) as QueryOperation;
 }

@@ -104,7 +104,7 @@ export function visitThenByOperation(
   return {
     operation: {
       type: "queryOperation",
-      operationType: methodName === "thenByDescending" ? "thenByDescending" : "thenBy",
+      operationType: "thenBy",
       source,
       keySelector: selector,
       descending: methodName === "thenByDescending",
