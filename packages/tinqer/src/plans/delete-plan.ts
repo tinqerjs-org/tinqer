@@ -100,15 +100,24 @@ export interface DeletePlanSql {
 export class DeletePlanHandleInitial<TRecord, TParams> {
   constructor(private readonly state: DeletePlanState<TRecord, TParams>) {}
 
+  // Overload for simple predicate without external params
+  where(predicate: (item: TRecord) => boolean): DeletePlanHandleComplete<TRecord, TParams>;
+  // Overload for predicate with external params
   where<ExtraParams extends object = Record<string, never>>(
     predicate: (item: TRecord, params: TParams & ExtraParams) => boolean,
-  ): DeletePlanHandleComplete<TRecord, TParams & ExtraParams> {
+  ): DeletePlanHandleComplete<TRecord, TParams & ExtraParams>;
+  // Implementation
+  where<ExtraParams extends object = Record<string, never>>(
+    predicate:
+      | ((item: TRecord) => boolean)
+      | ((item: TRecord, params: TParams & ExtraParams) => boolean),
+  ): DeletePlanHandleComplete<TRecord, TParams | (TParams & ExtraParams)> {
     const nextState = appendWhereDelete(
       this.state,
       predicate as unknown as (...args: unknown[]) => boolean,
     );
     return new DeletePlanHandleComplete(
-      nextState as DeletePlanState<TRecord, TParams & ExtraParams>,
+      nextState as DeletePlanState<TRecord, TParams | (TParams & ExtraParams)>,
     );
   }
 

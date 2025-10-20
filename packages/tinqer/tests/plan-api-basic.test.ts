@@ -142,7 +142,7 @@ describe("Plan API - Basic Tests", () => {
       expect(sql.params.__p2).to.equal("Admin");
     });
 
-    it.skip("should support WHERE with external parameters (not yet implemented)", () => {
+    it("should support WHERE with external parameters", () => {
       // This functionality requires visitor support for (item, params) => predicate
       // Currently visitWhereOperation only processes the first parameter
       type Params = { searchName: string };

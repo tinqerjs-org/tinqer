@@ -107,16 +107,9 @@ export interface UpdatePlanSql {
 export class UpdatePlanHandleInitial<TRecord, TParams> {
   constructor(private readonly state: UpdatePlanState<TRecord, TParams>) {}
 
-  set<ExtraParams extends object = Record<string, never>>(
-    values: Partial<TRecord> | ((params: TParams & ExtraParams) => Partial<TRecord>),
-  ): UpdatePlanHandleWithSet<TRecord, TParams & ExtraParams> {
-    const nextState = appendSet(
-      this.state,
-      values as Partial<TRecord> | ((params: unknown) => Partial<TRecord>),
-    );
-    return new UpdatePlanHandleWithSet(
-      nextState as UpdatePlanState<TRecord, TParams & ExtraParams>,
-    );
+  set(values: Partial<TRecord>): UpdatePlanHandleWithSet<TRecord, TParams> {
+    const nextState = appendSet(this.state, values);
+    return new UpdatePlanHandleWithSet(nextState);
   }
 
   toSql(_params: TParams): UpdatePlanSql {
@@ -133,15 +126,24 @@ export class UpdatePlanHandleInitial<TRecord, TParams> {
 export class UpdatePlanHandleWithSet<TRecord, TParams> {
   constructor(private readonly state: UpdatePlanState<TRecord, TParams>) {}
 
+  // Overload for simple predicate without external params
+  where(predicate: (item: TRecord) => boolean): UpdatePlanHandleComplete<TRecord, TParams>;
+  // Overload for predicate with external params
   where<ExtraParams extends object = Record<string, never>>(
     predicate: (item: TRecord, params: TParams & ExtraParams) => boolean,
-  ): UpdatePlanHandleComplete<TRecord, TParams & ExtraParams> {
+  ): UpdatePlanHandleComplete<TRecord, TParams & ExtraParams>;
+  // Implementation
+  where<ExtraParams extends object = Record<string, never>>(
+    predicate:
+      | ((item: TRecord) => boolean)
+      | ((item: TRecord, params: TParams & ExtraParams) => boolean),
+  ): UpdatePlanHandleComplete<TRecord, TParams | (TParams & ExtraParams)> {
     const nextState = appendWhereUpdate(
       this.state,
       predicate as unknown as (...args: unknown[]) => boolean,
     );
     return new UpdatePlanHandleComplete(
-      nextState as UpdatePlanState<TRecord, TParams & ExtraParams>,
+      nextState as UpdatePlanState<TRecord, TParams | (TParams & ExtraParams)>,
     );
   }
 
@@ -306,8 +308,8 @@ export function defineUpdate<TSchema, TParams = Record<string, never>, TTable = 
     // Check if SET clause is present
     if (
       updateOp.assignments &&
-      (updateOp.assignments as any).properties &&
-      Object.keys((updateOp.assignments as any).properties).length > 0
+      updateOp.assignments.properties &&
+      Object.keys(updateOp.assignments.properties).length > 0
     ) {
       return new UpdatePlanHandleWithSet(initialState);
     }
@@ -348,31 +350,23 @@ export function defineUpdate<TSchema, TParams = Record<string, never>, TTable = 
 
 function appendSet<TRecord, TParams>(
   state: UpdatePlanState<TRecord, TParams>,
-  values: Partial<TRecord> | ((params: unknown) => Partial<TRecord>),
+  values: Partial<TRecord>,
 ): UpdatePlanState<TRecord, TParams> {
   const visitorContext = restoreVisitorContext(state.contextSnapshot);
 
-  // Handle both direct object and lambda function cases
-  let setExpression: ASTExpression;
-
-  if (typeof values === "function") {
-    const lambda = parseLambdaExpression(values as (...args: unknown[]) => unknown, "set");
-    setExpression = lambda;
-  } else {
-    // Create an object literal AST for direct values
-    setExpression = {
-      type: "ObjectExpression",
-      properties: Object.entries(values as Record<string, unknown>).map(([key, value]) => ({
-        type: "Property",
-        key: { type: "Identifier", name: key },
-        value: { type: "Literal", value },
-        kind: "init",
-        method: false,
-        shorthand: false,
-        computed: false,
-      })),
-    } as ASTExpression;
-  }
+  // Create an object literal AST for direct values
+  const setExpression: ASTExpression = {
+    type: "ObjectExpression",
+    properties: Object.entries(values as Record<string, unknown>).map(([key, value]) => ({
+      type: "Property",
+      key: { type: "Identifier", name: key },
+      value: { type: "Literal", value },
+      kind: "init",
+      method: false,
+      shorthand: false,
+      computed: false,
+    })),
+  } as ASTExpression;
 
   const call = createMethodCall("set", setExpression);
   const result = visitSetOperation(call, state.operation as UpdateOperation, visitorContext);

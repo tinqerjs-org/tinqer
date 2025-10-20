@@ -105,9 +105,9 @@ export function selectStatement<TSchema, TParams, TResult>(
   // Create plan using defineSelect
   // Type assertion needed due to complex overload resolution between
   // the builder's union return type and defineSelect's overloads
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let plan;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     plan = defineSelect(schema, builder as any, options);
   } catch (error) {
     // Maintain backward compatibility with error messages
@@ -467,9 +467,9 @@ export async function executeSelect<
   // Create plan using defineSelect
   // Type assertion needed due to complex overload resolution between
   // the builder's union return type and defineSelect's overloads
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let plan;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     plan = defineSelect(schema, builder as any, options);
   } catch (error) {
     // Maintain backward compatibility with error messages

@@ -14,6 +14,8 @@ interface TestSchema {
     id: number;
     name: string;
     email: string;
+    age: number;
+    isActive: boolean;
     createdAt: Date;
   };
   posts: {
@@ -21,6 +23,8 @@ interface TestSchema {
     userId: number;
     title: string;
     content: string;
+    isPublished: boolean;
+    viewCount: number;
   };
 }
 
@@ -173,6 +177,44 @@ describe("InsertPlanHandle", () => {
     });
   });
 
+  describe("External Parameters in Values", () => {
+    it("should support values with auto-params", () => {
+      const plan = defineInsert(testSchema, "users").values({
+        name: "Alice",
+        email: "alice@test.com",
+        age: 30,
+        isActive: true,
+      });
+
+      const sql = plan.toSql({});
+
+      expect(sql.params.__p1).to.equal("Alice");
+      expect(sql.params.__p2).to.equal("alice@test.com");
+      expect(sql.params.__p3).to.equal(30);
+      expect(sql.params.__p4).to.equal(true);
+    });
+
+    it("should support values with returning", () => {
+      const plan = defineInsert(testSchema, "posts")
+        .values({
+          userId: 123,
+          title: "New Article",
+          content: "Article content",
+          isPublished: false,
+          viewCount: 0,
+        })
+        .returning((post: TestSchema["posts"]) => ({ id: post.id, title: post.title }));
+
+      const sql = plan.toSql({});
+
+      expect(sql.params.__p1).to.equal(123);
+      expect(sql.params.__p2).to.equal("New Article");
+      expect(sql.params.__p3).to.equal("Article content");
+      expect(sql.params.__p4).to.equal(false);
+      expect(sql.params.__p5).to.equal(0);
+    });
+  });
+
   describe("Complex scenarios", () => {
     it("should handle insert with returning and params", () => {
       type Params = { source: string };
@@ -181,6 +223,8 @@ describe("InsertPlanHandle", () => {
         .values({
           name: "Helen",
           email: "helen@example.com",
+          age: 28,
+          isActive: true,
         })
         .returning((u) => ({ id: u.id, createdAt: u.createdAt }));
 
@@ -192,6 +236,21 @@ describe("InsertPlanHandle", () => {
       expect(insertOp.values).to.exist;
       expect(insertOp.returning).to.exist;
       expect(sql.params.source).to.equal("api");
+    });
+
+    it("should maintain immutability with object values", () => {
+      const base = defineInsert(testSchema, "users");
+      const withValues = base.values({
+        name: "Test",
+        email: "test@test.com",
+        age: 25,
+        isActive: true,
+      });
+
+      // Should be different instances
+      expect(base).to.not.equal(withValues);
+      expect(base).to.be.instanceOf(InsertPlanHandleInitial);
+      expect(withValues).to.be.instanceOf(InsertPlanHandleWithValues);
     });
   });
 });

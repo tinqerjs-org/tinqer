@@ -227,8 +227,8 @@ export function defineInsert<TSchema, TParams = Record<string, never>, TTable = 
     const insertOp = parseResult.operation as InsertOperation;
     if (
       insertOp.values &&
-      (insertOp.values as any).properties &&
-      Object.keys((insertOp.values as any).properties).length > 0
+      insertOp.values.properties &&
+      Object.keys(insertOp.values.properties).length > 0
     ) {
       return new InsertPlanHandleWithValues(initialState);
     }

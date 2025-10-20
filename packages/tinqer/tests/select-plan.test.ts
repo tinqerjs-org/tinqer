@@ -159,7 +159,7 @@ describe("SelectPlanHandle", () => {
 
       const planData = plan.toPlan();
       expect(planData.operation.operationType).to.equal("orderBy");
-      expect((planData.operation as any).descending).to.equal(true);
+      expect((planData.operation as OrderByOperation).descending).to.equal(true);
     });
 
     it("should support thenBy after orderBy", () => {
@@ -182,7 +182,7 @@ describe("SelectPlanHandle", () => {
 
       const planData = plan.toPlan();
       expect(planData.operation.operationType).to.equal("thenBy");
-      expect((planData.operation as any).descending).to.equal(true);
+      expect((planData.operation as ThenByOperation).descending).to.equal(true);
     });
   });
 

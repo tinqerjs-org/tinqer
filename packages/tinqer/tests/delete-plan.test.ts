@@ -6,6 +6,7 @@ import {
   DeletePlanHandleComplete,
 } from "../src/plans/delete-plan.js";
 import { createSchema } from "../src/linq/database-context.js";
+import type { QueryBuilder } from "../src/linq/query-builder.js";
 import type { DeleteOperation } from "../src/query-tree/operations.js";
 
 // Test schema
@@ -14,7 +15,9 @@ interface TestSchema {
     id: number;
     name: string;
     email: string;
+    age: number;
     isActive: boolean;
+    departmentId: number;
   };
   posts: {
     id: number;
@@ -22,6 +25,7 @@ interface TestSchema {
     title: string;
     content: string;
     isPublished: boolean;
+    viewCount: number;
   };
 }
 
@@ -70,7 +74,7 @@ describe("DeletePlanHandle", () => {
       expect(planData.autoParams.__p1).to.equal(false);
     });
 
-    it.skip("should support where with external parameters (not yet implemented)", () => {
+    it("should support where with external parameters", () => {
       // This functionality requires visitor support for (item, params) => predicate
       // Currently visitors only process the first parameter
       type Params = { minId: number };
@@ -151,6 +155,61 @@ describe("DeletePlanHandle", () => {
     });
   });
 
+  describe("External Parameters in WHERE", () => {
+    it("should support external params with simple predicate", () => {
+      type Params = { targetId: number };
+
+      const plan = defineDelete(testSchema, "users").where<Params>(
+        (u, params) => u.id === params.targetId,
+      );
+
+      const sql = plan.toSql({ targetId: 42 });
+      expect(sql.params.targetId).to.equal(42);
+    });
+
+    it("should handle complex external param conditions", () => {
+      type Params = { minId: number; maxId: number; dept: number };
+
+      const plan = defineDelete(testSchema, "users").where<Params>(
+        (u, params) =>
+          u.id >= params.minId && u.id <= params.maxId && u.departmentId === params.dept,
+      );
+
+      const sql = plan.toSql({ minId: 10, maxId: 100, dept: 5 });
+      expect(sql.params.minId).to.equal(10);
+      expect(sql.params.maxId).to.equal(100);
+      expect(sql.params.dept).to.equal(5);
+    });
+
+    it("should support builder function with external params", () => {
+      type Params = { userId: number; minViews: number };
+
+      const plan = defineDelete(testSchema, (q: QueryBuilder<TestSchema>, p: Params) =>
+        q
+          .deleteFrom("posts")
+          .where(
+            (post: TestSchema["posts"]) => post.userId === p.userId && post.viewCount < p.minViews,
+          ),
+      );
+
+      const sql = plan.toSql({ userId: 123, minViews: 10 });
+      expect(sql.params.userId).to.equal(123);
+      expect(sql.params.minViews).to.equal(10);
+    });
+
+    it("should mix external params with OR conditions", () => {
+      type Params = { threshold: number; userId: number };
+
+      const plan = defineDelete(testSchema, "posts").where<Params>(
+        (p, params) => p.viewCount < params.threshold || p.userId === params.userId,
+      );
+
+      const sql = plan.toSql({ threshold: 5, userId: 99 });
+      expect(sql.params.threshold).to.equal(5);
+      expect(sql.params.userId).to.equal(99);
+    });
+  });
+
   describe("Complex scenarios", () => {
     it("should handle delete with multiple conditions", () => {
       const plan = defineDelete(testSchema, "users").where(
@@ -178,19 +237,36 @@ describe("DeletePlanHandle", () => {
       expect(planData.autoParams.__p2).to.equal(false);
     });
 
-    it.skip("should handle delete with external and auto params (not yet implemented)", () => {
-      // This functionality requires visitor support for (item, params) => predicate
-      // type Params = { maxId: number; status: boolean };
-      // const plan = defineDelete(testSchema, "posts")
-      //   .where<Params>((p, params) =>
-      //     p.id < params.maxId &&
-      //     p.isPublished === params.status &&
-      //     p.title === "Test"
-      //   );
-      // const sql = plan.toSql({ maxId: 1000, status: true });
-      // expect(sql.params.maxId).to.equal(1000);
-      // expect(sql.params.status).to.equal(true);
-      // expect(sql.params.__p1).to.equal("Test"); // auto-param for title
+    it("should handle delete with external and auto params", () => {
+      type Params = { maxId: number; status: boolean };
+      const plan = defineDelete(testSchema, "posts").where<Params>(
+        (p, params) => p.id < params.maxId && p.isPublished === params.status && p.title === "Test",
+      );
+      const sql = plan.toSql({ maxId: 1000, status: true });
+      expect(sql.params.maxId).to.equal(1000);
+      expect(sql.params.status).to.equal(true);
+      expect(sql.params.__p1).to.equal("Test"); // auto-param for title
+    });
+
+    it("should maintain immutability with external params", () => {
+      type Params1 = { id1: number };
+      type Params2 = { id2: number };
+
+      const base = defineDelete(testSchema, "posts");
+      const branch1 = base.where<Params1>((p, params) => p.id === params.id1);
+      const branch2 = base.where<Params2>((p, params) => p.id === params.id2);
+
+      // All should be different instances
+      expect(base).to.not.equal(branch1);
+      expect(base).to.not.equal(branch2);
+      expect(branch1).to.not.equal(branch2);
+
+      // Each branch should work independently
+      const sql1 = branch1.toSql({ id1: 10 });
+      const sql2 = branch2.toSql({ id2: 20 });
+
+      expect(sql1.params.id1).to.equal(10);
+      expect(sql2.params.id2).to.equal(20);
     });
   });
 });
