@@ -1,7 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
-import { createSchema } from "@webpods/tinqer";
+import { defineSelect, createSchema } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 
 describe("Distinct SQL Generation", () => {
   interface Product {
@@ -18,19 +18,21 @@ describe("Distinct SQL Generation", () => {
   const schema = createSchema<Schema>();
 
   it("should generate DISTINCT for all columns", () => {
-    const result = selectStatement(schema, (q) => q.from("products").distinct(), {});
+    const result = toSql(defineSelect(schema, (q) => q.from("products").distinct()), {});
 
     expect(result.sql).to.equal('SELECT DISTINCT * FROM "products"');
   });
 
   it("should combine DISTINCT with WHERE", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("products")
-          .where((p) => p.price > 100)
-          .distinct(),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("products")
+            .where((p) => p.price > 100)
+            .distinct(),
+      ),
       {},
     );
 
@@ -39,13 +41,15 @@ describe("Distinct SQL Generation", () => {
   });
 
   it("should combine DISTINCT with SELECT projection", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("products")
-          .select((p) => ({ category: p.category }))
-          .distinct(),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("products")
+            .select((p) => ({ category: p.category }))
+            .distinct(),
+      ),
       {},
     );
 
@@ -53,14 +57,16 @@ describe("Distinct SQL Generation", () => {
   });
 
   it("should work with DISTINCT, WHERE, and ORDER BY", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("products")
-          .where((p) => p.price < 500)
-          .distinct()
-          .orderBy((p) => p.brand),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("products")
+            .where((p) => p.price < 500)
+            .distinct()
+            .orderBy((p) => p.brand),
+      ),
       {},
     );
 
