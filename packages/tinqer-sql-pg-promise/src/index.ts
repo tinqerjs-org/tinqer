@@ -3,7 +3,6 @@
  */
 
 import {
-  parseQuery,
   type Queryable,
   type OrderedQueryable,
   type TerminalQuery,
@@ -18,12 +17,14 @@ import {
   type Deletable,
   type DeletableComplete,
   type ParseQueryOptions,
-  // Plan API imports for parallel implementation
   defineSelect,
   defineInsert,
   defineUpdate,
   defineDelete,
   isTerminalHandle,
+  type QueryOperation,
+  type InsertOperation,
+  type UpdateOperation,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
 import type { SqlResult, ExecuteOptions } from "./types.js";
@@ -44,6 +45,26 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
   }
 
   return expanded;
+}
+
+function materializePlan<TParams>(
+  plan: {
+    toSql(params: TParams): {
+      operation: QueryOperation;
+      params: Record<string, unknown>;
+    };
+  },
+  params: TParams,
+): {
+  operation: QueryOperation;
+  mergedParams: Record<string, unknown>;
+  sql: string;
+  expandedParams: Record<string, unknown>;
+} {
+  const { operation, params: mergedParams } = plan.toSql(params);
+  const sql = generateSql(operation, mergedParams);
+  const expandedParams = expandArrayParams(mergedParams);
+  return { operation, mergedParams, sql, expandedParams };
 }
 
 /**
@@ -131,250 +152,27 @@ export function selectStatement<TSchema, TParams, TResult>(
 }
 
 /**
- * PARALLEL IMPLEMENTATION USING PLAN API
- * Generate INSERT SQL from a builder function using the plan API
- */
-export function insertStatementWithPlan<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-export function insertStatementWithPlan<TSchema, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
-): SqlResult<
-  Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-// Implementation
-export function insertStatementWithPlan<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
-> {
-  // Parse the builder to get the table name
-  // For insert, we need to extract the table from the builder
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult || parseResult.operation.operationType !== "insert") {
-    throw new Error("Failed to parse INSERT query or not an insert operation");
-  }
-
-  const insertOp = parseResult.operation as unknown as { table: string };
-  const tableName = insertOp.table as keyof TSchema;
-
-  // TODO: Use plan API properly once it supports builder functions
-  // const plan = defineInsert(schema, tableName, options);
-  // For now, use parseQuery result directly
-  void defineInsert(schema, tableName, options); // Placeholder to demonstrate we'll use it
-
-  // Apply the values and returning operations
-  // Since the plan API doesn't directly take a builder, we need to extract values from parseResult
-  // For now, we'll use the parseQuery approach and merge with plan
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-
-  // Generate SQL string using existing generator
-  const sql = generateSql(parseResult.operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
-
-  return { sql, params: finalParams };
-}
-
-/**
- * PARALLEL IMPLEMENTATION USING PLAN API
- * Generate UPDATE SQL from a builder function using the plan API
- */
-export function updateStatementWithPlan<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) =>
-    | UpdatableWithSet<TTable>
-    | UpdatableComplete<TTable>
-    | UpdatableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-export function updateStatementWithPlan<TSchema, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) =>
-    | UpdatableWithSet<TTable>
-    | UpdatableComplete<TTable>
-    | UpdatableWithReturning<TTable, TReturning>,
-): SqlResult<
-  Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-// Implementation
-export function updateStatementWithPlan<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
-> {
-  // Parse the builder to get the table name
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult || parseResult.operation.operationType !== "update") {
-    throw new Error("Failed to parse UPDATE query or not an update operation");
-  }
-
-  const updateOp = parseResult.operation as unknown as { table: string };
-  const tableName = updateOp.table as keyof TSchema;
-
-  // TODO: Use plan API properly once it supports builder functions
-  // const plan = defineUpdate(schema, tableName, options);
-  // For now, use parseQuery result directly
-  void defineUpdate(schema, tableName, options); // Placeholder to demonstrate we'll use it
-
-  // For now, use the parseQuery result directly
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-
-  // Generate SQL string using existing generator
-  const sql = generateSql(parseResult.operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
-
-  return { sql, params: finalParams };
-}
-
-/**
- * PARALLEL IMPLEMENTATION USING PLAN API
- * Generate DELETE SQL from a builder function using the plan API
- */
-export function deleteStatementWithPlan<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => Deletable<TResult> | DeletableComplete<TResult>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, void>;
-
-export function deleteStatementWithPlan<TSchema, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>,
-): SqlResult<Record<string, string | number | boolean | null>, void>;
-
-// Implementation
-export function deleteStatementWithPlan<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Deletable<TResult> | DeletableComplete<TResult>)
-    | ((queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
-  // Parse the builder to get the table name
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult || parseResult.operation.operationType !== "delete") {
-    throw new Error("Failed to parse DELETE query or not a delete operation");
-  }
-
-  const deleteOp = parseResult.operation as unknown as { table: string };
-  const tableName = deleteOp.table as keyof TSchema;
-
-  // TODO: Use plan API properly once it supports builder functions
-  // const plan = defineDelete(schema, tableName, options);
-  // For now, use parseQuery result directly
-  void defineDelete(schema, tableName, options); // Placeholder to demonstrate we'll use it
-
-  // For now, use the parseQuery result directly
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-
-  // Generate SQL string using existing generator
-  const sql = generateSql(parseResult.operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
-
-  return { sql, params: finalParams };
-}
-
-/**
  * Simpler API for generating SQL with auto-parameterization
  * @param queryable A Queryable or TerminalQuery object
  * @param options Parse options including cache control
  * @returns Object with text (SQL string) and parameters
  */
-export function toSql<T>(
-  queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>,
-  options: ParseQueryOptions = {},
+export function toSql<TParams = Record<string, never>>(
+  plan: {
+    toSql(params: TParams): {
+      operation: QueryOperation;
+      params: Record<string, unknown>;
+    };
+  },
+  params?: TParams,
 ): {
   text: string;
   parameters: Record<string, unknown>;
 } {
-  // Create a dummy function that returns the queryable
-  const queryBuilder = () => queryable;
-
-  // Parse and generate SQL
-  const parseResult = parseQuery(queryBuilder, options);
-
-  if (!parseResult) {
-    throw new Error("Failed to parse query");
-  }
-
-  // Generate SQL with auto-parameters
-  const sql = generateSql(parseResult.operation, parseResult.autoParams);
-
-  return {
-    text: sql,
-    parameters: parseResult.autoParams,
-  };
+  const normalizedParams = params ?? ({} as TParams);
+  const { operation, params: mergedParams } = plan.toSql(normalizedParams);
+  const text = generateSql(operation, mergedParams);
+  return { text, parameters: mergedParams };
 }
 
 /**
@@ -648,20 +446,25 @@ export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
   TParams & Record<string, string | number | boolean | null>,
   TReturning extends never ? void : TReturning
 > {
-  // Create plan using defineInsert with builder function
-  const plan = defineInsert(schema, builder, options);
+  let plan: ReturnType<typeof defineInsert>;
+  try {
+    plan = defineInsert(schema, builder, options);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Failed to parse insert builder or not an insert operation"
+    ) {
+      throw new Error("Failed to parse INSERT query or not an insert operation");
+    }
+    throw error;
+  }
 
-  // Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
+  const { sql, expandedParams } = materializePlan(plan, params || ({} as TParams));
 
-  // Generate SQL string using existing generator
-  const sql = generateSql(operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
-
-  return { sql, params: finalParams };
+  return {
+    sql,
+    params: expandedParams as TParams & Record<string, string | number | boolean | null>,
+  };
 }
 
 /**
@@ -722,125 +525,36 @@ export async function executeInsert<TSchema, TParams, TTable, TReturning = never
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): Promise<number | TReturning[]> {
-  // Call insertStatement with appropriate arguments based on whether params provided
-  const { sql, params: sqlParams } =
-    params !== undefined
-      ? insertStatement(schema, builder, params, options)
-      : insertStatement(
-          schema,
-          builder as (
-            q: QueryBuilder<TSchema>,
-          ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
-        );
+  const normalizedParams = params || ({} as TParams);
+
+  let plan: ReturnType<typeof defineInsert>;
+  try {
+    plan = defineInsert(schema, builder, options);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Failed to parse insert builder or not an insert operation"
+    ) {
+      throw new Error("Failed to parse INSERT query or not an insert operation");
+    }
+    throw error;
+  }
+
+  const { operation, sql, expandedParams } = materializePlan(plan, normalizedParams);
 
   if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
+    options.onSql({ sql, params: expandedParams });
   }
 
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult) {
-    throw new Error("Failed to parse INSERT query");
+  const insertOperation = operation as InsertOperation;
+
+  if (insertOperation.returning) {
+    const rows = await db.any(sql, expandedParams);
+    return rows as TReturning[];
   }
 
-  // Check if RETURNING clause is present
-  const hasReturning =
-    parseResult.operation.operationType === "insert" &&
-    (parseResult.operation as { returning?: unknown }).returning;
-
-  if (hasReturning) {
-    return (await db.any(sql, sqlParams)) as TReturning[];
-  } else {
-    const result = await db.result(sql, sqlParams);
-    return result.rowCount;
-  }
-}
-
-/**
- * PARALLEL IMPLEMENTATION USING PLAN API
- * Execute INSERT with plan API
- */
-export async function executeInsertWithPlan<TSchema, TParams, TTable>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>, params: TParams) => Insertable<TTable>,
-  params: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<number>;
-
-export async function executeInsertWithPlan<TSchema, TParams, TTable, TReturning>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => InsertableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<TReturning[]>;
-
-export async function executeInsertWithPlan<TSchema, TTable>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>) => Insertable<TTable>,
-): Promise<number>;
-
-export async function executeInsertWithPlan<TSchema, TTable, TReturning>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>) => InsertableWithReturning<TTable, TReturning>,
-): Promise<TReturning[]>;
-
-// Implementation
-export async function executeInsertWithPlan<TSchema, TParams, TTable, TReturning = never>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>),
-  params?: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<number | TReturning[]> {
-  // Parse the builder to get the insert operation
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult || parseResult.operation.operationType !== "insert") {
-    throw new Error("Failed to parse INSERT query or not an insert operation");
-  }
-
-  const insertOp = parseResult.operation as unknown as { table: string; returning?: unknown };
-  const tableName = insertOp.table as keyof TSchema;
-
-  // TODO: Use plan API properly once it supports builder functions
-  // const plan = defineInsert(schema, tableName, options);
-  // For now, use parseQuery result directly
-  void defineInsert(schema, tableName, options); // Placeholder to demonstrate we'll use it
-
-  // Merge params
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-
-  // Generate SQL string using existing generator
-  const sql = generateSql(parseResult.operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const sqlParams = expandArrayParams(mergedParams);
-
-  if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
-  }
-
-  // Check if RETURNING clause is present
-  const hasReturning = !!insertOp.returning;
-
-  if (hasReturning) {
-    return (await db.any(sql, sqlParams)) as TReturning[];
-  } else {
-    const result = await db.result(sql, sqlParams);
-    return result.rowCount;
-  }
+  const result = await db.result(sql, expandedParams);
+  return result.rowCount;
 }
 
 // ==================== UPDATE Statement & Execution ====================
@@ -988,139 +702,36 @@ export async function executeUpdate<TSchema, TParams, TTable, TReturning = never
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): Promise<number | TReturning[]> {
-  // Call updateStatement with appropriate arguments based on whether params provided
-  const { sql, params: sqlParams } =
-    params !== undefined
-      ? updateStatement(schema, builder, params, options)
-      : updateStatement(
-          schema,
-          builder as (
-            q: QueryBuilder<TSchema>,
-          ) =>
-            | UpdatableWithSet<TTable>
-            | UpdatableComplete<TTable>
-            | UpdatableWithReturning<TTable, TReturning>,
-        );
+  const normalizedParams = params || ({} as TParams);
+
+  let plan: ReturnType<typeof defineUpdate>;
+  try {
+    plan = defineUpdate(schema, builder, options);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Failed to parse update builder or not an update operation"
+    ) {
+      throw new Error("Failed to parse UPDATE query or not an update operation");
+    }
+    throw error;
+  }
+
+  const { operation, sql, expandedParams } = materializePlan(plan, normalizedParams);
 
   if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
+    options.onSql({ sql, params: expandedParams });
   }
 
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult) {
-    throw new Error("Failed to parse UPDATE query");
+  const updateOperation = operation as UpdateOperation;
+
+  if (updateOperation.returning) {
+    const rows = await db.any(sql, expandedParams);
+    return rows as TReturning[];
   }
 
-  // Check if RETURNING clause is present
-  const hasReturning =
-    parseResult.operation.operationType === "update" &&
-    (parseResult.operation as { returning?: unknown }).returning;
-
-  if (hasReturning) {
-    return (await db.any(sql, sqlParams)) as TReturning[];
-  } else {
-    const result = await db.result(sql, sqlParams);
-    return result.rowCount;
-  }
-}
-
-/**
- * PARALLEL IMPLEMENTATION USING PLAN API
- * Execute UPDATE with plan API
- */
-export async function executeUpdateWithPlan<TSchema, TParams, TTable>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
-  params: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<number>;
-
-export async function executeUpdateWithPlan<TSchema, TParams, TTable, TReturning>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => UpdatableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<TReturning[]>;
-
-export async function executeUpdateWithPlan<TSchema, TTable>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
-): Promise<number>;
-
-export async function executeUpdateWithPlan<TSchema, TTable, TReturning>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>) => UpdatableWithReturning<TTable, TReturning>,
-): Promise<TReturning[]>;
-
-// Implementation
-export async function executeUpdateWithPlan<TSchema, TParams, TTable, TReturning = never>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>),
-  params?: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<number | TReturning[]> {
-  // Parse the builder to get the update operation
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult || parseResult.operation.operationType !== "update") {
-    throw new Error("Failed to parse UPDATE query or not an update operation");
-  }
-
-  const updateOp = parseResult.operation as unknown as { table: string; returning?: unknown };
-  const tableName = updateOp.table as keyof TSchema;
-
-  // TODO: Use plan API properly once it supports builder functions
-  // const plan = defineUpdate(schema, tableName, options);
-  // For now, use parseQuery result directly
-  void defineUpdate(schema, tableName, options); // Placeholder to demonstrate we'll use it
-
-  // Merge params
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-
-  // Generate SQL string using existing generator
-  const sql = generateSql(parseResult.operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const sqlParams = expandArrayParams(mergedParams);
-
-  if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
-  }
-
-  // Check if RETURNING clause is present
-  const hasReturning = !!updateOp.returning;
-
-  if (hasReturning) {
-    return (await db.any(sql, sqlParams)) as TReturning[];
-  } else {
-    const result = await db.result(sql, sqlParams);
-    return result.rowCount;
-  }
+  const result = await db.result(sql, expandedParams);
+  return result.rowCount;
 }
 
 // ==================== DELETE Statement & Execution ====================
@@ -1229,71 +840,6 @@ export async function executeDelete<TSchema, TParams, TResult>(
           schema,
           builder as (q: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>,
         );
-
-  if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
-  }
-
-  const result = await db.result(sql, sqlParams);
-  return result.rowCount;
-}
-
-/**
- * PARALLEL IMPLEMENTATION USING PLAN API
- * Execute DELETE with plan API
- */
-export async function executeDeleteWithPlan<TSchema, TParams, TResult>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => Deletable<TResult> | DeletableComplete<TResult>,
-  params: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<number>;
-
-export async function executeDeleteWithPlan<TSchema, TResult>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>,
-): Promise<number>;
-
-// Implementation
-export async function executeDeleteWithPlan<TSchema, TParams, TResult>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Deletable<TResult> | DeletableComplete<TResult>)
-    | ((queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>),
-  params?: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<number> {
-  // Parse the builder to get the delete operation
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult || parseResult.operation.operationType !== "delete") {
-    throw new Error("Failed to parse DELETE query or not a delete operation");
-  }
-
-  const deleteOp = parseResult.operation as unknown as { table: string };
-  const tableName = deleteOp.table as keyof TSchema;
-
-  // TODO: Use plan API properly once it supports builder functions
-  // const plan = defineDelete(schema, tableName, options);
-  // For now, use parseQuery result directly
-  void defineDelete(schema, tableName, options); // Placeholder to demonstrate we'll use it
-
-  // Merge params
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-
-  // Generate SQL string using existing generator
-  const sql = generateSql(parseResult.operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const sqlParams = expandArrayParams(mergedParams);
 
   if (options?.onSql) {
     options.onSql({ sql, params: sqlParams });
