@@ -1,7 +1,13 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { defineSelect, SelectPlanHandle } from "../src/plans/select-plan.js";
-import { DatabaseSchema, createSchema } from "../src/linq/database-context.js";
+import { createSchema } from "../src/linq/database-context.js";
+import type {
+  FromOperation,
+  WhereOperation,
+  OrderByOperation,
+  TakeOperation
+} from "../src/query-tree/operations.js";
 
 // Test schema
 interface TestSchema {
@@ -12,13 +18,7 @@ interface TestSchema {
   };
 }
 
-const testSchema: DatabaseSchema<TestSchema> = createSchema<TestSchema>({
-  users: {
-    id: { type: "number" },
-    name: { type: "string" },
-    age: { type: "number" },
-  },
-});
+const testSchema = createSchema<TestSchema>();
 
 describe("Plan API - Basic Tests", () => {
   describe("defineSelect", () => {
@@ -33,7 +33,8 @@ describe("Plan API - Basic Tests", () => {
       const planData = plan.toPlan();
       expect(planData).to.have.property("operation");
       expect(planData.operation.operationType).to.equal("from");
-      expect((planData.operation as any).table).to.equal("users");
+      const fromOp = planData.operation as FromOperation;
+      expect(fromOp.table).to.equal("users");
     });
 
     it("should handle WHERE with auto-parameterization", () => {
@@ -105,11 +106,14 @@ describe("Plan API - Basic Tests", () => {
       expect(planData.operation.operationType).to.equal("take");
 
       // Check the chain
-      let op = planData.operation as any;
-      expect(op.operationType).to.equal("take");
-      expect(op.source.operationType).to.equal("orderBy");
-      expect(op.source.source.operationType).to.equal("where");
-      expect(op.source.source.source.operationType).to.equal("from");
+      const takeOp = planData.operation as TakeOperation;
+      expect(takeOp.operationType).to.equal("take");
+      const orderByOp = takeOp.source as OrderByOperation;
+      expect(orderByOp.operationType).to.equal("orderBy");
+      const whereOp = orderByOp.source as WhereOperation;
+      expect(whereOp.operationType).to.equal("where");
+      const fromOp = whereOp.source as FromOperation;
+      expect(fromOp.operationType).to.equal("from");
 
       // Check auto-params
       expect(planData.autoParams.__p1).to.equal(18);  // age > 18
@@ -137,9 +141,9 @@ describe("Plan API - Basic Tests", () => {
     it("should support external parameters in builder", () => {
       type Params = { minAge: number };
 
-      const plan = defineSelect<TestSchema, Params>(
+      const plan = defineSelect(
         testSchema,
-        (q, p) => q.from("users").where((u) => u.age > p.minAge),
+        (q, p: Params) => q.from("users").where((u) => u.age > p.minAge),
       );
 
       const sql = plan.toSql({ minAge: 18 });
@@ -169,7 +173,7 @@ describe("Plan API - Basic Tests", () => {
       // Currently visitWhereOperation only processes the first parameter
       type Params = { searchName: string };
 
-      const plan = defineSelect<TestSchema, Params>(
+      const plan = defineSelect(
         testSchema,
         (q) => q.from("users"),
       )

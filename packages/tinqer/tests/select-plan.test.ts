@@ -1,8 +1,19 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { defineSelect, SelectPlanHandle } from "../src/plans/select-plan.js";
-import { DatabaseSchema, createSchema } from "../src/linq/database-context.js";
-import type { QueryOperation } from "../src/query-tree/operations.js";
+import { createSchema } from "../src/linq/database-context.js";
+import type {
+  QueryOperation,
+  FromOperation,
+  WhereOperation,
+  SelectOperation,
+  OrderByOperation,
+  ThenByOperation,
+  TakeOperation,
+  SkipOperation,
+  GroupByOperation,
+  DistinctOperation
+} from "../src/query-tree/operations.js";
 
 // Test schema
 interface TestSchema {
@@ -20,20 +31,7 @@ interface TestSchema {
   };
 }
 
-const testSchema: DatabaseSchema<TestSchema> = createSchema<TestSchema>({
-  users: {
-    id: { type: "number" },
-    name: { type: "string" },
-    age: { type: "number" },
-    email: { type: "string" },
-  },
-  posts: {
-    id: { type: "number" },
-    userId: { type: "number" },
-    title: { type: "string" },
-    content: { type: "string" },
-  },
-});
+const testSchema = createSchema<TestSchema>();
 
 describe("SelectPlanHandle", () => {
   describe("Basic plan creation", () => {
@@ -48,7 +46,8 @@ describe("SelectPlanHandle", () => {
       const planData = plan.toPlan();
       expect(planData).to.have.property("operation");
       expect(planData.operation.operationType).to.equal("from");
-      expect((planData.operation as any).table).to.equal("users");
+      const fromOp = planData.operation as FromOperation;
+      expect(fromOp.table).to.equal("users");
     });
 
     it("should maintain immutability when chaining", () => {
@@ -94,7 +93,7 @@ describe("SelectPlanHandle", () => {
     it("should support where with external parameters", () => {
       type Params = { minAge: number };
 
-      const plan = defineSelect<TestSchema, Params>(
+      const plan = defineSelect(
         testSchema,
         (q) => q.from("users"),
       ).where<Params>((u, p) => u.age > p.minAge);
@@ -127,7 +126,6 @@ describe("SelectPlanHandle", () => {
     it("should project specific fields", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       ).select((u) => ({
         userName: u.name,
@@ -138,14 +136,13 @@ describe("SelectPlanHandle", () => {
       expect(planData.operation.operationType).to.equal("select");
 
       // Check that the source is the FROM operation
-      const selectOp = planData.operation as any;
+      const selectOp = planData.operation as SelectOperation;
       expect(selectOp.source?.operationType).to.equal("from");
     });
 
     it("should handle nested select operations", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       )
         .select((u) => ({ name: u.name, age: u.age }))
@@ -157,11 +154,12 @@ describe("SelectPlanHandle", () => {
       expect(planData.operation.operationType).to.equal("select");
 
       // Its source should be the first select
-      const topSelect = planData.operation as any;
+      const topSelect = planData.operation as SelectOperation;
       expect(topSelect.source?.operationType).to.equal("select");
 
       // And that source's source should be FROM
-      expect(topSelect.source?.source?.operationType).to.equal("from");
+      const innerSelect = topSelect.source as SelectOperation;
+      expect(innerSelect.source?.operationType).to.equal("from");
     });
   });
 
@@ -169,7 +167,6 @@ describe("SelectPlanHandle", () => {
     it("should add orderBy clause", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       ).orderBy((u) => u.age);
 
@@ -180,7 +177,6 @@ describe("SelectPlanHandle", () => {
     it("should support orderByDescending", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       ).orderByDescending((u) => u.name);
 
@@ -191,7 +187,6 @@ describe("SelectPlanHandle", () => {
     it("should support thenBy after orderBy", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       )
         .orderBy((u) => u.age)
@@ -201,14 +196,13 @@ describe("SelectPlanHandle", () => {
       expect(planData.operation.operationType).to.equal("thenBy");
 
       // Source should be orderBy
-      const thenByOp = planData.operation as any;
+      const thenByOp = planData.operation as ThenByOperation;
       expect(thenByOp.source?.operationType).to.equal("orderBy");
     });
 
     it("should support thenByDescending", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       )
         .orderBy((u) => u.age)
@@ -223,7 +217,6 @@ describe("SelectPlanHandle", () => {
     it("should add take operation", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       ).take(10);
 
@@ -238,7 +231,6 @@ describe("SelectPlanHandle", () => {
     it("should add skip operation", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       ).skip(20);
 
@@ -253,7 +245,6 @@ describe("SelectPlanHandle", () => {
     it("should combine skip and take for pagination", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       )
         .skip(20)
@@ -262,7 +253,7 @@ describe("SelectPlanHandle", () => {
       const planData = plan.toPlan();
       expect(planData.operation.operationType).to.equal("take");
 
-      const takeOp = planData.operation as any;
+      const takeOp = planData.operation as TakeOperation;
       expect(takeOp.source?.operationType).to.equal("skip");
 
       // Should have both parameters
@@ -275,7 +266,6 @@ describe("SelectPlanHandle", () => {
     it("should add distinct operation", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       ).distinct();
 
@@ -286,7 +276,6 @@ describe("SelectPlanHandle", () => {
     it("should add reverse operation", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       ).reverse();
 
@@ -299,7 +288,6 @@ describe("SelectPlanHandle", () => {
     it("should add groupBy clause", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       ).groupBy((u) => u.age);
 
@@ -310,7 +298,6 @@ describe("SelectPlanHandle", () => {
     it("should handle composite groupBy keys", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       ).groupBy((u) => ({ age: u.age, name: u.name }));
 
@@ -318,7 +305,7 @@ describe("SelectPlanHandle", () => {
       expect(planData.operation.operationType).to.equal("groupBy");
 
       // The key selector should be an object expression
-      const groupByOp = planData.operation as any;
+      const groupByOp = planData.operation as GroupByOperation;
       expect(groupByOp.keySelector).to.exist;
     });
   });
@@ -327,7 +314,6 @@ describe("SelectPlanHandle", () => {
     it("should handle a complex query with multiple operations", () => {
       const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       )
         .where((u) => u.age > 18)
@@ -344,12 +330,13 @@ describe("SelectPlanHandle", () => {
       expect(planData.operation.operationType).to.equal("distinct");
 
       // Walk the chain to verify structure
-      let op: QueryOperation = planData.operation;
+      let op: QueryOperation | undefined = planData.operation;
       const operations: string[] = [];
 
       while (op) {
         operations.push(op.operationType);
-        op = (op as any).source;
+        op = (op as DistinctOperation | TakeOperation | SkipOperation | ThenByOperation |
+              OrderByOperation | SelectOperation | WhereOperation).source;
       }
 
       expect(operations).to.deep.equal([
@@ -374,9 +361,8 @@ describe("SelectPlanHandle", () => {
     it("should merge auto-params with provided params", () => {
       type Params = { maxAge: number };
 
-      const plan = defineSelect<TestSchema, Params>(
+      const plan = defineSelect(
         testSchema,
-        "users",
         (q) => q.from("users"),
       )
         .where((u) => u.age > 18)
