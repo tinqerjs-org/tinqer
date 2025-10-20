@@ -54,7 +54,7 @@ describe("Query Composition", () => {
           .where<Params2>((u: TestSchema["users"], p: Params2) => u.age <= p.maxAge)
           .where<Params3>((u: TestSchema["users"], p: Params3) => u.isActive === p.isActive);
 
-        const sql = plan.toSql({
+        const sql = plan.finalize({
           minAge: 18,
           maxAge: 65,
           isActive: true,
@@ -73,7 +73,7 @@ describe("Query Composition", () => {
           .where<Params>((u, p) => u.departmentId === p.departmentId) // external
           .where((u) => u.name !== "Admin"); // auto-param
 
-        const sql = plan.toSql({ departmentId: 5 });
+        const sql = plan.finalize({ departmentId: 5 });
 
         expect(sql.params.__p1).to.equal(21);
         expect(sql.params.departmentId).to.equal(5);
@@ -88,7 +88,7 @@ describe("Query Composition", () => {
           .orderBy((u: TestSchema["users"]) => u.age)
           .thenBy((u: TestSchema["users"]) => u.name);
 
-        const sql = plan.toSql({
+        const sql = plan.finalize({
           filterName: "Test",
         });
 
@@ -105,7 +105,7 @@ describe("Query Composition", () => {
           q.from("users").where((u) => u.age > p.baseAge),
         ).where<ChainParams>((u, p) => u.age < p.maxAge);
 
-        const sql = plan.toSql({
+        const sql = plan.finalize({
           baseAge: 18,
           maxAge: 65,
         });
@@ -131,7 +131,7 @@ describe("Query Composition", () => {
             .take(p.limit),
         );
 
-        const sql = plan.toSql({
+        const sql = plan.finalize({
           minAge: 25,
           maxAge: 50,
           dept: 3,
@@ -189,8 +189,8 @@ describe("Query Composition", () => {
           .where<Branch2Params>((u, p) => u.age <= p.maxAge);
 
         // Execute both branches with different params
-        const activeSql = activeBranch.toSql({ dept: 1, minAge: 25 });
-        const inactiveSql = inactiveBranch.toSql({ dept: 1, maxAge: 65 });
+        const activeSql = activeBranch.finalize({ dept: 1, minAge: 25 });
+        const inactiveSql = inactiveBranch.finalize({ dept: 1, maxAge: 65 });
 
         expect(activeSql.params.dept).to.equal(1);
         expect(activeSql.params.minAge).to.equal(25);
@@ -213,7 +213,7 @@ describe("Query Composition", () => {
           .where<OuterParams>((p, params) => p.viewCount > params.minViewCount)
           .where<InnerParams>((p, params) => p.userId === params.userId);
 
-        const sql = plan.toSql({
+        const sql = plan.finalize({
           minViewCount: 100,
           userId: 42,
         });
@@ -246,7 +246,7 @@ describe("Query Composition", () => {
             })),
         );
 
-        const sql = plan.toSql({
+        const sql = plan.finalize({
           minAge: 21,
           dept: 3,
           sortField: "age",
@@ -273,7 +273,7 @@ describe("Query Composition", () => {
           departmentId: 1,
         });
 
-        const sql = plan.toSql({});
+        const sql = plan.finalize({});
 
         expect(sql.params.__p1).to.equal("Alice");
         expect(sql.params.__p2).to.equal("alice@example.com");
@@ -294,7 +294,7 @@ describe("Query Composition", () => {
           })
           .returning((p: TestSchema["posts"]) => ({ id: p.id, title: p.title }));
 
-        const sql = plan.toSql({});
+        const sql = plan.finalize({});
 
         expect(sql.params.__p1).to.equal(1);
         expect(sql.params.__p2).to.equal("New Post");
@@ -315,7 +315,7 @@ describe("Query Composition", () => {
           departmentId: 1,
         });
 
-        const sql = plan.toSql({});
+        const sql = plan.finalize({});
 
         expect(sql.params.__p1).to.equal("Bob");
         expect(sql.params.__p2).to.equal("bob@example.com");
@@ -336,7 +336,7 @@ describe("Query Composition", () => {
           })
           .returning((p) => p); // Changed from "*" to lambda
 
-        const sql = plan.toSql({});
+        const sql = plan.finalize({});
 
         expect(sql.params.__p1).to.equal(1);
         expect(sql.params.__p2).to.equal("Test");
@@ -360,7 +360,7 @@ describe("Query Composition", () => {
           })
           .where<WhereParams>((p, params) => p.viewCount > params.threshold);
 
-        const sql = plan.toSql({ threshold: 1000 });
+        const sql = plan.finalize({ threshold: 1000 });
 
         expect(sql.params.__p1).to.equal(true);
         expect(sql.params.__p2).to.equal(0);
@@ -378,7 +378,7 @@ describe("Query Composition", () => {
           (u, p) => u.age < p.minAge && u.isActive === p.isActive,
         );
 
-        const sql = plan.toSql({
+        const sql = plan.finalize({
           minAge: 18,
           isActive: false,
         });
@@ -399,7 +399,7 @@ describe("Query Composition", () => {
             ),
         );
 
-        const sql = plan.toSql({
+        const sql = plan.finalize({
           userId: 42,
           minViews: 10,
         });
@@ -415,7 +415,7 @@ describe("Query Composition", () => {
           (u: TestSchema["users"]) => u.isActive === false && u.departmentId === 3,
         );
 
-        const sql = plan.toSql({});
+        const sql = plan.finalize({});
 
         expect(sql.params.__p1).to.equal(false);
         expect(sql.params.__p2).to.equal(3);
@@ -440,7 +440,7 @@ describe("Query Composition", () => {
       );
 
       // TypeScript should enforce all required params
-      const sql = plan.toSql({
+      const sql = plan.finalize({
         userId: 1,
         minAge: 18,
         isActive: true,
@@ -451,7 +451,7 @@ describe("Query Composition", () => {
       expect(sql.params.isActive).to.equal(true);
 
       // This would cause TypeScript error:
-      // plan.toSql({ userId: 1 }); // Missing minAge and isActive
+      // plan.finalize({ userId: 1 }); // Missing minAge and isActive
     });
 
     it("should accumulate parameter types through chaining", () => {
@@ -465,7 +465,7 @@ describe("Query Composition", () => {
         .where<Params3>((u: TestSchema["users"], p: Params3) => u.isActive === p.param3);
 
       // TypeScript enforces all accumulated params
-      const sql = plan.toSql({
+      const sql = plan.finalize({
         param1: "Test",
         param2: 30,
         param3: true,
@@ -502,9 +502,9 @@ describe("Query Composition", () => {
       // All should accept the same param structure
       const params = { userId: 42 };
 
-      const selectSql = selectPlan.toSql(params);
-      const updateSql = updatePlan.toSql(params);
-      const deleteSql = deletePlan.toSql(params);
+      const selectSql = selectPlan.finalize(params);
+      const updateSql = updatePlan.finalize(params);
+      const deleteSql = deletePlan.finalize(params);
 
       expect(selectSql.params.userId).to.equal(42);
       expect(updateSql.params.userId).to.equal(42);

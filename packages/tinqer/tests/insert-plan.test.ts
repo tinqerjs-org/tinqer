@@ -88,7 +88,7 @@ describe("InsertPlanHandle", () => {
         content: "This is a test post",
       });
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       // Values should be in the operation
       const insertOp = sql.operation as InsertOperation;
@@ -147,7 +147,7 @@ describe("InsertPlanHandle", () => {
     });
   });
 
-  describe("toSql method", () => {
+  describe("finalize method", () => {
     it("should merge provided params", () => {
       type Params = { defaultEmail: string };
 
@@ -156,7 +156,7 @@ describe("InsertPlanHandle", () => {
         email: "frank@example.com", // In a real scenario, might use params.defaultEmail
       });
 
-      const sql = plan.toSql({ defaultEmail: "default@example.com" } as Params);
+      const sql = plan.finalize({ defaultEmail: "default@example.com" } as Params);
 
       expect(sql).to.have.property("operation");
       expect(sql).to.have.property("params");
@@ -169,7 +169,7 @@ describe("InsertPlanHandle", () => {
         email: "grace@example.com",
       });
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       expect(sql).to.have.property("operation");
       expect(sql.operation.operationType).to.equal("insert");
@@ -186,7 +186,7 @@ describe("InsertPlanHandle", () => {
         isActive: true,
       });
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       expect(sql.params.__p1).to.equal("Alice");
       expect(sql.params.__p2).to.equal("alice@test.com");
@@ -205,7 +205,7 @@ describe("InsertPlanHandle", () => {
         })
         .returning((post: TestSchema["posts"]) => ({ id: post.id, title: post.title }));
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       expect(sql.params.__p1).to.equal(123);
       expect(sql.params.__p2).to.equal("New Article");
@@ -228,7 +228,7 @@ describe("InsertPlanHandle", () => {
         })
         .returning((u) => ({ id: u.id, createdAt: u.createdAt }));
 
-      const sql = plan.toSql({ source: "api" } as Params);
+      const sql = plan.finalize({ source: "api" } as Params);
 
       expect(sql.operation.operationType).to.equal("insert");
       const insertOp = sql.operation as InsertOperation;

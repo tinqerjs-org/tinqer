@@ -88,7 +88,7 @@ describe("SelectPlanHandle", () => {
         (u, p) => u.age > p.minAge,
       );
 
-      const sql = plan.toSql({ minAge: 25 });
+      const sql = plan.finalize({ minAge: 25 });
       expect(sql.params).to.have.property("minAge");
       expect(sql.params.minAge).to.equal(25);
     });
@@ -317,7 +317,7 @@ describe("SelectPlanHandle", () => {
     });
   });
 
-  describe("toSql method", () => {
+  describe("finalize method", () => {
     it("should merge auto-params with provided params", () => {
       type Params = { maxAge: number };
 
@@ -326,7 +326,7 @@ describe("SelectPlanHandle", () => {
         .where<Params>((u, p) => u.age < p.maxAge)
         .take(10);
 
-      const sql = plan.toSql({ maxAge: 65 });
+      const sql = plan.finalize({ maxAge: 65 });
 
       // Should have both auto params and provided params
       expect(sql.params.__p1).to.equal(18); // auto param for age > 18

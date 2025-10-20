@@ -743,7 +743,7 @@ Reference for adapter execution helpers, typed contexts, and query utilities.
   - [1.3 insertStatement & executeInsert](#13-insertstatement--executeinsert)
   - [1.4 updateStatement & executeUpdate](#14-updatestatement--executeupdate)
   - [1.5 deleteStatement & executeDelete](#15-deletestatement--executedelete)
-  - [1.6 toSql](#16-tosql)
+  - [1.6 finalize](#16-tosql)
   - [1.7 ExecuteOptions & SqlResult](#17-executeoptions--sqlresult)
 - [2. Type-Safe Contexts](#2-type-safe-contexts)
   - [2.1 createSchema](#21-createschema)

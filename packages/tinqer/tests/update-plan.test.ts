@@ -132,7 +132,7 @@ describe("UpdatePlanHandle", () => {
         .set({ isPublished: false })
         .where((p) => p.viewCount < 10);
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       expect(sql.params).to.have.property("__p1");
       expect(sql.params.__p1).to.equal(false);
@@ -146,7 +146,7 @@ describe("UpdatePlanHandle", () => {
         .set({ isActive: true })
         .where<Params>((u, params) => u.age >= params.minAge && u.isActive === params.status);
 
-      const sql = plan.toSql({ minAge: 18, status: false });
+      const sql = plan.finalize({ minAge: 18, status: false });
 
       expect(sql.params).to.have.property("minAge");
       expect(sql.params.minAge).to.equal(18);
@@ -205,13 +205,13 @@ describe("UpdatePlanHandle", () => {
     });
   });
 
-  describe("toSql method", () => {
+  describe("finalize method", () => {
     it("should merge auto-params with provided params", () => {
       const plan = defineUpdate(testSchema, "posts")
         .set({ isPublished: true, viewCount: 0 })
         .where((p) => p.userId === 42);
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       expect(sql).to.have.property("operation");
       expect(sql).to.have.property("params");
@@ -225,7 +225,7 @@ describe("UpdatePlanHandle", () => {
         .set({ isPublished: false })
         .allowFullTableUpdate();
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       expect(sql.operation.operationType).to.equal("update");
       const updateOp = sql.operation as UpdateOperation;
@@ -266,7 +266,7 @@ describe("UpdatePlanHandle", () => {
           .where((p: TestSchema["posts"]) => p.userId === params.userId),
       );
 
-      const sql = plan.toSql({ userId: 5, newTitle: "Updated Title" });
+      const sql = plan.finalize({ userId: 5, newTitle: "Updated Title" });
 
       expect(sql.params.userId).to.equal(5);
       expect(sql.params.newTitle).to.equal("Updated Title");

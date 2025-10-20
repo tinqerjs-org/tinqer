@@ -126,7 +126,7 @@ export class DeletePlanHandleInitial<TRecord, TParams> {
     return new DeletePlanHandleComplete(nextState);
   }
 
-  toSql(_params: TParams): DeletePlanSql {
+  finalize(_params: TParams): DeletePlanSql {
     // Initial stage without WHERE clause - this would be dangerous SQL
     throw new Error(
       "DELETE statement requires where() or allowFullTableDelete() to be called before generating SQL",
@@ -142,7 +142,7 @@ export class DeletePlanHandleInitial<TRecord, TParams> {
 export class DeletePlanHandleComplete<TRecord, TParams> {
   constructor(private readonly state: DeletePlanState<TRecord, TParams>) {}
 
-  toSql(params: TParams): DeletePlanSql {
+  finalize(params: TParams): DeletePlanSql {
     const merged = mergeParams(this.state.autoParams, params);
     return {
       operation: this.state.operation,

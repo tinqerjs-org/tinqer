@@ -84,16 +84,18 @@ export function createDeletePlan<TSchema>(
 }
 
 /**
- * Helper that combines plan.toSql() + generateSql()
+ * Helper that combines plan.finalize() + generateSql()
  * This is what adapters will use to get SQL strings
  */
 export function planToSqlString(
-  plan: { toSql(params: unknown): { operation: QueryOperation; params: Record<string, unknown> } },
+  plan: {
+    finalize(params: unknown): { operation: QueryOperation; params: Record<string, unknown> };
+  },
   params: unknown,
   generateSqlFn: (op: QueryOperation, params: Record<string, unknown>) => string,
 ): { sql: string; params: Record<string, unknown> } {
   // Step 1: Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.toSql(params);
+  const { operation, params: mergedParams } = plan.finalize(params);
 
   // Step 2: Use existing generator to create SQL string
   const sql = generateSqlFn(operation, mergedParams);

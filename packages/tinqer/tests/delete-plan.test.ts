@@ -83,7 +83,7 @@ describe("DeletePlanHandle", () => {
         (p, params) => p.id > params.minId,
       );
 
-      const sql = plan.toSql({ minId: 100 });
+      const sql = plan.finalize({ minId: 100 });
 
       expect(sql.params).to.have.property("minId");
       expect(sql.params.minId).to.equal(100);
@@ -128,14 +128,14 @@ describe("DeletePlanHandle", () => {
     });
   });
 
-  describe("toSql method", () => {
+  describe("finalize method", () => {
     it("should merge auto-params with provided params", () => {
       // For now, just test auto-params since external params in WHERE aren't supported yet
       const plan = defineDelete(testSchema, "posts").where(
         (p) => p.userId === 42 && p.isPublished === false,
       );
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       expect(sql).to.have.property("operation");
       expect(sql).to.have.property("params");
@@ -146,7 +146,7 @@ describe("DeletePlanHandle", () => {
     it("should work with allowFullTableDelete", () => {
       const plan = defineDelete(testSchema, "posts").allowFullTableDelete();
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       expect(sql.operation.operationType).to.equal("delete");
       const deleteOp = sql.operation as DeleteOperation;
@@ -163,7 +163,7 @@ describe("DeletePlanHandle", () => {
         (u, params) => u.id === params.targetId,
       );
 
-      const sql = plan.toSql({ targetId: 42 });
+      const sql = plan.finalize({ targetId: 42 });
       expect(sql.params.targetId).to.equal(42);
     });
 
@@ -175,7 +175,7 @@ describe("DeletePlanHandle", () => {
           u.id >= params.minId && u.id <= params.maxId && u.departmentId === params.dept,
       );
 
-      const sql = plan.toSql({ minId: 10, maxId: 100, dept: 5 });
+      const sql = plan.finalize({ minId: 10, maxId: 100, dept: 5 });
       expect(sql.params.minId).to.equal(10);
       expect(sql.params.maxId).to.equal(100);
       expect(sql.params.dept).to.equal(5);
@@ -192,7 +192,7 @@ describe("DeletePlanHandle", () => {
           ),
       );
 
-      const sql = plan.toSql({ userId: 123, minViews: 10 });
+      const sql = plan.finalize({ userId: 123, minViews: 10 });
       expect(sql.params.userId).to.equal(123);
       expect(sql.params.minViews).to.equal(10);
     });
@@ -204,7 +204,7 @@ describe("DeletePlanHandle", () => {
         (p, params) => p.viewCount < params.threshold || p.userId === params.userId,
       );
 
-      const sql = plan.toSql({ threshold: 5, userId: 99 });
+      const sql = plan.finalize({ threshold: 5, userId: 99 });
       expect(sql.params.threshold).to.equal(5);
       expect(sql.params.userId).to.equal(99);
     });
@@ -242,7 +242,7 @@ describe("DeletePlanHandle", () => {
       const plan = defineDelete(testSchema, "posts").where<Params>(
         (p, params) => p.id < params.maxId && p.isPublished === params.status && p.title === "Test",
       );
-      const sql = plan.toSql({ maxId: 1000, status: true });
+      const sql = plan.finalize({ maxId: 1000, status: true });
       expect(sql.params.maxId).to.equal(1000);
       expect(sql.params.status).to.equal(true);
       expect(sql.params.__p1).to.equal("Test"); // auto-param for title
@@ -262,8 +262,8 @@ describe("DeletePlanHandle", () => {
       expect(branch1).to.not.equal(branch2);
 
       // Each branch should work independently
-      const sql1 = branch1.toSql({ id1: 10 });
-      const sql2 = branch2.toSql({ id2: 20 });
+      const sql1 = branch1.finalize({ id1: 10 });
+      const sql2 = branch2.finalize({ id2: 20 });
 
       expect(sql1.params.id1).to.equal(10);
       expect(sql2.params.id2).to.equal(20);

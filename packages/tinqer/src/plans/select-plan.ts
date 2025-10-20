@@ -117,7 +117,7 @@ export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
     super();
   }
 
-  toSql(params: TParams): SelectPlanSql {
+  finalize(params: TParams): SelectPlanSql {
     const merged = mergeParams(this.state.autoParams, params);
     return {
       operation: this.state.operation,
@@ -351,7 +351,7 @@ export class SelectTerminalHandle<TResult, TParams> extends TerminalQuery<TResul
     super();
   }
 
-  toSql(params: TParams): SelectPlanSql {
+  finalize(params: TParams): SelectPlanSql {
     const merged = mergeParams(this.state.autoParams, params);
     return {
       operation: this.state.operation,

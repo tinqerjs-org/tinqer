@@ -49,7 +49,7 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
 
 function materializePlan<TParams>(
   plan: {
-    toSql(params: TParams): {
+    finalize(params: TParams): {
       operation: QueryOperation;
       params: Record<string, unknown>;
     };
@@ -61,7 +61,7 @@ function materializePlan<TParams>(
   sql: string;
   expandedParams: Record<string, unknown>;
 } {
-  const { operation, params: mergedParams } = plan.toSql(params);
+  const { operation, params: mergedParams } = plan.finalize(params);
   const sql = generateSql(operation, mergedParams);
   const expandedParams = expandArrayParams(mergedParams);
   return { operation, mergedParams, sql, expandedParams };
@@ -139,7 +139,7 @@ export function selectStatement<TSchema, TParams, TResult>(
   }
 
   // Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
+  const { operation, params: mergedParams } = plan.finalize(params || ({} as TParams));
 
   // Generate SQL string using existing generator
   const sql = generateSql(operation, mergedParams);
@@ -157,9 +157,9 @@ export function selectStatement<TSchema, TParams, TResult>(
  * @param options Parse options including cache control
  * @returns Object with text (SQL string) and parameters
  */
-export function toSql<TParams = Record<string, never>>(
+export function finalize<TParams = Record<string, never>>(
   plan: {
-    toSql(params: TParams): {
+    finalize(params: TParams): {
       operation: QueryOperation;
       params: Record<string, unknown>;
     };
@@ -170,7 +170,7 @@ export function toSql<TParams = Record<string, never>>(
   parameters: Record<string, unknown>;
 } {
   const normalizedParams = params ?? ({} as TParams);
-  const { operation, params: mergedParams } = plan.toSql(normalizedParams);
+  const { operation, params: mergedParams } = plan.finalize(normalizedParams);
   const text = generateSql(operation, mergedParams);
   return { text, parameters: mergedParams };
 }
@@ -278,7 +278,7 @@ export async function executeSelect<
   }
 
   // Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
+  const { operation, params: mergedParams } = plan.finalize(params || ({} as TParams));
 
   // Generate SQL string using existing generator
   const sql = generateSql(operation, mergedParams);
@@ -621,7 +621,7 @@ export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
   const plan = defineUpdate(schema, builder, options);
 
   // Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.toSql(params || ({} as TParams));
+  const { operation, params: mergedParams } = plan.finalize(params || ({} as TParams));
 
   // Generate SQL string using existing generator
   const sql = generateSql(operation, mergedParams);
@@ -775,7 +775,7 @@ export function deleteStatement<TSchema, TParams, TResult>(
   // Get operation and merged params from plan
   let operation, mergedParams;
   try {
-    const result = plan.toSql(params || ({} as TParams));
+    const result = plan.finalize(params || ({} as TParams));
     operation = result.operation;
     mergedParams = result.params;
   } catch (error) {

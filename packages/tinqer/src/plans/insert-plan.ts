@@ -106,7 +106,7 @@ export class InsertPlanHandleInitial<TRecord, TParams> {
     return new InsertPlanHandleWithValues(nextState);
   }
 
-  toSql(_params: TParams): InsertPlanSql {
+  finalize(_params: TParams): InsertPlanSql {
     // Initial stage without values - this would be invalid SQL
     throw new Error("INSERT statement requires values() to be called before generating SQL");
   }
@@ -130,7 +130,7 @@ export class InsertPlanHandleWithValues<TRecord, TParams> {
     return new InsertPlanHandleWithReturning(nextState as InsertPlanState<TResult, TParams>);
   }
 
-  toSql(params: TParams): InsertPlanSql {
+  finalize(params: TParams): InsertPlanSql {
     const merged = mergeParams(this.state.autoParams, params);
     return {
       operation: this.state.operation,
@@ -154,7 +154,7 @@ export class InsertPlanHandleWithValues<TRecord, TParams> {
 export class InsertPlanHandleWithReturning<TResult, TParams> {
   constructor(private readonly state: InsertPlanState<TResult, TParams>) {}
 
-  toSql(params: TParams): InsertPlanSql {
+  finalize(params: TParams): InsertPlanSql {
     const merged = mergeParams(this.state.autoParams, params);
     return {
       operation: this.state.operation,

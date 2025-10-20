@@ -123,19 +123,19 @@ describe("Plan API - Basic Tests", () => {
         q.from("users").where((u) => u.age > p.minAge),
       );
 
-      const sql = plan.toSql({ minAge: 18 });
+      const sql = plan.finalize({ minAge: 18 });
 
       expect(sql.params.minAge).to.equal(18);
     });
 
-    it("should handle toSql parameter merging", () => {
+    it("should handle finalize parameter merging", () => {
       // Note: WHERE with external params (u, p) => ... is not yet supported by visitors
       // This test demonstrates auto-param merging with provided params
       const plan = defineSelect(testSchema, (q) => q.from("users"))
         .where((u) => u.age > 21) // Auto-param
         .where((u) => u.name !== "Admin"); // Another auto-param
 
-      const sql = plan.toSql({});
+      const sql = plan.finalize({});
 
       // Should have auto params
       expect(sql.params.__p1).to.equal(21);
@@ -151,7 +151,7 @@ describe("Plan API - Basic Tests", () => {
         (u, p) => u.name === p.searchName,
       );
 
-      const sql = plan.toSql({ searchName: "John" });
+      const sql = plan.finalize({ searchName: "John" });
       expect(sql.params.searchName).to.equal("John");
     });
   });
@@ -170,7 +170,7 @@ describe("Plan API - Basic Tests", () => {
       expect(plan.groupBy).to.be.a("function");
 
       // Test that it also has plan-specific methods
-      expect(plan.toSql).to.be.a("function");
+      expect(plan.finalize).to.be.a("function");
       expect(plan.toPlan).to.be.a("function");
     });
   });

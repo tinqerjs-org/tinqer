@@ -112,7 +112,7 @@ export class UpdatePlanHandleInitial<TRecord, TParams> {
     return new UpdatePlanHandleWithSet(nextState);
   }
 
-  toSql(_params: TParams): UpdatePlanSql {
+  finalize(_params: TParams): UpdatePlanSql {
     // Initial stage without SET clause - this would be invalid SQL
     throw new Error("UPDATE statement requires set() to be called before generating SQL");
   }
@@ -162,7 +162,7 @@ export class UpdatePlanHandleWithSet<TRecord, TParams> {
     return new UpdatePlanHandleWithReturning(nextState as UpdatePlanState<TResult, TParams>);
   }
 
-  toSql(params: TParams): UpdatePlanSql {
+  finalize(params: TParams): UpdatePlanSql {
     const merged = mergeParams(this.state.autoParams, params);
     return {
       operation: this.state.operation,
@@ -196,7 +196,7 @@ export class UpdatePlanHandleComplete<TRecord, TParams> {
     return new UpdatePlanHandleWithReturning(nextState as UpdatePlanState<TResult, TParams>);
   }
 
-  toSql(params: TParams): UpdatePlanSql {
+  finalize(params: TParams): UpdatePlanSql {
     const merged = mergeParams(this.state.autoParams, params);
     return {
       operation: this.state.operation,
@@ -220,7 +220,7 @@ export class UpdatePlanHandleComplete<TRecord, TParams> {
 export class UpdatePlanHandleWithReturning<TResult, TParams> {
   constructor(private readonly state: UpdatePlanState<TResult, TParams>) {}
 
-  toSql(params: TParams): UpdatePlanSql {
+  finalize(params: TParams): UpdatePlanSql {
     const merged = mergeParams(this.state.autoParams, params);
     return {
       operation: this.state.operation,
