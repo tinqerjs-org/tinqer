@@ -4,14 +4,17 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
+import { defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 
 describe("Auto-Parameterization SQL Generation", () => {
   it("should generate SQL with auto-parameterized constants", () => {
-    const result = selectStatement(
-      schema,
-      (q) => q.from("users").where((x) => x.age >= 18 && x.name == "John"),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) => q.from("users").where((x) => x.age >= 18 && x.name == "John"),
+      ),
       {},
     );
 
@@ -25,9 +28,11 @@ describe("Auto-Parameterization SQL Generation", () => {
   });
 
   it("should merge user params with auto-params", () => {
-    const result = selectStatement(
-      schema,
-      (q, p) => q.from("users").where((x) => x.age >= 21 && x.role == p.role),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q, p) => q.from("users").where((x) => x.age >= 21 && x.role == p.role),
+      ),
       { role: "admin" },
     );
 
@@ -41,14 +46,16 @@ describe("Auto-Parameterization SQL Generation", () => {
   });
 
   it("should handle take and skip auto-parameterization", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("posts")
-          .orderBy((x) => x.id)
-          .skip(20)
-          .take(10),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("posts")
+            .orderBy((x) => x.id)
+            .skip(20)
+            .take(10),
+      ),
       {},
     );
 
@@ -62,18 +69,20 @@ describe("Auto-Parameterization SQL Generation", () => {
   });
 
   it("should handle complex query with multiple auto-params", () => {
-    const result = selectStatement(
-      schema,
-      (q, p) =>
-        q
-          .from("products")
-          .where((x) => x.price > 100)
-          .where((x) => x.discount <= 0.5)
-          .where((x) => x.category == p.category)
-          .where((x) => x.inStock == true)
-          .orderByDescending((x) => x.price)
-          .skip(10)
-          .take(5),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q, p) =>
+          q
+            .from("products")
+            .where((x) => x.price > 100)
+            .where((x) => x.discount <= 0.5)
+            .where((x) => x.category == p.category)
+            .where((x) => x.inStock == true)
+            .orderByDescending((x) => x.price)
+            .skip(10)
+            .take(5),
+      ),
       { category: "electronics" },
     );
 
@@ -95,9 +104,11 @@ describe("Auto-Parameterization SQL Generation", () => {
   });
 
   it("should handle null comparisons with IS NULL/IS NOT NULL", () => {
-    const result = selectStatement(
-      schema,
-      (q) => q.from("users").where((x) => x.email != null),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) => q.from("users").where((x) => x.email != null),
+      ),
       {},
     );
 
@@ -106,14 +117,16 @@ describe("Auto-Parameterization SQL Generation", () => {
   });
 
   it("should handle multiple uses of same column", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
-        q
-          .from("users")
-          .where((x) => x.age >= 18)
-          .where((x) => x.age <= 65)
-          .where((x) => x.age != 30),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) =>
+          q
+            .from("users")
+            .where((x) => x.age >= 18)
+            .where((x) => x.age <= 65)
+            .where((x) => x.age != 30),
+      ),
       {},
     );
 
@@ -133,9 +146,11 @@ describe("Auto-Parameterization SQL Generation", () => {
     // This demonstrates the security benefit of auto-parameterization
     // Even if we had a way to pass strings that look like SQL injection,
     // they would be parameterized
-    const result = selectStatement(
-      schema,
-      (q) => q.from("users").where((x) => x.username == "admin' OR '1'='1"),
+    const result = toSql(
+      defineSelect(
+        schema,
+        (q) => q.from("users").where((x) => x.username == "admin' OR '1'='1"),
+      ),
       {},
     );
 
