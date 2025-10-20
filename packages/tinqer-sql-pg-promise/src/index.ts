@@ -25,6 +25,13 @@ import {
   type QueryOperation,
   type InsertOperation,
   type UpdateOperation,
+  SelectPlanHandle,
+  SelectTerminalHandle,
+  InsertPlanHandleWithValues,
+  InsertPlanHandleWithReturning,
+  UpdatePlanHandleComplete,
+  UpdatePlanHandleWithReturning,
+  DeletePlanHandleComplete,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
 import type { SqlResult, ExecuteOptions } from "./types.js";
@@ -149,6 +156,83 @@ export function selectStatement<TSchema, TParams, TResult>(
     Record<string, string | number | boolean | null>;
 
   return { sql, params: finalParams };
+}
+
+/**
+ * Convert a SELECT plan to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: SelectPlanHandle<TRecord, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert a SELECT terminal plan to SQL string with parameters
+ */
+export function toSql<TResult, TParams>(
+  plan: SelectTerminalHandle<TResult, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an INSERT plan to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: InsertPlanHandleWithValues<TRecord, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an INSERT plan with RETURNING to SQL string with parameters
+ */
+export function toSql<TResult, TParams>(
+  plan: InsertPlanHandleWithReturning<TResult, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an UPDATE plan to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: UpdatePlanHandleComplete<TRecord, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an UPDATE plan with RETURNING to SQL string with parameters
+ */
+export function toSql<TResult, TParams>(
+  plan: UpdatePlanHandleWithReturning<TResult, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert a DELETE plan to SQL string with parameters
+ */
+export function toSql<TParams>(
+  plan: DeletePlanHandleComplete<unknown, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert any plan to SQL string with parameters
+ * Handles pg-promise specific array parameter expansion
+ */
+export function toSql<TParams>(
+  plan:
+    | SelectPlanHandle<unknown, TParams>
+    | SelectTerminalHandle<unknown, TParams>
+    | InsertPlanHandleWithValues<unknown, TParams>
+    | InsertPlanHandleWithReturning<unknown, TParams>
+    | UpdatePlanHandleComplete<unknown, TParams>
+    | UpdatePlanHandleWithReturning<unknown, TParams>
+    | DeletePlanHandleComplete<unknown, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> } {
+  const { operation, params: mergedParams } = plan.finalize(params);
+  const sql = generateSql(operation, mergedParams);
+  const expandedParams = expandArrayParams(mergedParams);
+  return { sql, params: expandedParams };
 }
 
 /**
