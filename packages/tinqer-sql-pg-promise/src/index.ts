@@ -34,7 +34,7 @@ import {
   DeletePlanHandleComplete,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
-import type { SqlResult, ExecuteOptions } from "./types.js";
+import type { ExecuteOptions } from "./types.js";
 
 /**
  * Helper function to expand array parameters into indexed parameters
@@ -72,90 +72,6 @@ function materializePlan<TParams>(
   const sql = generateSql(operation, mergedParams);
   const expandedParams = expandArrayParams(mergedParams);
   return { operation, mergedParams, sql, expandedParams };
-}
-
-/**
- * Generate SQL from a query builder function (with params and helpers)
- */
-export function selectStatement<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-    helpers: QueryHelpers,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult>;
-
-/**
- * Generate SQL from a query builder function (with params only, no helpers)
- */
-export function selectStatement<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult>;
-
-/**
- * Generate SQL from a query builder function (query builder only, no params or helpers)
- */
-export function selectStatement<TSchema, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
-): SqlResult<Record<string, string | number | boolean | null>, TResult>;
-
-// Implementation
-export function selectStatement<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-        helpers: QueryHelpers,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
-  // Create plan using defineSelect
-  // Type assertion needed due to complex overload resolution between
-  // the builder's union return type and defineSelect's overloads
-  let plan;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    plan = defineSelect(schema, builder as any, options);
-  } catch (error) {
-    // Maintain backward compatibility with error messages
-    if (error instanceof Error && error.message === "Failed to parse select plan") {
-      throw new Error("Failed to parse query");
-    }
-    throw error;
-  }
-
-  // Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.finalize(params || ({} as TParams));
-
-  // Generate SQL string using existing generator
-  const sql = generateSql(operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
-
-  return { sql, params: finalParams };
 }
 
 /**
@@ -482,74 +398,7 @@ export async function executeSelectSimple<
   return executeSelect(dbClient, schema, builder, {}, options);
 }
 
-// ==================== INSERT Statement & Execution ====================
-
-/**
- * Generate INSERT SQL statement (with params)
- */
-export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-/**
- * Generate INSERT SQL statement (without params)
- */
-export function insertStatement<TSchema, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
-): SqlResult<
-  Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-// Implementation
-export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
-> {
-  let plan: ReturnType<typeof defineInsert>;
-  try {
-    plan = defineInsert(schema, builder, options);
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === "Failed to parse insert builder or not an insert operation"
-    ) {
-      throw new Error("Failed to parse INSERT query or not an insert operation");
-    }
-    throw error;
-  }
-
-  const { sql, expandedParams } = materializePlan(plan, params || ({} as TParams));
-
-  return {
-    sql,
-    params: expandedParams as TParams & Record<string, string | number | boolean | null>,
-  };
-}
+// ==================== INSERT Execution ====================
 
 /**
  * Execute INSERT with params, return row count
@@ -641,81 +490,7 @@ export async function executeInsert<TSchema, TParams, TTable, TReturning = never
   return result.rowCount;
 }
 
-// ==================== UPDATE Statement & Execution ====================
-
-/**
- * Generate UPDATE SQL statement (with params)
- */
-export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) =>
-    | UpdatableWithSet<TTable>
-    | UpdatableComplete<TTable>
-    | UpdatableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-/**
- * Generate UPDATE SQL statement (without params)
- */
-export function updateStatement<TSchema, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) =>
-    | UpdatableWithSet<TTable>
-    | UpdatableComplete<TTable>
-    | UpdatableWithReturning<TTable, TReturning>,
-): SqlResult<
-  Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-// Implementation
-export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
-> {
-  // Create plan using defineUpdate with builder function
-  const plan = defineUpdate(schema, builder, options);
-
-  // Get operation and merged params from plan
-  const { operation, params: mergedParams } = plan.finalize(params || ({} as TParams));
-
-  // Generate SQL string using existing generator
-  const sql = generateSql(operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
-
-  return { sql, params: finalParams };
-}
+// ==================== UPDATE Execution ====================
 
 /**
  * Execute UPDATE with params, return row count
@@ -818,67 +593,7 @@ export async function executeUpdate<TSchema, TParams, TTable, TReturning = never
   return result.rowCount;
 }
 
-// ==================== DELETE Statement & Execution ====================
-
-/**
- * Generate DELETE SQL statement (with params)
- */
-export function deleteStatement<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => Deletable<TResult> | DeletableComplete<TResult>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, void>;
-
-/**
- * Generate DELETE SQL statement (without params)
- */
-export function deleteStatement<TSchema, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>,
-): SqlResult<Record<string, string | number | boolean | null>, void>;
-
-// Implementation
-export function deleteStatement<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Deletable<TResult> | DeletableComplete<TResult>)
-    | ((queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
-  // Create plan using defineDelete with builder function
-  const plan = defineDelete(schema, builder, options);
-
-  // Get operation and merged params from plan
-  let operation, mergedParams;
-  try {
-    const result = plan.finalize(params || ({} as TParams));
-    operation = result.operation;
-    mergedParams = result.params;
-  } catch (error) {
-    // Maintain backward compatibility with error messages for DELETE
-    if (error instanceof Error && error.message.includes("DELETE statement requires")) {
-      throw new Error("DELETE requires a WHERE clause or explicit allowFullTableDelete");
-    }
-    throw error;
-  }
-
-  // Generate SQL string using existing generator
-  const sql = generateSql(operation, mergedParams);
-
-  // Expand array parameters for pg-promise
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
-
-  return { sql, params: finalParams };
-}
+// ==================== DELETE Execution ====================
 
 /**
  * Execute DELETE with params, return row count
@@ -916,14 +631,30 @@ export async function executeDelete<TSchema, TParams, TResult>(
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): Promise<number> {
-  // Call deleteStatement with appropriate arguments based on whether params provided
-  const { sql, params: sqlParams } =
-    params !== undefined
-      ? deleteStatement(schema, builder, params, options)
-      : deleteStatement(
-          schema,
-          builder as (q: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>,
-        );
+  const normalizedParams = params || ({} as TParams);
+
+  // Create plan using defineDelete with builder function
+  const plan = defineDelete(schema, builder, options);
+
+  // Get operation and merged params from plan
+  let operation, mergedParams;
+  try {
+    const result = plan.finalize(normalizedParams);
+    operation = result.operation;
+    mergedParams = result.params;
+  } catch (error) {
+    // Maintain backward compatibility with error messages for DELETE
+    if (error instanceof Error && error.message.includes("DELETE statement requires")) {
+      throw new Error("DELETE requires a WHERE clause or explicit allowFullTableDelete");
+    }
+    throw error;
+  }
+
+  // Generate SQL string using existing generator
+  const sql = generateSql(operation, mergedParams);
+
+  // Expand array parameters for pg-promise
+  const sqlParams = expandArrayParams(mergedParams);
 
   if (options?.onSql) {
     options.onSql({ sql, params: sqlParams });

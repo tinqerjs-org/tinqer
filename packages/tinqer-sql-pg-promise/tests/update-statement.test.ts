@@ -4,19 +4,22 @@
 
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { updateStatement } from "../dist/index.js";
+import { defineUpdate } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 
 describe("UPDATE Statement Generation", () => {
   describe("Basic UPDATE", () => {
     it("should generate UPDATE with WHERE clause", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ age: 31 })
-            .where((u) => u.id === 1),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ age: 31 })
+              .where((u) => u.id === 1),
+        ),
         {},
       );
 
@@ -28,13 +31,15 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should generate UPDATE with multiple columns", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ age: 32, email: "updated@example.com" })
-            .where((u) => u.id === 2),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ age: 32, email: "updated@example.com" })
+              .where((u) => u.id === 2),
+        ),
         {},
       );
 
@@ -50,13 +55,15 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should generate UPDATE with schema prefix in table name", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("public.users")
-            .set({ age: 33 })
-            .where((u) => u.id === 3),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("public.users")
+              .set({ age: 33 })
+              .where((u) => u.id === 3),
+        ),
         {},
       );
 
@@ -66,13 +73,15 @@ describe("UPDATE Statement Generation", () => {
 
   describe("UPDATE with complex WHERE clauses", () => {
     it("should handle AND conditions", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ age: 34 })
-            .where((u) => u.id === 4 && u.name === "Alice"),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ age: 34 })
+              .where((u) => u.id === 4 && u.name === "Alice"),
+        ),
         {},
       );
 
@@ -83,13 +92,15 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should handle OR conditions", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ isActive: true })
-            .where((u) => u.age > 50 || u.department === "Sales"),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ isActive: true })
+              .where((u) => u.age > 50 || u.department === "Sales"),
+        ),
         {},
       );
 
@@ -100,13 +111,15 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should handle complex nested conditions", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ salary: 75000 })
-            .where((u) => (u.age > 30 && u.department === "IT") || u.role === "Manager"),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ salary: 75000 })
+              .where((u) => (u.age > 30 && u.department === "IT") || u.role === "Manager"),
+        ),
         {},
       );
 
@@ -119,13 +132,15 @@ describe("UPDATE Statement Generation", () => {
 
   describe("UPDATE with parameters", () => {
     it("should use external parameters in SET", () => {
-      const result = updateStatement(
-        schema,
-        (q, p) =>
-          q
-            .update("users")
-            .set({ age: p.newAge })
-            .where((u) => u.id === p.userId),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q, p) =>
+            q
+              .update("users")
+              .set({ age: p.newAge })
+              .where((u) => u.id === p.userId),
+        ),
         { newAge: 35, userId: 5 },
       );
 
@@ -137,13 +152,15 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should mix external parameters with literals", () => {
-      const result = updateStatement(
-        schema,
-        (q, p) =>
-          q
-            .update("users")
-            .set({ age: 36, email: "fixed@example.com" })
-            .where((u) => u.id === p.userId),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q, p) =>
+            q
+              .update("users")
+              .set({ age: 36, email: "fixed@example.com" })
+              .where((u) => u.id === p.userId),
+        ),
         { userId: 6 },
       );
 
@@ -160,13 +177,15 @@ describe("UPDATE Statement Generation", () => {
 
     it("should skip assignments when parameter values are undefined", () => {
       type UpdateParams = { userId: number; name: string; email?: string };
-      const result = updateStatement(
-        schema,
-        (q, p: UpdateParams) =>
-          q
-            .update("users")
-            .set({ email: p.email, name: p.name })
-            .where((u) => u.id === p.userId),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q, p: UpdateParams) =>
+            q
+              .update("users")
+              .set({ email: p.email, name: p.name })
+              .where((u) => u.id === p.userId),
+        ),
         { userId: 9, name: "Updated Name" },
       );
 
@@ -180,13 +199,15 @@ describe("UPDATE Statement Generation", () => {
     it("should throw when all assignments resolve to undefined", () => {
       type UpdateParams = { userId: number; email?: string };
       assert.throws(() => {
-        updateStatement(
-          schema,
-          (q, p: UpdateParams) =>
-            q
-              .update("users")
-              .set({ email: p.email })
-              .where((u) => u.id === p.userId),
+        toSql(
+          defineUpdate(
+            schema,
+            (q, p: UpdateParams) =>
+              q
+                .update("users")
+                .set({ email: p.email })
+                .where((u) => u.id === p.userId),
+          ),
           { userId: 10 },
         );
       }, /All provided values were undefined/);
@@ -195,14 +216,16 @@ describe("UPDATE Statement Generation", () => {
 
   describe("UPDATE with RETURNING", () => {
     it("should generate UPDATE with RETURNING single column", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ age: 37 })
-            .where((u) => u.id === 7)
-            .returning((u) => u.age),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ age: 37 })
+              .where((u) => u.id === 7)
+              .returning((u) => u.age),
+        ),
         {},
       );
 
@@ -213,14 +236,16 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should generate UPDATE with RETURNING multiple columns", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ age: 38, email: "new@example.com" })
-            .where((u) => u.id === 8)
-            .returning((u) => ({ id: u.id, age: u.age, email: u.email })),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ age: 38, email: "new@example.com" })
+              .where((u) => u.id === 8)
+              .returning((u) => ({ id: u.id, age: u.age, email: u.email })),
+        ),
         {},
       );
 
@@ -231,14 +256,16 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should generate UPDATE with RETURNING all columns (*)", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ age: 39 })
-            .where((u) => u.id === 9)
-            .returning((u) => u),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ age: 39 })
+              .where((u) => u.id === 9)
+              .returning((u) => u),
+        ),
         {},
       );
 
@@ -251,9 +278,11 @@ describe("UPDATE Statement Generation", () => {
 
   describe("UPDATE with allowFullTableUpdate", () => {
     it("should generate UPDATE without WHERE when allowed", () => {
-      const result = updateStatement(
-        schema,
-        (q) => q.update("users").set({ isActive: true }).allowFullTableUpdate(),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) => q.update("users").set({ isActive: true }).allowFullTableUpdate(),
+        ),
         {},
       );
 
@@ -262,20 +291,28 @@ describe("UPDATE Statement Generation", () => {
 
     it("should throw error when UPDATE has no WHERE and no allow flag", () => {
       assert.throws(() => {
-        updateStatement(schema, (q) => q.update("users").set({ isActive: true }), {});
+        toSql(
+          defineUpdate(
+            schema,
+            (q) => q.update("users").set({ isActive: true }),
+          ),
+          {},
+        );
       }, /UPDATE requires a WHERE clause or explicit allowFullTableUpdate/);
     });
   });
 
   describe("UPDATE with special values", () => {
     it("should handle boolean values", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ isActive: false })
-            .where((u) => u.id === 10),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ isActive: false })
+              .where((u) => u.id === 10),
+        ),
         {},
       );
 
@@ -286,13 +323,15 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should handle null values", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ email: null })
-            .where((u) => u.id === 11),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ email: null })
+              .where((u) => u.id === 11),
+        ),
         {},
       );
 
@@ -300,13 +339,15 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should handle numeric edge cases", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ age: 0, salary: -500 })
-            .where((u) => u.id === 12),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ age: 0, salary: -500 })
+              .where((u) => u.id === 12),
+        ),
         {},
       );
 
@@ -320,13 +361,15 @@ describe("UPDATE Statement Generation", () => {
 
   describe("UPDATE with string operations in WHERE", () => {
     it("should handle startsWith in WHERE", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ department: "Engineering" })
-            .where((u) => u.name.startsWith("A")),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ department: "Engineering" })
+              .where((u) => u.name.startsWith("A")),
+        ),
         {},
       );
 
@@ -337,13 +380,15 @@ describe("UPDATE Statement Generation", () => {
     });
 
     it("should handle contains in WHERE", () => {
-      const result = updateStatement(
-        schema,
-        (q) =>
-          q
-            .update("users")
-            .set({ role: "Senior" })
-            .where((u) => u.email !== null && u.email.includes("@company.com")),
+      const result = toSql(
+        defineUpdate(
+          schema,
+          (q) =>
+            q
+              .update("users")
+              .set({ role: "Senior" })
+              .where((u) => u.email !== null && u.email.includes("@company.com")),
+        ),
         {},
       );
 
