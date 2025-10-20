@@ -33,6 +33,16 @@ import { visitDistinctOperation } from "../visitors/distinct/index.js";
 import { visitReverseOperation } from "../visitors/reverse/index.js";
 import { visitGroupByOperation } from "../visitors/groupby/index.js";
 import { visitJoinOperation } from "../visitors/join/join.js";
+import { visitCountOperation } from "../visitors/count/index.js";
+import { visitFirstOperation } from "../visitors/predicates/first.js";
+import { visitLastOperation } from "../visitors/predicates/last.js";
+import { visitSingleOperation } from "../visitors/predicates/single.js";
+import { visitSumOperation } from "../visitors/aggregates/sum.js";
+import { visitAverageOperation } from "../visitors/aggregates/average.js";
+import { visitMinOperation } from "../visitors/aggregates/min.js";
+import { visitMaxOperation } from "../visitors/aggregates/max.js";
+import { visitAnyOperation } from "../visitors/boolean-predicates/any.js";
+import { visitAllOperation } from "../visitors/boolean-predicates/all.js";
 
 // -----------------------------------------------------------------------------
 // Plan data
@@ -268,98 +278,67 @@ export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
   // Terminal operations - these return terminal handles that cannot be chained further
 
   count(predicate?: (item: TRecord) => boolean): SelectTerminalHandle<number, TParams> {
-    // TODO: Wire up visitCountOperation properly
-    // For now, create a simplified count operation
-    const nextState = {
-      ...this.state,
-      operation: {
-        type: "queryOperation" as const,
-        operationType: "count" as const,
-        source: this.state.operation,
-        predicate: predicate ? {} : undefined, // TODO: Parse predicate properly
-      },
-    };
-    return new SelectTerminalHandle(nextState as SelectPlanState<number, TParams>);
+    const nextState = appendCount(this.state, predicate);
+    return new SelectTerminalHandle(nextState);
   }
 
   first(predicate?: (item: TRecord) => boolean): SelectTerminalHandle<TRecord, TParams> {
-    // TODO: Wire up visitFirstOperation properly
-    const nextState = {
-      ...this.state,
-      operation: {
-        type: "queryOperation" as const,
-        operationType: "first" as const,
-        source: this.state.operation,
-        predicate: predicate ? {} : undefined, // TODO: Parse predicate properly
-      },
-    };
-    return new SelectTerminalHandle(nextState as SelectPlanState<TRecord, TParams>);
+    const nextState = appendFirst(this.state, predicate);
+    return new SelectTerminalHandle(nextState);
   }
 
   last(predicate?: (item: TRecord) => boolean): SelectTerminalHandle<TRecord, TParams> {
-    // TODO: Wire up visitLastOperation properly
-    const nextState = {
-      ...this.state,
-      operation: {
-        type: "queryOperation" as const,
-        operationType: "last" as const,
-        source: this.state.operation,
-        predicate: predicate ? {} : undefined, // TODO: Parse predicate properly
-      },
-    };
-    return new SelectTerminalHandle(nextState as SelectPlanState<TRecord, TParams>);
+    const nextState = appendLast(this.state, predicate);
+    return new SelectTerminalHandle(nextState);
   }
 
   single(predicate?: (item: TRecord) => boolean): SelectTerminalHandle<TRecord, TParams> {
-    // TODO: Wire up visitSingleOperation properly
-    const nextState = {
-      ...this.state,
-      operation: {
-        type: "queryOperation" as const,
-        operationType: "single" as const,
-        source: this.state.operation,
-        predicate: predicate ? {} : undefined, // TODO: Parse predicate properly
-      },
-    };
-    return new SelectTerminalHandle(nextState as SelectPlanState<TRecord, TParams>);
+    const nextState = appendSingle(this.state, predicate);
+    return new SelectTerminalHandle(nextState);
   }
 
-  sum(_selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
-    // TODO: Implement sum terminal operation
-    throw new Error("sum() is not yet implemented for plan handles. Coming soon.");
+  sum(selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
+    if (!selector) {
+      throw new Error("sum() requires a selector function");
+    }
+    const nextState = appendSum(this.state, selector);
+    return new SelectTerminalHandle(nextState);
   }
 
-  avg(_selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
-    // TODO: Implement avg terminal operation
-    throw new Error("avg() is not yet implemented for plan handles. Coming soon.");
+  avg(selector?: (item: TRecord) => number): SelectTerminalHandle<number, TParams> {
+    if (!selector) {
+      throw new Error("avg() requires a selector function");
+    }
+    const nextState = appendAverage(this.state, selector);
+    return new SelectTerminalHandle(nextState);
   }
 
   min(): SelectTerminalHandle<TRecord, TParams>;
-  min<TResult>(_selector: (item: TRecord) => TResult): SelectTerminalHandle<TResult, TParams>;
+  min<TResult>(selector: (item: TRecord) => TResult): SelectTerminalHandle<TResult, TParams>;
   min<TResult = TRecord>(
-    _selector?: (item: TRecord) => TResult,
+    selector?: (item: TRecord) => TResult,
   ): SelectTerminalHandle<TRecord | TResult, TParams> {
-    // TODO: Implement min terminal operation
-    throw new Error("min() is not yet implemented for plan handles. Coming soon.");
+    const nextState = appendMin(this.state, selector as (item: TRecord) => unknown);
+    return new SelectTerminalHandle(nextState as SelectPlanState<TRecord | TResult, TParams>);
   }
 
   max(): SelectTerminalHandle<TRecord, TParams>;
-  max<TResult>(_selector: (item: TRecord) => TResult): SelectTerminalHandle<TResult, TParams>;
+  max<TResult>(selector: (item: TRecord) => TResult): SelectTerminalHandle<TResult, TParams>;
   max<TResult = TRecord>(
-    _selector?: (item: TRecord) => TResult,
+    selector?: (item: TRecord) => TResult,
   ): SelectTerminalHandle<TRecord | TResult, TParams> {
-    // TODO: Implement max terminal operation
-    throw new Error("max() is not yet implemented for plan handles. Coming soon.");
+    const nextState = appendMax(this.state, selector as (item: TRecord) => unknown);
+    return new SelectTerminalHandle(nextState as SelectPlanState<TRecord | TResult, TParams>);
   }
 
-  any(_predicate?: (item: TRecord) => boolean): SelectTerminalHandle<boolean, TParams> {
-    // TODO: Implement any terminal operation
-    throw new Error("any() is not yet implemented for plan handles. Coming soon.");
+  any(predicate?: (item: TRecord) => boolean): SelectTerminalHandle<boolean, TParams> {
+    const nextState = appendAny(this.state, predicate);
+    return new SelectTerminalHandle(nextState);
   }
 
-  all(_predicate: (item: TRecord) => boolean): SelectTerminalHandle<boolean, TParams> {
-    // TODO: Implement all terminal operation
-    throw new Error("all() is not yet implemented for plan handles. Coming soon.");
+  all(predicate: (item: TRecord) => boolean): SelectTerminalHandle<boolean, TParams> {
+    const nextState = appendAll(this.state, predicate);
+    return new SelectTerminalHandle(nextState);
   }
 }
 
@@ -733,6 +712,242 @@ function parseLambdaExpression(
   }
 
   return expression;
+}
+
+// -----------------------------------------------------------------------------
+// Terminal operation append functions
+// -----------------------------------------------------------------------------
+
+function appendCount<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  predicate?: (item: TRecord) => boolean,
+): SelectPlanState<number, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  let call: CallExpression;
+
+  if (predicate) {
+    const lambda = parseLambdaExpression(predicate as (...args: unknown[]) => unknown, "count");
+    call = createMethodCall("count", lambda);
+  } else {
+    call = createMethodCall("count");
+  }
+
+  const result = visitCountOperation(call, state.operation, "count", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append count operation to plan");
+  }
+
+  return createState(
+    state as unknown as SelectPlanState<number, TParams>,
+    result.operation,
+    visitorContext,
+  );
+}
+
+function appendFirst<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  predicate?: (item: TRecord) => boolean,
+): SelectPlanState<TRecord, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  let call: CallExpression;
+
+  if (predicate) {
+    const lambda = parseLambdaExpression(predicate as (...args: unknown[]) => unknown, "first");
+    call = createMethodCall("first", lambda);
+  } else {
+    call = createMethodCall("first");
+  }
+
+  const result = visitFirstOperation(call, state.operation, "first", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append first operation to plan");
+  }
+
+  return createState(state, result.operation, visitorContext);
+}
+
+function appendLast<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  predicate?: (item: TRecord) => boolean,
+): SelectPlanState<TRecord, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  let call: CallExpression;
+
+  if (predicate) {
+    const lambda = parseLambdaExpression(predicate as (...args: unknown[]) => unknown, "last");
+    call = createMethodCall("last", lambda);
+  } else {
+    call = createMethodCall("last");
+  }
+
+  const result = visitLastOperation(call, state.operation, "last", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append last operation to plan");
+  }
+
+  return createState(state, result.operation, visitorContext);
+}
+
+function appendSingle<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  predicate?: (item: TRecord) => boolean,
+): SelectPlanState<TRecord, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  let call: CallExpression;
+
+  if (predicate) {
+    const lambda = parseLambdaExpression(predicate as (...args: unknown[]) => unknown, "single");
+    call = createMethodCall("single", lambda);
+  } else {
+    call = createMethodCall("single");
+  }
+
+  const result = visitSingleOperation(call, state.operation, "single", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append single operation to plan");
+  }
+
+  return createState(state, result.operation, visitorContext);
+}
+
+function appendSum<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  selector: (item: TRecord) => number,
+): SelectPlanState<number, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  const lambda = parseLambdaExpression(selector as (...args: unknown[]) => unknown, "sum");
+  const call = createMethodCall("sum", lambda);
+
+  const result = visitSumOperation(call, state.operation, "sum", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append sum operation to plan");
+  }
+
+  return createState(
+    state as unknown as SelectPlanState<number, TParams>,
+    result.operation,
+    visitorContext,
+  );
+}
+
+function appendAverage<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  selector: (item: TRecord) => number,
+): SelectPlanState<number, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  const lambda = parseLambdaExpression(selector as (...args: unknown[]) => unknown, "average");
+  const call = createMethodCall("average", lambda);
+
+  const result = visitAverageOperation(call, state.operation, "average", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append average operation to plan");
+  }
+
+  return createState(
+    state as unknown as SelectPlanState<number, TParams>,
+    result.operation,
+    visitorContext,
+  );
+}
+
+function appendMin<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  selector?: (item: TRecord) => unknown,
+): SelectPlanState<unknown, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  let call: CallExpression;
+
+  if (selector) {
+    const lambda = parseLambdaExpression(selector as (...args: unknown[]) => unknown, "min");
+    call = createMethodCall("min", lambda);
+  } else {
+    call = createMethodCall("min");
+  }
+
+  const result = visitMinOperation(call, state.operation, "min", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append min operation to plan");
+  }
+
+  return createState(state as SelectPlanState<unknown, TParams>, result.operation, visitorContext);
+}
+
+function appendMax<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  selector?: (item: TRecord) => unknown,
+): SelectPlanState<unknown, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  let call: CallExpression;
+
+  if (selector) {
+    const lambda = parseLambdaExpression(selector as (...args: unknown[]) => unknown, "max");
+    call = createMethodCall("max", lambda);
+  } else {
+    call = createMethodCall("max");
+  }
+
+  const result = visitMaxOperation(call, state.operation, "max", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append max operation to plan");
+  }
+
+  return createState(state as SelectPlanState<unknown, TParams>, result.operation, visitorContext);
+}
+
+function appendAny<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  predicate?: (item: TRecord) => boolean,
+): SelectPlanState<boolean, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  let call: CallExpression;
+
+  if (predicate) {
+    const lambda = parseLambdaExpression(predicate as (...args: unknown[]) => unknown, "any");
+    call = createMethodCall("any", lambda);
+  } else {
+    call = createMethodCall("any");
+  }
+
+  const result = visitAnyOperation(call, state.operation, "any", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append any operation to plan");
+  }
+
+  return createState(
+    state as unknown as SelectPlanState<boolean, TParams>,
+    result.operation,
+    visitorContext,
+  );
+}
+
+function appendAll<TRecord, TParams>(
+  state: SelectPlanState<TRecord, TParams>,
+  predicate: (item: TRecord) => boolean,
+): SelectPlanState<boolean, TParams> {
+  const visitorContext = restoreVisitorContext(state.contextSnapshot);
+  const lambda = parseLambdaExpression(predicate as (...args: unknown[]) => unknown, "all");
+  const call = createMethodCall("all", lambda);
+
+  const result = visitAllOperation(call, state.operation, "all", visitorContext);
+
+  if (!result) {
+    throw new Error("Failed to append all operation to plan");
+  }
+
+  return createState(
+    state as unknown as SelectPlanState<boolean, TParams>,
+    result.operation,
+    visitorContext,
+  );
 }
 
 function createMethodCall(methodName: string, argument?: ASTExpression): CallExpression {
