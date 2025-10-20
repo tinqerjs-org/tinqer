@@ -175,20 +175,20 @@ describe("DeletePlanHandle", () => {
 
     it.skip("should handle delete with external and auto params (not yet implemented)", () => {
       // This functionality requires visitor support for (item, params) => predicate
-      type Params = { maxId: number; status: boolean };
+      // type Params = { maxId: number; status: boolean };
 
-      const plan = defineDelete<TestSchema, Params>(testSchema, "posts")
-        .where<Params>((p, params) =>
-          p.id < params.maxId &&
-          p.isPublished === params.status &&
-          p.title === "Test"
-        );
+      // const plan = defineDelete(testSchema, "posts")
+      //   .where<Params>((p, params) =>
+      //     p.id < params.maxId &&
+      //     p.isPublished === params.status &&
+      //     p.title === "Test"
+      //   );
 
-      const sql = plan.toSql({ maxId: 1000, status: true });
+      // const sql = plan.toSql({ maxId: 1000, status: true });
 
-      expect(sql.params.maxId).to.equal(1000);
-      expect(sql.params.status).to.equal(true);
-      expect(sql.params.__p1).to.equal("Test"); // auto-param for title
+      // expect(sql.params.maxId).to.equal(1000);
+      // expect(sql.params.status).to.equal(true);
+      // expect(sql.params.__p1).to.equal("Test"); // auto-param for title
     });
   });
 });

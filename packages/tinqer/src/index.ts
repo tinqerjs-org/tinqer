@@ -198,3 +198,16 @@ export {
   type DeletePlan,
   type DeletePlanSql
 } from "./plans/delete-plan.js";
+
+export {
+  createSelectPlan,
+  createUpdatePlan,
+  createInsertPlan,
+  createDeletePlan,
+  planToSqlString,
+  isTerminalHandle,
+  executeSelectPlan,
+  executeUpdatePlan,
+  executeInsertPlan,
+  executeDeletePlan
+} from "./plans/plan-execution.js";

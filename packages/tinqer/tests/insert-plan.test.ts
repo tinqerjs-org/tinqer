@@ -143,13 +143,13 @@ describe("InsertPlanHandle", () => {
     it("should merge provided params", () => {
       type Params = { defaultEmail: string };
 
-      const plan = defineInsert<TestSchema, Params>(testSchema, "users")
+      const plan = defineInsert(testSchema, "users")
         .values({
           name: "Frank",
           email: "frank@example.com", // In a real scenario, might use params.defaultEmail
         });
 
-      const sql = plan.toSql({ defaultEmail: "default@example.com" });
+      const sql = plan.toSql({ defaultEmail: "default@example.com" } as Params);
 
       expect(sql).to.have.property("operation");
       expect(sql).to.have.property("params");
@@ -175,14 +175,14 @@ describe("InsertPlanHandle", () => {
     it("should handle insert with returning and params", () => {
       type Params = { source: string };
 
-      const plan = defineInsert<TestSchema, Params>(testSchema, "users")
+      const plan = defineInsert(testSchema, "users")
         .values({
           name: "Helen",
           email: "helen@example.com",
         })
         .returning((u) => ({ id: u.id, createdAt: u.createdAt }));
 
-      const sql = plan.toSql({ source: "api" });
+      const sql = plan.toSql({ source: "api" } as Params);
 
       expect(sql.operation.operationType).to.equal("insert");
       const insertOp = sql.operation as InsertOperation;
