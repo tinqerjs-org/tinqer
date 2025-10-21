@@ -158,6 +158,14 @@ export function toSql<TParams>(
 ): { sql: string; params: Record<string, unknown> };
 
 /**
+ * Convert a SELECT plan (either regular or terminal) to SQL string with parameters
+ */
+export function toSql<TParams>(
+  plan: SelectPlanHandle<unknown, TParams> | SelectTerminalHandle<unknown, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
  * Convert any plan to SQL string with parameters
  * Handles pg-promise specific array parameter expansion
  */
@@ -222,16 +230,26 @@ export function selectStatement<TSchema, TParams>(
   params: TParams,
 ): { sql: string; params: Record<string, unknown> };
 
-export function selectStatement<TSchema, TParams>(
+export function selectStatement<TSchema, TParams = Record<string, never>>(
   schema: DatabaseSchema<TSchema>,
-  builder: (q: QueryBuilder<TSchema>, p?: TParams, h?: QueryHelpers) => unknown,
+  builder:
+    | ((q: QueryBuilder<TSchema>, p: TParams, h: QueryHelpers) => unknown)
+    | ((q: QueryBuilder<TSchema>, p: TParams) => unknown)
+    | ((q: QueryBuilder<TSchema>) => unknown),
   params?: TParams,
 ): { sql: string; params: Record<string, unknown> } {
+  type SelectResult = Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>;
   const normalizedParams = (params ?? {}) as TParams;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const plan = defineSelect(schema, builder as any);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return toSql(plan as any, normalizedParams);
+  const plan = defineSelect<TSchema, TParams, SelectResult>(
+    schema,
+    builder as (
+      queryBuilder: QueryBuilder<TSchema>,
+      params: TParams,
+      helpers?: QueryHelpers,
+    ) => SelectResult,
+    undefined,
+  ) as SelectPlanHandle<unknown, TParams> | SelectTerminalHandle<unknown, TParams>;
+  return toSql(plan, normalizedParams);
 }
 
 /**
@@ -587,8 +605,7 @@ export async function executeInsert<
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<number | any[]> {
+): Promise<number | TReturning[]> {
   const normalizedParams = params || ({} as TParams);
 
   let plan;
@@ -614,8 +631,7 @@ export async function executeInsert<
 
   if (insertOperation.returning) {
     const rows = await db.any(sql, expandedParams);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return rows as any[];
+    return rows as TReturning[];
   }
 
   const result = await db.result(sql, expandedParams);
@@ -691,8 +707,7 @@ export async function executeUpdate<
     | UpdatableWithReturning<TTable, TReturning>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<number | any[]> {
+): Promise<number | TReturning[]> {
   const normalizedParams = params || ({} as TParams);
 
   let plan;
@@ -718,8 +733,7 @@ export async function executeUpdate<
 
   if (updateOperation.returning) {
     const rows = await db.any(sql, expandedParams);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return rows as any[];
+    return rows as TReturning[];
   }
 
   const result = await db.result(sql, expandedParams);
