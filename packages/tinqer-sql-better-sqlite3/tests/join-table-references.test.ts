@@ -50,23 +50,21 @@ describe("JOIN with Table References", () => {
   describe("Basic table reference returns", () => {
     it("should support (u, d) => ({ u, d }) pattern", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .select((joined) => ({
-                userId: joined.u.id,
-                userName: joined.u.name,
-                deptId: joined.d.id,
-                deptName: joined.d.name,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .select((joined) => ({
+              userId: joined.u.id,
+              userName: joined.u.name,
+              deptId: joined.d.id,
+              deptName: joined.d.name,
+            })),
         ),
         {},
       );
@@ -84,23 +82,21 @@ describe("JOIN with Table References", () => {
 
     it("should support accessing nested properties after table reference JOIN", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .select((joined) => ({
-                userName: joined.u.name,
-                userEmail: joined.u.email,
-                deptName: joined.d.name,
-                deptLocation: joined.d.location,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .select((joined) => ({
+              userName: joined.u.name,
+              userEmail: joined.u.email,
+              deptName: joined.d.name,
+              deptLocation: joined.d.location,
+            })),
         ),
         {},
       );
@@ -113,22 +109,20 @@ describe("JOIN with Table References", () => {
 
     it("should support WHERE clause with table references", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .where((joined) => joined.u.age > 25 && joined.d.budget > 100000)
-              .select((joined) => ({
-                userName: joined.u.name,
-                deptName: joined.d.name,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .where((joined) => joined.u.age > 25 && joined.d.budget > 100000)
+            .select((joined) => ({
+              userName: joined.u.name,
+              deptName: joined.d.name,
+            })),
         ),
         {},
       );
@@ -147,33 +141,31 @@ describe("JOIN with Table References", () => {
   describe("Chained JOINs with table references", () => {
     it("should support chaining JOINs with table references", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .join(
-                q.from("orders"),
-                (joined) => joined.u.id,
-                (o) => o.user_id,
-                (joined, o) => ({
-                  user: joined.u,
-                  dept: joined.d,
-                  order: o,
-                }),
-              )
-              .select((result) => ({
-                userId: result.user.id,
-                userName: result.user.name,
-                deptName: result.dept.name,
-                orderTotal: result.order.total_amount,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .join(
+              q.from("orders"),
+              (joined) => joined.u.id,
+              (o) => o.user_id,
+              (joined, o) => ({
+                user: joined.u,
+                dept: joined.d,
+                order: o,
+              }),
+            )
+            .select((result) => ({
+              userId: result.user.id,
+              userName: result.user.name,
+              deptName: result.dept.name,
+              orderTotal: result.order.total_amount,
+            })),
         ),
         {},
       );
@@ -192,28 +184,26 @@ describe("JOIN with Table References", () => {
 
     it("should correctly resolve properties through chained table references", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ user: u, dept: d }),
-              )
-              .join(
-                q.from("orders"),
-                (joined) => joined.user.id,
-                (o) => o.user_id,
-                (joined, o) => ({ joined, order: o }),
-              )
-              .select((result) => ({
-                userName: result.joined.user.name,
-                deptName: result.joined.dept.name,
-                orderTotal: result.order.total_amount,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ user: u, dept: d }),
+            )
+            .join(
+              q.from("orders"),
+              (joined) => joined.user.id,
+              (o) => o.user_id,
+              (joined, o) => ({ joined, order: o }),
+            )
+            .select((result) => ({
+              userName: result.joined.user.name,
+              deptName: result.joined.dept.name,
+              orderTotal: result.order.total_amount,
+            })),
         ),
         {},
       );
@@ -225,35 +215,33 @@ describe("JOIN with Table References", () => {
 
     it("should handle three-way JOINs with table references", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .join(
-                q.from("orders"),
-                (joined) => joined.u.id,
-                (o) => o.user_id,
-                (joined, o) => ({ ...joined, o }),
-              )
-              .join(
-                q.from("products"),
-                (joined) => joined.o.id,
-                (p) => p.id,
-                (joined, p) => ({ ...joined, p }),
-              )
-              .select((result) => ({
-                userName: result.u.name,
-                deptName: result.d.name,
-                orderTotal: result.o.total_amount,
-                productName: result.p.name,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .join(
+              q.from("orders"),
+              (joined) => joined.u.id,
+              (o) => o.user_id,
+              (joined, o) => ({ ...joined, o }),
+            )
+            .join(
+              q.from("products"),
+              (joined) => joined.o.id,
+              (p) => p.id,
+              (joined, p) => ({ ...joined, p }),
+            )
+            .select((result) => ({
+              userName: result.u.name,
+              deptName: result.d.name,
+              orderTotal: result.o.total_amount,
+              productName: result.p.name,
+            })),
         ),
         {},
       );
@@ -270,25 +258,23 @@ describe("JOIN with Table References", () => {
       // This test verifies that mixing table references with field selections is not allowed
       expect(() => {
         toSql(
-          defineSelect(
-            schema,
-            (q) =>
-              q
-                .from("users")
-                .join(
-                  q.from("departments"),
-                  (u) => u.department_id,
-                  (d) => d.id,
-                  (u, d) => ({
-                    u,
-                    deptName: d.name, // This is not allowed - can't mix references with field selections
-                    deptBudget: d.budget,
-                  }),
-                )
-                .select((joined) => ({
-                  userId: joined.u.id,
-                  userName: joined.u.name,
-                })),
+          defineSelect(schema, (q) =>
+            q
+              .from("users")
+              .join(
+                q.from("departments"),
+                (u) => u.department_id,
+                (d) => d.id,
+                (u, d) => ({
+                  u,
+                  deptName: d.name, // This is not allowed - can't mix references with field selections
+                  deptBudget: d.budget,
+                }),
+              )
+              .select((joined) => ({
+                userId: joined.u.id,
+                userName: joined.u.name,
+              })),
           ),
           {},
         );
@@ -299,27 +285,25 @@ describe("JOIN with Table References", () => {
   describe("Aggregations with table references", () => {
     it("should support GROUP BY with table references", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .groupBy((joined) => ({
-                deptId: joined.d.id,
-                deptName: joined.d.name,
-              }))
-              .select((g) => ({
-                departmentId: g.key.deptId,
-                departmentName: g.key.deptName,
-                userCount: g.count(),
-                avgAge: g.average((joined) => joined.u.age),
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .groupBy((joined) => ({
+              deptId: joined.d.id,
+              deptName: joined.d.name,
+            }))
+            .select((g) => ({
+              departmentId: g.key.deptId,
+              departmentName: g.key.deptName,
+              userCount: g.count(),
+              avgAge: g.average((joined) => joined.u.age),
+            })),
         ),
         {},
       );
@@ -331,33 +315,31 @@ describe("JOIN with Table References", () => {
 
     it("should support complex aggregations with chained table references", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .join(
-                q.from("orders"),
-                (joined) => joined.u.id,
-                (o) => o.user_id,
-                (joined, o) => ({ ...joined, o }),
-              )
-              .groupBy((result) => ({
-                deptName: result.d.name,
-                userName: result.u.name,
-              }))
-              .select((g) => ({
-                department: g.key.deptName,
-                user: g.key.userName,
-                totalOrders: g.count(),
-                totalRevenue: g.sum((result) => result.o.total_amount),
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .join(
+              q.from("orders"),
+              (joined) => joined.u.id,
+              (o) => o.user_id,
+              (joined, o) => ({ ...joined, o }),
+            )
+            .groupBy((result) => ({
+              deptName: result.d.name,
+              userName: result.u.name,
+            }))
+            .select((g) => ({
+              department: g.key.deptName,
+              user: g.key.userName,
+              totalOrders: g.count(),
+              totalRevenue: g.sum((result) => result.o.total_amount),
+            })),
         ),
         {},
       );
@@ -371,15 +353,13 @@ describe("JOIN with Table References", () => {
     it("should throw error when SELECT is missing after JOIN with result selector", () => {
       expect(() => {
         toSql(
-          defineSelect(
-            schema,
-            (q) =>
-              q.from("users").join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              ),
+          defineSelect(schema, (q) =>
+            q.from("users").join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            ),
           ),
           {},
         );
@@ -390,21 +370,19 @@ describe("JOIN with Table References", () => {
 
     it("should handle empty object in result selector with SELECT", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                () => ({}),
-              )
-              .select(() => ({
-                userId: 1,
-                deptId: 2,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              () => ({}),
+            )
+            .select(() => ({
+              userId: 1,
+              deptId: 2,
+            })),
         ),
         {},
       );
@@ -417,21 +395,19 @@ describe("JOIN with Table References", () => {
 
     it("should handle single table reference return", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, _d) => u, // Just return the first table
-              )
-              .select((u) => ({
-                userId: u.id,
-                userName: u.name,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, _d) => u, // Just return the first table
+            )
+            .select((u) => ({
+              userId: u.id,
+              userName: u.name,
+            })),
         ),
         {},
       );
@@ -444,24 +420,22 @@ describe("JOIN with Table References", () => {
 
     it("should support ORDER BY with table references", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .orderBy((joined) => joined.d.name)
-              .thenByDescending((joined) => joined.u.age)
-              .select((joined) => ({
-                userName: joined.u.name,
-                userAge: joined.u.age,
-                deptName: joined.d.name,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .orderBy((joined) => joined.d.name)
+            .thenByDescending((joined) => joined.u.age)
+            .select((joined) => ({
+              userName: joined.u.name,
+              userAge: joined.u.age,
+              deptName: joined.d.name,
+            })),
         ),
         {},
       );
@@ -476,21 +450,19 @@ describe("JOIN with Table References", () => {
 
     it("should support DISTINCT with table references", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.department_id,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .select((joined) => ({
-                deptName: joined.d.name,
-              }))
-              .distinct(),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.department_id,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .select((joined) => ({
+              deptName: joined.d.name,
+            }))
+            .distinct(),
         ),
         {},
       );

@@ -70,9 +70,8 @@ describe("NULL Handling", () => {
   describe("Complex NULL conditions", () => {
     it("should handle NULL checks with AND", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").where((u) => u.name != null && u.email == null),
+        defineSelect(schema, (q) =>
+          q.from("users").where((u) => u.name != null && u.email == null),
         ),
         {},
       );
@@ -84,9 +83,8 @@ describe("NULL Handling", () => {
 
     it("should handle NULL checks with OR", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").where((u) => u.email == null || u.phone == null),
+        defineSelect(schema, (q) =>
+          q.from("users").where((u) => u.email == null || u.phone == null),
         ),
         {},
       );
@@ -111,10 +109,8 @@ describe("NULL Handling", () => {
   describe("Undefined comparisons", () => {
     it("should treat parameter equality against undefined as IS NULL", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, params: { role?: string }) =>
-            q.from("users").where((_u) => params.role === undefined),
+        defineSelect(schema, (q, params: { role?: string }) =>
+          q.from("users").where((_u) => params.role === undefined),
         ),
         { role: undefined },
       );
@@ -125,16 +121,14 @@ describe("NULL Handling", () => {
 
     it("should allow optional guards that combine undefined checks with column comparisons", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, params: { role?: string; city?: string }) =>
-            q
-              .from("users")
-              .where(
-                (u) =>
-                  (params.role === undefined || u.role === params.role) &&
-                  (params.city === undefined || u.city === params.city),
-              ),
+        defineSelect(schema, (q, params: { role?: string; city?: string }) =>
+          q
+            .from("users")
+            .where(
+              (u) =>
+                (params.role === undefined || u.role === params.role) &&
+                (params.city === undefined || u.city === params.city),
+            ),
         ),
         { role: undefined, city: "Portland" },
       );
