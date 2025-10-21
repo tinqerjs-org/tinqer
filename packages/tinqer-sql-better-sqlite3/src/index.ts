@@ -590,14 +590,19 @@ export function executeInsert<TSchema, TTable, TReturning>(
 ): never;
 
 // Implementation
-export function executeInsert<TSchema, TParams = Record<string, never>>(
+export function executeInsert<
+  TSchema,
+  TTable = unknown,
+  TReturning = unknown,
+  TParams = Record<string, never>,
+>(
   db: BetterSqlite3Database,
   schema: DatabaseSchema<TSchema>,
   builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
     helpers?: QueryHelpers,
-  ) => Insertable<unknown> | InsertableWithReturning<unknown, unknown>,
+  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): number {
@@ -683,7 +688,12 @@ export function executeUpdate<TSchema, TTable, TReturning>(
 ): never;
 
 // Implementation
-export function executeUpdate<TSchema, TParams = Record<string, never>>(
+export function executeUpdate<
+  TSchema,
+  TTable = unknown,
+  TReturning = unknown,
+  TParams = Record<string, never>,
+>(
   db: BetterSqlite3Database,
   schema: DatabaseSchema<TSchema>,
   builder: (
@@ -691,9 +701,9 @@ export function executeUpdate<TSchema, TParams = Record<string, never>>(
     params: TParams,
     helpers?: QueryHelpers,
   ) =>
-    | UpdatableWithSet<unknown>
-    | UpdatableComplete<unknown>
-    | UpdatableWithReturning<unknown, unknown>,
+    | UpdatableWithSet<TTable>
+    | UpdatableComplete<TTable>
+    | UpdatableWithReturning<TTable, TReturning>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): number {
@@ -754,14 +764,14 @@ export function executeDelete<TSchema, TResult>(
 ): number;
 
 // Implementation
-export function executeDelete<TSchema, TParams = Record<string, never>>(
+export function executeDelete<TSchema, TTable = unknown, TParams = Record<string, never>>(
   db: BetterSqlite3Database,
   schema: DatabaseSchema<TSchema>,
   builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
     helpers?: QueryHelpers,
-  ) => Deletable<unknown> | DeletableComplete<unknown>,
+  ) => Deletable<TTable> | DeletableComplete<TTable>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): number {

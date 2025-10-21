@@ -581,14 +581,19 @@ export async function executeInsert<TSchema, TTable, TReturning>(
 ): Promise<TReturning[]>;
 
 // Implementation
-export async function executeInsert<TSchema, TParams = Record<string, never>>(
+export async function executeInsert<
+  TSchema,
+  TTable = unknown,
+  TReturning = unknown,
+  TParams = Record<string, never>,
+>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
   builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
     helpers?: QueryHelpers,
-  ) => Insertable<unknown> | InsertableWithReturning<unknown, unknown>,
+  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -677,7 +682,12 @@ export async function executeUpdate<TSchema, TTable, TReturning>(
 ): Promise<TReturning[]>;
 
 // Implementation
-export async function executeUpdate<TSchema, TParams = Record<string, never>>(
+export async function executeUpdate<
+  TSchema,
+  TTable = unknown,
+  TReturning = unknown,
+  TParams = Record<string, never>,
+>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
   builder: (
@@ -685,9 +695,9 @@ export async function executeUpdate<TSchema, TParams = Record<string, never>>(
     params: TParams,
     helpers?: QueryHelpers,
   ) =>
-    | UpdatableWithSet<unknown>
-    | UpdatableComplete<unknown>
-    | UpdatableWithReturning<unknown, unknown>,
+    | UpdatableWithSet<TTable>
+    | UpdatableComplete<TTable>
+    | UpdatableWithReturning<TTable, TReturning>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -730,14 +740,14 @@ export async function executeUpdate<TSchema, TParams = Record<string, never>>(
 /**
  * Execute DELETE, return row count
  */
-export async function executeDelete<TSchema, TParams = Record<string, never>>(
+export async function executeDelete<TSchema, TTable = unknown, TParams = Record<string, never>>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
   builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
     helpers?: QueryHelpers,
-  ) => Deletable<unknown> | DeletableComplete<unknown>,
+  ) => Deletable<TTable> | DeletableComplete<TTable>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): Promise<number> {
