@@ -128,9 +128,7 @@ export class DeletePlanHandleInitial<TRecord, TParams> {
 
   finalize(_params: TParams): DeletePlanSql {
     // Initial stage without WHERE clause - this would be dangerous SQL
-    throw new Error(
-      "DELETE statement requires where() or allowFullTableDelete() to be called before generating SQL",
-    );
+    throw new Error("DELETE requires a WHERE clause or explicit allowFullTableDelete");
   }
 
   toPlan(): DeletePlan<TRecord, TParams> {

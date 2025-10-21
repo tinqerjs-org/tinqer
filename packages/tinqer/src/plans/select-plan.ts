@@ -430,7 +430,7 @@ export function defineSelect<
 ): SelectPlanHandle<unknown, TParams> | SelectTerminalHandle<unknown, TParams> {
   const parseResult = parseQuery(builder, options);
   if (!parseResult) {
-    throw new Error("Failed to parse select plan");
+    throw new Error("Failed to parse query");
   }
 
   const initialState = createInitialState<unknown, TParams>(parseResult, options);

@@ -199,8 +199,8 @@ export function toSql<TParams>(
 ): { sql: string; params: Record<string, unknown> } {
   const { operation, params: mergedParams } = plan.finalize(params);
   const sql = generateSql(operation, mergedParams);
-  const normalizedParams = normalizeSqliteParams(mergedParams);
-  return { sql, params: normalizedParams };
+  const expandedParams = expandArrayParams(mergedParams);
+  return { sql, params: expandedParams };
 }
 
 /**
@@ -438,15 +438,7 @@ export function executeSelect<
           ? T
           : never;
 
-  let plan;
-  try {
-    plan = defineSelect(schema, builder, options);
-  } catch (error) {
-    if (error instanceof Error && error.message === "Failed to parse select plan") {
-      throw new Error("Failed to parse query");
-    }
-    throw error;
-  }
+  const plan = defineSelect(schema, builder, options);
 
   const normalizedParams = params || ({} as TParams);
   const { operation, sql, expandedParams } = materializePlan(plan, normalizedParams);

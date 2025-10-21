@@ -403,16 +403,7 @@ export async function executeSelect<
           : never;
 
   // Create plan using defineSelect
-  let plan;
-  try {
-    plan = defineSelect(schema, builder, options);
-  } catch (error) {
-    // Maintain backward compatibility with error messages
-    if (error instanceof Error && error.message === "Failed to parse select plan") {
-      throw new Error("Failed to parse query");
-    }
-    throw error;
-  }
+  const plan = defineSelect(schema, builder, options);
 
   // Get operation and merged params from plan
   const { operation, params: mergedParams } = plan.finalize(params || ({} as TParams));

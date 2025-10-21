@@ -225,8 +225,8 @@ export function defineInsert(
     return new InsertPlanHandleWithReturning(initialState);
   }
 
-  // Check if builder already called .values()
-  if (insertOp.values) {
+  // Check if builder already called .values() (values exists and has properties)
+  if (insertOp.values && Object.keys(insertOp.values.properties).length > 0) {
     return new InsertPlanHandleWithValues(initialState);
   }
 
