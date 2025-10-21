@@ -63,4 +63,3 @@ export function isTerminalHandle(
 ): plan is SelectTerminalHandle<unknown, unknown> {
   return plan instanceof SelectTerminalHandle;
 }
-

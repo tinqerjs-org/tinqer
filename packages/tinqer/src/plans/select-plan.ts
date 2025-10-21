@@ -32,8 +32,6 @@ import { visitSkipOperation } from "../visitors/take-skip/skip.js";
 import { visitDistinctOperation } from "../visitors/distinct/index.js";
 import { visitReverseOperation } from "../visitors/reverse/index.js";
 import { visitGroupByOperation } from "../visitors/groupby/index.js";
-import { visitJoinOperation } from "../visitors/join/join.js";
-import { visitGroupJoinOperation } from "../visitors/groupjoin/index.js";
 import { visitCountOperation } from "../visitors/count/index.js";
 import { visitFirstOperation } from "../visitors/predicates/first.js";
 import { visitLastOperation } from "../visitors/predicates/last.js";
@@ -217,46 +215,15 @@ export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
     return new SelectPlanHandle(nextState);
   }
 
-  // Note: Join operations are complex and require further work to properly handle inner queries
-  // For now, these are placeholders that throw informative errors
-
-  join<TInner, TKey, TResult>(
-    inner: Queryable<TInner>,
-    outerKeySelector: (item: TRecord) => TKey,
-    innerKeySelector: (item: TInner) => TKey,
-    resultSelector: (outer: TRecord, inner: TInner) => TResult,
-  ): SelectPlanHandle<TResult, TParams> {
-    const nextState = appendJoin(
-      this.state,
-      inner,
-      outerKeySelector as unknown as (item: unknown) => unknown,
-      innerKeySelector as unknown as (item: unknown) => unknown,
-      resultSelector as unknown as (outer: unknown, inner: unknown) => unknown,
-    );
-    return new SelectPlanHandle(nextState as SelectPlanState<TResult, TParams>);
-  }
-
-  groupJoin<TInner, TKey, TResult>(
-    inner: Queryable<TInner>,
-    outerKeySelector: (item: TRecord) => TKey,
-    innerKeySelector: (item: TInner) => TKey,
-    resultSelector: (outer: TRecord, innerGroup: Grouping<TKey, TInner>) => TResult,
-  ): SelectPlanHandle<TResult, TParams> {
-    const nextState = appendGroupJoin(
-      this.state,
-      inner,
-      outerKeySelector as unknown as (item: unknown) => unknown,
-      innerKeySelector as unknown as (item: unknown) => unknown,
-      resultSelector as unknown as (outer: unknown, innerGroup: unknown) => unknown,
-    );
-    return new SelectPlanHandle(nextState as SelectPlanState<TResult, TParams>);
-  }
-
-  // TODO: selectMany is not yet supported in defineSelect/plan API
-  // It only works with parseQuery(() => from(...).selectMany(...))
-  // The underlying visitor needs to be updated to work with the QueryBuilder pattern
-  // before this can be implemented for plan handles.
-  // See: packages/tinqer/tests/cross-join-normalization.test.ts for working parseQuery example
+  // NOTE: join, groupJoin, and selectMany are NOT supported on plan handles.
+  // These operations must be composed inside the defineSelect builder where the query builder (q) is in scope.
+  //
+  // Working pattern:
+  //   const plan = defineSelect(schema, (q) =>
+  //     q.from("users").join(q.from("orders"), ...)
+  //   );
+  //
+  // Plan handles only support operations that don't require access to the query builder.
 
   groupBy<TKey>(
     keySelector: (item: TRecord) => TKey,
@@ -611,126 +578,6 @@ function appendGroupBy<TRecord, TParams>(
 
   if (!result) {
     throw new Error("Failed to append groupBy to plan");
-  }
-
-  visitorContext.autoParams = mergeAutoParams(visitorContext.autoParams, result.autoParams);
-
-  return createState(
-    state as unknown as SelectPlanState<unknown, TParams>,
-    result.operation,
-    visitorContext,
-  );
-}
-
-function appendJoin<TRecord, TParams>(
-  state: SelectPlanState<TRecord, TParams>,
-  _inner: Queryable<unknown>,
-  outerKeySelector: (item: unknown) => unknown,
-  innerKeySelector: (item: unknown) => unknown,
-  resultSelector: (outer: unknown, inner: unknown) => unknown,
-): SelectPlanState<unknown, TParams> {
-  const visitorContext = restoreVisitorContext(state.contextSnapshot);
-
-  // The join visitor expects a 2-arg form (inner, predicate) or 4-arg form
-  // For now, let's implement a simplified version that creates the proper AST
-  // TODO: This needs refinement to handle the actual join visitor requirements
-
-  // Parse the lambdas to get AST representations
-  const outerKeyLambda = parseLambdaExpression(outerKeySelector, "outerKeySelector");
-  const innerKeyLambda = parseLambdaExpression(innerKeySelector, "innerKeySelector");
-  const resultLambda = parseLambdaExpression(resultSelector, "resultSelector");
-
-  // Create a placeholder inner expression (in real implementation, we'd parse the Queryable)
-  // TODO: Handle inner Queryable properly - may need to extract its operation tree
-  const innerExpr = {
-    type: "CallExpression",
-    callee: {
-      type: "MemberExpression",
-      object: { type: "Identifier", name: "q" },
-      property: { type: "Identifier", name: "from" },
-      computed: false,
-      optional: false,
-    },
-    arguments: [{ type: "Literal", value: "innerTable" }], // Placeholder
-    optional: false,
-  } as CallExpression;
-
-  // Create the join call with 4-argument form
-  const call = {
-    type: "CallExpression",
-    callee: {
-      type: "MemberExpression",
-      object: { type: "Identifier", name: "__plan" },
-      property: { type: "Identifier", name: "join" },
-      computed: false,
-      optional: false,
-    },
-    arguments: [innerExpr, outerKeyLambda, innerKeyLambda, resultLambda],
-    optional: false,
-  } as CallExpression;
-
-  const result = visitJoinOperation(call, state.operation, "join", visitorContext);
-
-  if (!result) {
-    throw new Error("Failed to append join to plan");
-  }
-
-  visitorContext.autoParams = mergeAutoParams(visitorContext.autoParams, result.autoParams);
-
-  return createState(
-    state as unknown as SelectPlanState<unknown, TParams>,
-    result.operation,
-    visitorContext,
-  );
-}
-
-function appendGroupJoin<TRecord, TParams>(
-  state: SelectPlanState<TRecord, TParams>,
-  _inner: Queryable<unknown>,
-  outerKeySelector: (item: unknown) => unknown,
-  innerKeySelector: (item: unknown) => unknown,
-  resultSelector: (outer: unknown, innerGroup: unknown) => unknown,
-): SelectPlanState<unknown, TParams> {
-  const visitorContext = restoreVisitorContext(state.contextSnapshot);
-
-  // Parse the lambdas to get AST representations
-  const outerKeyLambda = parseLambdaExpression(outerKeySelector, "outerKeySelector");
-  const innerKeyLambda = parseLambdaExpression(innerKeySelector, "innerKeySelector");
-  const resultLambda = parseLambdaExpression(resultSelector, "resultSelector");
-
-  // Create a placeholder inner expression
-  // TODO: Handle inner Queryable properly - may need to extract its operation tree
-  const innerExpr = {
-    type: "CallExpression",
-    callee: {
-      type: "MemberExpression",
-      object: { type: "Identifier", name: "q" },
-      property: { type: "Identifier", name: "from" },
-      computed: false,
-      optional: false,
-    },
-    arguments: [{ type: "Literal", value: "innerTable" }], // Placeholder
-    optional: false,
-  } as CallExpression;
-
-  // Create the groupJoin call with 4-argument form
-  const call = {
-    type: "CallExpression",
-    callee: {
-      type: "MemberExpression",
-      object: { type: "Identifier", name: "__plan" },
-      property: { type: "Identifier", name: "groupJoin" },
-      computed: false,
-      optional: false,
-    },
-    arguments: [innerExpr, outerKeyLambda, innerKeyLambda, resultLambda],
-    optional: false,
-  } as CallExpression;
-
-  const result = visitGroupJoinOperation(call, state.operation, "groupJoin", visitorContext);
-
-  if (!result) {
-    throw new Error("Failed to append groupJoin to plan");
   }
 
   visitorContext.autoParams = mergeAutoParams(visitorContext.autoParams, result.autoParams);

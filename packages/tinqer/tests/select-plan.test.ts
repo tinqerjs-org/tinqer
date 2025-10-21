@@ -2,7 +2,6 @@ import { describe, it } from "mocha";
 import { expect } from "chai";
 import { defineSelect, SelectPlanHandle } from "../src/plans/select-plan.js";
 import { createSchema } from "../src/linq/database-context.js";
-import { from } from "../src/linq/from.js";
 import type {
   QueryOperation,
   FromOperation,
@@ -339,67 +338,8 @@ describe("SelectPlanHandle", () => {
     });
   });
 
-  describe("groupJoin operation on plan handles", () => {
-    it("should add groupJoin operation when chained on plan handle", () => {
-      type Post = { id: number; userId: number; title: string; content: string };
-
-      const usersQuery = defineSelect(testSchema, (q) => q.from("users"));
-
-      const plan = usersQuery.groupJoin(
-        from<Post>("posts"),
-        (u) => u.id,
-        (p) => p.userId,
-        (u, postGroup) => ({ user: u, posts: postGroup }),
-      );
-
-      const planData = plan.toPlan();
-      expect(planData.operation.operationType).to.equal("groupJoin");
-    });
-
-    it("should maintain immutability when adding groupJoin", () => {
-      type Post = { id: number; userId: number; title: string; content: string };
-
-      const plan1 = defineSelect(testSchema, (q) => q.from("users"));
-      const plan2 = plan1.groupJoin(
-        from<Post>("posts"),
-        (u) => u.id,
-        (p) => p.userId,
-        (u, postGroup) => ({ user: u, posts: postGroup }),
-      );
-
-      // Should be different instances
-      expect(plan1).to.not.equal(plan2);
-
-      // Original plan should still just have from
-      expect(plan1.toPlan().operation.operationType).to.equal("from");
-
-      // New plan should have groupJoin
-      expect(plan2.toPlan().operation.operationType).to.equal("groupJoin");
-    });
-
-    it("should work in complex query chains with groupJoin", () => {
-      type Post = { id: number; userId: number; title: string; content: string };
-
-      const plan = defineSelect(testSchema, (q) => q.from("users"))
-        .where((u) => u.age > 18)
-        .groupJoin(
-          from<Post>("posts"),
-          (u) => u.id,
-          (p) => p.userId,
-          (u, postGroup) => ({ user: u, posts: postGroup }),
-        )
-        .take(10);
-
-      const planData = plan.toPlan();
-      expect(planData.operation.operationType).to.equal("take");
-
-      // Check auto params
-      expect(planData.autoParams.__p1).to.equal(18); // age > 18
-      expect(planData.autoParams.__p2).to.equal(10); // take 10
-    });
-  });
-
-  // NOTE: selectMany is not supported in defineSelect/plan API
-  // It only works with parseQuery(() => from(...).selectMany(...))
-  // See packages/tinqer/tests/cross-join-normalization.test.ts for working example
+  // NOTE: join, groupJoin, and selectMany are not supported on plan handles.
+  // These operations must be composed inside the defineSelect builder:
+  //   const plan = defineSelect(schema, (q) => q.from("users").join(q.from("orders"), ...));
+  // See packages/tinqer/tests/cross-join-normalization.test.ts for working selectMany example
 });

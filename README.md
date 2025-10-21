@@ -423,7 +423,7 @@ See [Database Adapters](docs/adapters.md) for detailed comparison.
 ## Differences from .NET LINQ to SQL
 
 - Lambdas cannot capture external variables; use params object
-- Limited method set (no `SelectMany`, `GroupJoin`, `DefaultIfEmpty`)
+- Join operations (`join`, `groupJoin`, `selectMany`) must be composed inside the defineSelect builder; they cannot be chained on plan handles
 - Left outer joins and cross joins supported via LINQ patterns (right/full joins still require manual SQL)
 - No deferred execution; SQL generated on demand
 - Grouping supports `count`, `sum`, `avg`, `min`, `max`
