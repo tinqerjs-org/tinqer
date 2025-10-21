@@ -70,8 +70,8 @@ describe("Join SQL Generation", () => {
                 (u, d) => ({ u, d }),
               )
               .select((joined) => ({ userName: joined.u.name, deptName: joined.d.name })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.equal(
@@ -94,8 +94,8 @@ describe("Join SQL Generation", () => {
                 (u, o) => ({ u, o }),
               )
               .select((joined) => ({ user: joined.u.name, total: joined.o.amount })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.equal(
@@ -118,8 +118,8 @@ describe("Join SQL Generation", () => {
                 (u, o) => ({ u, o }),
               )
               .select((joined) => ({ userName: joined.u.name, orderAmount: joined.o.amount })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.equal(
@@ -146,8 +146,8 @@ describe("Join SQL Generation", () => {
                 userId: g.key,
                 totalAmount: g.sum((joined) => joined.o.amount),
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.equal(
@@ -170,8 +170,8 @@ describe("Join SQL Generation", () => {
               )
               .select((joined) => ({ deptName: joined.d.name }))
               .distinct(),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.equal(
@@ -195,8 +195,8 @@ describe("Join SQL Generation", () => {
               .orderBy((joined) => joined.o.amount)
               .select((joined) => ({ userName: joined.u.name, amount: joined.o.amount }))
               .take(10),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.equal(
@@ -231,8 +231,8 @@ describe("Join SQL Generation", () => {
                 deptName: result.d.name,
                 city: result.l.city,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.contain("INNER JOIN");
@@ -270,8 +270,8 @@ describe("Join SQL Generation", () => {
                 productName: result.p.name,
                 categoryName: result.c.name,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.contain("orders");
@@ -296,8 +296,8 @@ describe("Join SQL Generation", () => {
                 (e, m) => ({ e, m }),
               )
               .select((joined) => ({ employeeName: joined.e.name, managerName: joined.m.name })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.contain(`FROM "users" AS "t0"`);
@@ -327,8 +327,8 @@ describe("Join SQL Generation", () => {
                 maxOrderAmount: g.max((joined) => joined.o.amount),
                 minOrderAmount: g.min((joined) => joined.o.amount),
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.equal(
@@ -351,8 +351,8 @@ describe("Join SQL Generation", () => {
               )
               .where((joined) => joined.o.amount > 100 && joined.o.amount < 1000)
               .select((joined) => ({ userName: joined.u.name, amount: joined.o.amount })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.contain("WHERE");
@@ -382,8 +382,8 @@ describe("Join SQL Generation", () => {
               }))
               .orderBy((x) => x.amount)
               .take(20),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.contain("WHERE");
@@ -399,7 +399,7 @@ describe("Join SQL Generation", () => {
       const result = toSql(
         defineSelect(
           schema,
-          (q, p) =>
+          (q, p: { page: number; pageSize: number }) =>
             q
               .from("users")
               .join(
@@ -412,8 +412,8 @@ describe("Join SQL Generation", () => {
               .orderBy((x) => x.userName)
               .skip(p.page * p.pageSize)
               .take(p.pageSize),
-          { page: 2, pageSize: 10 },
         ),
+        { page: 2, pageSize: 10 },
       );
 
       expect(result.sql).to.contain("INNER JOIN");
@@ -443,8 +443,8 @@ describe("Join SQL Generation", () => {
                 (g, dept) => ({ user: g.user, dept }),
               )
               .select((row) => ({ userId: row.user.id, deptId: row.dept.id })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.equal(
@@ -469,8 +469,8 @@ describe("Join SQL Generation", () => {
                 departmentId: row.department.id,
                 userId: row.user.id,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.equal(

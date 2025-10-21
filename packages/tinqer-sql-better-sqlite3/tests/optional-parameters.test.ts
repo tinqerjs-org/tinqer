@@ -62,7 +62,9 @@ describe("Optional Parameters", () => {
   describe("selectStatement - with params but no helpers", () => {
     it("should work with query builder and params", () => {
       const result = toSql(
-        defineSelect(schema, (q, p) => q.from("users").where((u) => u.age >= p.minAge)),
+        defineSelect(schema, (q, p: { minAge: number }) =>
+          q.from("users").where((u) => u.age >= p.minAge),
+        ),
         { minAge: 25 },
       );
 
@@ -72,7 +74,7 @@ describe("Optional Parameters", () => {
 
     it("should work with complex params", () => {
       const result = toSql(
-        defineSelect(schema, (q, p) =>
+        defineSelect(schema, (q, p: { minAge: number; maxAge: number }) =>
           q
             .from("users")
             .where((u) => u.age >= p.minAge && u.age <= p.maxAge)
@@ -91,7 +93,7 @@ describe("Optional Parameters", () => {
   describe("selectStatement - with params and helpers", () => {
     it("should work with all three parameters", () => {
       const result = toSql(
-        defineSelect(schema, (q, p, h) =>
+        defineSelect(schema, (q, p: { searchTerm: string }, h) =>
           q
             .from("users")
             .where((u) => h.functions.icontains(u.name, p.searchTerm))
@@ -207,7 +209,9 @@ describe("Optional Parameters", () => {
     it("should infer correct types with params", () => {
       // This test mainly checks that TypeScript compilation works
       const result = toSql(
-        defineSelect(schema, (q, p) => q.from("users").where((u) => u.age >= p.minAge)),
+        defineSelect(schema, (q, p: { minAge: number }) =>
+          q.from("users").where((u) => u.age >= p.minAge),
+        ),
         { minAge: 18 },
       );
 

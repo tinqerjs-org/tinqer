@@ -235,7 +235,7 @@ describe("IN Operator", () => {
   describe("Parameterized arrays", () => {
     it("should expand parameterized array in IN clause", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { targetIds: number[] }) =>
           q.from("users").where((u) => params.targetIds.includes(u.id)),
         ),
         { targetIds: [1, 3, 5, 7] },
@@ -255,7 +255,7 @@ describe("IN Operator", () => {
 
     it("should expand parameterized array in NOT IN clause", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { excludedIds: number[] }) =>
           q.from("users").where((u) => !params.excludedIds.includes(u.id)),
         ),
         { excludedIds: [2, 4] },
@@ -273,7 +273,7 @@ describe("IN Operator", () => {
 
     it("should handle empty parameterized array", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { ids: number[] }) =>
           q.from("users").where((u) => params.ids.includes(u.id)),
         ),
         { ids: [] as number[] },
@@ -287,7 +287,7 @@ describe("IN Operator", () => {
 
     it("should handle parameterized array with strings", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { roles: string[] }) =>
           q.from("users").where((u) => params.roles.includes(u.role)),
         ),
         { roles: ["admin", "moderator", "user"] },

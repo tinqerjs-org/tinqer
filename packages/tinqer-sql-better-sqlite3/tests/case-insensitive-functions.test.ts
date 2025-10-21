@@ -51,7 +51,7 @@ describe("Case-Insensitive Functions - SQL Generation", () => {
 
     it("should handle query parameters", () => {
       const result = toSql(
-        defineSelect(schema, (q, params, h) =>
+        defineSelect(schema, (q, params: { searchName: string; users?: unknown[] }, h) =>
           q.from("users").where((u) => h.functions.iequals(u.name, params.searchName)),
         ),
         { users: [], searchName: "Alice" },

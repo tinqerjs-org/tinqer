@@ -67,8 +67,8 @@ describe("JOIN with Table References", () => {
                 deptId: joined.d.id,
                 deptName: joined.d.name,
               })),
-          {},
         ),
+        {},
       );
 
       // Should generate SELECT with columns from both tables
@@ -101,8 +101,8 @@ describe("JOIN with Table References", () => {
                 deptName: joined.d.name,
                 deptLocation: joined.d.location,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include('"t0"."name" AS "userName"');
@@ -129,8 +129,8 @@ describe("JOIN with Table References", () => {
                 userName: joined.u.name,
                 deptName: joined.d.name,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include("SELECT");
@@ -174,8 +174,8 @@ describe("JOIN with Table References", () => {
                 deptName: result.dept.name,
                 orderTotal: result.order.total_amount,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include("SELECT");
@@ -214,8 +214,8 @@ describe("JOIN with Table References", () => {
                 deptName: result.joined.dept.name,
                 orderTotal: result.order.total_amount,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include('"t0"."name" AS "userName"');
@@ -254,8 +254,8 @@ describe("JOIN with Table References", () => {
                 orderTotal: result.o.total_amount,
                 productName: result.p.name,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include('"t0"."name" AS "userName"');
@@ -289,8 +289,8 @@ describe("JOIN with Table References", () => {
                   userId: joined.u.id,
                   userName: joined.u.name,
                 })),
-            {},
           ),
+          {},
         );
       }).to.throw("Failed to parse query");
     });
@@ -320,8 +320,8 @@ describe("JOIN with Table References", () => {
                 userCount: g.count(),
                 avgAge: g.average((joined) => joined.u.age),
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include('GROUP BY "t1"."id", "t1"."name"');
@@ -358,8 +358,8 @@ describe("JOIN with Table References", () => {
                 totalOrders: g.count(),
                 totalRevenue: g.sum((result) => result.o.total_amount),
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include('GROUP BY "t1"."name", "t0"."name"');
@@ -380,8 +380,8 @@ describe("JOIN with Table References", () => {
                 (d) => d.id,
                 (u, d) => ({ u, d }),
               ),
-            {},
           ),
+          {},
         );
       }).to.throw(
         /JOIN with result selector requires explicit SELECT projection|Failed to parse query/,
@@ -405,8 +405,8 @@ describe("JOIN with Table References", () => {
                 userId: 1,
                 deptId: 2,
               })),
-          {},
         ),
+        {},
       );
 
       // Should still generate valid JOIN syntax
@@ -432,8 +432,8 @@ describe("JOIN with Table References", () => {
                 userId: u.id,
                 userName: u.name,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include("SELECT");
@@ -462,8 +462,8 @@ describe("JOIN with Table References", () => {
                 userAge: joined.u.age,
                 deptName: joined.d.name,
               })),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include("SELECT");
@@ -491,8 +491,8 @@ describe("JOIN with Table References", () => {
                 deptName: joined.d.name,
               }))
               .distinct(),
-          {},
         ),
+        {},
       );
 
       expect(result.sql).to.include("SELECT DISTINCT");

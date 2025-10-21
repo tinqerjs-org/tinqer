@@ -371,16 +371,18 @@ describe("Complex WHERE Clause SQL Generation", () => {
   describe("WHERE with parameters", () => {
     it("should handle complex conditions with external parameters", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
-          q
-            .from("users")
-            .where(
-              (u) =>
-                u.age >= params.minAge &&
-                u.age <= params.maxAge &&
-                u.isActive == params.isActive &&
-                (u.role == params.roles[0] || u.role == params.roles[1]),
-            ),
+        defineSelect(
+          schema,
+          (q, params: { minAge: number; maxAge: number; roles: string[]; isActive: boolean }) =>
+            q
+              .from("users")
+              .where(
+                (u) =>
+                  u.age >= params.minAge &&
+                  u.age <= params.maxAge &&
+                  u.isActive == params.isActive &&
+                  (u.role == params.roles[0] || u.role == params.roles[1]),
+              ),
         ),
         { minAge: 25, maxAge: 55, roles: ["admin", "manager"], isActive: true },
       );
@@ -400,7 +402,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
     it("should mix parameters with auto-parameterized constants", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { threshold: number }) =>
           q
             .from("products")
             .where(

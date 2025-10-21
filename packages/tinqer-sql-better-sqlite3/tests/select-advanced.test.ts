@@ -233,7 +233,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
   describe("SELECT with special cases", () => {
     it("should handle SELECT with pagination pattern", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { page: number; pageSize: number }) =>
           q
             .from("products")
             .select((p) => ({

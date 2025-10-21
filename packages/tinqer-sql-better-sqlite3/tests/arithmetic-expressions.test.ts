@@ -116,7 +116,7 @@ describe("Arithmetic Expression SQL Generation", () => {
 
     it("should mix parameters with constants in arithmetic", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { baseDiscount: number }) =>
           q.from("products").where((p) => p.price * (1 - params.baseDiscount - 0.05) > 100),
         ),
         { baseDiscount: 0.1 },

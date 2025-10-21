@@ -297,7 +297,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
   describe("GROUP BY with parameters", () => {
     it("should handle parameters in WHERE before GROUP BY", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { minAmount: number; region: string }) =>
           q
             .from("sales")
             .where((s) => s.amount >= params.minAmount && s.region == params.region)
@@ -318,7 +318,7 @@ describe("Advanced GROUP BY SQL Generation", () => {
 
     it("should mix parameters with auto-params in GROUP BY queries", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { targetProfit: number }) =>
           q
             .from("sales")
             .where((s) => s.profit > params.targetProfit && s.quantity > 10)

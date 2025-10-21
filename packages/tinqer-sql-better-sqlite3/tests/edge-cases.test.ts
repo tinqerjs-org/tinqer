@@ -327,7 +327,9 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle null parameter values", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) => q.from("test").where((t) => t.name == params.name)),
+        defineSelect(schema, (q, params: { name: string | null }) =>
+          q.from("test").where((t) => t.name == params.name),
+        ),
         { name: null },
       );
 

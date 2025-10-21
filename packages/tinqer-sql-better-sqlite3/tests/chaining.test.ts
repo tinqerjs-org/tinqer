@@ -11,7 +11,7 @@ import { schema } from "./test-schema.js";
 describe("Complex Query Chaining", () => {
   it("should generate complex query with WHERE, SELECT, ORDER BY, TAKE", () => {
     const result = toSql(
-      defineSelect(schema, (q, p) =>
+      defineSelect(schema, (q, p: { minAge: number }) =>
         q
           .from("users")
           .where((x) => x.age >= p.minAge && x.isActive)
@@ -30,7 +30,7 @@ describe("Complex Query Chaining", () => {
 
   it("should generate query with SKIP and TAKE for pagination", () => {
     const result = toSql(
-      defineSelect(schema, (q, p) =>
+      defineSelect(schema, (q, p: { page: number; pageSize: number }) =>
         q
           .from("products")
           .orderBy((x) => x.name)

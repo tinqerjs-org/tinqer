@@ -242,7 +242,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
       // Correct way: pass via params
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { testDate: Date }) =>
           q.from("items").where((i) => i.createdAt > params.testDate),
         ),
         { testDate },
@@ -334,7 +334,7 @@ describe("Advanced Edge Cases and Corner Scenarios", () => {
 
     it("should handle parameter name collision with auto-params", () => {
       const result = toSql(
-        defineSelect(schema, (q, params) =>
+        defineSelect(schema, (q, params: { threshold: number }) =>
           q
             .from("items")
             .where((i) => i.value !== null && i.value > params.threshold)
