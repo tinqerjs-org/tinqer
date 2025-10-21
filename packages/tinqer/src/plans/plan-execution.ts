@@ -41,48 +41,6 @@ export function createSelectPlan<TSchema>(
   return defineSelect(schema, builder, options);
 }
 
-// DISABLED: Table name overload has been disabled for defineUpdate, defineInsert, defineDelete
-// These helper functions will be re-enabled when/if table name overloads are restored
-
-// /**
-//  * Create an update plan from a builder function
-//  * Note: This is a placeholder until defineUpdate supports builders
-//  * For now, we need to extract the table from the builder
-//  */
-// export function createUpdatePlan<TSchema>(
-//   schema: DatabaseSchema<TSchema>,
-//   table: keyof TSchema,
-//   options?: ParseQueryOptions,
-// ): UpdatePlanHandleInitial<unknown, unknown> {
-//   // Delegate to defineUpdate
-//   // TODO: When defineUpdate supports builders, update this
-//   return defineUpdate(schema, table, options);
-// }
-
-// /**
-//  * Create an insert plan
-//  */
-// export function createInsertPlan<TSchema>(
-//   schema: DatabaseSchema<TSchema>,
-//   table: keyof TSchema,
-//   options?: ParseQueryOptions,
-// ): InsertPlanHandleInitial<unknown, unknown> {
-//   // Delegate to defineInsert
-//   return defineInsert(schema, table, options);
-// }
-
-// /**
-//  * Create a delete plan
-//  */
-// export function createDeletePlan<TSchema>(
-//   schema: DatabaseSchema<TSchema>,
-//   table: keyof TSchema,
-//   options?: ParseQueryOptions,
-// ): DeletePlanHandleInitial<unknown, unknown> {
-//   // Delegate to defineDelete
-//   return defineDelete(schema, table, options);
-// }
-
 /**
  * Helper that combines plan.finalize() + generateSql()
  * This is what adapters will use to get SQL strings
