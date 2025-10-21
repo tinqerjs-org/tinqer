@@ -4,20 +4,21 @@
 
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { insertStatement } from "../dist/index.js";
+import { defineInsert } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 
 describe("INSERT Statement Generation (SQLite)", () => {
   describe("Basic INSERT", () => {
     it("should generate INSERT with all columns using @param format", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q.insertInto("users").values({
             name: "Alice",
             age: 30,
             email: "alice@example.com",
           }),
+        ),
         {},
       );
 
@@ -33,13 +34,13 @@ describe("INSERT Statement Generation (SQLite)", () => {
     });
 
     it("should generate INSERT with partial columns", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q.insertInto("users").values({
             name: "Bob",
             age: 25,
           }),
+        ),
         {},
       );
 
@@ -51,12 +52,12 @@ describe("INSERT Statement Generation (SQLite)", () => {
     });
 
     it("should generate INSERT with schema prefix in table name", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q.insertInto("user_accounts").values({
             username: "Charlie",
           }),
+        ),
         {},
       );
 
@@ -66,13 +67,13 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
   describe("INSERT with parameters", () => {
     it("should use external parameters", () => {
-      const result = insertStatement(
-        schema,
-        (q, p) =>
+      const result = toSql(
+        defineInsert(schema, (q, p: { name: string; age: number }) =>
           q.insertInto("users").values({
             name: p.name,
             age: p.age,
           }),
+        ),
         { name: "David", age: 40 },
       );
 
@@ -84,14 +85,14 @@ describe("INSERT Statement Generation (SQLite)", () => {
     });
 
     it("should mix external parameters with literals", () => {
-      const result = insertStatement(
-        schema,
-        (q, p) =>
+      const result = toSql(
+        defineInsert(schema, (q, p: { name: string }) =>
           q.insertInto("users").values({
             name: p.name,
             age: 25,
             email: "default@example.com",
           }),
+        ),
         { name: "Eve" },
       );
 
@@ -110,13 +111,13 @@ describe("INSERT Statement Generation (SQLite)", () => {
   describe("INSERT with optional fields", () => {
     it("should skip columns with undefined parameter values", () => {
       type InsertParams = { name: string; email?: string };
-      const result = insertStatement(
-        schema,
-        (q, p: InsertParams) =>
+      const result = toSql(
+        defineInsert(schema, (q, p: InsertParams) =>
           q
             .insertInto("users")
             .values({ name: p.name, email: p.email })
             .returning((u) => u.id),
+        ),
         { name: "Optional User" },
       );
 
@@ -127,9 +128,10 @@ describe("INSERT Statement Generation (SQLite)", () => {
     it("should throw when all insert values are undefined", () => {
       type InsertParams = { name?: string; email?: string };
       assert.throws(() => {
-        insertStatement(
-          schema,
-          (q, p: InsertParams) => q.insertInto("users").values({ name: p.name, email: p.email }),
+        toSql(
+          defineInsert(schema, (q, p: InsertParams) =>
+            q.insertInto("users").values({ name: p.name, email: p.email }),
+          ),
           {},
         );
       }, /All provided values were undefined/);
@@ -138,13 +140,13 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
   describe("INSERT with RETURNING", () => {
     it("should generate INSERT with RETURNING single column", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q
             .insertInto("users")
             .values({ name: "Frank", age: 45 })
             .returning((u) => u.id),
+        ),
         {},
       );
 
@@ -155,13 +157,13 @@ describe("INSERT Statement Generation (SQLite)", () => {
     });
 
     it("should generate INSERT with RETURNING multiple columns", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q
             .insertInto("users")
             .values({ name: "Grace", age: 50 })
             .returning((u) => ({ id: u.id, name: u.name })),
+        ),
         {},
       );
 
@@ -172,13 +174,13 @@ describe("INSERT Statement Generation (SQLite)", () => {
     });
 
     it("should generate INSERT with RETURNING all columns (*)", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q
             .insertInto("users")
             .values({ name: "Helen", age: 55 })
             .returning((u) => u),
+        ),
         {},
       );
 
@@ -191,14 +193,14 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
   describe("INSERT with special values", () => {
     it("should handle boolean values (converted to 1/0 in SQLite)", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q.insertInto("users").values({
             name: "Ian",
             age: 60,
             isActive: true,
           }),
+        ),
         {},
       );
 
@@ -214,14 +216,14 @@ describe("INSERT Statement Generation (SQLite)", () => {
     });
 
     it("should handle null values", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q.insertInto("users").values({
             name: "Jane",
             age: 65,
             email: null,
           }),
+        ),
         {},
       );
 
@@ -236,14 +238,14 @@ describe("INSERT Statement Generation (SQLite)", () => {
     });
 
     it("should handle numeric edge cases", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q.insertInto("users").values({
             name: "Kevin",
             age: 0,
             salary: -1000,
           }),
+        ),
         {},
       );
 
@@ -261,13 +263,13 @@ describe("INSERT Statement Generation (SQLite)", () => {
 
   describe("INSERT with special characters", () => {
     it("should handle strings with quotes", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q.insertInto("users").values({
             name: "O'Brien",
             email: 'test"email@example.com',
           }),
+        ),
         {},
       );
 
@@ -279,13 +281,13 @@ describe("INSERT Statement Generation (SQLite)", () => {
     });
 
     it("should handle Unicode characters", () => {
-      const result = insertStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineInsert(schema, (q) =>
           q.insertInto("users").values({
             name: "李明",
             email: "test@例え.com",
           }),
+        ),
         {},
       );
 
