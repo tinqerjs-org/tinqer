@@ -15,12 +15,6 @@ import type { QueryOperation } from "../query-tree/operations.js";
 
 import { defineSelect, SelectPlanHandle, SelectTerminalHandle } from "./select-plan.js";
 
-import { UpdatePlanHandleInitial } from "./update-plan.js";
-
-import { InsertPlanHandleInitial } from "./insert-plan.js";
-
-import { DeletePlanHandleInitial } from "./delete-plan.js";
-
 // Type for any query result
 type SelectResult = Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>;
 
@@ -70,46 +64,3 @@ export function isTerminalHandle(
   return plan instanceof SelectTerminalHandle;
 }
 
-/**
- * Execute a select plan (placeholder - will be implemented with adapter integration)
- */
-export async function executeSelectPlan<TResult>(
-  _db: unknown,
-  _plan: SelectPlanHandle<unknown, unknown> | SelectTerminalHandle<unknown, unknown>,
-  _params: unknown,
-): Promise<TResult | TResult[]> {
-  throw new Error("executeSelectPlan not yet implemented - coming with adapter refactor");
-}
-
-/**
- * Execute an update plan (placeholder)
- */
-export async function executeUpdatePlan(
-  _db: unknown,
-  _plan: UpdatePlanHandleInitial<unknown, unknown>,
-  _params: unknown,
-): Promise<void> {
-  throw new Error("executeUpdatePlan not yet implemented - coming with adapter refactor");
-}
-
-/**
- * Execute an insert plan (placeholder)
- */
-export async function executeInsertPlan<TResult>(
-  _db: unknown,
-  _plan: InsertPlanHandleInitial<unknown, unknown>,
-  _params: unknown,
-): Promise<TResult | void> {
-  throw new Error("executeInsertPlan not yet implemented - coming with adapter refactor");
-}
-
-/**
- * Execute a delete plan (placeholder)
- */
-export async function executeDeletePlan(
-  _db: unknown,
-  _plan: DeletePlanHandleInitial<unknown, unknown>,
-  _params: unknown,
-): Promise<void> {
-  throw new Error("executeDeletePlan not yet implemented - coming with adapter refactor");
-}

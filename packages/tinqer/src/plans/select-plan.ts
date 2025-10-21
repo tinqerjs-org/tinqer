@@ -126,10 +126,9 @@ export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
     };
   }
 
-  /** TODO: remove once execute helper exists. */
   execute(_params: TParams): Promise<never> {
     return Promise.reject(
-      new Error("execute() is not implemented yet. Use executeSelectPlan helper once available."),
+      new Error("execute() is not implemented. Use adapter methods (toSql/executeSelect) instead."),
     );
   }
 
@@ -366,7 +365,7 @@ export class SelectTerminalHandle<TResult, TParams> extends TerminalQuery<TResul
 
   execute(_params: TParams): Promise<TResult> {
     return Promise.reject(
-      new Error("execute() is not implemented yet. Use executeSelectPlan helper once available."),
+      new Error("execute() is not implemented. Use adapter methods (toSql/executeSelect) instead."),
     );
   }
 

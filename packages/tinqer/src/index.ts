@@ -201,11 +201,6 @@ export {
 
 export {
   createSelectPlan,
-  // createUpdatePlan, createInsertPlan, createDeletePlan - DISABLED (table name overload removed)
   planToSqlString,
   isTerminalHandle,
-  executeSelectPlan,
-  executeUpdatePlan,
-  executeInsertPlan,
-  executeDeletePlan,
 } from "./plans/plan-execution.js";

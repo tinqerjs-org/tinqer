@@ -145,7 +145,7 @@ export class InsertPlanHandleWithValues<TRecord, TParams> {
 
   execute(_params: TParams): Promise<void> {
     return Promise.reject(
-      new Error("execute() is not implemented yet. Use executeInsertPlan helper once available."),
+      new Error("execute() is not implemented. Use adapter methods (toSql/executeInsert) instead."),
     );
   }
 }
@@ -169,7 +169,7 @@ export class InsertPlanHandleWithReturning<TResult, TParams> {
 
   execute(_params: TParams): Promise<TResult> {
     return Promise.reject(
-      new Error("execute() is not implemented yet. Use executeInsertPlan helper once available."),
+      new Error("execute() is not implemented. Use adapter methods (toSql/executeInsert) instead."),
     );
   }
 }

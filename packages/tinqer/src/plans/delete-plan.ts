@@ -155,7 +155,7 @@ export class DeletePlanHandleComplete<TRecord, TParams> {
 
   execute(_params: TParams): Promise<void> {
     return Promise.reject(
-      new Error("execute() is not implemented yet. Use executeDeletePlan helper once available."),
+      new Error("execute() is not implemented. Use adapter methods (toSql/executeDelete) instead."),
     );
   }
 }

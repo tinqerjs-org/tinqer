@@ -177,7 +177,7 @@ export class UpdatePlanHandleWithSet<TRecord, TParams> {
 
   execute(_params: TParams): Promise<void> {
     return Promise.reject(
-      new Error("execute() is not implemented yet. Use executeUpdatePlan helper once available."),
+      new Error("execute() is not implemented. Use adapter methods (toSql/executeUpdate) instead."),
     );
   }
 }
@@ -211,7 +211,7 @@ export class UpdatePlanHandleComplete<TRecord, TParams> {
 
   execute(_params: TParams): Promise<void> {
     return Promise.reject(
-      new Error("execute() is not implemented yet. Use executeUpdatePlan helper once available."),
+      new Error("execute() is not implemented. Use adapter methods (toSql/executeUpdate) instead."),
     );
   }
 }
@@ -235,7 +235,7 @@ export class UpdatePlanHandleWithReturning<TResult, TParams> {
 
   execute(_params: TParams): Promise<TResult[]> {
     return Promise.reject(
-      new Error("execute() is not implemented yet. Use executeUpdatePlan helper once available."),
+      new Error("execute() is not implemented. Use adapter methods (toSql/executeUpdate) instead."),
     );
   }
 }
