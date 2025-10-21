@@ -90,7 +90,7 @@ const { sql, params } = toSql(
 
 ```typescript
 import { createSchema, defineSelect } from "@webpods/tinqer";
-import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelect, toSql } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; age: number };
@@ -100,12 +100,12 @@ const schema = createSchema<Schema>();
 
 const users = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name),
-  ),
   { minAge: 21 },
 );
 // Returns: Array of user objects
@@ -170,7 +170,7 @@ const { sql, params } = toSql(
 
 ```typescript
 import { createSchema, defineInsert } from "@webpods/tinqer";
-import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
+import { executeInsert, toSql } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string };
@@ -181,21 +181,20 @@ const schema = createSchema<Schema>();
 // Without RETURNING - returns number of rows inserted
 const rowCount = await executeInsert(
   db,
-  defineInsert(schema, (q, params: { name: string }) =>
-    q.insertInto("users").values({ name: params.name }),
-  ),
+  schema,
+  (q, params: { name: string }) => q.insertInto("users").values({ name: params.name }),
   { name: "Alice" },
 );
 
 // With RETURNING - returns inserted rows
 const createdUsers = await executeInsert(
   db,
-  defineInsert(schema, (q, params: { name: string }) =>
+  schema,
+  (q, params: { name: string }) =>
     q
       .insertInto("users")
       .values({ name: params.name })
       .returning((u) => ({ id: u.id, name: u.name })),
-  ),
   { name: "Bob" },
 );
 ```
@@ -265,7 +264,7 @@ const { sql, params } = toSql(
 
 ```typescript
 import { createSchema, defineUpdate } from "@webpods/tinqer";
-import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
+import { executeUpdate, toSql } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; lastLogin: Date; status: string };
@@ -276,25 +275,25 @@ const schema = createSchema<Schema>();
 // Without RETURNING - returns number of rows updated
 const updatedRows = await executeUpdate(
   db,
-  defineUpdate(schema, (q, params: { cutoff: Date }) =>
+  schema,
+  (q, params: { cutoff: Date }) =>
     q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoff),
-  ),
   { cutoff: new Date("2024-01-01") },
 );
 
 // With RETURNING - returns updated rows
 const updatedUsers = await executeUpdate(
   db,
-  defineUpdate(schema, (q, params: { cutoff: Date }) =>
+  schema,
+  (q, params: { cutoff: Date }) =>
     q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoff)
       .returning((u) => ({ id: u.id, status: u.status })),
-  ),
   { cutoff: new Date("2024-01-01") },
 );
 ```
@@ -358,7 +357,7 @@ const { sql, params } = toSql(
 
 ```typescript
 import { createSchema, defineDelete } from "@webpods/tinqer";
-import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
+import { executeDelete, toSql } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; status: string };
@@ -368,9 +367,8 @@ const schema = createSchema<Schema>();
 
 const deletedCount = await executeDelete(
   db,
-  defineDelete(schema, (q, params: { status: string }) =>
-    q.deleteFrom("users").where((u) => u.status === params.status),
-  ),
+  schema,
+  (q, params: { status: string }) => q.deleteFrom("users").where((u) => u.status === params.status),
   { status: "inactive" },
 );
 ```
@@ -402,7 +400,7 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 Creates a phantom-typed `DatabaseSchema` that ties table names to row types. The schema is passed to execution functions, which provide a type-safe query builder through the lambda's first parameter.
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -412,10 +410,11 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-// Schema is passed to defineSelect, which provides the query builder 'q' parameter
+// Schema is passed to executeSelect, which provides the query builder 'q' parameter
 const results = await executeSelect(
   db,
-  defineSelect(schema, (q) => q.from("users").where((u) => u.email.endsWith("@example.com"))),
+  schema,
+  (q) => q.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```

@@ -22,7 +22,7 @@ npm install @webpods/tinqer-sql-better-sqlite3
 ### PostgreSQL Example
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
@@ -41,13 +41,13 @@ const schema = createSchema<Schema>();
 
 const results = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name)
       .select((u) => ({ id: u.id, name: u.name })),
-  ),
   { minAge: 18 },
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
@@ -57,7 +57,7 @@ const results = await executeSelect(
 
 ```typescript
 import Database from "better-sqlite3";
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 
 // Same schema definition
@@ -76,13 +76,13 @@ const schema = createSchema<Schema>();
 // Identical query logic
 const results = executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name)
       .select((u) => ({ id: u.id, name: u.name })),
-  ),
   { minAge: 18 },
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
@@ -264,21 +264,19 @@ Window functions enable calculations across rows related to the current row. Tin
 // Get top earner per department (automatically wrapped in subquery)
 const topEarners = await executeSelect(
   db,
-  defineSelect(
-    schema,
-    (q, params, h) =>
-      q
-        .from("employees")
-        .select((e) => ({
-          ...e,
-          rank: h
-            .window(e)
-            .partitionBy((r) => r.department)
-            .orderByDescending((r) => r.salary)
-            .rowNumber(),
-        }))
-        .where((e) => e.rank === 1), // Filtering on window function result
-  ),
+  schema,
+  (q, params, h) =>
+    q
+      .from("employees")
+      .select((e) => ({
+        ...e,
+        rank: h
+          .window(e)
+          .partitionBy((r) => r.department)
+          .orderByDescending((r) => r.salary)
+          .rowNumber(),
+      }))
+      .where((e) => e.rank === 1), // Filtering on window function result
   {},
 );
 
@@ -297,7 +295,7 @@ See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed 
 ### CRUD Operations
 
 ```typescript
-import { createSchema, defineInsert, defineUpdate, defineDelete } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 const schema = createSchema<Schema>();
@@ -305,25 +303,25 @@ const schema = createSchema<Schema>();
 // INSERT
 const insertedRows = await executeInsert(
   db,
-  defineInsert(schema, (q) =>
+  schema,
+  (q) =>
     q.insertInto("users").values({
       name: "Alice",
       email: "alice@example.com",
     }),
-  ),
   {},
 );
 
 // UPDATE with RETURNING
 const inactiveUsers = await executeUpdate(
   db,
-  defineUpdate(schema, (q, params: { cutoffDate: Date }) =>
+  schema,
+  (q, params: { cutoffDate: Date }) =>
     q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoffDate)
       .returning((u) => u.id),
-  ),
   { cutoffDate: new Date("2023-01-01") },
 );
 
@@ -332,7 +330,8 @@ const inactiveUsers = await executeUpdate(
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => u.status === "deleted")),
+  schema,
+  (q) => q.deleteFrom("users").where((u) => u.status === "deleted"),
   {},
 );
 

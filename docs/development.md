@@ -202,7 +202,7 @@ describe("SQL Generation", () => {
 ```typescript
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -217,12 +217,12 @@ describe("PostgreSQL Integration", () => {
   it("should execute SELECT query", async () => {
     const results = await executeSelect(
       db,
-      defineSelect(schema, (q, params: { minAge: number }) =>
+      schema,
+      (q, params: { minAge: number }) =>
         q
           .from("users")
           .where((u) => u.age >= params.minAge)
           .select((u) => u.name),
-      ),
       { minAge: 25 },
     );
 
@@ -470,12 +470,12 @@ Error: Unsupported AST node type: TemplateLiteral
 // Incorrect - template literal in lambda
 .where(u => u.name === `User ${userId}`)
 
-// Correct - use params with defineSelect and executeSelect
+// Correct - use params with executeSelect
 await executeSelect(
   db,
-  defineSelect(schema, (q, params: { name: string }) =>
+  schema,
+  (q, params: { name: string }) =>
     q.from("users").where((u) => u.name === params.name),
-  ),
   { name: `User ${userId}` },
 );
 ```
@@ -493,12 +493,12 @@ Error: Unknown identifier 'externalVar'
 const minAge = 18;
 .where(u => u.age >= minAge)
 
-// Correct - params pattern with defineSelect and executeSelect
+// Correct - params pattern with executeSelect
 await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q.from("users").where((u) => u.age >= params.minAge),
-  ),
   { minAge: 18 },
 );
 ```
@@ -514,7 +514,8 @@ const schema = createSchema(); // No schema type provided
 // Types will be 'unknown' without schema
 const result = await executeSelect(
   db,
-  defineSelect(schema, (q) => q.from("users")), // Type is Queryable<unknown>
+  schema,
+  (q) => q.from("users"), // Type is Queryable<unknown>
   {},
 );
 ```
@@ -531,7 +532,8 @@ const schema = createSchema<Schema>();
 // Now fully typed from schema
 const result = await executeSelect(
   db,
-  defineSelect(schema, (q) => q.from("users")), // Fully typed: Queryable<{ id: number; name: string }>
+  schema,
+  (q) => q.from("users"), // Fully typed: Queryable<{ id: number; name: string }>
   {},
 );
 ```

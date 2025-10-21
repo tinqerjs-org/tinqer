@@ -812,13 +812,13 @@ ORDER BY "totalSalary" DESC
 ```typescript
 const largeDepartments = await executeSelect(
   db,
-  defineSelect(schema, (q) =>
+  schema,
+  (q) =>
     q
       .from("users")
       .groupBy((u) => u.departmentId)
       .select((g) => ({ departmentId: g.key, headcount: g.count() }))
       .where((row) => row.headcount > 5),
-  ),
   {},
 );
 ```
@@ -1178,7 +1178,8 @@ Get the top earner from each department:
 ```typescript
 const topEarners = await executeSelect(
   db,
-  defineSelect(schema, (q, params, helpers) =>
+  schema,
+  (q, params, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -1191,7 +1192,6 @@ const topEarners = await executeSelect(
       }))
       .where((r) => r.rank === 1)
       .orderBy((r) => r.department),
-  ),
   {},
 );
 ```
@@ -1228,7 +1228,8 @@ const schema = createSchema<EmployeeDeptSchema>();
 
 const top3Engineering = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { deptId: number }, helpers) =>
+  schema,
+  (q, params: { deptId: number }, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -1242,7 +1243,6 @@ const top3Engineering = await executeSelect(
       }))
       .where((r) => r.rank <= 3 && r.department_id === params.deptId)
       .orderBy((r) => r.rank),
-  ),
   { deptId: 1 },
 );
 ```
@@ -1270,7 +1270,8 @@ const schema = createSchema<PerformanceSchema>();
 
 const topPerformers = await executeSelect(
   db,
-  defineSelect(schema, (q, params, helpers) =>
+  schema,
+  (q, params, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -1281,7 +1282,6 @@ const topPerformers = await executeSelect(
           .rowNumber(),
       }))
       .where((r) => r.performance_rank <= 10),
-  ),
   {},
 );
 ```
@@ -1307,7 +1307,8 @@ const schema = createSchema<ActiveEmployeeSchema>();
 
 const activeTopEarners = await executeSelect(
   db,
-  defineSelect(schema, (q, params, helpers) =>
+  schema,
+  (q, params, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -1324,7 +1325,6 @@ const activeTopEarners = await executeSelect(
       .where((r) => r.dept_rank <= 2 && r.is_active === true)
       .orderBy((r) => r.department)
       .thenBy((r) => r.dept_rank),
-  ),
   {},
 );
 ```
@@ -1486,12 +1486,12 @@ Queries are executed directly without requiring a materialization method. The qu
 ```typescript
 const activeUsers = await executeSelect(
   db,
-  defineSelect(schema, (q) =>
+  schema,
+  (q) =>
     q
       .from("users")
       .where((u) => u.active)
       .orderBy((u) => u.name),
-  ),
   {},
 );
 ```
@@ -2005,7 +2005,7 @@ The adapter packages provide execution functions for all CRUD operations:
 #### PostgreSQL (pg-promise)
 
 ```typescript
-import { createSchema, defineInsert, defineUpdate, defineDelete } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 const schema = createSchema<Schema>();
@@ -2013,12 +2013,12 @@ const schema = createSchema<Schema>();
 // Execute INSERT with RETURNING
 const insertedUsers = await executeInsert(
   db,
-  defineInsert(schema, (q) =>
+  schema,
+  (q) =>
     q
       .insertInto("users")
       .values({ name: "Frank", age: 28 })
       .returning((u) => ({ id: u.id, name: u.name })),
-  ),
   {},
 );
 // Returns: [{ id: 123, name: "Frank" }]
@@ -2026,12 +2026,12 @@ const insertedUsers = await executeInsert(
 // Execute UPDATE - returns affected row count
 const updateCount = await executeUpdate(
   db,
-  defineUpdate(schema, (q) =>
+  schema,
+  (q) =>
     q
       .update("users")
       .set({ age: 29 })
       .where((u) => u.id === 123),
-  ),
   {},
 );
 // Returns number of affected rows
@@ -2039,7 +2039,8 @@ const updateCount = await executeUpdate(
 // Execute DELETE - returns affected row count
 const deleteCount = await executeDelete(
   db,
-  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => u.id === 123)),
+  schema,
+  (q) => q.deleteFrom("users").where((u) => u.id === 123),
   {},
 );
 ```
@@ -2047,7 +2048,7 @@ const deleteCount = await executeDelete(
 #### SQLite (better-sqlite3)
 
 ```typescript
-import { createSchema, defineInsert, defineUpdate, defineDelete } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-better-sqlite3";
 
 const schema = createSchema<Schema>();
@@ -2055,7 +2056,8 @@ const schema = createSchema<Schema>();
 // Execute INSERT - returns row count
 const insertCount = executeInsert(
   db,
-  defineInsert(schema, (q) => q.insertInto("users").values({ name: "Grace", age: 30 })),
+  schema,
+  (q) => q.insertInto("users").values({ name: "Grace", age: 30 }),
   {},
 );
 // Returns number of inserted rows
@@ -2063,24 +2065,25 @@ const insertCount = executeInsert(
 // Execute UPDATE - returns row count
 const updateCount = executeUpdate(
   db,
-  defineUpdate(schema, (q) =>
+  schema,
+  (q) =>
     q
       .update("users")
       .set({ age: 33 })
       .where((u) => u.name === "Henry"),
-  ),
   {},
 );
 
 // Execute DELETE - returns row count
 const deleteCount = executeDelete(
   db,
-  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => u.age > 100)),
+  schema,
+  (q) => q.deleteFrom("users").where((u) => u.age > 100),
   {},
 );
 ```
 
-SQLite helpers always return the number of affected rows. To inspect row data after an insert or update, run a follow-up SELECT query using `defineSelect` and `executeSelect`.
+SQLite helpers always return the number of affected rows. To inspect row data after an insert or update, run a follow-up SELECT query using `executeSelect`.
 
 #### Transaction Support
 
@@ -2097,42 +2100,38 @@ const schema = createSchema<TxSchema>();
 await db.tx(async (t) => {
   const users = await executeInsert(
     t,
-    defineInsert(schema, (q) =>
+    schema,
+    (q) =>
       q
         .insertInto("users")
         .values({ name: "Ivy" })
         .returning((u) => u.id),
-    ),
     {},
   );
 
   await executeInsert(
     t,
-    defineInsert(schema, (q) =>
+    schema,
+    (q) =>
       q.insertInto("user_logs").values({
         userId: users[0]!.id,
         action: "created",
       }),
-    ),
     {},
   );
 });
 
 // SQLite transactions
 const transaction = sqliteDb.transaction(() => {
-  executeInsert(
-    db,
-    defineInsert(schema, (q) => q.insertInto("users").values({ name: "Jack" })),
-    {},
-  );
+  executeInsert(db, schema, (q) => q.insertInto("users").values({ name: "Jack" }), {});
   executeUpdate(
     db,
-    defineUpdate(schema, (q) =>
+    schema,
+    (q) =>
       q
         .update("users")
         .set({ lastLogin: new Date() })
         .where((u) => u.name === "Jack"),
-    ),
     {},
   );
 });
