@@ -59,6 +59,13 @@ Complete reference for all query operations, parameters, and CRUD functionality 
   - [14.3 DELETE Statements](#143-delete-statements)
   - [14.4 Safety Features](#144-safety-features)
   - [14.5 Executing CRUD Operations](#145-executing-crud-operations)
+- [15. Query Composition and Reusability](#15-query-composition-and-reusability)
+  - [15.1 Chaining Operations on Plans](#151-chaining-operations-on-plans)
+  - [15.2 Immutability and Base Queries](#152-immutability-and-base-queries)
+  - [15.3 Branching from Base Queries](#153-branching-from-base-queries)
+  - [15.4 Parameter Accumulation](#154-parameter-accumulation)
+  - [15.5 Composition with All Operations](#155-composition-with-all-operations)
+  - [15.6 Practical Patterns](#156-practical-patterns)
 
 ---
 
@@ -2137,6 +2144,311 @@ const transaction = sqliteDb.transaction(() => {
 });
 transaction();
 ```
+
+---
+
+## 15. Query Composition and Reusability
+
+Tinqer query plans are **immutable and composable**. Plan handles returned by `define*` functions support method chaining - each operation returns a new plan without modifying the original. This enables powerful query composition patterns: reusable base queries, branching specialized variations, and parameter accumulation.
+
+### 15.1 Chaining Operations on Plans
+
+All plan handles support chaining operations like `where()`, `orderBy()`, `select()`, etc.:
+
+```typescript
+import { createSchema, defineSelect } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; age: number; isActive: boolean };
+}
+
+const schema = createSchema<Schema>();
+
+// Chain operations on the plan handle
+const plan = defineSelect(schema, (q) => q.from("users"))
+  .where((u) => u.age > 18)
+  .where((u) => u.isActive === true)
+  .orderBy((u) => u.name)
+  .select((u) => ({ id: u.id, name: u.name }));
+
+const { sql, params } = toSql(plan, {});
+// SELECT "id" AS "id", "name" AS "name" FROM "users"
+// WHERE "age" > $(__p1) AND "isActive" = $(__p2)
+// ORDER BY "name" ASC
+```
+
+### 15.2 Immutability and Base Queries
+
+Plans are immutable - calling a method returns a **new plan** without modifying the original:
+
+```typescript
+const basePlan = defineSelect(schema, (q) => q.from("users"));
+
+const withAge = basePlan.where((u) => u.age > 18);
+const withStatus = basePlan.where((u) => u.isActive === true);
+
+// basePlan is unchanged
+// withAge and withStatus are independent plans
+```
+
+This immutability enables creating **reusable base queries**:
+
+```typescript
+interface Schema {
+  orders: {
+    id: number;
+    userId: number;
+    total: number;
+    status: string;
+    createdAt: Date;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+// Reusable base query
+type UserOrdersParams = { userId: number };
+
+const userOrders = defineSelect(schema, (q, p: UserOrdersParams) =>
+  q
+    .from("orders")
+    .where((o) => o.userId === p.userId)
+    .orderBy((o) => o.createdAt),
+);
+
+// Use the base query in different contexts
+const recentUserOrders = userOrders.take(10);
+const highValueUserOrders = userOrders.where((o) => o.total > 1000);
+
+// Execute with parameters
+toSql(recentUserOrders, { userId: 42 });
+toSql(highValueUserOrders, { userId: 42 });
+```
+
+### 15.3 Branching from Base Queries
+
+Since plans are immutable, you can branch multiple specialized queries from a single base:
+
+```typescript
+interface Schema {
+  users: {
+    id: number;
+    name: string;
+    age: number;
+    isActive: boolean;
+    departmentId: number;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+type DeptParams = { departmentId: number };
+
+// Base query: users in a department
+const usersInDept = defineSelect(schema, (q, p: DeptParams) =>
+  q.from("users").where((u) => u.departmentId === p.departmentId),
+);
+
+// Branch 1: Active users only
+const activeUsersInDept = usersInDept
+  .where((u) => u.isActive === true)
+  .where<{ minAge: number }>((u, p) => u.age >= p.minAge)
+  .orderBy((u) => u.name);
+
+// Branch 2: Inactive users only
+const inactiveUsersInDept = usersInDept
+  .where((u) => u.isActive === false)
+  .where<{ maxAge: number }>((u, p) => u.age <= p.maxAge)
+  .orderBy((u) => u.age);
+
+// Branch 3: Senior staff
+const seniorStaffInDept = usersInDept
+  .where((u) => u.age >= 50)
+  .select((u) => ({ id: u.id, name: u.name, age: u.age }));
+
+// Execute branches with different parameters
+toSql(activeUsersInDept, { departmentId: 1, minAge: 25 });
+toSql(inactiveUsersInDept, { departmentId: 1, maxAge: 65 });
+toSql(seniorStaffInDept, { departmentId: 1 });
+```
+
+### 15.4 Parameter Accumulation
+
+Parameters from the builder function and chained operations are **merged automatically**:
+
+```typescript
+interface Schema {
+  products: {
+    id: number;
+    name: string;
+    price: number;
+    category: string;
+    inStock: boolean;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+// Builder function defines initial params
+type BuilderParams = { category: string };
+
+const plan = defineSelect(schema, (q, p: BuilderParams) =>
+  q.from("products").where((prod) => prod.category === p.category),
+);
+
+// Chained operations add more params
+type ChainParams1 = { minPrice: number };
+type ChainParams2 = { maxPrice: number };
+
+const refinedPlan = plan
+  .where<ChainParams1>((prod, p) => prod.price >= p.minPrice)
+  .where<ChainParams2>((prod, p) => prod.price <= p.maxPrice)
+  .where((prod) => prod.inStock === true);
+
+// Must provide ALL accumulated parameters
+const { sql, params } = toSql(refinedPlan, {
+  category: "electronics",
+  minPrice: 100,
+  maxPrice: 1000,
+});
+
+// params contains: { category, minPrice, maxPrice, __p1: true }
+```
+
+**Type safety**: TypeScript enforces that all accumulated parameters are provided at execution time.
+
+### 15.5 Composition with All Operations
+
+Composition works with all CRUD operations, not just SELECT:
+
+#### INSERT Composition
+
+```typescript
+interface Schema {
+  posts: {
+    id: number;
+    userId: number;
+    title: string;
+    content: string;
+    isPublished: boolean;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+const insertPost = defineInsert(schema, (q) => q.insertInto("posts"))
+  .values({
+    userId: 1,
+    title: "My Post",
+    content: "Post content",
+    isPublished: false,
+  })
+  .returning((p) => ({ id: p.id, title: p.title }));
+
+toSql(insertPost, {});
+```
+
+#### UPDATE Composition
+
+```typescript
+const updatePlan = defineUpdate(schema, (q) => q.update("posts"))
+  .set({ isPublished: true })
+  .where<{ minViews: number }>((p, params) => p.viewCount > params.minViews)
+  .returning((p) => p.id);
+
+toSql(updatePlan, { minViews: 1000 });
+```
+
+#### DELETE Composition
+
+```typescript
+const deletePlan = defineDelete(schema, (q) => q.deleteFrom("posts"))
+  .where((p) => p.isPublished === false)
+  .where<{ beforeDate: Date }>((p, params) => p.createdAt < params.beforeDate);
+
+toSql(deletePlan, { beforeDate: new Date("2024-01-01") });
+```
+
+### 15.6 Practical Patterns
+
+#### Pattern 1: Pagination Helper
+
+```typescript
+interface Schema {
+  articles: {
+    id: number;
+    title: string;
+    createdAt: Date;
+    viewCount: number;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+type PageParams = { page: number; pageSize: number };
+
+function paginate<TPlan extends { skip: Function; take: Function }>(
+  plan: TPlan,
+  page: number,
+  pageSize: number,
+): TPlan {
+  return plan.skip((page - 1) * pageSize).take(pageSize) as TPlan;
+}
+
+const allArticles = defineSelect(schema, (q) => q.from("articles").orderBy((a) => a.createdAt));
+
+// Page 1
+const page1 = paginate(allArticles, 1, 20);
+toSql(page1, {});
+
+// Page 2
+const page2 = paginate(allArticles, 2, 20);
+toSql(page2, {});
+```
+
+#### Pattern 2: Common Filters
+
+```typescript
+const activeArticles = defineSelect(schema, (q) =>
+  q.from("articles").where((a) => a.isActive === true),
+);
+
+const popularActiveArticles = activeArticles.where((a) => a.viewCount > 1000);
+
+const recentActiveArticles = activeArticles
+  .where<{ since: Date }>((a, p) => a.createdAt >= p.since)
+  .orderBy((a) => a.createdAt);
+
+toSql(popularActiveArticles, {});
+toSql(recentActiveArticles, { since: new Date("2024-01-01") });
+```
+
+#### Pattern 3: Repository Pattern
+
+```typescript
+class UserRepository {
+  private baseQuery = defineSelect(schema, (q) => q.from("users"));
+
+  findActive() {
+    return this.baseQuery.where((u) => u.isActive === true);
+  }
+
+  findByDepartment(deptId: number) {
+    return this.baseQuery.where((u) => u.departmentId === deptId);
+  }
+
+  findActiveInDepartment(deptId: number) {
+    return this.findActive().where((u) => u.departmentId === deptId);
+  }
+}
+
+const repo = new UserRepository();
+toSql(repo.findActive(), {});
+toSql(repo.findActiveInDepartment(5), {});
+```
+
+**Key Takeaway**: Query composition enables building reusable, composable query fragments that can be combined and specialized without duplication.
 
 ---
 

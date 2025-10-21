@@ -168,6 +168,73 @@ const query = (q) =>
 // { id: number; name: string; email: string }
 ```
 
+### Query Composition
+
+Query plans are **immutable and composable** - you can chain operations onto plan handles to create reusable base queries and branch into specialized variations.
+
+#### Chaining Operations on Plans
+
+```typescript
+import { defineSelect } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
+
+const schema = createSchema<Schema>();
+
+// Start with base query
+const plan = defineSelect(schema, (q) => q.from("users"))
+  .where((u) => u.age > 18)
+  .where((u) => u.isActive)
+  .orderBy((u) => u.name)
+  .select((u) => ({ id: u.id, name: u.name }));
+
+const { sql, params } = toSql(plan, {});
+```
+
+#### Reusable Base Queries
+
+Plans are immutable - each operation returns a new plan without modifying the original. This enables creating base queries and branching:
+
+```typescript
+type DeptParams = { dept: number };
+
+// Reusable base query
+const usersInDept = defineSelect(schema, (q, p: DeptParams) =>
+  q.from("users").where((u) => u.departmentId === p.dept),
+);
+
+// Branch 1: Active users only
+const activeUsers = usersInDept
+  .where((u) => u.isActive === true)
+  .where<{ minAge: number }>((u, p) => u.age >= p.minAge);
+
+// Branch 2: Inactive users only
+const inactiveUsers = usersInDept
+  .where((u) => u.isActive === false)
+  .where<{ maxAge: number }>((u, p) => u.age <= p.maxAge);
+
+// Execute branches with different parameters
+toSql(activeUsers, { dept: 1, minAge: 25 });
+toSql(inactiveUsers, { dept: 1, maxAge: 65 });
+```
+
+#### Parameter Accumulation
+
+Parameters from the builder function and chained operations are merged:
+
+```typescript
+type BuilderParams = { baseAge: number };
+type ChainParams = { maxAge: number };
+
+const plan = defineSelect(schema, (q, p: BuilderParams) =>
+  q.from("users").where((u) => u.age > p.baseAge),
+).where<ChainParams>((u, p) => u.age < p.maxAge);
+
+// Must provide both parameter types
+toSql(plan, { baseAge: 18, maxAge: 65 });
+```
+
+Composition works with all operations: `defineSelect`, `defineInsert`, `defineUpdate`, `defineDelete`.
+
 ### Joins
 
 Tinqer mirrors LINQ semantics. Inner joins have a dedicated operator; left outer and cross joins follow the familiar `groupJoin`/`selectMany` patterns from C#.
