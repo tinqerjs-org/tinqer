@@ -139,12 +139,12 @@ function extractParameters(ast: ASTExpression): {
   let helpersParam: string | undefined;
 
   // Check if the root is an arrow function with params
-  // New signature: (q, p, h) => q.from(...).where(x => x.id == p.minId)
-  // Old signature (backward compat): (p, h) => from(...).where(x => x.id == p.minId)
+  // Signature: (q, p, h) => q.from(...).where(x => x.id == p.minId)
+  // where q = query builder, p = parameters, h = helpers
   if (ast.type === "ArrowFunctionExpression") {
     const arrow = ast as ArrowFunctionExpression;
     if (arrow.params && arrow.params.length > 0) {
-      // First param is DSL param (new signature) or query params (old signature)
+      // First param is the query builder
       const firstParam = arrow.params[0];
       if (firstParam && firstParam.type === "Identifier") {
         queryBuilderParam = (firstParam as Identifier).name;
@@ -156,7 +156,7 @@ function extractParameters(ast: ASTExpression): {
         }
       }
 
-      // Second param is query params (new signature) or helpers (old signature)
+      // Second param is query parameters
       if (arrow.params.length > 1) {
         const secondParam = arrow.params[1];
         if (secondParam && secondParam.type === "Identifier") {
@@ -170,7 +170,7 @@ function extractParameters(ast: ASTExpression): {
         }
       }
 
-      // Third param is helpers (new signature only)
+      // Third param is helpers
       if (arrow.params.length > 2) {
         const thirdParam = arrow.params[2];
         if (thirdParam && thirdParam.type === "Identifier") {
@@ -252,7 +252,7 @@ function isDSLMethodCall(ast: ASTCallExpression, queryBuilderParam: string | und
 }
 
 /**
- * Check if a call expression is a bare DSL operation (e.g., from()) for backward compatibility
+ * Check if a call expression is a bare DSL operation (e.g., from())
  */
 function isBareDSLOperation(ast: ASTCallExpression, methodName: string): boolean {
   return (

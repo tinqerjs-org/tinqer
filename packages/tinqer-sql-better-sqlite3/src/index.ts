@@ -669,15 +669,7 @@ export function executeDelete<TSchema, TTable = unknown, TParams = Record<string
 
   const plan = defineDelete(schema, builder, options);
 
-  let planResult;
-  try {
-    planResult = plan.finalize(normalizedParams);
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("DELETE statement requires")) {
-      throw new Error("DELETE requires a WHERE clause or explicit allowFullTableDelete");
-    }
-    throw error;
-  }
+  const planResult = plan.finalize(normalizedParams);
 
   const sql = generateSql(planResult.operation, planResult.params);
   const expandedParams = expandArrayParams(planResult.params);

@@ -642,18 +642,9 @@ export async function executeDelete<TSchema, TTable = unknown, TParams = Record<
   const plan = defineDelete(schema, builder, options);
 
   // Get operation and merged params from plan
-  let operation, mergedParams;
-  try {
-    const result = plan.finalize(normalizedParams);
-    operation = result.operation;
-    mergedParams = result.params;
-  } catch (error) {
-    // Maintain backward compatibility with error messages for DELETE
-    if (error instanceof Error && error.message.includes("DELETE statement requires")) {
-      throw new Error("DELETE requires a WHERE clause or explicit allowFullTableDelete");
-    }
-    throw error;
-  }
+  const planResult = plan.finalize(normalizedParams);
+  const operation = planResult.operation;
+  const mergedParams = planResult.params;
 
   // Generate SQL string using existing generator
   const sql = generateSql(operation, mergedParams);
