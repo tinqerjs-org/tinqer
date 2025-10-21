@@ -7,13 +7,11 @@ Reference for adapter execution helpers, typed contexts, and query utilities.
 ## Table of Contents
 
 - [1. Execution APIs](#1-execution-apis)
-  - [1.1 selectStatement](#11-selectstatement)
-  - [1.2 executeSelect](#12-executeselect)
-  - [1.3 insertStatement & executeInsert](#13-insertstatement--executeinsert)
-  - [1.4 updateStatement & executeUpdate](#14-updatestatement--executeupdate)
-  - [1.5 deleteStatement & executeDelete](#15-deletestatement--executedelete)
-  - [1.6 toSql](#16-tosql)
-  - [1.7 ExecuteOptions & SqlResult](#17-executeoptions--sqlresult)
+  - [1.1 defineSelect, toSql & executeSelect](#11-defineselect-tosql--executeselect)
+  - [1.2 defineInsert, toSql & executeInsert](#12-defineinsert-tosql--executeinsert)
+  - [1.3 defineUpdate, toSql & executeUpdate](#13-defineupdate-tosql--executeupdate)
+  - [1.4 defineDelete, toSql & executeDelete](#14-definedelete-tosql--executedelete)
+  - [1.5 ExecuteOptions & SqlResult](#15-executeoptions--sqlresult)
 - [2. Type-Safe Contexts](#2-type-safe-contexts)
   - [2.1 createSchema](#21-createschema)
 - [3. Helper Utilities](#3-helper-utilities)
@@ -23,31 +21,51 @@ Reference for adapter execution helpers, typed contexts, and query utilities.
 
 ## 1. Execution APIs
 
-Adapter packages export the runtime helpers that turn expression trees into SQL and execute them. PostgreSQL helpers live in `@webpods/tinqer-sql-pg-promise`; SQLite helpers live in `@webpods/tinqer-sql-better-sqlite3` and expose the same signatures.
+Tinqer uses a two-step API:
 
-### 1.1 selectStatement
+1. **Plan definition** (`define*` functions from `@webpods/tinqer`) - Creates type-safe query plans
+2. **Execution or SQL generation** (`execute*` or `toSql` from adapter packages) - Executes plans or generates SQL
 
-Converts a query builder function into SQL and named parameters without executing it. The query builder receives a DSL context, parameters, and helper functions.
+Adapter packages live in `@webpods/tinqer-sql-pg-promise` (PostgreSQL) and `@webpods/tinqer-sql-better-sqlite3` (SQLite).
 
-**Signature**
+### 1.1 defineSelect, toSql & executeSelect
+
+Creates SELECT query plans, generates SQL, or executes queries.
+
+**Signatures**
 
 ```typescript
-function selectStatement<TSchema, TParams, TResult>(
+// Plan definition (from @webpods/tinqer)
+function defineSelect<TSchema, TParams, TResult>(
   schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
+    q: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
+  paramDefaults?: TParams,
+): SelectPlanHandle<TResult, TParams> | SelectTerminalHandle<TResult, TParams>;
+
+// SQL generation (from adapter packages)
+function toSql<TParams>(
+  plan: SelectPlanHandle<unknown, TParams> | SelectTerminalHandle<unknown, TParams>,
   params: TParams,
-): SqlResult<TParams & Record<string, unknown>, TResult>;
+): { sql: string; params: TParams & Record<string, unknown> };
+
+// Execution (from adapter packages)
+async function executeSelect<TResult, TParams>(
+  db: PgDatabase | BetterSqlite3Database,
+  plan: SelectPlanHandle<TResult, TParams> | SelectTerminalHandle<TResult, TParams>,
+  params: TParams,
+  options?: ExecuteOptions,
+): Promise<TResult[] | TResult>;
 ```
 
-**Example (PostgreSQL)**
+**Example - SQL Generation**
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; age: number };
@@ -55,49 +73,23 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-const { sql, params } = selectStatement(
-  schema,
-  (q, params) =>
+const { sql, params } = toSql(
+  defineSelect(schema, (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
+  ),
   { minAge: 18 },
 );
 // sql: SELECT "id" AS "id", "name" AS "name" FROM "users" WHERE "age" >= $(minAge)
 // params: { minAge: 18 }
 ```
 
-### 1.2 executeSelect
-
-Executes a query builder against the database and returns typed results. The query builder receives a DSL context, parameters, and helper functions.
+**Example - Execution**
 
 ```typescript
-async function executeSelect<
-  TSchema,
-  TParams,
-  TQuery extends Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>,
->(
-  db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  queryBuilder: (ctx: QueryBuilder<TSchema>, params: TParams, helpers: QueryHelpers) => TQuery,
-  params: TParams,
-  options?: ExecuteOptions,
-): Promise<
-  TQuery extends Queryable<infer T>
-    ? T[]
-    : TQuery extends OrderedQueryable<infer T>
-      ? T[]
-      : TQuery extends TerminalQuery<infer T>
-        ? T
-        : never
->;
-```
-
-**Example (PostgreSQL)**
-
-```typescript
-import { createSchema } from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -108,60 +100,76 @@ const schema = createSchema<Schema>();
 
 const users = await executeSelect(
   db,
-  schema,
-  (q, params) =>
+  defineSelect(schema, (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name),
+  ),
   { minAge: 21 },
 );
+// Returns: Array of user objects
 ```
 
-### 1.3 insertStatement & executeInsert
+### 1.2 defineInsert, toSql & executeInsert
 
-Generate and execute INSERT statements with optional RETURNING clauses. The query builder receives a DSL context, parameters, and helper functions.
+Creates INSERT query plans, generates SQL, or executes queries with optional RETURNING clauses.
+
+**Signatures**
 
 ```typescript
-function insertStatement<TSchema, TParams, TTable, TReturning = never>(
+// Plan definition (from @webpods/tinqer)
+function defineInsert<TSchema, TParams, TTable, TReturning = never>(
   schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
+    q: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
-  params: TParams,
-): SqlResult<TParams & Record<string, unknown>, TReturning extends never ? void : TReturning>;
+  paramDefaults?: TParams,
+): InsertPlanHandle<TTable, TReturning, TParams>;
 
-async function executeInsert<TSchema, TParams, TTable>(
+// SQL generation (from adapter packages)
+function toSql<TParams>(
+  plan: InsertPlanHandle<unknown, unknown, TParams>,
+  params: TParams,
+): { sql: string; params: TParams & Record<string, unknown> };
+
+// Execution (from adapter packages)
+async function executeInsert<TTable, TReturning, TParams>(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
-    params: TParams,
-    helpers: QueryHelpers,
-  ) => Insertable<TTable>,
+  plan: InsertPlanHandle<TTable, TReturning, TParams>,
   params: TParams,
   options?: ExecuteOptions,
-): Promise<number>;
-
-async function executeInsert<TSchema, TParams, TTable, TReturning>(
-  db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
-    params: TParams,
-    helpers: QueryHelpers,
-  ) => InsertableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ExecuteOptions,
-): Promise<TReturning[]>;
+): Promise<TReturning extends never ? number : TReturning[]>;
 ```
 
-**Example**
+**Example - SQL Generation**
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
+import { createSchema, defineInsert } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string };
+}
+
+const schema = createSchema<Schema>();
+
+const { sql, params } = toSql(
+  defineInsert(schema, (q, params: { name: string }) =>
+    q.insertInto("users").values({ name: params.name }),
+  ),
+  { name: "Alice" },
+);
+// sql: INSERT INTO "users" ("name") VALUES ($(name))
+// params: { name: "Alice" }
+```
+
+**Example - Execution**
+
+```typescript
+import { createSchema, defineInsert } from "@webpods/tinqer";
 import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -170,72 +178,93 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-const inserted = await executeInsert(
+// Without RETURNING - returns number of rows inserted
+const rowCount = await executeInsert(
   db,
-  schema,
-  (q) => q.insertInto("users").values({ name: "Alice" }),
-  {},
+  defineInsert(schema, (q, params: { name: string }) =>
+    q.insertInto("users").values({ name: params.name }),
+  ),
+  { name: "Alice" },
 );
 
+// With RETURNING - returns inserted rows
 const createdUsers = await executeInsert(
   db,
-  schema,
-  (q) =>
+  defineInsert(schema, (q, params: { name: string }) =>
     q
       .insertInto("users")
-      .values({ name: "Bob" })
+      .values({ name: params.name })
       .returning((u) => ({ id: u.id, name: u.name })),
-  {},
+  ),
+  { name: "Bob" },
 );
 ```
 
-### 1.4 updateStatement & executeUpdate
+### 1.3 defineUpdate, toSql & executeUpdate
 
-Generate and execute UPDATE statements with optional RETURNING clauses. The query builder receives a DSL context, parameters, and helper functions.
+Creates UPDATE query plans, generates SQL, or executes queries with optional RETURNING clauses.
+
+**Signatures**
 
 ```typescript
-function updateStatement<TSchema, TParams, TTable, TReturning = never>(
+// Plan definition (from @webpods/tinqer)
+function defineUpdate<TSchema, TParams, TTable, TReturning = never>(
   schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
+    q: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
   ) =>
     | UpdatableWithSet<TTable>
     | UpdatableComplete<TTable>
     | UpdatableWithReturning<TTable, TReturning>,
-  params: TParams,
-): SqlResult<TParams & Record<string, unknown>, TReturning extends never ? void : TReturning>;
+  paramDefaults?: TParams,
+): UpdatePlanHandle<TTable, TReturning, TParams>;
 
-async function executeUpdate<TSchema, TParams, TTable>(
+// SQL generation (from adapter packages)
+function toSql<TParams>(
+  plan: UpdatePlanHandle<unknown, unknown, TParams>,
+  params: TParams,
+): { sql: string; params: TParams & Record<string, unknown> };
+
+// Execution (from adapter packages)
+async function executeUpdate<TTable, TReturning, TParams>(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
-    params: TParams,
-    helpers: QueryHelpers,
-  ) => UpdatableWithSet<TTable> | UpdatableComplete<TTable>,
+  plan: UpdatePlanHandle<TTable, TReturning, TParams>,
   params: TParams,
   options?: ExecuteOptions,
-): Promise<number>;
-
-async function executeUpdate<TSchema, TParams, TTable, TReturning>(
-  db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
-    params: TParams,
-    helpers: QueryHelpers,
-  ) => UpdatableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ExecuteOptions,
-): Promise<TReturning[]>;
+): Promise<TReturning extends never ? number : TReturning[]>;
 ```
 
-**Example**
+**Example - SQL Generation**
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
+import { createSchema, defineUpdate } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; status: string; lastLogin: Date };
+}
+
+const schema = createSchema<Schema>();
+
+const { sql, params } = toSql(
+  defineUpdate(schema, (q, params: { cutoff: Date }) =>
+    q
+      .update("users")
+      .set({ status: "inactive" })
+      .where((u) => u.lastLogin < params.cutoff),
+  ),
+  { cutoff: new Date("2024-01-01") },
+);
+// sql: UPDATE "users" SET "status" = 'inactive' WHERE "lastLogin" < $(cutoff)
+// params: { cutoff: Date }
+```
+
+**Example - Execution**
+
+```typescript
+import { createSchema, defineUpdate } from "@webpods/tinqer";
 import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -244,50 +273,91 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
+// Without RETURNING - returns number of rows updated
 const updatedRows = await executeUpdate(
   db,
-  schema,
-  (q, params) =>
+  defineUpdate(schema, (q, params: { cutoff: Date }) =>
     q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoff),
+  ),
+  { cutoff: new Date("2024-01-01") },
+);
+
+// With RETURNING - returns updated rows
+const updatedUsers = await executeUpdate(
+  db,
+  defineUpdate(schema, (q, params: { cutoff: Date }) =>
+    q
+      .update("users")
+      .set({ status: "inactive" })
+      .where((u) => u.lastLogin < params.cutoff)
+      .returning((u) => ({ id: u.id, status: u.status })),
+  ),
   { cutoff: new Date("2024-01-01") },
 );
 ```
 
-### 1.5 deleteStatement & executeDelete
+### 1.4 defineDelete, toSql & executeDelete
 
-Generate and execute DELETE statements. The query builder receives a DSL context, parameters, and helper functions.
+Creates DELETE query plans, generates SQL, or executes queries.
+
+**Signatures**
 
 ```typescript
-function deleteStatement<TSchema, TParams, TResult>(
+// Plan definition (from @webpods/tinqer)
+function defineDelete<TSchema, TParams>(
   schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
+    q: QueryBuilder<TSchema>,
     params: TParams,
     helpers: QueryHelpers,
-  ) => Deletable<TResult> | DeletableComplete<TResult>,
-  params: TParams,
-): SqlResult<TParams & Record<string, unknown>, void>;
+  ) => Deletable<unknown> | DeletableComplete<unknown>,
+  paramDefaults?: TParams,
+): DeletePlanHandle<TParams>;
 
-async function executeDelete<TSchema, TParams, TResult>(
+// SQL generation (from adapter packages)
+function toSql<TParams>(
+  plan: DeletePlanHandle<TParams>,
+  params: TParams,
+): { sql: string; params: TParams & Record<string, unknown> };
+
+// Execution (from adapter packages)
+async function executeDelete<TParams>(
   db: PgDatabase | BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  queryBuilder: (
-    ctx: QueryBuilder<TSchema>,
-    params: TParams,
-    helpers: QueryHelpers,
-  ) => Deletable<TResult> | DeletableComplete<TResult>,
+  plan: DeletePlanHandle<TParams>,
   params: TParams,
   options?: ExecuteOptions,
 ): Promise<number>;
 ```
 
-**Example**
+**Example - SQL Generation**
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
+import { createSchema, defineDelete } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; status: string };
+}
+
+const schema = createSchema<Schema>();
+
+const { sql, params } = toSql(
+  defineDelete(schema, (q, params: { status: string }) =>
+    q.deleteFrom("users").where((u) => u.status === params.status),
+  ),
+  { status: "inactive" },
+);
+// sql: DELETE FROM "users" WHERE "status" = $(status)
+// params: { status: "inactive" }
+```
+
+**Example - Execution**
+
+```typescript
+import { createSchema, defineDelete } from "@webpods/tinqer";
 import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -298,48 +368,14 @@ const schema = createSchema<Schema>();
 
 const deletedCount = await executeDelete(
   db,
-  schema,
-  (q) => q.deleteFrom("users").where((u) => u.status === "inactive"),
-  {},
+  defineDelete(schema, (q, params: { status: string }) =>
+    q.deleteFrom("users").where((u) => u.status === params.status),
+  ),
+  { status: "inactive" },
 );
 ```
 
-### 1.6 Statement Functions (selectStatement, insertStatement, etc.)
-
-Generate SQL and parameters without executing them. These functions are useful for debugging, testing, or when you need the SQL before execution.
-
-```typescript
-function selectStatement<TSchema, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (q: QueryBuilder<TSchema>) => Queryable<TResult>,
-): SqlResult<Record<string, unknown>, TResult>;
-```
-
-**Example (SQLite)**
-
-```typescript
-import { createSchema } from "@webpods/tinqer";
-import { selectStatement } from "@webpods/tinqer-sql-better-sqlite3";
-
-interface Schema {
-  products: { id: number; name: string; price: number; inStock: number };
-}
-
-const schema = createSchema<Schema>();
-
-// Generate SQL without executing
-const result = selectStatement(schema, (q) =>
-  q
-    .from("products")
-    .where((p) => p.inStock === 1)
-    .orderByDescending((p) => p.price),
-);
-
-// result.sql contains the SQL string
-// result.params contains the parameters
-```
-
-### 1.7 ExecuteOptions & SqlResult
+### 1.5 ExecuteOptions & SqlResult
 
 Both adapters expose `ExecuteOptions` and `SqlResult` for inspection and typing.
 
@@ -366,7 +402,7 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 Creates a phantom-typed `DatabaseSchema` that ties table names to row types. The schema is passed to execution functions, which provide a type-safe query builder through the lambda's first parameter.
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -376,9 +412,11 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-// Schema is passed to execute functions, which provide the query builder 'q' parameter
-const results = await executeSelect(db, schema, (q) =>
-  q.from("users").where((u) => u.email.endsWith("@example.com")),
+// Schema is passed to defineSelect, which provides the query builder 'q' parameter
+const results = await executeSelect(
+  db,
+  defineSelect(schema, (q) => q.from("users").where((u) => u.email.endsWith("@example.com"))),
+  {},
 );
 ```
 
@@ -391,8 +429,8 @@ const results = await executeSelect(db, schema, (q) =>
 Provides helper functions for case-insensitive comparisons and string searches. Helpers are automatically passed as the third parameter to query builder functions.
 
 ```typescript
-import { createSchema, createQueryHelpers } from "@webpods/tinqer";
-import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string };
@@ -400,10 +438,10 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-const result = selectStatement(
-  schema,
-  (q, params, helpers) =>
+const result = toSql(
+  defineSelect(schema, (q, params, helpers) =>
     q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  ),
   {},
 );
 ```

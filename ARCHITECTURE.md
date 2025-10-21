@@ -9,7 +9,7 @@ The core package is adapter-agnostic; database-specific behavior lives in compan
 - `@webpods/tinqer-sql-pg-promise` – PostgreSQL integration built on pg-promise
 - `@webpods/tinqer-sql-better-sqlite3` – SQLite integration powered by better-sqlite3
 
-Both adapters provide database context objects that expose a `dsl` property containing query builders (`from`, `query`, etc.). Applications receive the DSL through lambda parameters, allowing database switching without rewriting query code.
+Both adapters provide execution functions (`executeSelect`, `executeInsert`, etc.) that accept plan handles created by `define*` functions from the core package. Query plans are created using `defineSelect`, `defineInsert`, `defineUpdate`, and `defineDelete`, which parse query builder lambdas. Plans can then be executed with adapter-specific `execute*` functions or converted to SQL using `toSql`, allowing database switching without rewriting query code.
 
 ## Core Design Principles
 
@@ -675,16 +675,14 @@ normalizedOperation = normalizeXYZ(normalizedOperation); // New pass
 ### User-Facing API (Compile-Time)
 
 ```typescript
-// Database context provides DSL access
+// Database schema provides type context
 interface DatabaseSchema<TSchema> {
-  dsl: DSL<TSchema>;
-  // ... other context properties
+  _schemaType?: TSchema;
 }
 
-// DSL object contains query builders
-interface DSL<TSchema> {
+// Query builder provides table access
+interface QueryBuilder<TSchema> {
   from<TTable extends keyof TSchema>(table: TTable): Queryable<TSchema[TTable]>;
-  query<TResult>(builder: QueryBuilder<TResult>): Queryable<TResult>;
 }
 
 // Queryable class for type-safe chaining
@@ -732,22 +730,41 @@ function convertAstToQueryOperation(ast: unknown): QueryOperation;
 ### SQL Adapter API
 
 ```typescript
-// Main execution functions (in adapters)
-function selectStatement<TParams, TResult>(
+// Plan creation functions (in core package)
+function defineSelect<TSchema, TParams, TResult>(
   schema: DatabaseSchema<TSchema>,
   queryBuilder: (
-    dsl: DSL<TSchema>,
+    q: QueryBuilder<TSchema>,
     params: TParams,
     helpers: Helpers,
   ) => Queryable<TResult> | TerminalQuery<TResult>,
+  paramDefaults?: TParams,
+): SelectPlanHandle<TResult, TParams> | SelectTerminalHandle<TResult, TParams>;
+
+function defineInsert<TSchema, TParams, TTable, TReturning>(
+  schema: DatabaseSchema<TSchema>,
+  queryBuilder: (q: QueryBuilder<TSchema>, params: TParams, helpers: Helpers) => InsertQuery,
+  paramDefaults?: TParams,
+): InsertPlanHandle<TTable, TReturning, TParams>;
+
+// Execution functions (in adapters)
+async function executeSelect<TResult, TParams>(
+  db: Database,
+  plan: SelectPlanHandle<TResult, TParams> | SelectTerminalHandle<TResult, TParams>,
   params: TParams,
 ): Promise<TResult[]>;
 
-function insertStatement<TParams>(
-  schema: DatabaseSchema<TSchema>,
-  queryBuilder: (dsl: DSL<TSchema>, params: TParams, helpers: Helpers) => InsertQuery,
+async function executeInsert<TTable, TReturning, TParams>(
+  db: Database,
+  plan: InsertPlanHandle<TTable, TReturning, TParams>,
   params: TParams,
-): Promise<void>;
+): Promise<TReturning extends never ? number : TReturning[]>;
+
+// SQL generation functions (in adapters, for testing/debugging)
+function toSql<TParams>(
+  plan: SelectPlanHandle<unknown, TParams> | SelectTerminalHandle<unknown, TParams>,
+  params: TParams,
+): { sql: string; params: TParams & Record<string, unknown> };
 
 // SQL generation (internal)
 function generateSql(operation: QueryOperation, params: unknown): string;
@@ -765,18 +782,21 @@ function generateSql(operation: QueryOperation, params: unknown): string;
 // Create database context
 const schema = createSchema<Schema>();
 
-// Execute query with parameter pattern
-const result = await selectStatement(
-  schema,
-  (q, p) =>
-    q
-      .from("users")
-      .where((x) => x.age >= p.minAge && x.department === p.dept)
-      .select((x) => ({ id: x.id, name: x.name, age: x.age }))
-      .orderBy((x) => x.name)
-      .take(10),
-  { minAge: 18, dept: "Engineering" },
+// Define query plan
+const usersPlan = defineSelect(schema, (q, p: { minAge: number; dept: string }) =>
+  q
+    .from("users")
+    .where((x) => x.age >= p.minAge && x.department === p.dept)
+    .select((x) => ({ id: x.id, name: x.name, age: x.age }))
+    .orderBy((x) => x.name)
+    .take(10),
 );
+
+// Execute query with parameters
+const result = await executeSelect(db, usersPlan, {
+  minAge: 18,
+  dept: "Engineering",
+});
 ```
 
 ### Parsed Expression Tree

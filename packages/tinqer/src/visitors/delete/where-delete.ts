@@ -49,6 +49,12 @@ export function visitWhereDeleteOperation(
   const originalTableParams = new Set(visitorContext.tableParams);
   visitorContext.tableParams.add(paramName);
 
+  // Check for second parameter (external params)
+  if (params.length > 1 && params[1]?.type === "Identifier") {
+    const externalParamName = params[1].name;
+    visitorContext.queryParams.add(externalParamName);
+  }
+
   let bodyExpr = arrowFn.body;
 
   // Handle block statement with return

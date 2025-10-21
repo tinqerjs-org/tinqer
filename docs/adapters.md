@@ -34,13 +34,19 @@ npm install @webpods/tinqer-sql-pg-promise pg-promise
 
 ```typescript
 import pgPromise from "pg-promise";
-import { createSchema } from "@webpods/tinqer";
+import {
+  createSchema,
+  defineSelect,
+  defineInsert,
+  defineUpdate,
+  defineDelete,
+} from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
   executeUpdate,
   executeDelete,
-  selectStatement,
+  toSql,
 } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -54,63 +60,61 @@ const schema = createSchema<Schema>();
 // Execute with params
 const activeUsers = await executeSelect(
   db,
-  schema,
-  (q, params) =>
+  defineSelect(schema, (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.active && u.age >= params.minAge)
       .orderBy((u) => u.name),
+  ),
   { minAge: 18 },
 );
 
 // Execute with params
 const matchingUsers = await executeSelect(
   db,
-  schema,
-  (q, params) =>
+  defineSelect(schema, (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
+  ),
   { minAge: 21 },
 );
 
 // INSERT with RETURNING
 const createdUsers = await executeInsert(
   db,
-  schema,
-  (q) =>
+  defineInsert(schema, (q) =>
     q
       .insertInto("users")
       .values({ name: "Alice", email: "alice@example.com", age: 30, active: true })
       .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
+  ),
   {},
 );
 
 // UPDATE
 const updatedCount = await executeUpdate(
   db,
-  schema,
-  (q) =>
+  defineUpdate(schema, (q) =>
     q
       .update("users")
       .set({ active: false })
       .where((u) => u.age > 65),
+  ),
   {},
 );
 
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  schema,
-  (q) => q.deleteFrom("users").where((u) => !u.active),
+  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => !u.active)),
   {},
 );
 
 // Generate SQL without executing
-const { sql, params } = selectStatement(
-  schema,
-  (q) => q.from("users").where((u) => u.email.endsWith("@example.com")),
+const { sql, params } = toSql(
+  defineSelect(schema, (q) => q.from("users").where((u) => u.email.endsWith("@example.com"))),
   {},
 );
 ```
@@ -118,7 +122,7 @@ const { sql, params } = selectStatement(
 ### 1.3 PostgreSQL Dialect Notes
 
 - Booleans map to `BOOLEAN` values (`true`/`false`).
-- Case-insensitive comparisons use `ILIKE` when you call helper functions such as `contains`.
+- Case-insensitive helper functions generate `LOWER()` comparisons for portable SQL.
 - RETURNING clauses are fully supported on INSERT, UPDATE, and DELETE through the execution helpers.
 - Parameter placeholders use the `$()` syntax expected by pg-promise (e.g., `$(minAge)`).
 - Window functions (`ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`) are fully supported.
@@ -137,13 +141,19 @@ npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
 
 ```typescript
 import Database from "better-sqlite3";
-import { createSchema } from "@webpods/tinqer";
+import {
+  createSchema,
+  defineSelect,
+  defineInsert,
+  defineUpdate,
+  defineDelete,
+} from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
   executeUpdate,
   executeDelete,
-  selectStatement,
+  toSql,
 } from "@webpods/tinqer-sql-better-sqlite3";
 
 interface Schema {
@@ -165,45 +175,46 @@ db.exec(`
 
 const inserted = executeInsert(
   db,
-  schema,
-  (q) => q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
+  defineInsert(schema, (q) =>
+    q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
+  ),
   {},
 );
 // inserted === 1
 
 const users = executeSelect(
   db,
-  schema,
-  (q, params) =>
+  defineSelect(schema, (q, params: { active: number }) =>
     q
       .from("users")
       .where((u) => u.isActive === params.active)
       .orderBy((u) => u.name),
+  ),
   { active: 1 },
 );
 
 const updated = executeUpdate(
   db,
-  schema,
-  (q) =>
+  defineUpdate(schema, (q) =>
     q
       .update("users")
       .set({ isActive: 0 })
       .where((u) => u.age > 60),
+  ),
   {},
 );
 
 const removed = executeDelete(
   db,
-  schema,
-  (q, params) => q.deleteFrom("users").where((u) => u.age < params.cutoff),
+  defineDelete(schema, (q, params: { cutoff: number }) =>
+    q.deleteFrom("users").where((u) => u.age < params.cutoff),
+  ),
   { cutoff: 18 },
 );
 
 // Need the SQL text for custom execution?
-const { sql, params } = selectStatement(
-  schema,
-  (q) => q.from("users").where((u) => u.name.startsWith("S")),
+const { sql, params } = toSql(
+  defineSelect(schema, (q) => q.from("users").where((u) => u.name.startsWith("S"))),
   {},
 );
 const rows = db.prepare(sql).all(params);
@@ -243,8 +254,8 @@ const rows = db.prepare(sql).all(params);
 Use query helpers for portable case-insensitive comparisons:
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; email: string };
@@ -252,13 +263,13 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-const { sql } = selectStatement(
-  schema,
-  (q, params, helpers) =>
+const { sql } = toSql(
+  defineSelect(schema, (q, params, helpers) =>
     q.from("users").where((u) => helpers.functions.icontains(u.name, "alice")),
+  ),
   {},
 );
-// PostgreSQL: WHERE "name" ILIKE $(__p1)
+// PostgreSQL: WHERE LOWER("name") LIKE '%' || LOWER($(__p1)) || '%'
 // SQLite: WHERE LOWER("name") LIKE '%' || LOWER(@__p1) || '%'
 ```
 

@@ -3,7 +3,8 @@
  */
 
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
+import { defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 import { createSchema } from "@webpods/tinqer";
 
 interface User {
@@ -48,9 +49,8 @@ const schema = createSchema<Schema>();
 describe("JOIN with Table References", () => {
   describe("Basic table reference returns", () => {
     it("should support (u, d) => ({ u, d }) pattern", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -65,6 +65,7 @@ describe("JOIN with Table References", () => {
               deptId: joined.d.id,
               deptName: joined.d.name,
             })),
+        ),
         {},
       );
 
@@ -80,9 +81,8 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support accessing nested properties after table reference JOIN", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -97,6 +97,7 @@ describe("JOIN with Table References", () => {
               deptName: joined.d.name,
               deptLocation: joined.d.location,
             })),
+        ),
         {},
       );
 
@@ -107,9 +108,8 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support WHERE clause with table references", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -123,6 +123,7 @@ describe("JOIN with Table References", () => {
               userName: joined.u.name,
               deptName: joined.d.name,
             })),
+        ),
         {},
       );
 
@@ -139,9 +140,8 @@ describe("JOIN with Table References", () => {
 
   describe("Chained JOINs with table references", () => {
     it("should support chaining JOINs with table references", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -166,6 +166,7 @@ describe("JOIN with Table References", () => {
               deptName: result.dept.name,
               orderTotal: result.order.total_amount,
             })),
+        ),
         {},
       );
 
@@ -182,9 +183,8 @@ describe("JOIN with Table References", () => {
     });
 
     it("should correctly resolve properties through chained table references", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -204,6 +204,7 @@ describe("JOIN with Table References", () => {
               deptName: result.joined.dept.name,
               orderTotal: result.order.total_amount,
             })),
+        ),
         {},
       );
 
@@ -213,9 +214,8 @@ describe("JOIN with Table References", () => {
     });
 
     it("should handle three-way JOINs with table references", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -242,6 +242,7 @@ describe("JOIN with Table References", () => {
               orderTotal: result.o.total_amount,
               productName: result.p.name,
             })),
+        ),
         {},
       );
 
@@ -256,9 +257,8 @@ describe("JOIN with Table References", () => {
     it("should enforce table references only in JOIN result selector", () => {
       // This test verifies that mixing table references with field selections is not allowed
       expect(() => {
-        selectStatement(
-          schema,
-          (q) =>
+        toSql(
+          defineSelect(schema, (q) =>
             q
               .from("users")
               .join(
@@ -275,6 +275,7 @@ describe("JOIN with Table References", () => {
                 userId: joined.u.id,
                 userName: joined.u.name,
               })),
+          ),
           {},
         );
       }).to.throw("Failed to parse query");
@@ -283,9 +284,8 @@ describe("JOIN with Table References", () => {
 
   describe("Aggregations with table references", () => {
     it("should support GROUP BY with table references", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -304,6 +304,7 @@ describe("JOIN with Table References", () => {
               userCount: g.count(),
               avgAge: g.average((joined) => joined.u.age),
             })),
+        ),
         {},
       );
 
@@ -313,9 +314,8 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support complex aggregations with chained table references", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -340,6 +340,7 @@ describe("JOIN with Table References", () => {
               totalOrders: g.count(),
               totalRevenue: g.sum((result) => result.o.total_amount),
             })),
+        ),
         {},
       );
 
@@ -351,15 +352,15 @@ describe("JOIN with Table References", () => {
   describe("Edge cases and validation", () => {
     it("should throw error when SELECT is missing after JOIN with result selector", () => {
       expect(() => {
-        selectStatement(
-          schema,
-          (q) =>
+        toSql(
+          defineSelect(schema, (q) =>
             q.from("users").join(
               q.from("departments"),
               (u) => u.department_id,
               (d) => d.id,
               (u, d) => ({ u, d }),
             ),
+          ),
           {},
         );
       }).to.throw(
@@ -368,9 +369,8 @@ describe("JOIN with Table References", () => {
     });
 
     it("should handle empty object in result selector with SELECT", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -383,6 +383,7 @@ describe("JOIN with Table References", () => {
               userId: 1,
               deptId: 2,
             })),
+        ),
         {},
       );
 
@@ -393,9 +394,8 @@ describe("JOIN with Table References", () => {
     });
 
     it("should handle single table reference return", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -408,6 +408,7 @@ describe("JOIN with Table References", () => {
               userId: u.id,
               userName: u.name,
             })),
+        ),
         {},
       );
 
@@ -418,9 +419,8 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support ORDER BY with table references", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -436,6 +436,7 @@ describe("JOIN with Table References", () => {
               userAge: joined.u.age,
               deptName: joined.d.name,
             })),
+        ),
         {},
       );
 
@@ -448,9 +449,8 @@ describe("JOIN with Table References", () => {
     });
 
     it("should support DISTINCT with table references", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -463,6 +463,7 @@ describe("JOIN with Table References", () => {
               deptName: joined.d.name,
             }))
             .distinct(),
+        ),
         {},
       );
 

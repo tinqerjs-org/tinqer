@@ -160,3 +160,43 @@ export {
   clearParseCache,
 } from "./parser/parse-cache-config.js";
 export type { ParseCacheConfig } from "./parser/parse-cache-config.js";
+
+// ==================== Plan API ====================
+
+export {
+  defineSelect,
+  defineSelectPlan,
+  SelectPlanHandle,
+  SelectTerminalHandle,
+  type SelectPlan,
+  type SelectPlanSql,
+} from "./plans/select-plan.js";
+
+export {
+  defineUpdate,
+  UpdatePlanHandleInitial,
+  UpdatePlanHandleWithSet,
+  UpdatePlanHandleComplete,
+  UpdatePlanHandleWithReturning,
+  type UpdatePlan,
+  type UpdatePlanSql,
+} from "./plans/update-plan.js";
+
+export {
+  defineInsert,
+  InsertPlanHandleInitial,
+  InsertPlanHandleWithValues,
+  InsertPlanHandleWithReturning,
+  type InsertPlan,
+  type InsertPlanSql,
+} from "./plans/insert-plan.js";
+
+export {
+  defineDelete,
+  DeletePlanHandleInitial,
+  DeletePlanHandleComplete,
+  type DeletePlan,
+  type DeletePlanSql,
+} from "./plans/delete-plan.js";
+
+export { createSelectPlan, planToSqlString, isTerminalHandle } from "./plans/plan-execution.js";

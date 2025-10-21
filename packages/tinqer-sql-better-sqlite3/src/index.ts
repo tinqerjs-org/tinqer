@@ -3,7 +3,6 @@
  */
 
 import {
-  parseQuery,
   type Queryable,
   type OrderedQueryable,
   type TerminalQuery,
@@ -18,9 +17,27 @@ import {
   type Deletable,
   type DeletableComplete,
   type ParseQueryOptions,
+  defineSelect,
+  defineInsert,
+  defineUpdate,
+  defineDelete,
+  isTerminalHandle,
+  type QueryOperation,
+  type InsertOperation,
+  type UpdateOperation,
+  SelectPlanHandle,
+  SelectTerminalHandle,
+  InsertPlanHandleInitial,
+  InsertPlanHandleWithValues,
+  InsertPlanHandleWithReturning,
+  UpdatePlanHandleWithSet,
+  UpdatePlanHandleComplete,
+  UpdatePlanHandleWithReturning,
+  DeletePlanHandleInitial,
+  DeletePlanHandleComplete,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
-import type { SqlResult, ExecuteOptions } from "./types.js";
+import type { ExecuteOptions } from "./types.js";
 
 /**
  * Helper function to expand array parameters into indexed parameters
@@ -40,82 +57,158 @@ function expandArrayParams(params: Record<string, unknown>): Record<string, unkn
   return expanded;
 }
 
-/**
- * Generate SQL from a query builder function (with params and helpers)
- */
-export function selectStatement<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-    helpers: QueryHelpers,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
+function materializePlan<TParams>(
+  plan: {
+    finalize(params: TParams): {
+      operation: QueryOperation;
+      params: Record<string, unknown>;
+    };
+  },
   params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult>;
+): {
+  operation: QueryOperation;
+  mergedParams: Record<string, unknown>;
+  sql: string;
+  expandedParams: Record<string, unknown>;
+} {
+  const { operation, params: mergedParams } = plan.finalize(params);
+  const sql = generateSql(operation, mergedParams);
+  const expandedParams = expandArrayParams(mergedParams);
+  return { operation, mergedParams, sql, expandedParams };
+}
 
-/**
- * Generate SQL from a query builder function (with params only, no helpers)
- */
-export function selectStatement<TSchema, TParams, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult>;
+function normalizeSqliteParams(params: Record<string, unknown>): Record<string, unknown> {
+  const converted: Record<string, unknown> = {};
 
-/**
- * Generate SQL from a query builder function (query builder only, no params or helpers)
- */
-export function selectStatement<TSchema, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>,
-): SqlResult<Record<string, string | number | boolean | null>, TResult>;
-
-// Implementation
-export function selectStatement<TSchema, TParams, TResult>(
-  _schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-        helpers: QueryHelpers,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Queryable<TResult> | OrderedQueryable<TResult> | TerminalQuery<TResult>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, TResult> {
-  // Parse the query to get the operation tree and auto-params
-  const parseResult = parseQuery(builder, options || {});
-
-  if (!parseResult) {
-    throw new Error("Failed to parse query");
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "boolean") {
+      converted[key] = value ? 1 : 0;
+    } else if (value instanceof Date) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, "0");
+      const day = String(value.getDate()).padStart(2, "0");
+      const hours = String(value.getHours()).padStart(2, "0");
+      const minutes = String(value.getMinutes()).padStart(2, "0");
+      const seconds = String(value.getSeconds()).padStart(2, "0");
+      converted[key] = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    } else {
+      converted[key] = value;
+    }
   }
 
-  // Merge user params with auto-extracted params
-  // User params take priority over auto-params to avoid collisions
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
+  return converted;
+}
 
-  // Generate SQL from the operation tree
-  const sql = generateSql(parseResult.operation, mergedParams);
+/**
+ * Convert a SELECT plan to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: SelectPlanHandle<TRecord, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
 
-  // Expand array parameters into indexed parameters for IN clause support
-  // e.g., { ids: [1, 2, 3] } becomes { ids: [1, 2, 3], "ids[0]": 1, "ids[1]": 2, "ids[2]": 3 }
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
+/**
+ * Convert a SELECT terminal plan to SQL string with parameters
+ */
+export function toSql<TResult, TParams>(
+  plan: SelectTerminalHandle<TResult, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
 
-  return { sql, params: finalParams };
+/**
+ * Convert an INSERT plan (initial) to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: InsertPlanHandleInitial<TRecord, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an INSERT plan to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: InsertPlanHandleWithValues<TRecord, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an INSERT plan with RETURNING to SQL string with parameters
+ */
+export function toSql<TResult, TParams>(
+  plan: InsertPlanHandleWithReturning<TResult, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an UPDATE plan (with set) to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: UpdatePlanHandleWithSet<TRecord, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an UPDATE plan to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: UpdatePlanHandleComplete<TRecord, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an UPDATE plan with RETURNING to SQL string with parameters
+ */
+export function toSql<TResult, TParams>(
+  plan: UpdatePlanHandleWithReturning<TResult, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert a DELETE plan (initial) to SQL string with parameters
+ */
+export function toSql<TParams>(
+  plan: DeletePlanHandleInitial<unknown, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert a DELETE plan to SQL string with parameters
+ */
+export function toSql<TParams>(
+  plan: DeletePlanHandleComplete<unknown, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert a SELECT plan (either regular or terminal) to SQL string with parameters
+ */
+export function toSql<TParams>(
+  plan: SelectPlanHandle<unknown, TParams> | SelectTerminalHandle<unknown, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert any plan to SQL string with parameters
+ * Handles SQLite specific parameter normalization (booleans, dates)
+ */
+export function toSql<TParams>(
+  plan:
+    | SelectPlanHandle<unknown, TParams>
+    | SelectTerminalHandle<unknown, TParams>
+    | InsertPlanHandleInitial<unknown, TParams>
+    | InsertPlanHandleWithValues<unknown, TParams>
+    | InsertPlanHandleWithReturning<unknown, TParams>
+    | UpdatePlanHandleWithSet<unknown, TParams>
+    | UpdatePlanHandleComplete<unknown, TParams>
+    | UpdatePlanHandleWithReturning<unknown, TParams>
+    | DeletePlanHandleInitial<unknown, TParams>
+    | DeletePlanHandleComplete<unknown, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> } {
+  const { operation, params: mergedParams } = plan.finalize(params);
+  const sql = generateSql(operation, mergedParams);
+  const expandedParams = expandArrayParams(mergedParams);
+  return { sql, params: expandedParams };
 }
 
 /**
@@ -124,31 +217,22 @@ export function selectStatement<TSchema, TParams, TResult>(
  * @param options Parse options including cache control
  * @returns Object with text (SQL string), parameters, and preserved result type
  */
-export function toSql<T>(
-  queryable: Queryable<T> | OrderedQueryable<T> | TerminalQuery<T>,
-  options: ParseQueryOptions = {},
+export function finalize<TParams = Record<string, never>>(
+  plan: {
+    finalize(params: TParams): {
+      operation: QueryOperation;
+      params: Record<string, unknown>;
+    };
+  },
+  params?: TParams,
 ): {
   text: string;
   parameters: Record<string, unknown>;
-  _resultType?: T;
 } {
-  // Create a dummy function that returns the queryable
-  const queryBuilder = () => queryable;
-
-  // Parse and generate SQL
-  const parseResult = parseQuery(queryBuilder, options);
-
-  if (!parseResult) {
-    throw new Error("Failed to parse query");
-  }
-
-  // Generate SQL with auto-parameters
-  const sql = generateSql(parseResult.operation, parseResult.autoParams);
-
-  return {
-    text: sql,
-    parameters: parseResult.autoParams,
-  };
+  const normalizedParams = params ?? ({} as TParams);
+  const { operation, params: mergedParams } = plan.finalize(normalizedParams);
+  const text = generateSql(operation, mergedParams);
+  return { text, parameters: mergedParams };
 }
 
 /**
@@ -252,56 +336,25 @@ export function executeSelect<
           ? T
           : never;
 
-  // Call selectStatement with appropriate arguments based on whether params provided
-  const { sql, params: sqlParams } =
-    params !== undefined
-      ? selectStatement(schema, builder, params, options)
-      : selectStatement(schema, builder as (q: QueryBuilder<TSchema>) => TQuery);
+  const plan = defineSelect(schema, builder, options);
 
-  // Call onSql callback if provided
+  const normalizedParams = params || ({} as TParams);
+  const { operation, sql, expandedParams } = materializePlan(plan, normalizedParams);
+
+  const displayParams = expandedParams;
   if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
+    options.onSql({ sql, params: displayParams });
   }
 
-  // Check if this is a terminal operation that returns a single value
-  const parseResult = parseQuery(builder, options || {});
-  if (!parseResult) {
-    throw new Error("Failed to parse query");
-  }
-
-  const operationType = parseResult.operation.operationType;
-
-  // Convert parameters for SQLite compatibility
-  // - Booleans: SQLite doesn't have a native boolean type - use 0 for false, 1 for true
-  // - Dates: Convert to SQLite DATETIME format 'YYYY-MM-DD HH:MM:SS'
-  const convertedParams: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(sqlParams)) {
-    if (typeof value === "boolean") {
-      convertedParams[key] = value ? 1 : 0;
-    } else if (
-      value !== null &&
-      value !== undefined &&
-      Object.prototype.toString.call(value) === "[object Date]"
-    ) {
-      // Convert to SQLite DATETIME format: 'YYYY-MM-DD HH:MM:SS'
-      const date = value as unknown as Date;
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      const hours = String(date.getHours()).padStart(2, "0");
-      const minutes = String(date.getMinutes()).padStart(2, "0");
-      const seconds = String(date.getSeconds()).padStart(2, "0");
-      // For date-only comparisons, use just the date part (time will be 00:00:00)
-      convertedParams[key] = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    } else {
-      convertedParams[key] = value;
-    }
-  }
-
-  // Prepare statement
+  const boundParams = normalizeSqliteParams(expandedParams);
   const stmt = db.prepare(sql);
 
-  // Handle different terminal operations
+  if (!isTerminalHandle(plan)) {
+    return stmt.all(boundParams) as ReturnType;
+  }
+
+  const operationType = operation.operationType;
+
   switch (operationType) {
     case "first":
     case "firstOrDefault":
@@ -309,8 +362,7 @@ export function executeSelect<
     case "singleOrDefault":
     case "last":
     case "lastOrDefault": {
-      // These return a single item
-      const rows = stmt.all(convertedParams);
+      const rows = stmt.all(boundParams);
       if (rows.length === 0) {
         if (operationType.includes("OrDefault")) {
           return null as ReturnType;
@@ -320,58 +372,35 @@ export function executeSelect<
       if (operationType.startsWith("single") && rows.length > 1) {
         throw new Error(`Multiple elements found for ${operationType} operation`);
       }
+      if (operationType.startsWith("last")) {
+        return rows[rows.length - 1] as ReturnType;
+      }
       return rows[0] as ReturnType;
     }
 
     case "count":
     case "longCount": {
-      // These return a number - SQL is: SELECT COUNT(*) FROM ...
-      // SQLite returns the result with column name "COUNT(*)", so get the first column value
-      const countResult = stmt.get(convertedParams) as Record<string, unknown>;
-      const keys = Object.keys(countResult);
-      if (keys.length > 0 && keys[0]) {
-        return countResult[keys[0]] as ReturnType;
-      }
-      return 0 as ReturnType;
+      const countRow = stmt.get(boundParams) as Record<string, unknown> | undefined;
+      const value = countRow ? Number(extractFirstColumn(countRow)) : 0;
+      return Number.isNaN(value) ? (0 as ReturnType) : (value as ReturnType);
     }
 
     case "sum":
     case "average":
     case "min":
     case "max": {
-      // These return a single aggregate value - SQL is: SELECT SUM/AVG/MIN/MAX(column) FROM ...
-      // The result is in the first column of the row
-      const aggResult = stmt.get(convertedParams) as Record<string, unknown>;
-      const keys = Object.keys(aggResult);
-      if (keys.length > 0 && keys[0]) {
-        return aggResult[keys[0]] as ReturnType;
-      }
-      return null as ReturnType;
+      const aggRow = stmt.get(boundParams) as Record<string, unknown> | undefined;
+      return (aggRow ? (extractFirstColumn(aggRow) ?? null) : null) as ReturnType;
     }
 
-    case "any": {
-      // Returns boolean - SQL is: SELECT CASE WHEN EXISTS(...) THEN 1 ELSE 0 END
-      const anyResult = stmt.get(convertedParams) as Record<string, unknown>;
-      const anyKeys = Object.keys(anyResult);
-      if (anyKeys.length > 0 && anyKeys[0]) {
-        return (anyResult[anyKeys[0]] === 1) as ReturnType;
-      }
-      return false as ReturnType;
-    }
-
+    case "any":
     case "all": {
-      // Returns boolean - SQL is: SELECT CASE WHEN NOT EXISTS(...) THEN 1 ELSE 0 END
-      const allResult = stmt.get(convertedParams) as Record<string, unknown>;
-      const allKeys = Object.keys(allResult);
-      if (allKeys.length > 0 && allKeys[0]) {
-        return (allResult[allKeys[0]] === 1) as ReturnType;
-      }
-      return false as ReturnType;
+      const boolRow = stmt.get(boundParams) as Record<string, unknown> | undefined;
+      return toBoolean(boolRow ? extractFirstColumn(boolRow) : undefined) as ReturnType;
     }
 
     default:
-      // Regular query that returns an array
-      return stmt.all(convertedParams) as ReturnType;
+      return stmt.all(boundParams) as ReturnType;
   }
 }
 
@@ -405,72 +434,7 @@ export function executeSelectSimple<
   return executeSelect(dbClient, schema, builder, {}, options);
 }
 
-// ==================== INSERT Statement & Execution ====================
-
-/**
- * Generate INSERT SQL statement (with params)
- */
-export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-    params: TParams,
-  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-/**
- * Generate INSERT SQL statement (without params)
- */
-export function insertStatement<TSchema, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
-): SqlResult<
-  Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-// Implementation
-export function insertStatement<TSchema, TParams, TTable, TReturning = never>(
-  _schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>),
-  params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
-> {
-  const parseResult = parseQuery(builder, options || {});
-
-  if (!parseResult) {
-    throw new Error("Failed to parse INSERT query");
-  }
-
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-  const sql = generateSql(parseResult.operation, mergedParams);
-
-  // Expand array parameters into indexed parameters for IN clause support
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
-
-  return {
-    sql,
-    params: finalParams,
-  };
-}
+// ==================== INSERT Execution ====================
 
 /**
  * Execute INSERT with params, return row count
@@ -516,118 +480,54 @@ export function executeInsert<TSchema, TTable, TReturning>(
 ): never;
 
 // Implementation
-export function executeInsert<TSchema, TParams, TTable, TReturning = never>(
+export function executeInsert<
+  TSchema,
+  TTable = unknown,
+  TReturning = unknown,
+  TParams = Record<string, never>,
+>(
   db: BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>),
-  params?: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): number {
-  // Call insertStatement with appropriate arguments based on whether params provided
-  const { sql, params: sqlParams } =
-    params !== undefined
-      ? insertStatement(schema, builder, params, options)
-      : insertStatement(
-          schema,
-          builder as (
-            q: QueryBuilder<TSchema>,
-          ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
-        );
-
-  if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
-  }
-
-  const stmt = db.prepare(sql);
-  const result = stmt.run(sqlParams);
-  return result.changes;
-}
-
-// ==================== UPDATE Statement & Execution ====================
-
-/**
- * Generate UPDATE SQL statement (with params)
- */
-export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
   schema: DatabaseSchema<TSchema>,
   builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
-  ) =>
-    | UpdatableWithSet<TTable>
-    | UpdatableComplete<TTable>
-    | UpdatableWithReturning<TTable, TReturning>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-/**
- * Generate UPDATE SQL statement (without params)
- */
-export function updateStatement<TSchema, TTable, TReturning = never>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (
-    queryBuilder: QueryBuilder<TSchema>,
-  ) =>
-    | UpdatableWithSet<TTable>
-    | UpdatableComplete<TTable>
-    | UpdatableWithReturning<TTable, TReturning>,
-): SqlResult<
-  Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
->;
-
-// Implementation
-export function updateStatement<TSchema, TParams, TTable, TReturning = never>(
-  _schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>),
+    helpers?: QueryHelpers,
+  ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>,
   params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<
-  TParams & Record<string, string | number | boolean | null>,
-  TReturning extends never ? void : TReturning
-> {
-  const parseResult = parseQuery(builder, options || {});
+  options?: ExecuteOptions & ParseQueryOptions,
+): number {
+  const normalizedParams = params || ({} as TParams);
 
-  if (!parseResult) {
-    throw new Error("Failed to parse UPDATE query");
+  let plan;
+  try {
+    plan = defineInsert(schema, builder, options);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Failed to parse insert builder or not an insert operation"
+    ) {
+      throw new Error("Failed to parse INSERT query or not an insert operation");
+    }
+    throw error;
   }
 
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-  const sql = generateSql(parseResult.operation, mergedParams);
+  const { operation, sql, expandedParams } = materializePlan(plan, normalizedParams);
 
-  // Expand array parameters into indexed parameters for IN clause support
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
+  if (options?.onSql) {
+    options.onSql({ sql, params: expandedParams });
+  }
 
-  return {
-    sql,
-    params: finalParams,
-  };
+  const insertOperation = operation as InsertOperation;
+  if (insertOperation.returning) {
+    throw new Error("SQLite adapter does not support INSERT ... RETURNING clauses");
+  }
+
+  const stmt = db.prepare(sql);
+  const result = stmt.run(normalizeSqliteParams(expandedParams));
+  return result.changes;
 }
+
+// ==================== UPDATE Execution ====================
 
 /**
  * Execute UPDATE with params, return row count
@@ -678,102 +578,57 @@ export function executeUpdate<TSchema, TTable, TReturning>(
 ): never;
 
 // Implementation
-export function executeUpdate<TSchema, TParams, TTable, TReturning = never>(
+export function executeUpdate<
+  TSchema,
+  TTable = unknown,
+  TReturning = unknown,
+  TParams = Record<string, never>,
+>(
   db: BetterSqlite3Database,
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>),
-  params?: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): number {
-  // Call updateStatement with appropriate arguments based on whether params provided
-  const { sql, params: sqlParams } =
-    params !== undefined
-      ? updateStatement(schema, builder, params, options)
-      : updateStatement(
-          schema,
-          builder as (
-            q: QueryBuilder<TSchema>,
-          ) =>
-            | UpdatableWithSet<TTable>
-            | UpdatableComplete<TTable>
-            | UpdatableWithReturning<TTable, TReturning>,
-        );
-
-  if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
-  }
-
-  const stmt = db.prepare(sql);
-  const result = stmt.run(sqlParams);
-  return result.changes;
-}
-
-// ==================== DELETE Statement & Execution ====================
-
-/**
- * Generate DELETE SQL statement (with params)
- */
-export function deleteStatement<TSchema, TParams, TResult>(
   schema: DatabaseSchema<TSchema>,
   builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
-  ) => Deletable<TResult> | DeletableComplete<TResult>,
-  params: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, void>;
-
-/**
- * Generate DELETE SQL statement (without params)
- */
-export function deleteStatement<TSchema, TResult>(
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>,
-): SqlResult<Record<string, string | number | boolean | null>, void>;
-
-// Implementation
-export function deleteStatement<TSchema, TParams, TResult>(
-  _schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Deletable<TResult> | DeletableComplete<TResult>)
-    | ((queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>),
+    helpers?: QueryHelpers,
+  ) =>
+    | UpdatableWithSet<TTable>
+    | UpdatableComplete<TTable>
+    | UpdatableWithReturning<TTable, TReturning>,
   params?: TParams,
-  options?: ParseQueryOptions,
-): SqlResult<TParams & Record<string, string | number | boolean | null>, void> {
-  const parseResult = parseQuery(builder, options || {});
+  options?: ExecuteOptions & ParseQueryOptions,
+): number {
+  const normalizedParams = params || ({} as TParams);
 
-  if (!parseResult) {
-    throw new Error("Failed to parse DELETE query");
+  let plan;
+  try {
+    plan = defineUpdate(schema, builder, options);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Failed to parse update builder or not an update operation"
+    ) {
+      throw new Error("Failed to parse UPDATE query or not an update operation");
+    }
+    throw error;
   }
 
-  const mergedParams = { ...parseResult.autoParams, ...(params || {}) };
-  const sql = generateSql(parseResult.operation, mergedParams);
+  const { operation, sql, expandedParams } = materializePlan(plan, normalizedParams);
 
-  // Expand array parameters into indexed parameters for IN clause support
-  const finalParams = expandArrayParams(mergedParams) as TParams &
-    Record<string, string | number | boolean | null>;
+  if (options?.onSql) {
+    options.onSql({ sql, params: expandedParams });
+  }
 
-  return {
-    sql,
-    params: finalParams,
-  };
+  const updateOperation = operation as UpdateOperation;
+  if (updateOperation.returning) {
+    throw new Error("SQLite adapter does not support UPDATE ... RETURNING clauses");
+  }
+
+  const stmt = db.prepare(sql);
+  const result = stmt.run(normalizeSqliteParams(expandedParams));
+  return result.changes;
 }
+
+// ==================== DELETE Execution ====================
 
 /**
  * Execute DELETE with params, return row count
@@ -799,35 +654,64 @@ export function executeDelete<TSchema, TResult>(
 ): number;
 
 // Implementation
-export function executeDelete<TSchema, TParams, TResult>(
+export function executeDelete<TSchema, TTable = unknown, TParams = Record<string, never>>(
   db: BetterSqlite3Database,
   schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Deletable<TResult> | DeletableComplete<TResult>)
-    | ((queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>),
+  builder: (
+    queryBuilder: QueryBuilder<TSchema>,
+    params: TParams,
+    helpers?: QueryHelpers,
+  ) => Deletable<TTable> | DeletableComplete<TTable>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): number {
-  // Call deleteStatement with appropriate arguments based on whether params provided
-  const { sql, params: sqlParams } =
-    params !== undefined
-      ? deleteStatement(schema, builder, params, options)
-      : deleteStatement(
-          schema,
-          builder as (q: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>,
-        );
+  const normalizedParams = params || ({} as TParams);
+
+  const plan = defineDelete(schema, builder, options);
+
+  const planResult = plan.finalize(normalizedParams);
+
+  const sql = generateSql(planResult.operation, planResult.params);
+  const expandedParams = expandArrayParams(planResult.params);
 
   if (options?.onSql) {
-    options.onSql({ sql, params: sqlParams });
+    options.onSql({ sql, params: expandedParams });
   }
 
   const stmt = db.prepare(sql);
-  const result = stmt.run(sqlParams);
+  const result = stmt.run(normalizeSqliteParams(expandedParams));
   return result.changes;
 }
 
 // Export types
 export type { SqlResult, ExecuteOptions } from "./types.js";
+
+function extractFirstColumn(row: Record<string, unknown> | undefined): unknown {
+  if (!row) {
+    return undefined;
+  }
+  const keys = Object.keys(row);
+  if (keys.length === 0 || !keys[0]) {
+    return undefined;
+  }
+  return row[keys[0]];
+}
+
+function toBoolean(value: unknown): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+  if (typeof value === "string") {
+    if (value === "0") {
+      return false;
+    }
+    if (value === "1") {
+      return true;
+    }
+    return value.length > 0;
+  }
+  return Boolean(value);
+}

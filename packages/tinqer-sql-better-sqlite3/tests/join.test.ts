@@ -1,6 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
+import { defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 import { createSchema } from "@webpods/tinqer";
 
 interface User {
@@ -56,9 +57,8 @@ const schema = createSchema<Schema>();
 describe("Join SQL Generation", () => {
   describe("INNER JOIN", () => {
     it("should generate INNER JOIN with proper syntax", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -68,6 +68,7 @@ describe("Join SQL Generation", () => {
               (u, d) => ({ u, d }),
             )
             .select((joined) => ({ userName: joined.u.name, deptName: joined.d.name })),
+        ),
         {},
       );
 
@@ -77,9 +78,8 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with WHERE clause", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where((u) => u.id > 100)
@@ -90,6 +90,7 @@ describe("Join SQL Generation", () => {
               (u, o) => ({ u, o }),
             )
             .select((joined) => ({ user: joined.u.name, total: joined.o.amount })),
+        ),
         {},
       );
 
@@ -100,9 +101,8 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with complex inner query", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -112,6 +112,7 @@ describe("Join SQL Generation", () => {
               (u, o) => ({ u, o }),
             )
             .select((joined) => ({ userName: joined.u.name, orderAmount: joined.o.amount })),
+        ),
         {},
       );
 
@@ -122,9 +123,8 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with GROUP BY", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -138,6 +138,7 @@ describe("Join SQL Generation", () => {
               userId: g.key,
               totalAmount: g.sum((joined) => joined.o.amount),
             })),
+        ),
         {},
       );
 
@@ -147,9 +148,8 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with DISTINCT", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -160,6 +160,7 @@ describe("Join SQL Generation", () => {
             )
             .select((joined) => ({ deptName: joined.d.name }))
             .distinct(),
+        ),
         {},
       );
 
@@ -169,9 +170,8 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with ORDER BY and TAKE", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -183,6 +183,7 @@ describe("Join SQL Generation", () => {
             .orderBy((joined) => joined.o.amount)
             .select((joined) => ({ userName: joined.u.name, amount: joined.o.amount }))
             .take(10),
+        ),
         {},
       );
 
@@ -195,9 +196,8 @@ describe("Join SQL Generation", () => {
 
   describe("Multiple JOINs", () => {
     it("should handle multiple JOINs (3 tables)", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -217,6 +217,7 @@ describe("Join SQL Generation", () => {
               deptName: result.d.name,
               city: result.l.city,
             })),
+        ),
         {},
       );
 
@@ -225,9 +226,8 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle 4-table JOIN chain", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("orders")
             .join(
@@ -254,6 +254,7 @@ describe("Join SQL Generation", () => {
               productName: result.p.name,
               categoryName: result.c.name,
             })),
+        ),
         {},
       );
 
@@ -266,9 +267,8 @@ describe("Join SQL Generation", () => {
 
   describe("Self JOIN", () => {
     it("should handle self JOIN for hierarchical data", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -278,6 +278,7 @@ describe("Join SQL Generation", () => {
               (e, m) => ({ e, m }),
             )
             .select((joined) => ({ employeeName: joined.e.name, managerName: joined.m.name })),
+        ),
         {},
       );
 
@@ -289,9 +290,8 @@ describe("Join SQL Generation", () => {
 
   describe("Complex JOIN scenarios", () => {
     it("should handle JOIN with aggregates", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -307,6 +307,7 @@ describe("Join SQL Generation", () => {
               maxOrderAmount: g.max((joined) => joined.o.amount),
               minOrderAmount: g.min((joined) => joined.o.amount),
             })),
+        ),
         {},
       );
 
@@ -316,9 +317,8 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with complex conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -329,6 +329,7 @@ describe("Join SQL Generation", () => {
             )
             .where((joined) => joined.o.amount > 100 && joined.o.amount < 1000)
             .select((joined) => ({ userName: joined.u.name, amount: joined.o.amount })),
+        ),
         {},
       );
 
@@ -338,9 +339,8 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with complex WHERE and ORDER BY", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where((u) => u.id > 50)
@@ -358,6 +358,7 @@ describe("Join SQL Generation", () => {
             }))
             .orderBy((x) => x.amount)
             .take(20),
+        ),
         {},
       );
 
@@ -371,9 +372,8 @@ describe("Join SQL Generation", () => {
     });
 
     it("should handle JOIN with pagination", () => {
-      const result = selectStatement(
-        schema,
-        (q, p) =>
+      const result = toSql(
+        defineSelect(schema, (q, p: { page: number; pageSize: number }) =>
           q
             .from("users")
             .join(
@@ -386,6 +386,7 @@ describe("Join SQL Generation", () => {
             .orderBy((x) => x.userName)
             .skip(p.page * p.pageSize)
             .take(p.pageSize),
+        ),
         { page: 2, pageSize: 10 },
       );
 
@@ -399,9 +400,8 @@ describe("Join SQL Generation", () => {
 
   describe("LINQ-style joins", () => {
     it("should translate groupJoin/selectMany/defaultIfEmpty into LEFT OUTER JOIN", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .groupJoin(
@@ -415,6 +415,7 @@ describe("Join SQL Generation", () => {
               (g, dept) => ({ user: g.user, dept }),
             )
             .select((row) => ({ userId: row.user.id, deptId: row.dept.id })),
+        ),
         {},
       );
 
@@ -426,9 +427,8 @@ describe("Join SQL Generation", () => {
 
   describe("CROSS JOIN", () => {
     it("should generate CROSS JOIN when collection selector returns a query", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("departments")
             .selectMany(
@@ -439,6 +439,7 @@ describe("Join SQL Generation", () => {
               departmentId: row.department.id,
               userId: row.user.id,
             })),
+        ),
         {},
       );
 

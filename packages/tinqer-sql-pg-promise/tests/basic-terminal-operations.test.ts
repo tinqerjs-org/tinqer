@@ -4,8 +4,8 @@
  */
 
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
-import { createSchema } from "@webpods/tinqer";
+import { defineSelect, createSchema } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 
 interface User {
   id: number;
@@ -23,19 +23,22 @@ const schema = createSchema<Schema>();
 describe("Basic Terminal Operations", () => {
   describe("COUNT operations", () => {
     it("should generate SQL for count()", () => {
-      const result = selectStatement(schema, (q) => q.from("users").count(), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").count()),
+        {},
+      );
       expect(result.sql).to.equal('SELECT COUNT(*) FROM "users"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate SQL for count() with WHERE", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where((u) => u.isActive)
             .count(),
+        ),
         {},
       );
       expect(result.sql).to.equal('SELECT COUNT(*) FROM "users" WHERE "isActive"');
