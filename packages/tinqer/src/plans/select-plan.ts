@@ -34,7 +34,6 @@ import { visitReverseOperation } from "../visitors/reverse/index.js";
 import { visitGroupByOperation } from "../visitors/groupby/index.js";
 import { visitJoinOperation } from "../visitors/join/join.js";
 import { visitGroupJoinOperation } from "../visitors/groupjoin/index.js";
-import { visitSelectManyOperation } from "../visitors/select-many/index.js";
 import { visitCountOperation } from "../visitors/count/index.js";
 import { visitFirstOperation } from "../visitors/predicates/first.js";
 import { visitLastOperation } from "../visitors/predicates/last.js";
@@ -253,26 +252,11 @@ export class SelectPlanHandle<TRecord, TParams> extends Queryable<TRecord> {
     return new SelectPlanHandle(nextState as SelectPlanState<TResult, TParams>);
   }
 
-  selectMany<TCollection>(
-    _collectionSelector: (item: TRecord) => Queryable<TCollection> | Iterable<TCollection>,
-  ): SelectPlanHandle<TCollection, TParams>;
-
-  selectMany<TCollection, TResult>(
-    _collectionSelector: (item: TRecord) => Queryable<TCollection> | Iterable<TCollection>,
-    _resultSelector: (item: TRecord, collectionItem: TCollection) => TResult,
-  ): SelectPlanHandle<TResult, TParams>;
-
-  selectMany<TCollection, TResult = TCollection>(
-    collectionSelector: (item: TRecord) => Queryable<TCollection> | Iterable<TCollection>,
-    resultSelector?: (item: TRecord, collectionItem: TCollection) => TResult,
-  ): SelectPlanHandle<TResult, TParams> {
-    const nextState = appendSelectMany(
-      this.state,
-      collectionSelector as unknown as (item: unknown) => unknown,
-      resultSelector as unknown as ((item: unknown, collectionItem: unknown) => unknown) | undefined,
-    );
-    return new SelectPlanHandle(nextState as SelectPlanState<TResult, TParams>);
-  }
+  // TODO: selectMany is not yet supported in defineSelect/plan API
+  // It only works with parseQuery(() => from(...).selectMany(...))
+  // The underlying visitor needs to be updated to work with the QueryBuilder pattern
+  // before this can be implemented for plan handles.
+  // See: packages/tinqer/tests/cross-join-normalization.test.ts for working parseQuery example
 
   groupBy<TKey>(
     keySelector: (item: TRecord) => TKey,
@@ -747,51 +731,6 @@ function appendGroupJoin<TRecord, TParams>(
 
   if (!result) {
     throw new Error("Failed to append groupJoin to plan");
-  }
-
-  visitorContext.autoParams = mergeAutoParams(visitorContext.autoParams, result.autoParams);
-
-  return createState(
-    state as unknown as SelectPlanState<unknown, TParams>,
-    result.operation,
-    visitorContext,
-  );
-}
-
-function appendSelectMany<TRecord, TParams>(
-  state: SelectPlanState<TRecord, TParams>,
-  collectionSelector: (item: unknown) => unknown,
-  resultSelector?: (item: unknown, collectionItem: unknown) => unknown,
-): SelectPlanState<unknown, TParams> {
-  const visitorContext = restoreVisitorContext(state.contextSnapshot);
-
-  // Parse the collection selector lambda
-  const collectionLambda = parseLambdaExpression(collectionSelector, "collectionSelector");
-
-  // Parse the optional result selector
-  let resultLambda: ArrowFunctionExpression | undefined;
-  if (resultSelector) {
-    resultLambda = parseLambdaExpression(resultSelector, "resultSelector");
-  }
-
-  // Create the selectMany call with either 1 or 2 arguments
-  const call = {
-    type: "CallExpression",
-    callee: {
-      type: "MemberExpression",
-      object: { type: "Identifier", name: "__plan" },
-      property: { type: "Identifier", name: "selectMany" },
-      computed: false,
-      optional: false,
-    },
-    arguments: resultLambda ? [collectionLambda, resultLambda] : [collectionLambda],
-    optional: false,
-  } as CallExpression;
-
-  const result = visitSelectManyOperation(call, state.operation, "selectMany", visitorContext);
-
-  if (!result) {
-    throw new Error("Failed to append selectMany to plan");
   }
 
   visitorContext.autoParams = mergeAutoParams(visitorContext.autoParams, result.autoParams);

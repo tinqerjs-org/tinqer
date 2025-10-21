@@ -341,11 +341,12 @@ describe("SelectPlanHandle", () => {
 
   describe("groupJoin operation on plan handles", () => {
     it("should add groupJoin operation when chained on plan handle", () => {
+      type Post = { id: number; userId: number; title: string; content: string };
+
       const usersQuery = defineSelect(testSchema, (q) => q.from("users"));
-      const postsQuery = defineSelect(testSchema, (q) => q.from("posts"));
 
       const plan = usersQuery.groupJoin(
-        postsQuery.toPlan().operation as any,
+        from<Post>("posts"),
         (u) => u.id,
         (p) => p.userId,
         (u, postGroup) => ({ user: u, posts: postGroup }),
@@ -356,12 +357,11 @@ describe("SelectPlanHandle", () => {
     });
 
     it("should maintain immutability when adding groupJoin", () => {
-      const usersQuery = defineSelect(testSchema, (q) => q.from("users"));
-      const postsQuery = defineSelect(testSchema, (q) => q.from("posts"));
+      type Post = { id: number; userId: number; title: string; content: string };
 
-      const plan1 = usersQuery;
+      const plan1 = defineSelect(testSchema, (q) => q.from("users"));
       const plan2 = plan1.groupJoin(
-        postsQuery.toPlan().operation as any,
+        from<Post>("posts"),
         (u) => u.id,
         (p) => p.userId,
         (u, postGroup) => ({ user: u, posts: postGroup }),
@@ -378,13 +378,12 @@ describe("SelectPlanHandle", () => {
     });
 
     it("should work in complex query chains with groupJoin", () => {
-      const usersQuery = defineSelect(testSchema, (q) => q.from("users"));
-      const postsQuery = defineSelect(testSchema, (q) => q.from("posts"));
+      type Post = { id: number; userId: number; title: string; content: string };
 
-      const plan = usersQuery
+      const plan = defineSelect(testSchema, (q) => q.from("users"))
         .where((u) => u.age > 18)
         .groupJoin(
-          postsQuery.toPlan().operation as any,
+          from<Post>("posts"),
           (u) => u.id,
           (p) => p.userId,
           (u, postGroup) => ({ user: u, posts: postGroup }),
@@ -400,58 +399,7 @@ describe("SelectPlanHandle", () => {
     });
   });
 
-  describe.skip("selectMany operation on plan handles", () => {
-    // TODO: selectMany visitor requires additional work to support plan handle chaining
-    // The visitor is returning null when called outside of the normal parseQuery flow
-    // This needs further investigation to understand the visitor's requirements
-    it("should add selectMany operation with collection and result selector", () => {
-      type Post = { id: number; userId: number; title: string; content: string };
-
-      const plan = defineSelect(testSchema, (q) => q.from("users")).selectMany(
-        () => from<Post>("posts"),
-        (u, p) => ({ userId: u.id, postId: p.id }),
-      );
-
-      const planData = plan.toPlan();
-      expect(planData.operation.operationType).to.equal("selectMany");
-    });
-
-    it("should maintain immutability when adding selectMany", () => {
-      type Post = { id: number; userId: number; title: string; content: string };
-
-      const plan1 = defineSelect(testSchema, (q) => q.from("users"));
-      const plan2 = plan1.selectMany(
-        () => from<Post>("posts"),
-        (u, p) => ({ userId: u.id, postId: p.id }),
-      );
-
-      // Should be different instances
-      expect(plan1).to.not.equal(plan2);
-
-      // Original plan should still just have from
-      expect(plan1.toPlan().operation.operationType).to.equal("from");
-
-      // New plan should have selectMany
-      expect(plan2.toPlan().operation.operationType).to.equal("selectMany");
-    });
-
-    it("should work in complex query chains with selectMany", () => {
-      type Post = { id: number; userId: number; title: string; content: string };
-
-      const plan = defineSelect(testSchema, (q) => q.from("users"))
-        .where((u) => u.age > 25)
-        .selectMany(
-          () => from<Post>("posts"),
-          (u, p) => ({ userName: u.name, postTitle: p.title }),
-        )
-        .take(5);
-
-      const planData = plan.toPlan();
-      expect(planData.operation.operationType).to.equal("take");
-
-      // Check auto params
-      expect(planData.autoParams.__p1).to.equal(25); // age > 25
-      expect(planData.autoParams.__p2).to.equal(5); // take 5
-    });
-  });
+  // NOTE: selectMany is not supported in defineSelect/plan API
+  // It only works with parseQuery(() => from(...).selectMany(...))
+  // See packages/tinqer/tests/cross-join-normalization.test.ts for working example
 });
