@@ -4,6 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
+import type { QueryHelpers } from "@webpods/tinqer";
 import {
   selectStatement,
   insertStatement,
@@ -87,10 +88,10 @@ describe("Optional Parameters", () => {
     it("should work with all three parameters", () => {
       const result = selectStatement(
         schema,
-        (q, p, h) =>
+        (q, p: { searchTerm: string }, h?: QueryHelpers) =>
           q
             .from("users")
-            .where((u) => h.functions.icontains(u.name, p.searchTerm))
+            .where((u) => h!.functions.icontains(u.name, p.searchTerm))
             .select((u) => u.name),
         { searchTerm: "alice" },
       );

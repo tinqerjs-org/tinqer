@@ -121,7 +121,7 @@ describe("UPDATE Statement Generation", () => {
   describe("UPDATE with parameters", () => {
     it("should use external parameters in SET", () => {
       const result = toSql(
-        defineUpdate(schema, (q, p) =>
+        defineUpdate(schema, (q, p: { newAge: number; userId: number }) =>
           q
             .update("users")
             .set({ age: p.newAge })
@@ -139,7 +139,7 @@ describe("UPDATE Statement Generation", () => {
 
     it("should mix external parameters with literals", () => {
       const result = toSql(
-        defineUpdate(schema, (q, p) =>
+        defineUpdate(schema, (q, p: { userId: number }) =>
           q
             .update("users")
             .set({ age: 36, email: "fixed@example.com" })

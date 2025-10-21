@@ -94,7 +94,9 @@ describe("DELETE Statement Generation", () => {
   describe("DELETE with parameters", () => {
     it("should use external parameters", () => {
       const result = toSql(
-        defineDelete(schema, (q, p) => q.deleteFrom("users").where((u) => u.id === p.userId)),
+        defineDelete(schema, (q, p: { userId: number }) =>
+          q.deleteFrom("users").where((u) => u.id === p.userId),
+        ),
         { userId: 4 },
       );
 
@@ -106,7 +108,7 @@ describe("DELETE Statement Generation", () => {
 
     it("should mix external parameters with literals", () => {
       const result = toSql(
-        defineDelete(schema, (q, p) =>
+        defineDelete(schema, (q, p: { minAge: number }) =>
           q.deleteFrom("users").where((u) => u.age > p.minAge && u.department === "Old"),
         ),
         { minAge: 65 },
@@ -260,7 +262,9 @@ describe("DELETE Statement Generation", () => {
 
     it("should handle parameterized array includes", () => {
       const result = toSql(
-        defineDelete(schema, (q, p) => q.deleteFrom("users").where((u) => p.ids.includes(u.id))),
+        defineDelete(schema, (q, p: { ids: number[] }) =>
+          q.deleteFrom("users").where((u) => p.ids.includes(u.id)),
+        ),
         { ids: [4, 5, 6] },
       );
 
@@ -277,7 +281,7 @@ describe("DELETE Statement Generation", () => {
   describe("DELETE with date comparisons", () => {
     it("should handle date parameters", () => {
       const result = toSql(
-        defineDelete(schema, (q, p) =>
+        defineDelete(schema, (q, p: { cutoffDate: Date }) =>
           q.deleteFrom("users").where((u) => u.createdAt < p.cutoffDate),
         ),
         { cutoffDate: new Date("2020-01-01") },

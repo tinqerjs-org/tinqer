@@ -27,10 +27,13 @@ import {
   type UpdateOperation,
   SelectPlanHandle,
   SelectTerminalHandle,
+  InsertPlanHandleInitial,
   InsertPlanHandleWithValues,
   InsertPlanHandleWithReturning,
+  UpdatePlanHandleWithSet,
   UpdatePlanHandleComplete,
   UpdatePlanHandleWithReturning,
+  DeletePlanHandleInitial,
   DeletePlanHandleComplete,
 } from "@webpods/tinqer";
 import { generateSql } from "./sql-generator.js";
@@ -113,6 +116,14 @@ export function toSql<TResult, TParams>(
 ): { sql: string; params: Record<string, unknown> };
 
 /**
+ * Convert an INSERT plan (initial) to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: InsertPlanHandleInitial<TRecord, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
  * Convert an INSERT plan to SQL string with parameters
  */
 export function toSql<TRecord, TParams>(
@@ -125,6 +136,14 @@ export function toSql<TRecord, TParams>(
  */
 export function toSql<TResult, TParams>(
   plan: InsertPlanHandleWithReturning<TResult, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Convert an UPDATE plan (with set) to SQL string with parameters
+ */
+export function toSql<TRecord, TParams>(
+  plan: UpdatePlanHandleWithSet<TRecord, TParams>,
   params: TParams,
 ): { sql: string; params: Record<string, unknown> };
 
@@ -145,6 +164,14 @@ export function toSql<TResult, TParams>(
 ): { sql: string; params: Record<string, unknown> };
 
 /**
+ * Convert a DELETE plan (initial) to SQL string with parameters
+ */
+export function toSql<TParams>(
+  plan: DeletePlanHandleInitial<unknown, TParams>,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+/**
  * Convert a DELETE plan to SQL string with parameters
  */
 export function toSql<TParams>(
@@ -160,10 +187,13 @@ export function toSql<TParams>(
   plan:
     | SelectPlanHandle<unknown, TParams>
     | SelectTerminalHandle<unknown, TParams>
+    | InsertPlanHandleInitial<unknown, TParams>
     | InsertPlanHandleWithValues<unknown, TParams>
     | InsertPlanHandleWithReturning<unknown, TParams>
+    | UpdatePlanHandleWithSet<unknown, TParams>
     | UpdatePlanHandleComplete<unknown, TParams>
     | UpdatePlanHandleWithReturning<unknown, TParams>
+    | DeletePlanHandleInitial<unknown, TParams>
     | DeletePlanHandleComplete<unknown, TParams>,
   params: TParams,
 ): { sql: string; params: Record<string, unknown> } {
@@ -195,6 +225,116 @@ export function finalize<TParams = Record<string, never>>(
   const { operation, params: mergedParams } = plan.finalize(normalizedParams);
   const text = generateSql(operation, mergedParams);
   return { text, parameters: mergedParams };
+}
+
+/**
+ * Helper function for SELECT statements - no params
+ */
+export function selectStatement<TSchema>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>) => unknown,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Helper function for SELECT statements - with params (and optionally helpers)
+ */
+export function selectStatement<TSchema, TParams>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>, p: TParams, h?: QueryHelpers) => unknown,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+export function selectStatement<TSchema, TParams>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>, p?: TParams, h?: QueryHelpers) => unknown,
+  params?: TParams,
+): { sql: string; params: Record<string, unknown> } {
+  const normalizedParams = (params ?? {}) as TParams;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const plan = defineSelect(schema, builder as any);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return toSql(plan as any, normalizedParams);
+}
+
+/**
+ * Helper function for INSERT statements - no params
+ */
+export function insertStatement<TSchema>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>) => unknown,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Helper function for INSERT statements - with params
+ */
+export function insertStatement<TSchema, TParams>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>, p: TParams) => unknown,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+export function insertStatement<TSchema, TParams = Record<string, never>>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>, p: TParams) => unknown,
+  params?: TParams,
+): { sql: string; params: Record<string, unknown> } {
+  const normalizedParams = (params ?? {}) as TParams;
+  const plan = defineInsert(schema, builder);
+  return toSql(plan, normalizedParams);
+}
+
+/**
+ * Helper function for UPDATE statements - no params
+ */
+export function updateStatement<TSchema>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>) => unknown,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Helper function for UPDATE statements - with params
+ */
+export function updateStatement<TSchema, TParams>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>, p: TParams) => unknown,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+export function updateStatement<TSchema, TParams = Record<string, never>>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>, p: TParams) => unknown,
+  params?: TParams,
+): { sql: string; params: Record<string, unknown> } {
+  const normalizedParams = (params ?? {}) as TParams;
+  const plan = defineUpdate(schema, builder);
+  return toSql(plan, normalizedParams);
+}
+
+/**
+ * Helper function for DELETE statements - no params
+ */
+export function deleteStatement<TSchema>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>) => unknown,
+): { sql: string; params: Record<string, unknown> };
+
+/**
+ * Helper function for DELETE statements - with params
+ */
+export function deleteStatement<TSchema, TParams>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>, p: TParams) => unknown,
+  params: TParams,
+): { sql: string; params: Record<string, unknown> };
+
+export function deleteStatement<TSchema, TParams = Record<string, never>>(
+  schema: DatabaseSchema<TSchema>,
+  builder: (q: QueryBuilder<TSchema>, p: TParams) => unknown,
+  params?: TParams,
+): { sql: string; params: Record<string, unknown> } {
+  const normalizedParams = (params ?? {}) as TParams;
+  const plan = defineDelete(schema, builder);
+  return toSql(plan, normalizedParams);
 }
 
 /**
