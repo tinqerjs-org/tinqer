@@ -218,9 +218,19 @@ export function defineInsert(
   }
 
   const initialState = createInitialState<unknown, unknown>(parseResult, options);
+  const insertOp = parseResult.operation as InsertOperation;
 
-  // Always return InsertPlanHandleInitial to keep the type simple
-  // The builder can call .values() to add values if needed
+  // Check if builder already called .returning()
+  if (insertOp.returning) {
+    return new InsertPlanHandleWithReturning(initialState);
+  }
+
+  // Check if builder already called .values()
+  if (insertOp.values) {
+    return new InsertPlanHandleWithValues(initialState);
+  }
+
+  // Return initial handle if neither values() nor returning() was called
   return new InsertPlanHandleInitial(initialState);
 }
 
