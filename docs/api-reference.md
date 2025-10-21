@@ -89,8 +89,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { executeSelect, toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@webpods/tinqer";
+import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; age: number };
@@ -169,8 +169,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineInsert } from "@webpods/tinqer";
-import { executeInsert, toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@webpods/tinqer";
+import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string };
@@ -263,8 +263,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineUpdate } from "@webpods/tinqer";
-import { executeUpdate, toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@webpods/tinqer";
+import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; lastLogin: Date; status: string };
@@ -356,8 +356,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineDelete } from "@webpods/tinqer";
-import { executeDelete, toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@webpods/tinqer";
+import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; status: string };

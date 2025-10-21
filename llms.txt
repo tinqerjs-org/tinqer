@@ -632,8 +632,7 @@ db.exec(`
 const inserted = executeInsert(
   db,
   schema,
-  (q) =>
-    q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
+  (q) => q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
   {},
 );
 // inserted === 1
@@ -663,8 +662,7 @@ const updated = executeUpdate(
 const removed = executeDelete(
   db,
   schema,
-  (q, params: { cutoff: number }) =>
-    q.deleteFrom("users").where((u) => u.age < params.cutoff),
+  (q, params: { cutoff: number }) => q.deleteFrom("users").where((u) => u.age < params.cutoff),
   { cutoff: 18 },
 );
 
@@ -828,8 +826,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { executeSelect, toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@webpods/tinqer";
+import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; age: number };
@@ -908,8 +906,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineInsert } from "@webpods/tinqer";
-import { executeInsert, toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@webpods/tinqer";
+import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string };
@@ -1002,8 +1000,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineUpdate } from "@webpods/tinqer";
-import { executeUpdate, toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@webpods/tinqer";
+import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; lastLogin: Date; status: string };
@@ -1095,8 +1093,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineDelete } from "@webpods/tinqer";
-import { executeDelete, toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@webpods/tinqer";
+import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; status: string };
@@ -3920,12 +3918,7 @@ await db.tx(async (t) => {
 
 // SQLite transactions
 const transaction = sqliteDb.transaction(() => {
-  executeInsert(
-    db,
-    schema,
-    (q) => q.insertInto("users").values({ name: "Jack" }),
-    {},
-  );
+  executeInsert(db, schema, (q) => q.insertInto("users").values({ name: "Jack" }), {});
   executeUpdate(
     db,
     schema,
