@@ -20,9 +20,8 @@ describe("Null Coalescing Operator (??) with query", () => {
     const schema = createSchema<Schema>();
 
     const result = toSql(
-      defineSelect(
-        schema,
-        (q) => q.from("users").where((u) => (u.status ?? "active") === "active"),
+      defineSelect(schema, (q) =>
+        q.from("users").where((u) => (u.status ?? "active") === "active"),
       ),
       {},
     );
@@ -43,10 +42,7 @@ describe("Null Coalescing Operator (??) with query", () => {
     const schema = createSchema<Schema>();
 
     const result = toSql(
-      defineSelect(
-        schema,
-        (q) => q.from("orders").where((o) => (o.priority ?? 5) < 3),
-      ),
+      defineSelect(schema, (q) => q.from("orders").where((o) => (o.priority ?? 5) < 3)),
       {},
     );
 

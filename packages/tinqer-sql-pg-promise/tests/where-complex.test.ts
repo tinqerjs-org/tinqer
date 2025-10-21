@@ -4,8 +4,8 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createSchema } from "@webpods/tinqer";
-import { selectStatement } from "../dist/index.js";
+import { createSchema, defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 
 describe("Complex WHERE Clause SQL Generation", () => {
   interface User {
@@ -38,9 +38,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
   describe("Nested logical conditions", () => {
     it("should handle complex nested AND/OR conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where(
@@ -48,6 +47,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
                 (u.age >= 18 && u.age <= 65 && u.isActive) ||
                 (u.role == "admin" && u.departmentId == 1),
             ),
+        ),
         {},
       );
 
@@ -62,9 +62,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle deeply nested conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("products")
             .where(
@@ -73,6 +72,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
                 p.isAvailable &&
                 p.stock > 0,
             ),
+        ),
         {},
       );
 
@@ -91,12 +91,12 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle multiple NOT conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where((u) => !(u.role == "guest") && !!u.isActive && !(u.age < 18 || u.age > 99)),
+        ),
         {},
       );
 
@@ -109,9 +109,10 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
   describe("Range conditions", () => {
     it("should handle BETWEEN-like conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("products").where((p) => p.price >= 50 && p.price <= 200),
+      const result = toSql(
+        defineSelect(schema, (q) =>
+          q.from("products").where((p) => p.price >= 50 && p.price <= 200),
+        ),
         {},
       );
 
@@ -122,15 +123,15 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle multiple range conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where(
               (u) =>
                 u.age >= 25 && u.age <= 35 && (u.salary || 0) >= 50000 && (u.salary || 0) <= 100000,
             ),
+        ),
         {},
       );
 
@@ -141,9 +142,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle exclusive ranges", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("products").where((p) => p.stock > 10 && p.stock < 100),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("products").where((p) => p.stock > 10 && p.stock < 100)),
         {},
       );
 
@@ -156,12 +156,12 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
   describe("IN-like conditions", () => {
     it("should handle OR conditions simulating IN", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where((u) => u.role == "admin" || u.role == "manager" || u.role == "supervisor"),
+        ),
         {},
       );
 
@@ -176,12 +176,12 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle NOT IN-like conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where((u) => u.role != "guest" && u.role != "blocked" && u.role != "suspended"),
+        ),
         {},
       );
 
@@ -198,14 +198,14 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
   describe("NULL handling", () => {
     it("should handle complex NULL checks", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where(
               (u) => (u.salary == null && u.role == "intern") || (u.salary != null && u.salary > 0),
             ),
+        ),
         {},
       );
 
@@ -220,9 +220,10 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle nullable field with default values", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("products").where((p) => (p.discount || 0) > 10 && (p.discount || 0) < 50),
+      const result = toSql(
+        defineSelect(schema, (q) =>
+          q.from("products").where((p) => (p.discount || 0) > 10 && (p.discount || 0) < 50),
+        ),
         {},
       );
 
@@ -235,9 +236,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
   describe("Arithmetic expressions in WHERE", () => {
     it("should handle arithmetic comparisons", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("products").where((p) => p.price * 0.9 > 100),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("products").where((p) => p.price * 0.9 > 100)),
         {},
       );
 
@@ -246,12 +246,12 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle complex arithmetic expressions", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("products")
             .where((p) => p.price - (p.discount || 0) > 50 && p.stock * p.price < 10000),
+        ),
         {},
       );
 
@@ -262,9 +262,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle division and modulo", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.id % 2 == 0),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.id % 2 == 0)),
         {},
       );
 
@@ -275,9 +274,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
   describe("Mixed type comparisons", () => {
     it("should handle boolean, number, and string conditions together", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where(
@@ -287,6 +285,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
                 u.name != "Anonymous" &&
                 (u.salary || 0) > 30000,
             ),
+        ),
         {},
       );
 
@@ -303,9 +302,10 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle type coercion scenarios", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.id > 0 && u.isActive && u.age != null),
+      const result = toSql(
+        defineSelect(schema, (q) =>
+          q.from("users").where((u) => u.id > 0 && u.isActive && u.age != null),
+        ),
         {},
       );
 
@@ -320,14 +320,14 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
   describe("Multiple WHERE clauses chained", () => {
     it("should combine 3 WHERE clauses", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where((u) => u.age >= 18)
             .where((u) => u.isActive)
             .where((u) => u.role != "guest"),
+        ),
         {},
       );
 
@@ -338,9 +338,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should combine 5 WHERE clauses", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("products")
             .where((p) => p.price > 10)
@@ -348,6 +347,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
             .where((p) => p.isAvailable)
             .where((p) => p.categoryId != 999)
             .where((p) => p.name != ""),
+        ),
         {},
       );
 
@@ -367,18 +367,20 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
   describe("WHERE with parameters", () => {
     it("should handle complex conditions with external parameters", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
-          q
-            .from("users")
-            .where(
-              (u) =>
-                u.age >= params.minAge &&
-                u.age <= params.maxAge &&
-                u.isActive == params.isActive &&
-                (u.role == params.roles[0] || u.role == params.roles[1]),
-            ),
+      const result = toSql(
+        defineSelect(
+          schema,
+          (q, params: { minAge: number; maxAge: number; roles: string[]; isActive: boolean }) =>
+            q
+              .from("users")
+              .where(
+                (u) =>
+                  u.age >= params.minAge &&
+                  u.age <= params.maxAge &&
+                  u.isActive == params.isActive &&
+                  (u.role == params.roles[0] || u.role == params.roles[1]),
+              ),
+        ),
         { minAge: 25, maxAge: 55, roles: ["admin", "manager"], isActive: true },
       );
 
@@ -396,9 +398,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should mix parameters with auto-parameterized constants", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
+      const result = toSql(
+        defineSelect(schema, (q, params: { threshold: number }) =>
           q
             .from("products")
             .where(
@@ -408,6 +409,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
                 p.discount != null &&
                 p.isAvailable == true,
             ),
+        ),
         { threshold: 100 },
       );
 
@@ -425,9 +427,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
 
   describe("Edge cases", () => {
     it("should handle very long condition chains", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where(
@@ -443,6 +444,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
                 (u.salary || 0) >= 0 &&
                 (u.departmentId || 0) > 0,
             ),
+        ),
         {},
       );
 
@@ -450,9 +452,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle conditions with all comparison operators", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("products")
             .where(
@@ -464,6 +465,7 @@ describe("Complex WHERE Clause SQL Generation", () => {
                 (p.discount ?? 0) < 50 ||
                 (p.discount ?? 0) <= 75,
             ),
+        ),
         {},
       );
 
@@ -476,9 +478,8 @@ describe("Complex WHERE Clause SQL Generation", () => {
     });
 
     it("should handle false boolean literals correctly", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.isActive == false),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.isActive == false)),
         {},
       );
 

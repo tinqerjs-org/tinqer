@@ -51,10 +51,7 @@ describe("Arithmetic Expression SQL Generation", () => {
   describe("Arithmetic in WHERE clauses", () => {
     it("should handle arithmetic comparisons in WHERE", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("products").where((p) => p.price - p.cost > 50),
-        ),
+        defineSelect(schema, (q) => q.from("products").where((p) => p.price - p.cost > 50)),
         {},
       );
 
@@ -64,9 +61,8 @@ describe("Arithmetic Expression SQL Generation", () => {
 
     it("should handle complex arithmetic in WHERE", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("financial").where((f) => f.revenue / f.employees > 100000),
+        defineSelect(schema, (q) =>
+          q.from("financial").where((f) => f.revenue / f.employees > 100000),
         ),
         {},
       );
@@ -79,9 +75,8 @@ describe("Arithmetic Expression SQL Generation", () => {
 
     it("should handle multiple arithmetic conditions", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("products").where((p) => p.price * 0.9 > 100 && p.cost * p.quantity < 10000),
+        defineSelect(schema, (q) =>
+          q.from("products").where((p) => p.price * 0.9 > 100 && p.cost * p.quantity < 10000),
         ),
         {},
       );
@@ -102,9 +97,8 @@ describe("Arithmetic Expression SQL Generation", () => {
 
     it("should handle arithmetic with nullable checks", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("products").where((p) => p.discount != null && p.price - p.discount > 50),
+        defineSelect(schema, (q) =>
+          q.from("products").where((p) => p.discount != null && p.price - p.discount > 50),
         ),
         {},
       );
@@ -122,10 +116,8 @@ describe("Arithmetic Expression SQL Generation", () => {
 
     it("should mix parameters with constants in arithmetic", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, params) =>
-            q.from("products").where((p) => p.price * (1 - params.baseDiscount - 0.05) > 100),
+        defineSelect(schema, (q, params: { baseDiscount: number }) =>
+          q.from("products").where((p) => p.price * (1 - params.baseDiscount - 0.05) > 100),
         ),
         { baseDiscount: 0.1 },
       );
@@ -151,10 +143,7 @@ describe("Arithmetic Expression SQL Generation", () => {
 
     it("should handle very large numbers", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("financial").where((f) => f.revenue > 1000000000),
-        ),
+        defineSelect(schema, (q) => q.from("financial").where((f) => f.revenue > 1000000000)),
         {},
       );
 

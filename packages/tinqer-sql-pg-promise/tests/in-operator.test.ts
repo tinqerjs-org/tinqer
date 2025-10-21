@@ -32,10 +32,7 @@ describe("IN Operator", () => {
   describe("Basic IN operations", () => {
     it("should generate SQL for array.includes() with numbers", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").where((u) => [1, 2, 3, 4, 5].includes(u.id)),
-        ),
+        defineSelect(schema, (q) => q.from("users").where((u) => [1, 2, 3, 4, 5].includes(u.id))),
         {},
       );
 
@@ -53,9 +50,8 @@ describe("IN Operator", () => {
 
     it("should generate SQL for array.includes() with strings", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").where((u) => ["admin", "user", "guest"].includes(u.role)),
+        defineSelect(schema, (q) =>
+          q.from("users").where((u) => ["admin", "user", "guest"].includes(u.role)),
         ),
         {},
       );
@@ -72,9 +68,8 @@ describe("IN Operator", () => {
 
     it("should handle single item array", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("products").where((p) => ["electronics"].includes(p.category)),
+        defineSelect(schema, (q) =>
+          q.from("products").where((p) => ["electronics"].includes(p.category)),
         ),
         {},
       );
@@ -87,10 +82,7 @@ describe("IN Operator", () => {
 
     it("should handle empty array as FALSE", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").where((u) => ([] as number[]).includes(u.id)),
-        ),
+        defineSelect(schema, (q) => q.from("users").where((u) => ([] as number[]).includes(u.id))),
         {},
       );
 
@@ -102,9 +94,8 @@ describe("IN Operator", () => {
   describe("IN with other conditions", () => {
     it("should combine IN with AND conditions", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").where((u) => [1, 2, 3].includes(u.id) && u.age > 18),
+        defineSelect(schema, (q) =>
+          q.from("users").where((u) => [1, 2, 3].includes(u.id) && u.age > 18),
         ),
         {},
       );
@@ -122,12 +113,10 @@ describe("IN Operator", () => {
 
     it("should combine IN with OR conditions", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("products")
-              .where((p) => ["electronics", "computers"].includes(p.category) || p.price < 100),
+        defineSelect(schema, (q) =>
+          q
+            .from("products")
+            .where((p) => ["electronics", "computers"].includes(p.category) || p.price < 100),
         ),
         {},
       );
@@ -144,12 +133,10 @@ describe("IN Operator", () => {
 
     it("should handle multiple IN conditions", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .where((u) => [1, 2, 3].includes(u.id) && ["admin", "moderator"].includes(u.role)),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .where((u) => [1, 2, 3].includes(u.id) && ["admin", "moderator"].includes(u.role)),
         ),
         {},
       );
@@ -170,14 +157,12 @@ describe("IN Operator", () => {
   describe("IN with other SQL operations", () => {
     it("should work with SELECT and ORDER BY", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .where((u) => ["admin", "moderator"].includes(u.role))
-              .select((u) => ({ id: u.id, name: u.name }))
-              .orderBy((u) => u.name),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .where((u) => ["admin", "moderator"].includes(u.role))
+            .select((u) => ({ id: u.id, name: u.name }))
+            .orderBy((u) => u.name),
         ),
         {},
       );
@@ -193,14 +178,12 @@ describe("IN Operator", () => {
 
     it("should work with GROUP BY", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("products")
-              .where((p) => ["electronics", "computers", "phones"].includes(p.category))
-              .groupBy((p) => p.category)
-              .select((g) => ({ category: g.key, count: g.count() })),
+        defineSelect(schema, (q) =>
+          q
+            .from("products")
+            .where((p) => ["electronics", "computers", "phones"].includes(p.category))
+            .groupBy((p) => p.category)
+            .select((g) => ({ category: g.key, count: g.count() })),
         ),
         {},
       );
@@ -217,15 +200,13 @@ describe("IN Operator", () => {
 
     it("should work with TAKE and SKIP", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .where((u) => [1, 2, 3, 4, 5].includes(u.id))
-              .orderBy((u) => u.id)
-              .skip(10)
-              .take(5),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .where((u) => [1, 2, 3, 4, 5].includes(u.id))
+            .orderBy((u) => u.id)
+            .skip(10)
+            .take(5),
         ),
         {},
       );
@@ -248,10 +229,7 @@ describe("IN Operator", () => {
   describe("NOT IN operations", () => {
     it("should generate NOT IN with negation", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").where((u) => ![1, 2, 3].includes(u.id)),
-        ),
+        defineSelect(schema, (q) => q.from("users").where((u) => ![1, 2, 3].includes(u.id))),
         {},
       );
 
@@ -267,10 +245,7 @@ describe("IN Operator", () => {
 
     it("should handle negated empty array as TRUE", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").where((u) => !([] as number[]).includes(u.id)),
-        ),
+        defineSelect(schema, (q) => q.from("users").where((u) => !([] as number[]).includes(u.id))),
         {},
       );
 
@@ -282,9 +257,8 @@ describe("IN Operator", () => {
   describe("Parameterized arrays", () => {
     it("should expand parameterized array in IN clause", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, params) => q.from("users").where((u) => params.targetIds.includes(u.id)),
+        defineSelect(schema, (q, params: { targetIds: number[] }) =>
+          q.from("users").where((u) => params.targetIds.includes(u.id)),
         ),
         { targetIds: [1, 3, 5, 7] },
       );
@@ -303,9 +277,8 @@ describe("IN Operator", () => {
 
     it("should expand parameterized array in NOT IN clause", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, params) => q.from("users").where((u) => !params.excludedIds.includes(u.id)),
+        defineSelect(schema, (q, params: { excludedIds: number[] }) =>
+          q.from("users").where((u) => !params.excludedIds.includes(u.id)),
         ),
         { excludedIds: [2, 4] },
       );
@@ -322,9 +295,8 @@ describe("IN Operator", () => {
 
     it("should handle empty parameterized array", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, params) => q.from("users").where((u) => params.ids.includes(u.id)),
+        defineSelect(schema, (q, params: { ids: number[] }) =>
+          q.from("users").where((u) => params.ids.includes(u.id)),
         ),
         { ids: [] as number[] },
       );
@@ -337,9 +309,8 @@ describe("IN Operator", () => {
 
     it("should handle parameterized array with strings", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, params) => q.from("users").where((u) => params.roles.includes(u.role)),
+        defineSelect(schema, (q, params: { roles: string[] }) =>
+          q.from("users").where((u) => params.roles.includes(u.role)),
         ),
         { roles: ["admin", "moderator", "user"] },
       );

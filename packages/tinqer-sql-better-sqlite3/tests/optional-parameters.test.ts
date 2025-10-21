@@ -4,26 +4,26 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import {
-  selectStatement,
-  insertStatement,
-  updateStatement,
-  deleteStatement,
-} from "../dist/index.js";
+import { defineSelect, defineInsert, defineUpdate, defineDelete } from "@webpods/tinqer";
+import { toSql, insertStatement, updateStatement, deleteStatement } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 
 describe("Optional Parameters", () => {
   describe("selectStatement - without params or helpers", () => {
     it("should work with only query builder parameter", () => {
-      const result = selectStatement(schema, (q) => q.from("users"));
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users")),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "users"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should work with query builder and select", () => {
-      const result = selectStatement(schema, (q) =>
-        q.from("users").select((u) => ({ id: u.id, name: u.name })),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").select((u) => ({ id: u.id, name: u.name }))),
+        {},
       );
 
       expect(result.sql).to.equal('SELECT "id" AS "id", "name" AS "name" FROM "users"');
@@ -31,19 +31,25 @@ describe("Optional Parameters", () => {
     });
 
     it("should work with query builder and where with literals", () => {
-      const result = selectStatement(schema, (q) => q.from("users").where((u) => u.age >= 18));
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.age >= 18)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "age" >= @__p1');
       expect(result.params).to.deep.equal({ __p1: 18 });
     });
 
     it("should work with query builder and multiple operations", () => {
-      const result = selectStatement(schema, (q) =>
-        q
-          .from("users")
-          .where((u) => u.age >= 21)
-          .orderBy((u) => u.name)
-          .select((u) => u.name),
+      const result = toSql(
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .where((u) => u.age >= 21)
+            .orderBy((u) => u.name)
+            .select((u) => u.name),
+        ),
+        {},
       );
 
       expect(result.sql).to.equal(
@@ -55,9 +61,8 @@ describe("Optional Parameters", () => {
 
   describe("selectStatement - with params but no helpers", () => {
     it("should work with query builder and params", () => {
-      const result = selectStatement(
-        schema,
-        (q, p) => q.from("users").where((u) => u.age >= p.minAge),
+      const result = toSql(
+        defineSelect(schema, (q, p) => q.from("users").where((u) => u.age >= p.minAge)),
         { minAge: 25 },
       );
 
@@ -66,13 +71,13 @@ describe("Optional Parameters", () => {
     });
 
     it("should work with complex params", () => {
-      const result = selectStatement(
-        schema,
-        (q, p) =>
+      const result = toSql(
+        defineSelect(schema, (q, p) =>
           q
             .from("users")
             .where((u) => u.age >= p.minAge && u.age <= p.maxAge)
             .select((u) => ({ name: u.name, age: u.age })),
+        ),
         { minAge: 18, maxAge: 65 },
       );
 
@@ -85,13 +90,13 @@ describe("Optional Parameters", () => {
 
   describe("selectStatement - with params and helpers", () => {
     it("should work with all three parameters", () => {
-      const result = selectStatement(
-        schema,
-        (q, p, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, p, h) =>
           q
             .from("users")
             .where((u) => h.functions.icontains(u.name, p.searchTerm))
             .select((u) => u.name),
+        ),
         { searchTerm: "alice" },
       );
 
@@ -189,8 +194,9 @@ describe("Optional Parameters", () => {
   describe("Type inference", () => {
     it("should infer correct types with no params", () => {
       // This test mainly checks that TypeScript compilation works
-      const result = selectStatement(schema, (q) =>
-        q.from("users").select((u) => ({ id: u.id, name: u.name })),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").select((u) => ({ id: u.id, name: u.name }))),
+        {},
       );
 
       // Runtime check
@@ -200,9 +206,8 @@ describe("Optional Parameters", () => {
 
     it("should infer correct types with params", () => {
       // This test mainly checks that TypeScript compilation works
-      const result = selectStatement(
-        schema,
-        (q, p) => q.from("users").where((u) => u.age >= p.minAge),
+      const result = toSql(
+        defineSelect(schema, (q, p) => q.from("users").where((u) => u.age >= p.minAge)),
         { minAge: 18 },
       );
 

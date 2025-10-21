@@ -4,20 +4,21 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
+import { defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 
 describe("Complex Query Chaining", () => {
   it("should generate complex query with WHERE, SELECT, ORDER BY, TAKE", () => {
-    const result = selectStatement(
-      schema,
-      (q, p) =>
+    const result = toSql(
+      defineSelect(schema, (q, p) =>
         q
           .from("users")
           .where((x) => x.age >= p.minAge && x.isActive)
           .select((x) => ({ id: x.id, name: x.name }))
           .orderBy((x) => x.name)
           .take(10),
+      ),
       { minAge: 18 },
     );
 
@@ -28,14 +29,14 @@ describe("Complex Query Chaining", () => {
   });
 
   it("should generate query with SKIP and TAKE for pagination", () => {
-    const result = selectStatement(
-      schema,
-      (q, p) =>
+    const result = toSql(
+      defineSelect(schema, (q, p) =>
         q
           .from("products")
           .orderBy((x) => x.name)
           .skip(p.page * p.pageSize)
           .take(p.pageSize),
+      ),
       { page: 2, pageSize: 20 },
     );
 
@@ -46,13 +47,13 @@ describe("Complex Query Chaining", () => {
   });
 
   it("should generate query with multiple WHERE clauses combined with AND", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
+    const result = toSql(
+      defineSelect(schema, (q) =>
         q
           .from("users")
           .where((x) => x.age >= 18)
           .where((x) => x.role == "admin"),
+      ),
       {},
     );
 
@@ -61,13 +62,13 @@ describe("Complex Query Chaining", () => {
   });
 
   it("should generate query with DISTINCT", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
+    const result = toSql(
+      defineSelect(schema, (q) =>
         q
           .from("products")
           .select((x) => x.category)
           .distinct(),
+      ),
       {},
     );
 
@@ -75,13 +76,13 @@ describe("Complex Query Chaining", () => {
   });
 
   it("should generate query with GROUP BY and COUNT aggregate", () => {
-    const result = selectStatement(
-      schema,
-      (q) =>
+    const result = toSql(
+      defineSelect(schema, (q) =>
         q
           .from("employees")
           .groupBy((x) => x.department)
           .select((g) => ({ department: g.key, count: g.count() })),
+      ),
       {},
     );
 

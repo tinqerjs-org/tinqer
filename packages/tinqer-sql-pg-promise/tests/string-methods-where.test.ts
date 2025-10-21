@@ -5,15 +5,15 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
+import { defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 
 describe("String methods in WHERE clause", () => {
   describe("toLowerCase", () => {
     it("should handle toLowerCase on column", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.name.toLowerCase() == "john"),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.name.toLowerCase() == "john")),
         {},
       );
 
@@ -23,9 +23,10 @@ describe("String methods in WHERE clause", () => {
     });
 
     it("should handle toLowerCase with params", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) => q.from("users").where((u) => u.name.toLowerCase() == params.search),
+      const result = toSql(
+        defineSelect(schema, (q, params: { search: string }) =>
+          q.from("users").where((u) => u.name.toLowerCase() == params.search),
+        ),
         { search: "john" },
       );
 
@@ -35,10 +36,10 @@ describe("String methods in WHERE clause", () => {
     });
 
     it("should handle toLowerCase on both sides", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
+      const result = toSql(
+        defineSelect(schema, (q, params: { search: string }) =>
           q.from("users").where((u) => u.name.toLowerCase() == params.search.toLowerCase()),
+        ),
         { search: "JOHN" },
       );
 
@@ -49,12 +50,12 @@ describe("String methods in WHERE clause", () => {
     });
 
     it("should combine toLowerCase with other conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
+      const result = toSql(
+        defineSelect(schema, (q, params: { search: string; minAge: number }) =>
           q
             .from("users")
             .where((u) => u.name.toLowerCase() == params.search && u.age > params.minAge),
+        ),
         { search: "john", minAge: 18 },
       );
 
@@ -67,15 +68,15 @@ describe("String methods in WHERE clause", () => {
     });
 
     it("should work with startsWith and toLowerCase", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
+      const result = toSql(
+        defineSelect(schema, (q, params: { prefix: string; minAge: number }) =>
           q
             .from("users")
             .where(
               (u) =>
                 u.name.toLowerCase().startsWith(params.prefix as string) && u.age >= params.minAge,
             ),
+        ),
         { prefix: "j", minAge: 21 },
       );
 
@@ -89,9 +90,8 @@ describe("String methods in WHERE clause", () => {
 
   describe("toUpperCase", () => {
     it("should handle toUpperCase on column", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.name.toUpperCase() == "JOHN"),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.name.toUpperCase() == "JOHN")),
         {},
       );
 
@@ -101,9 +101,10 @@ describe("String methods in WHERE clause", () => {
     });
 
     it("should handle toUpperCase with params", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) => q.from("users").where((u) => u.name.toUpperCase() == params.search),
+      const result = toSql(
+        defineSelect(schema, (q, params: { search: string }) =>
+          q.from("users").where((u) => u.name.toUpperCase() == params.search),
+        ),
         { search: "JOHN" },
       );
 
@@ -113,14 +114,14 @@ describe("String methods in WHERE clause", () => {
     });
 
     it("should combine toUpperCase with other conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
+      const result = toSql(
+        defineSelect(schema, (q, params: { category: string; excludeName: string }) =>
           q
             .from("products")
             .where(
               (p) => p.category.toUpperCase() == params.category && p.name != params.excludeName,
             ),
+        ),
         { category: "ELECTRONICS", excludeName: "Phone" },
       );
 
@@ -135,14 +136,14 @@ describe("String methods in WHERE clause", () => {
 
   describe("Complex scenarios", () => {
     it("should handle nested expressions with toLowerCase", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
+      const result = toSql(
+        defineSelect(schema, (q, params: { name1: string; name2: string }) =>
           q
             .from("users")
             .where(
               (u) => u.name.toLowerCase() == params.name1 || u.name.toLowerCase() == params.name2,
             ),
+        ),
         { name1: "john", name2: "jane" },
       );
 
@@ -156,9 +157,8 @@ describe("String methods in WHERE clause", () => {
     });
 
     it("should handle multiple string methods in one query", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
+      const result = toSql(
+        defineSelect(schema, (q, params: { searchName: string; searchCategory: string }) =>
           q
             .from("products")
             .where(
@@ -166,6 +166,7 @@ describe("String methods in WHERE clause", () => {
                 p.name.toLowerCase() == params.searchName &&
                 p.category.toUpperCase() == params.searchCategory,
             ),
+        ),
         { searchName: "laptop", searchCategory: "ELECTRONICS" },
       );
 
@@ -177,12 +178,12 @@ describe("String methods in WHERE clause", () => {
     });
 
     it("should handle string methods with NULL coalescing", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
+      const result = toSql(
+        defineSelect(schema, (q, params: { defaultName: string; search: string }) =>
           q
             .from("users")
             .where((u) => (u.name ?? params.defaultName).toLowerCase() == params.search),
+        ),
         { defaultName: "Unknown", search: "unknown" },
       );
 
@@ -198,9 +199,10 @@ describe("String methods in WHERE clause", () => {
     it("should throw error for unsupported toString() method", () => {
       // toString() is not supported - this documents the expected behavior
       expect(() =>
-        selectStatement(
-          schema,
-          (q) => q.from("users").where((u) => u.age.toString().toLowerCase() == "25"),
+        toSql(
+          defineSelect(schema, (q) =>
+            q.from("users").where((u) => u.age.toString().toLowerCase() == "25"),
+          ),
           {},
         ),
       ).to.throw("Failed to parse query");

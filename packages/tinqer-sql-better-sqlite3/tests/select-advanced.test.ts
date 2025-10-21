@@ -4,8 +4,8 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createSchema } from "@webpods/tinqer";
-import { selectStatement } from "../dist/index.js";
+import { createSchema, defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 
 interface User {
   id: number;
@@ -50,9 +50,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Removed: nested object structures with || operator
 
     it("should handle deeply nested projections", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q.from("products").select((p) => ({
             basic: {
               id: p.id,
@@ -71,6 +70,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
               // value: p.stock * p.cost,
             },
           })),
+        ),
         {},
       );
 
@@ -92,9 +92,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Test removed: Chained SELECT with expressions no longer supported
 
     it("should project after filtering", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("products")
             .where((p) => p.stock > 0 && p.price > 10)
@@ -104,6 +103,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
               price: p.price,
               stock: p.stock,
             })),
+        ),
         {},
       );
 
@@ -121,9 +121,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Test removed: WHERE/ORDER BY/TAKE with expressions no longer supported in SELECT
 
     it("should work with JOIN and GROUP BY", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .join(
@@ -138,6 +137,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
               avgSalary: g.avg((joined) => joined.u.salary),
               headcount: g.count(),
             })),
+        ),
         {},
       );
 
@@ -148,9 +148,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     });
 
     it("should work with DISTINCT", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("products")
             .select((p) => ({
@@ -158,6 +157,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
               name: p.name,
             }))
             .distinct(),
+        ),
         {},
       );
 
@@ -174,14 +174,14 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
   describe("Edge cases in SELECT", () => {
     it("should handle SELECT with only literals", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q.from("users").select(() => ({
             constant: 42,
             message: "Hello World",
             flag: true,
           })),
+        ),
         {},
       );
 
@@ -198,15 +198,17 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Test removed: Very complex nested arithmetic no longer supported in SELECT
 
     it("should handle SELECT with no projection (identity)", () => {
-      const result = selectStatement(schema, (q) => q.from("users").select((u) => u), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").select((u) => u)),
+        {},
+      );
 
       expect(result.sql).to.contain("SELECT * FROM");
     });
 
     it("should handle SELECT with renamed fields", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q.from("users").select((u) => ({
             userId: u.id,
             userFirstName: u.firstName,
@@ -214,6 +216,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
             userEmail: u.email,
             userAge: u.age,
           })),
+        ),
         {},
       );
 
@@ -229,9 +232,8 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
   describe("SELECT with special cases", () => {
     it("should handle SELECT with pagination pattern", () => {
-      const result = selectStatement(
-        schema,
-        (q, params) =>
+      const result = toSql(
+        defineSelect(schema, (q, params) =>
           q
             .from("products")
             .select((p) => ({
@@ -242,6 +244,7 @@ describe("Advanced SELECT Projection SQL Generation", () => {
             .orderBy((p) => p.id)
             .skip(params.page * params.pageSize)
             .take(params.pageSize),
+        ),
         { page: 2, pageSize: 20 },
       );
 

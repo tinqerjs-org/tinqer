@@ -58,13 +58,11 @@ describe("ANY and ALL Operations", () => {
 
     it("should combine WHERE with any() predicate", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .where((u) => u.age > 21)
-              .any((u) => u.isActive),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .where((u) => u.age > 21)
+            .any((u) => u.isActive),
         ),
         {},
       );
@@ -100,13 +98,11 @@ describe("ANY and ALL Operations", () => {
 
     it("should combine WHERE with all() predicate", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .where((u) => u.name != "admin")
-              .all((u) => u.age < 100),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .where((u) => u.name != "admin")
+            .all((u) => u.age < 100),
         ),
         {},
       );
@@ -120,9 +116,8 @@ describe("ANY and ALL Operations", () => {
   describe("Complex ANY/ALL scenarios", () => {
     it("should handle any() with complex conditions", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").any((u) => u.age > 18 && u.isActive && u.name != "test"),
+        defineSelect(schema, (q) =>
+          q.from("users").any((u) => u.age > 18 && u.isActive && u.name != "test"),
         ),
         {},
       );
@@ -134,10 +129,7 @@ describe("ANY and ALL Operations", () => {
 
     it("should handle all() with complex conditions", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").all((u) => u.age > 0 || u.name == "admin"),
-        ),
+        defineSelect(schema, (q) => q.from("users").all((u) => u.age > 0 || u.name == "admin")),
         {},
       );
       expect(result.sql).to.equal(
@@ -148,13 +140,11 @@ describe("ANY and ALL Operations", () => {
 
     it("should work with SELECT and any()", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .select((u) => ({ name: u.name, age: u.age }))
-              .any(),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .select((u) => ({ name: u.name, age: u.age }))
+            .any(),
         ),
         {},
       );

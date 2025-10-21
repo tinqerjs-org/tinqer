@@ -10,20 +10,21 @@ import { schema } from "./test-schema.js";
 
 describe("SELECT SQL Generation", () => {
   it("should generate SELECT with single column", () => {
-    const result = toSql(defineSelect(schema, (q) => q.from("users").select((x) => x.name)), {});
+    const result = toSql(
+      defineSelect(schema, (q) => q.from("users").select((x) => x.name)),
+      {},
+    );
 
     expect(result.sql).to.equal('SELECT "name" FROM "users"');
   });
 
   it("should generate SELECT with object projection", () => {
     const result = toSql(
-      defineSelect(
-        schema,
-        (q) =>
-          q.from("users").select((x) => ({
-            userId: x.id,
-            userName: x.name,
-          })),
+      defineSelect(schema, (q) =>
+        q.from("users").select((x) => ({
+          userId: x.id,
+          userName: x.name,
+        })),
       ),
       {},
     );
@@ -35,13 +36,11 @@ describe("SELECT SQL Generation", () => {
 
   it("should generate SELECT after WHERE", () => {
     const result = toSql(
-      defineSelect(
-        schema,
-        (q) =>
-          q
-            .from("users")
-            .where((x) => x.age >= 18)
-            .select((x) => ({ id: x.id, name: x.name })),
+      defineSelect(schema, (q) =>
+        q
+          .from("users")
+          .where((x) => x.age >= 18)
+          .select((x) => ({ id: x.id, name: x.name })),
       ),
       {},
     );

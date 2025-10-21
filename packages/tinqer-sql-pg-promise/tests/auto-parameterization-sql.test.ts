@@ -11,10 +11,7 @@ import { schema } from "./test-schema.js";
 describe("Auto-Parameterization SQL Generation", () => {
   it("should generate SQL with auto-parameterized constants", () => {
     const result = toSql(
-      defineSelect(
-        schema,
-        (q) => q.from("users").where((x) => x.age >= 18 && x.name == "John"),
-      ),
+      defineSelect(schema, (q) => q.from("users").where((x) => x.age >= 18 && x.name == "John")),
       {},
     );
 
@@ -29,9 +26,8 @@ describe("Auto-Parameterization SQL Generation", () => {
 
   it("should merge user params with auto-params", () => {
     const result = toSql(
-      defineSelect(
-        schema,
-        (q, p) => q.from("users").where((x) => x.age >= 21 && x.role == p.role),
+      defineSelect(schema, (q, p: { role: string }) =>
+        q.from("users").where((x) => x.age >= 21 && x.role == p.role),
       ),
       { role: "admin" },
     );
@@ -47,14 +43,12 @@ describe("Auto-Parameterization SQL Generation", () => {
 
   it("should handle take and skip auto-parameterization", () => {
     const result = toSql(
-      defineSelect(
-        schema,
-        (q) =>
-          q
-            .from("posts")
-            .orderBy((x) => x.id)
-            .skip(20)
-            .take(10),
+      defineSelect(schema, (q) =>
+        q
+          .from("posts")
+          .orderBy((x) => x.id)
+          .skip(20)
+          .take(10),
       ),
       {},
     );
@@ -70,18 +64,16 @@ describe("Auto-Parameterization SQL Generation", () => {
 
   it("should handle complex query with multiple auto-params", () => {
     const result = toSql(
-      defineSelect(
-        schema,
-        (q, p) =>
-          q
-            .from("products")
-            .where((x) => x.price > 100)
-            .where((x) => x.discount <= 0.5)
-            .where((x) => x.category == p.category)
-            .where((x) => x.inStock == true)
-            .orderByDescending((x) => x.price)
-            .skip(10)
-            .take(5),
+      defineSelect(schema, (q, p: { category: string }) =>
+        q
+          .from("products")
+          .where((x) => x.price > 100)
+          .where((x) => x.discount <= 0.5)
+          .where((x) => x.category == p.category)
+          .where((x) => x.inStock == true)
+          .orderByDescending((x) => x.price)
+          .skip(10)
+          .take(5),
       ),
       { category: "electronics" },
     );
@@ -105,10 +97,7 @@ describe("Auto-Parameterization SQL Generation", () => {
 
   it("should handle null comparisons with IS NULL/IS NOT NULL", () => {
     const result = toSql(
-      defineSelect(
-        schema,
-        (q) => q.from("users").where((x) => x.email != null),
-      ),
+      defineSelect(schema, (q) => q.from("users").where((x) => x.email != null)),
       {},
     );
 
@@ -118,14 +107,12 @@ describe("Auto-Parameterization SQL Generation", () => {
 
   it("should handle multiple uses of same column", () => {
     const result = toSql(
-      defineSelect(
-        schema,
-        (q) =>
-          q
-            .from("users")
-            .where((x) => x.age >= 18)
-            .where((x) => x.age <= 65)
-            .where((x) => x.age != 30),
+      defineSelect(schema, (q) =>
+        q
+          .from("users")
+          .where((x) => x.age >= 18)
+          .where((x) => x.age <= 65)
+          .where((x) => x.age != 30),
       ),
       {},
     );
@@ -147,10 +134,7 @@ describe("Auto-Parameterization SQL Generation", () => {
     // Even if we had a way to pass strings that look like SQL injection,
     // they would be parameterized
     const result = toSql(
-      defineSelect(
-        schema,
-        (q) => q.from("users").where((x) => x.username == "admin' OR '1'='1"),
-      ),
+      defineSelect(schema, (q) => q.from("users").where((x) => x.username == "admin' OR '1'='1")),
       {},
     );
 

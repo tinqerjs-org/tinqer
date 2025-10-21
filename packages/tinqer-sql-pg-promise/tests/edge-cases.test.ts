@@ -39,7 +39,10 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Empty queries", () => {
     it("should handle simple FROM without any operations", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("test_table")), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("test_table")),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test_table"');
       expect(result.params).to.deep.equal({});
@@ -50,22 +53,27 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Special characters and identifiers", () => {
     it("should handle table names with underscores", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("user_accounts_table")), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("user_accounts_table")),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "user_accounts_table"');
     });
 
     it("should handle table names with numbers", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("table123")), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("table123")),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "table123"');
     });
 
     it("should handle column names with underscores", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.column_with_underscore == "test"),
+        defineSelect(schema, (q) =>
+          q.from("test").where((t) => t.column_with_underscore == "test"),
         ),
         {},
       );
@@ -76,10 +84,7 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle uppercase column names", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.UPPERCASE_COLUMN == "TEST"),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.UPPERCASE_COLUMN == "TEST")),
         {},
       );
 
@@ -91,10 +96,7 @@ describe("Edge Cases and Error Handling", () => {
   describe("Extreme values", () => {
     it("should handle very large integers", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.id == Number.MAX_SAFE_INTEGER),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.id == Number.MAX_SAFE_INTEGER)),
         {},
       );
 
@@ -105,7 +107,10 @@ describe("Edge Cases and Error Handling", () => {
     // Removed: || operator for defaults
 
     it("should handle zero values", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("test").where((t) => t.value == 0)), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("test").where((t) => t.value == 0)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "value" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 0 });
@@ -116,7 +121,10 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("String edge cases", () => {
     it("should handle empty strings", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("test").where((t) => t.name == "")), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("test").where((t) => t.name == "")),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "name" = $(__p1)');
       expect(result.params).to.deep.equal({ __p1: "" });
@@ -124,10 +132,7 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle strings with quotes", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.name == "O'Brien"),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.name == "O'Brien")),
         {},
       );
 
@@ -137,10 +142,7 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle strings with double quotes", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.name == 'He said "Hello"'),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.name == 'He said "Hello"')),
         {},
       );
 
@@ -150,10 +152,7 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle strings with special characters", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.name == "test@#$%^&*()"),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.name == "test@#$%^&*()")),
         {},
       );
 
@@ -163,10 +162,7 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle strings with newlines and tabs", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.name == "line1\nline2\ttab"),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.name == "line1\nline2\ttab")),
         {},
       );
 
@@ -176,10 +172,7 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle Unicode strings", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.name == "Hello 世界 🌍"),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.name == "Hello 世界 🌍")),
         {},
       );
 
@@ -191,10 +184,7 @@ describe("Edge Cases and Error Handling", () => {
   describe("NULL handling edge cases", () => {
     it("should handle explicit null comparisons", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.value == null),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.value == null)),
         {},
       );
 
@@ -204,10 +194,7 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle null inequality", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.value != null),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.value != null)),
         {},
       );
 
@@ -221,10 +208,7 @@ describe("Edge Cases and Error Handling", () => {
   describe("Boolean edge cases", () => {
     it("should handle true literal", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.flag == true),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.flag == true)),
         {},
       );
 
@@ -234,10 +218,7 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle false literal", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.flag == false),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.flag == false)),
         {},
       );
 
@@ -246,14 +227,20 @@ describe("Edge Cases and Error Handling", () => {
     });
 
     it("should handle boolean field directly", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("test").where((t) => t.flag)), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("test").where((t) => t.flag)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE "flag"');
       expect(result.params).to.deep.equal({});
     });
 
     it("should handle negated boolean", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("test").where((t) => !t.flag)), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("test").where((t) => !t.flag)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" WHERE NOT "flag"');
       expect(result.params).to.deep.equal({});
@@ -263,16 +250,14 @@ describe("Edge Cases and Error Handling", () => {
   describe("Complex nested structures", () => {
     it("should handle deeply nested logical conditions", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("test")
-              .where(
-                (t) =>
-                  ((t.id > 0 && t.id < 100) || (t.id > 1000 && t.id < 2000)) &&
-                  (t.flag == true || (t.name != "" && t.value != null)),
-              ),
+        defineSelect(schema, (q) =>
+          q
+            .from("test")
+            .where(
+              (t) =>
+                ((t.id > 0 && t.id < 100) || (t.id > 1000 && t.id < 2000)) &&
+                (t.flag == true || (t.name != "" && t.value != null)),
+            ),
         ),
         {},
       );
@@ -288,19 +273,17 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle many chained operations", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("test")
-              .where((t) => t.id > 0)
-              .where((t) => t.id < 1000)
-              .where((t) => t.name != "")
-              .where((t) => t.flag == true)
-              .where((t) => t.value != null)
-              .select((t) => ({ id: t.id, name: t.name }))
-              .orderBy((t) => t.id)
-              .take(10),
+        defineSelect(schema, (q) =>
+          q
+            .from("test")
+            .where((t) => t.id > 0)
+            .where((t) => t.id < 1000)
+            .where((t) => t.name != "")
+            .where((t) => t.flag == true)
+            .where((t) => t.value != null)
+            .select((t) => ({ id: t.id, name: t.name }))
+            .orderBy((t) => t.id)
+            .take(10),
         ),
         {},
       );
@@ -317,28 +300,40 @@ describe("Edge Cases and Error Handling", () => {
 
   describe("Pagination edge cases", () => {
     it("should handle SKIP 0", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("test").skip(0)), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("test").skip(0)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" OFFSET $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 0 });
     });
 
     it("should handle TAKE 0", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("test").take(0)), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("test").take(0)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" LIMIT $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 0 });
     });
 
     it("should handle very large SKIP", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("test").skip(1000000)), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("test").skip(1000000)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" OFFSET $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 1000000 });
     });
 
     it("should handle very large TAKE", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("test").take(999999)), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("test").take(999999)),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "test" LIMIT $(__p1)');
       expect(result.params).to.deep.equal({ __p1: 999999 });
@@ -348,10 +343,7 @@ describe("Edge Cases and Error Handling", () => {
   describe("Parameter edge cases", () => {
     it("should handle empty parameter object", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, _params: Record<string, never>) => q.from("test"),
-        ),
+        defineSelect(schema, (q, _params: Record<string, never>) => q.from("test")),
         {},
       );
 
@@ -363,9 +355,8 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle null parameter values", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, params) => q.from("test").where((t) => t.name == params.name),
+        defineSelect(schema, (q, params: { name: null }) =>
+          q.from("test").where((t) => t.name == params.name),
         ),
         { name: null },
       );
@@ -380,9 +371,8 @@ describe("Edge Cases and Error Handling", () => {
   describe("Reserved SQL keywords", () => {
     it("should handle reserved keywords as column names", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("reserved").where((t) => t.select == "value" && t.from == "test"),
+        defineSelect(schema, (q) =>
+          q.from("reserved").where((t) => t.select == "value" && t.from == "test"),
         ),
         {},
       );
@@ -395,14 +385,12 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle reserved keywords in SELECT", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q.from("reserved").select((t) => ({
-              selectCol: t.select,
-              whereCol: t.where,
-              orderCol: t.order,
-            })),
+        defineSelect(schema, (q) =>
+          q.from("reserved").select((t) => ({
+            selectCol: t.select,
+            whereCol: t.where,
+            orderCol: t.order,
+          })),
         ),
         {},
       );
@@ -416,10 +404,7 @@ describe("Edge Cases and Error Handling", () => {
   describe("Whitespace handling", () => {
     it("should handle strings with only whitespace", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.name == "   "),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.name == "   ")),
         {},
       );
 
@@ -429,10 +414,7 @@ describe("Edge Cases and Error Handling", () => {
 
     it("should handle strings with leading/trailing whitespace", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("test").where((t) => t.name == "  test  "),
-        ),
+        defineSelect(schema, (q) => q.from("test").where((t) => t.name == "  test  ")),
         {},
       );
 

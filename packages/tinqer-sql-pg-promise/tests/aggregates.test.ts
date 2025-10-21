@@ -21,13 +21,11 @@ describe("Aggregate SQL Generation", () => {
 
     it("should generate COUNT with WHERE", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .where((x) => x.isActive)
-              .count(),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .where((x) => x.isActive)
+            .count(),
         ),
         {},
       );

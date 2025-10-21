@@ -4,8 +4,8 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createSchema } from "@webpods/tinqer";
-import { selectStatement } from "../dist/index.js";
+import { createSchema, defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 
 interface User {
   id: number;
@@ -31,9 +31,8 @@ const schema = createSchema<Schema>();
 describe("String Operations SQL Generation", () => {
   describe("startsWith", () => {
     it("should generate SQL for startsWith", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.name.startsWith("John")),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.name.startsWith("John"))),
         {},
       );
 
@@ -42,9 +41,8 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle startsWith with parameter", () => {
-      const result = selectStatement(
-        schema,
-        (q, p) => q.from("users").where((u) => u.email.startsWith(p.prefix)),
+      const result = toSql(
+        defineSelect(schema, (q, p) => q.from("users").where((u) => u.email.startsWith(p.prefix))),
         { prefix: "admin@" },
       );
 
@@ -53,9 +51,10 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle multiple startsWith conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("products").where((p) => p.name.startsWith("Pro") || p.sku.startsWith("SKU")),
+      const result = toSql(
+        defineSelect(schema, (q) =>
+          q.from("products").where((p) => p.name.startsWith("Pro") || p.sku.startsWith("SKU")),
+        ),
         {},
       );
 
@@ -67,9 +66,8 @@ describe("String Operations SQL Generation", () => {
 
   describe("endsWith", () => {
     it("should generate SQL for endsWith", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.email.endsWith(".com")),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.email.endsWith(".com"))),
         {},
       );
 
@@ -78,9 +76,8 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle endsWith with parameter", () => {
-      const result = selectStatement(
-        schema,
-        (q, p) => q.from("users").where((u) => u.name.endsWith(p.suffix)),
+      const result = toSql(
+        defineSelect(schema, (q, p) => q.from("users").where((u) => u.name.endsWith(p.suffix))),
         { suffix: "son" },
       );
 
@@ -89,9 +86,10 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle endsWith in combination with other conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.id > 100 && u.email.endsWith("@example.com")),
+      const result = toSql(
+        defineSelect(schema, (q) =>
+          q.from("users").where((u) => u.id > 100 && u.email.endsWith("@example.com")),
+        ),
         {},
       );
 
@@ -103,9 +101,10 @@ describe("String Operations SQL Generation", () => {
 
   describe("contains", () => {
     it("should generate SQL for contains", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("products").where((p) => p.description.includes("premium")),
+      const result = toSql(
+        defineSelect(schema, (q) =>
+          q.from("products").where((p) => p.description.includes("premium")),
+        ),
         {},
       );
 
@@ -116,9 +115,10 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle contains with parameter", () => {
-      const result = selectStatement(
-        schema,
-        (q, p) => q.from("products").where((pr) => pr.name.includes(p.keyword)),
+      const result = toSql(
+        defineSelect(schema, (q, p) =>
+          q.from("products").where((pr) => pr.name.includes(p.keyword)),
+        ),
         { keyword: "laptop" },
       );
 
@@ -129,12 +129,12 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle multiple contains conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("products")
             .where((p) => p.name.includes("Pro") && p.description.includes("quality")),
+        ),
         {},
       );
 
@@ -149,13 +149,13 @@ describe("String Operations SQL Generation", () => {
     // Multiple string methods work fine without optional chaining
 
     it("should handle string operations with SELECT", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where((u) => u.name.startsWith("A"))
             .select((u) => ({ id: u.id, name: u.name })),
+        ),
         {},
       );
 
@@ -166,14 +166,14 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle string operations with ORDER BY and TAKE", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("products")
             .where((p) => p.sku.startsWith("ELEC"))
             .orderBy((p) => p.name)
             .take(10),
+        ),
         {},
       );
 
@@ -184,14 +184,14 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle string operations with GROUP BY", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("products")
             .where((p) => p.name.includes("Phone"))
             .groupBy((p) => p.name)
             .select((g) => ({ name: g.key, count: g.count() })),
+        ),
         {},
       );
 
@@ -202,10 +202,10 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle case-sensitive string operations", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q.from("users").where((u) => u.email.startsWith("Admin") || u.email.startsWith("admin")),
+        ),
         {},
       );
 
@@ -215,16 +215,18 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle empty string checks", () => {
-      const result = selectStatement(schema, (q) => q.from("users").where((u) => u.bio == ""), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.bio == "")),
+        {},
+      );
 
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "bio" = @__p1');
       expect(result.params).to.deep.equal({ __p1: "" });
     });
 
     it("should handle string operations in JOIN", () => {
-      const result = selectStatement(
-        schema,
-        (q) =>
+      const result = toSql(
+        defineSelect(schema, (q) =>
           q
             .from("users")
             .where((u) => u.name.startsWith("John"))
@@ -238,6 +240,7 @@ describe("String Operations SQL Generation", () => {
               userName: joined.u.name,
               productName: joined.p.name,
             })),
+        ),
         {},
       );
 
@@ -251,9 +254,10 @@ describe("String Operations SQL Generation", () => {
     // Test removed: String concatenation no longer supported in SELECT projections
 
     it("should handle string concatenation in WHERE", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.name + u.email == "johnsmith@test.com"),
+      const result = toSql(
+        defineSelect(schema, (q) =>
+          q.from("users").where((u) => u.name + u.email == "johnsmith@test.com"),
+        ),
         {},
       );
 
@@ -264,9 +268,8 @@ describe("String Operations SQL Generation", () => {
 
   describe("Null string handling", () => {
     it("should handle nullable string comparisons", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.bio == null),
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.bio == null)),
         {},
       );
 
@@ -275,9 +278,10 @@ describe("String Operations SQL Generation", () => {
     });
 
     it("should handle nullable string with string operations", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.bio != null && u.bio.includes("developer")),
+      const result = toSql(
+        defineSelect(schema, (q) =>
+          q.from("users").where((u) => u.bio != null && u.bio.includes("developer")),
+        ),
         {},
       );
 

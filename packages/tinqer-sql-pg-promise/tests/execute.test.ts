@@ -13,19 +13,20 @@ describe("Execute Function", () => {
     it("should execute a simple query and return typed results", async () => {
       // Just verify the function signature and that it compiles
       // Real execution would need a real database
-      const sqlResult = toSql(defineSelect(schema, (q) => q.from("users")), {});
+      const sqlResult = toSql(
+        defineSelect(schema, (q) => q.from("users")),
+        {},
+      );
       expect(sqlResult.sql).to.equal('SELECT * FROM "users"');
     });
 
     it("should execute with SELECT projection", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q.from("users").select((u) => ({
-              id: u.id,
-              name: u.name,
-            })),
+        defineSelect(schema, (q) =>
+          q.from("users").select((u) => ({
+            id: u.id,
+            name: u.name,
+          })),
         ),
         {},
       );
@@ -34,10 +35,7 @@ describe("Execute Function", () => {
 
     it("should execute with WHERE clause", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").where((u) => u.age >= 18),
-        ),
+        defineSelect(schema, (q) => q.from("users").where((u) => u.age >= 18)),
         {},
       );
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "age" >= $(__p1)');
@@ -46,9 +44,8 @@ describe("Execute Function", () => {
 
     it("should execute with parameters", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q, p) => q.from("users").where((u) => u.age >= p.minAge),
+        defineSelect(schema, (q, p: { minAge: number }) =>
+          q.from("users").where((u) => u.age >= p.minAge),
         ),
         { minAge: 21 },
       );
@@ -59,17 +56,17 @@ describe("Execute Function", () => {
 
   describe("Terminal operations", () => {
     it("should handle first() operation", async () => {
-      const sqlResult = toSql(defineSelect(schema, (q) => q.from("users").first()), {});
+      const sqlResult = toSql(
+        defineSelect(schema, (q) => q.from("users").first()),
+        {},
+      );
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" LIMIT 1');
       expect(sqlResult.params).to.deep.equal({});
     });
 
     it("should handle first() with predicate", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").first((u) => u.id === 1),
-        ),
+        defineSelect(schema, (q) => q.from("users").first((u) => u.id === 1)),
         {},
       );
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "id" = $(__p1) LIMIT 1');
@@ -78,10 +75,7 @@ describe("Execute Function", () => {
 
     it("should handle single() operation", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").single((u) => u.id === 1),
-        ),
+        defineSelect(schema, (q) => q.from("users").single((u) => u.id === 1)),
         {},
       );
       // Single adds LIMIT 2 to check for multiple results
@@ -91,10 +85,7 @@ describe("Execute Function", () => {
 
     it("should handle firstOrDefault() operation", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").firstOrDefault((u) => u.id === 999),
-        ),
+        defineSelect(schema, (q) => q.from("users").firstOrDefault((u) => u.id === 999)),
         {},
       );
       expect(sqlResult.sql).to.equal('SELECT * FROM "users" WHERE "id" = $(__p1) LIMIT 1');
@@ -104,10 +95,7 @@ describe("Execute Function", () => {
 
     it("should handle singleOrDefault() operation", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").singleOrDefault((u) => u.id === 999),
-        ),
+        defineSelect(schema, (q) => q.from("users").singleOrDefault((u) => u.id === 999)),
         {},
       );
       // SingleOrDefault also adds LIMIT 2 to check for multiple results
@@ -118,13 +106,11 @@ describe("Execute Function", () => {
 
     it("should handle last() operation", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("users")
-              .orderBy((u) => u.id)
-              .last(),
+        defineSelect(schema, (q) =>
+          q
+            .from("users")
+            .orderBy((u) => u.id)
+            .last(),
         ),
         {},
       );
@@ -133,16 +119,16 @@ describe("Execute Function", () => {
     });
 
     it("should handle count() operation", async () => {
-      const sqlResult = toSql(defineSelect(schema, (q) => q.from("users").count()), {});
+      const sqlResult = toSql(
+        defineSelect(schema, (q) => q.from("users").count()),
+        {},
+      );
       expect(sqlResult.sql).to.equal('SELECT COUNT(*) FROM "users"');
     });
 
     it("should handle count() with predicate", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").count((u) => u.age >= 18),
-        ),
+        defineSelect(schema, (q) => q.from("users").count((u) => u.age >= 18)),
         {},
       );
       expect(sqlResult.sql).to.equal('SELECT COUNT(*) FROM "users" WHERE "age" >= $(__p1)');
@@ -150,40 +136,52 @@ describe("Execute Function", () => {
     });
 
     it("should handle sum() operation", async () => {
-      const sqlResult = toSql(defineSelect(schema, (q) => q.from("users").sum((u) => u.age)), {});
+      const sqlResult = toSql(
+        defineSelect(schema, (q) => q.from("users").sum((u) => u.age)),
+        {},
+      );
       expect(sqlResult.sql).to.equal('SELECT SUM("age") FROM "users"');
     });
 
     it("should handle average() operation", async () => {
       const sqlResult = toSql(
-        defineSelect(
-          schema,
-          (q) => q.from("users").average((u) => u.salary),
-        ),
+        defineSelect(schema, (q) => q.from("users").average((u) => u.salary)),
         {},
       );
       expect(sqlResult.sql).to.equal('SELECT AVG("salary") FROM "users"');
     });
 
     it("should handle min() operation", async () => {
-      const sqlResult = toSql(defineSelect(schema, (q) => q.from("products").min((p) => p.price)), {});
+      const sqlResult = toSql(
+        defineSelect(schema, (q) => q.from("products").min((p) => p.price)),
+        {},
+      );
       expect(sqlResult.sql).to.equal('SELECT MIN("price") FROM "products"');
     });
 
     it("should handle max() operation", async () => {
-      const sqlResult = toSql(defineSelect(schema, (q) => q.from("products").max((p) => p.price)), {});
+      const sqlResult = toSql(
+        defineSelect(schema, (q) => q.from("products").max((p) => p.price)),
+        {},
+      );
       expect(sqlResult.sql).to.equal('SELECT MAX("price") FROM "products"');
     });
 
     it("should handle any() operation without predicate", async () => {
-      const sqlResult = toSql(defineSelect(schema, (q) => q.from("users").any()), {});
+      const sqlResult = toSql(
+        defineSelect(schema, (q) => q.from("users").any()),
+        {},
+      );
       expect(sqlResult.sql).to.equal(
         'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users") THEN 1 ELSE 0 END',
       );
     });
 
     it("should handle any() operation with predicate", async () => {
-      const sqlResult = toSql(defineSelect(schema, (q) => q.from("users").any((u) => u.age >= 18)), {});
+      const sqlResult = toSql(
+        defineSelect(schema, (q) => q.from("users").any((u) => u.age >= 18)),
+        {},
+      );
       expect(sqlResult.sql).to.equal(
         'SELECT CASE WHEN EXISTS(SELECT 1 FROM "users" WHERE "age" >= $(__p1)) THEN 1 ELSE 0 END',
       );
@@ -191,7 +189,10 @@ describe("Execute Function", () => {
     });
 
     it("should handle all() operation", async () => {
-      const sqlResult = toSql(defineSelect(schema, (q) => q.from("users").all((u) => u.isActive)), {});
+      const sqlResult = toSql(
+        defineSelect(schema, (q) => q.from("users").all((u) => u.isActive)),
+        {},
+      );
       expect(sqlResult.sql).to.equal(
         'SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM "users" WHERE NOT ("isActive")) THEN 1 ELSE 0 END',
       );

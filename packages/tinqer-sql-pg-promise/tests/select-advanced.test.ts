@@ -51,27 +51,25 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
     it("should handle deeply nested projections", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q.from("products").select((p) => ({
-              basic: {
-                id: p.id,
-                name: p.name,
-              },
-              pricing: {
-                retail: p.price,
-                cost: p.cost,
-                // Removed: arithmetic expressions not allowed in SELECT
-                // margin: p.price - p.cost,
-                // marginPercent: ((p.price - p.cost) / p.price) * 100,
-              },
-              inventory: {
-                stock: p.stock,
-                // Removed: arithmetic expressions not allowed in SELECT
-                // value: p.stock * p.cost,
-              },
-            })),
+        defineSelect(schema, (q) =>
+          q.from("products").select((p) => ({
+            basic: {
+              id: p.id,
+              name: p.name,
+            },
+            pricing: {
+              retail: p.price,
+              cost: p.cost,
+              // Removed: arithmetic expressions not allowed in SELECT
+              // margin: p.price - p.cost,
+              // marginPercent: ((p.price - p.cost) / p.price) * 100,
+            },
+            inventory: {
+              stock: p.stock,
+              // Removed: arithmetic expressions not allowed in SELECT
+              // value: p.stock * p.cost,
+            },
+          })),
         ),
         {},
       );
@@ -95,18 +93,16 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
     it("should project after filtering", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("products")
-              .where((p) => p.stock > 0 && p.price > 10)
-              .select((p) => ({
-                id: p.id,
-                name: p.name,
-                price: p.price,
-                stock: p.stock,
-              })),
+        defineSelect(schema, (q) =>
+          q
+            .from("products")
+            .where((p) => p.stock > 0 && p.price > 10)
+            .select((p) => ({
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              stock: p.stock,
+            })),
         ),
         {},
       );
@@ -138,23 +134,21 @@ describe("Advanced SELECT Projection SQL Generation", () => {
       const dbWithDepartments = createSchema<SchemaWithDepartments>();
 
       const result = toSql(
-        defineSelect(
-          dbWithDepartments,
-          (q) =>
-            q
-              .from("users")
-              .join(
-                q.from("departments"),
-                (u) => u.departmentId,
-                (d) => d.id,
-                (u, d) => ({ u, d }),
-              )
-              .groupBy((joined) => joined.d.name)
-              .select((g) => ({
-                department: g.key,
-                avgSalary: g.avg((joined) => joined.u.salary),
-                headcount: g.count(),
-              })),
+        defineSelect(dbWithDepartments, (q) =>
+          q
+            .from("users")
+            .join(
+              q.from("departments"),
+              (u) => u.departmentId,
+              (d) => d.id,
+              (u, d) => ({ u, d }),
+            )
+            .groupBy((joined) => joined.d.name)
+            .select((g) => ({
+              department: g.key,
+              avgSalary: g.avg((joined) => joined.u.salary),
+              headcount: g.count(),
+            })),
         ),
         {},
       );
@@ -167,16 +161,14 @@ describe("Advanced SELECT Projection SQL Generation", () => {
 
     it("should work with DISTINCT", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q
-              .from("products")
-              .select((p) => ({
-                category: p.categoryId,
-                name: p.name,
-              }))
-              .distinct(),
+        defineSelect(schema, (q) =>
+          q
+            .from("products")
+            .select((p) => ({
+              category: p.categoryId,
+              name: p.name,
+            }))
+            .distinct(),
         ),
         {},
       );
@@ -195,14 +187,12 @@ describe("Advanced SELECT Projection SQL Generation", () => {
   describe("Edge cases in SELECT", () => {
     it("should handle SELECT with only literals", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q.from("users").select(() => ({
-              constant: 42,
-              message: "Hello World",
-              flag: true,
-            })),
+        defineSelect(schema, (q) =>
+          q.from("users").select(() => ({
+            constant: 42,
+            message: "Hello World",
+            flag: true,
+          })),
         ),
         {},
       );
@@ -220,23 +210,24 @@ describe("Advanced SELECT Projection SQL Generation", () => {
     // Test removed: Very complex nested arithmetic no longer supported in SELECT
 
     it("should handle SELECT with no projection (identity)", () => {
-      const result = toSql(defineSelect(schema, (q) => q.from("users").select((u) => u)), {});
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").select((u) => u)),
+        {},
+      );
 
       expect(result.sql).to.contain("SELECT * FROM");
     });
 
     it("should handle SELECT with renamed fields", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q) =>
-            q.from("users").select((u) => ({
-              userId: u.id,
-              userFirstName: u.firstName,
-              userLastName: u.lastName,
-              userEmail: u.email,
-              userAge: u.age,
-            })),
+        defineSelect(schema, (q) =>
+          q.from("users").select((u) => ({
+            userId: u.id,
+            userFirstName: u.firstName,
+            userLastName: u.lastName,
+            userEmail: u.email,
+            userAge: u.age,
+          })),
         ),
         {},
       );
@@ -254,19 +245,17 @@ describe("Advanced SELECT Projection SQL Generation", () => {
   describe("SELECT with special cases", () => {
     it("should handle SELECT with pagination pattern", () => {
       const result = toSql(
-        defineSelect(
-          schema,
-          (q, params) =>
-            q
-              .from("products")
-              .select((p) => ({
-                id: p.id,
-                name: p.name,
-                price: p.price,
-              }))
-              .orderBy((p) => p.id)
-              .skip(params.page * params.pageSize)
-              .take(params.pageSize),
+        defineSelect(schema, (q, params: { page: number; pageSize: number }) =>
+          q
+            .from("products")
+            .select((p) => ({
+              id: p.id,
+              name: p.name,
+              price: p.price,
+            }))
+            .orderBy((p) => p.id)
+            .skip(params.page * params.pageSize)
+            .take(params.pageSize),
         ),
         { page: 2, pageSize: 20 },
       );

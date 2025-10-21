@@ -4,15 +4,15 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
+import { defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 
 describe("Window Functions - SQLite", () => {
   describe("ROW_NUMBER", () => {
     it("should generate ROW_NUMBER with partition and order", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rn: h
@@ -21,6 +21,7 @@ describe("Window Functions - SQLite", () => {
               .orderBy((r) => r.age)
               .rowNumber(),
           })),
+        ),
         {},
       );
 
@@ -30,9 +31,8 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate ROW_NUMBER without partition", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rn: h
@@ -40,6 +40,7 @@ describe("Window Functions - SQLite", () => {
               .orderBy((r) => r.salary)
               .rowNumber(),
           })),
+        ),
         {},
       );
 
@@ -50,9 +51,8 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate ROW_NUMBER with descending order", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rn: h
@@ -60,6 +60,7 @@ describe("Window Functions - SQLite", () => {
               .orderByDescending((r) => r.createdAt)
               .rowNumber(),
           })),
+        ),
         {},
       );
 
@@ -69,9 +70,8 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate ROW_NUMBER with multiple partitions", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rn: h
@@ -83,6 +83,7 @@ describe("Window Functions - SQLite", () => {
               .orderBy((r) => r.salary)
               .rowNumber(),
           })),
+        ),
         {},
       );
 
@@ -90,9 +91,8 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate ROW_NUMBER with thenBy", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rn: h
@@ -102,6 +102,7 @@ describe("Window Functions - SQLite", () => {
               .thenBy((r) => r.name)
               .rowNumber(),
           })),
+        ),
         {},
       );
 
@@ -111,9 +112,8 @@ describe("Window Functions - SQLite", () => {
 
   describe("RANK", () => {
     it("should generate RANK without partition", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rank: h
@@ -121,6 +121,7 @@ describe("Window Functions - SQLite", () => {
               .orderByDescending((r) => r.salary)
               .rank(),
           })),
+        ),
         {},
       );
 
@@ -130,9 +131,8 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate RANK with partition", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rank: h
@@ -141,6 +141,7 @@ describe("Window Functions - SQLite", () => {
               .orderByDescending((r) => r.salary)
               .rank(),
           })),
+        ),
         {},
       );
 
@@ -152,9 +153,8 @@ describe("Window Functions - SQLite", () => {
 
   describe("DENSE_RANK", () => {
     it("should generate DENSE_RANK with partition and multiple orderings", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rank: h
@@ -164,6 +164,7 @@ describe("Window Functions - SQLite", () => {
               .thenBy((r) => r.name)
               .denseRank(),
           })),
+        ),
         {},
       );
 
@@ -173,9 +174,8 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate DENSE_RANK with complex thenBy chain", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rank: h
@@ -186,6 +186,7 @@ describe("Window Functions - SQLite", () => {
               .thenBy((r) => r.name)
               .denseRank(),
           })),
+        ),
         {},
       );
 
@@ -195,9 +196,8 @@ describe("Window Functions - SQLite", () => {
 
   describe("Multiple window functions", () => {
     it("should generate multiple window functions in same SELECT", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q.from("users").select((u) => ({
             name: u.name,
             rowNum: h
@@ -216,6 +216,7 @@ describe("Window Functions - SQLite", () => {
               .orderBy((r) => r.salary)
               .denseRank(),
           })),
+        ),
         {},
       );
 
@@ -227,9 +228,8 @@ describe("Window Functions - SQLite", () => {
 
   describe("Recursive Nesting - Subquery Wrapping", () => {
     it("should generate double nested subquery for two window filters", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q
             .from("users")
             .select((u) => ({
@@ -251,6 +251,7 @@ describe("Window Functions - SQLite", () => {
                 .rowNumber(),
             }))
             .where((u) => u.rn2 === 1),
+        ),
         { __p1: 10, __p2: 1 },
       );
 
@@ -262,9 +263,8 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should generate triple nested subquery for three window filters", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q
             .from("users")
             .select((u) => ({
@@ -297,6 +297,7 @@ describe("Window Functions - SQLite", () => {
                 .rowNumber(),
             }))
             .where((u) => u.rn3 === 1),
+        ),
         { __p1: 10, __p2: 5, __p3: 1 },
       );
 
@@ -307,9 +308,8 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should handle spread operator in nested subqueries", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q
             .from("users")
             .select((u) => ({
@@ -328,6 +328,7 @@ describe("Window Functions - SQLite", () => {
                 .rowNumber(),
             }))
             .where((u) => u.rn2 === 1),
+        ),
         { __p1: 3, __p2: 1 },
       );
 
@@ -339,21 +340,23 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should handle mixed regular and window filters", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
-          q
-            .from("users")
-            .where((u) => u.age > 25) // Regular filter first
-            .select((u) => ({
-              name: u.name,
-              age: u.age,
-              rn: h
-                .window(u)
-                .orderByDescending((r) => r.salary)
-                .rowNumber(),
-            }))
-            .where((u) => u.rn <= 5), // Window filter
+      const result = toSql(
+        defineSelect(
+          schema,
+          (q, _, h) =>
+            q
+              .from("users")
+              .where((u) => u.age > 25) // Regular filter first
+              .select((u) => ({
+                name: u.name,
+                age: u.age,
+                rn: h
+                  .window(u)
+                  .orderByDescending((r) => r.salary)
+                  .rowNumber(),
+              }))
+              .where((u) => u.rn <= 5), // Window filter
+        ),
         { __p1: 25, __p2: 5 },
       );
 
@@ -364,9 +367,8 @@ describe("Window Functions - SQLite", () => {
     });
 
     it("should handle COUNT after window filter", () => {
-      const result = selectStatement(
-        schema,
-        (q, _, h) =>
+      const result = toSql(
+        defineSelect(schema, (q, _, h) =>
           q
             .from("users")
             .select((u) => ({
@@ -380,6 +382,7 @@ describe("Window Functions - SQLite", () => {
             }))
             .where((u) => u.rn === 1)
             .count(),
+        ),
         { __p1: 1 },
       );
 

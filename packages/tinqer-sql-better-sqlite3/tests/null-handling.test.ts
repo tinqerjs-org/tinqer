@@ -4,36 +4,31 @@
  */
 
 import { expect } from "chai";
-import { selectStatement } from "../dist/index.js";
+import { defineSelect } from "@webpods/tinqer";
+import { toSql } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 
 describe("NULL Handling", () => {
   describe("IS NULL generation", () => {
     it("should generate IS NULL for == null comparison", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.email == null),
-        {},
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.email == null), {}),
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "email" IS NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NULL for === null comparison", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.email === null),
-        {},
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.email === null), {}),
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "email" IS NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NULL with null on left side", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => null == u.name),
-        {},
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => null == u.name), {}),
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" IS NULL');
       expect(result.params).to.deep.equal({});
@@ -42,30 +37,24 @@ describe("NULL Handling", () => {
 
   describe("IS NOT NULL generation", () => {
     it("should generate IS NOT NULL for != null comparison", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.email != null),
-        {},
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.email != null), {}),
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "email" IS NOT NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NOT NULL for !== null comparison", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.email !== null),
-        {},
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.email !== null), {}),
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "email" IS NOT NULL');
       expect(result.params).to.deep.equal({});
     });
 
     it("should generate IS NOT NULL with null on left side", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => null != u.name),
-        {},
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => null != u.name), {}),
       );
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE "name" IS NOT NULL');
       expect(result.params).to.deep.equal({});
@@ -74,10 +63,12 @@ describe("NULL Handling", () => {
 
   describe("Complex NULL conditions", () => {
     it("should handle NULL checks with AND", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.name != null && u.email == null),
-        {},
+      const result = toSql(
+        defineSelect(
+          schema,
+          (q) => q.from("users").where((u) => u.name != null && u.email == null),
+          {},
+        ),
       );
       expect(result.sql).to.equal(
         'SELECT * FROM "users" WHERE ("name" IS NOT NULL AND "email" IS NULL)',
@@ -86,10 +77,12 @@ describe("NULL Handling", () => {
     });
 
     it("should handle NULL checks with OR", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.email == null || u.phone == null),
-        {},
+      const result = toSql(
+        defineSelect(
+          schema,
+          (q) => q.from("users").where((u) => u.email == null || u.phone == null),
+          {},
+        ),
       );
       expect(result.sql).to.equal(
         'SELECT * FROM "users" WHERE ("email" IS NULL OR "phone" IS NULL)',
@@ -98,10 +91,8 @@ describe("NULL Handling", () => {
     });
 
     it("should handle NULL checks in complex conditions", () => {
-      const result = selectStatement(
-        schema,
-        (q) => q.from("users").where((u) => u.id > 10 && u.email != null),
-        {},
+      const result = toSql(
+        defineSelect(schema, (q) => q.from("users").where((u) => u.id > 10 && u.email != null), {}),
       );
       expect(result.sql).to.equal(
         'SELECT * FROM "users" WHERE ("id" > @__p1 AND "email" IS NOT NULL)',
@@ -112,10 +103,13 @@ describe("NULL Handling", () => {
 
   describe("Undefined comparisons", () => {
     it("should treat parameter equality against undefined as IS NULL", () => {
-      const result = selectStatement(
-        schema,
-        (q, params: { role?: string }) => q.from("users").where((_u) => params.role === undefined),
-        { role: undefined },
+      const result = toSql(
+        defineSelect(
+          schema,
+          (q, params: { role?: string }) =>
+            q.from("users").where((_u) => params.role === undefined),
+          { role: undefined },
+        ),
       );
 
       expect(result.sql).to.equal('SELECT * FROM "users" WHERE @role IS NULL');
@@ -123,17 +117,19 @@ describe("NULL Handling", () => {
     });
 
     it("should allow optional guards that combine undefined checks with column comparisons", () => {
-      const result = selectStatement(
-        schema,
-        (q, params: { role?: string; city?: string }) =>
-          q
-            .from("users")
-            .where(
-              (u) =>
-                (params.role === undefined || u.role === params.role) &&
-                (params.city === undefined || u.city === params.city),
-            ),
-        { role: undefined, city: "Portland" },
+      const result = toSql(
+        defineSelect(
+          schema,
+          (q, params: { role?: string; city?: string }) =>
+            q
+              .from("users")
+              .where(
+                (u) =>
+                  (params.role === undefined || u.role === params.role) &&
+                  (params.city === undefined || u.city === params.city),
+              ),
+          { role: undefined, city: "Portland" },
+        ),
       );
 
       expect(result.sql).to.equal(
