@@ -22,7 +22,7 @@ npm install @webpods/tinqer-sql-better-sqlite3
 ### PostgreSQL Example
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
@@ -41,13 +41,13 @@ const schema = createSchema<Schema>();
 
 const results = await executeSelect(
   db,
-  schema,
-  (q, params) =>
+  defineSelect(schema, (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name)
       .select((u) => ({ id: u.id, name: u.name })),
+  ),
   { minAge: 18 },
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
@@ -57,7 +57,7 @@ const results = await executeSelect(
 
 ```typescript
 import Database from "better-sqlite3";
-import { createSchema } from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 
 // Same schema definition
@@ -76,13 +76,13 @@ const schema = createSchema<Schema>();
 // Identical query logic
 const results = executeSelect(
   db,
-  schema,
-  (q, params) =>
+  defineSelect(schema, (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name)
       .select((u) => ({ id: u.id, name: u.name })),
+  ),
   { minAge: 18 },
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
@@ -90,16 +90,17 @@ const results = executeSelect(
 
 ### SQL Generation Without Execution
 
-**`execute*` functions** execute queries and return results. **`*Statement` functions** generate SQL and parameters without executing - useful for debugging, logging, or custom execution:
+**`execute*` functions** execute queries and return results. **`toSql` function** generates SQL and parameters without executing - useful for debugging, logging, or custom execution:
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
 import {
-  selectStatement,
-  insertStatement,
-  updateStatement,
-  deleteStatement,
-} from "@webpods/tinqer-sql-pg-promise";
+  createSchema,
+  defineSelect,
+  defineInsert,
+  defineUpdate,
+  defineDelete,
+} from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
   users: { id: number; name: string; age: number };
@@ -108,38 +109,41 @@ interface Schema {
 const schema = createSchema<Schema>();
 
 // SELECT - returns { sql, params }
-const select = selectStatement(
-  schema,
-  (q, params) => q.from("users").where((u) => u.age >= params.minAge),
+const select = toSql(
+  defineSelect(schema, (q, params: { minAge: number }) =>
+    q.from("users").where((u) => u.age >= params.minAge),
+  ),
   { minAge: 18 },
 );
 // select.sql: SELECT * FROM "users" WHERE "age" >= $(minAge)
 // select.params: { minAge: 18 }
 
 // INSERT
-const insert = insertStatement(
-  schema,
-  (q, params) => q.insertInto("users").values({ name: params.name, age: params.age }),
+const insert = toSql(
+  defineInsert(schema, (q, params: { name: string; age: number }) =>
+    q.insertInto("users").values({ name: params.name, age: params.age }),
+  ),
   { name: "Alice", age: 30 },
 );
 // insert.sql: INSERT INTO "users" ("name", "age") VALUES ($(name), $(age))
 
 // UPDATE
-const update = updateStatement(
-  schema,
-  (q, params) =>
+const update = toSql(
+  defineUpdate(schema, (q, params: { newAge: number; userId: number }) =>
     q
       .update("users")
       .set({ age: params.newAge })
       .where((u) => u.id === params.userId),
+  ),
   { newAge: 31, userId: 1 },
 );
 // update.sql: UPDATE "users" SET "age" = $(newAge) WHERE "id" = $(userId)
 
 // DELETE
-const del = deleteStatement(
-  schema,
-  (q, params) => q.deleteFrom("users").where((u) => u.age < params.minAge),
+const del = toSql(
+  defineDelete(schema, (q, params: { minAge: number }) =>
+    q.deleteFrom("users").where((u) => u.age < params.minAge),
+  ),
   { minAge: 18 },
 );
 // del.sql: DELETE FROM "users" WHERE "age" < $(minAge)
@@ -260,19 +264,21 @@ Window functions enable calculations across rows related to the current row. Tin
 // Get top earner per department (automatically wrapped in subquery)
 const topEarners = await executeSelect(
   db,
-  schema,
-  (q, params, h) =>
-    q
-      .from("employees")
-      .select((e) => ({
-        ...e,
-        rank: h
-          .window(e)
-          .partitionBy((r) => r.department)
-          .orderByDescending((r) => r.salary)
-          .rowNumber(),
-      }))
-      .where((e) => e.rank === 1), // Filtering on window function result
+  defineSelect(
+    schema,
+    (q, params, h) =>
+      q
+        .from("employees")
+        .select((e) => ({
+          ...e,
+          rank: h
+            .window(e)
+            .partitionBy((r) => r.department)
+            .orderByDescending((r) => r.salary)
+            .rowNumber(),
+        }))
+        .where((e) => e.rank === 1), // Filtering on window function result
+  ),
   {},
 );
 
@@ -291,7 +297,7 @@ See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed 
 ### CRUD Operations
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
+import { createSchema, defineInsert, defineUpdate, defineDelete } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 const schema = createSchema<Schema>();
@@ -299,25 +305,25 @@ const schema = createSchema<Schema>();
 // INSERT
 const insertedRows = await executeInsert(
   db,
-  schema,
-  (q) =>
+  defineInsert(schema, (q) =>
     q.insertInto("users").values({
       name: "Alice",
       email: "alice@example.com",
     }),
+  ),
   {},
 );
 
 // UPDATE with RETURNING
 const inactiveUsers = await executeUpdate(
   db,
-  schema,
-  (q, params) =>
+  defineUpdate(schema, (q, params: { cutoffDate: Date }) =>
     q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoffDate)
       .returning((u) => u.id),
+  ),
   { cutoffDate: new Date("2023-01-01") },
 );
 
@@ -326,8 +332,7 @@ const inactiveUsers = await executeUpdate(
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  schema,
-  (q) => q.deleteFrom("users").where((u) => u.status === "deleted"),
+  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => u.status === "deleted")),
   {},
 );
 
@@ -342,16 +347,20 @@ All literal values are automatically parameterized to prevent SQL injection:
 // External parameters via params object
 const schema = createSchema<Schema>();
 
-const sample = selectStatement(
-  schema,
-  (q, params) => q.from("users").where((u) => u.age >= params.minAge),
+const sample = toSql(
+  defineSelect(schema, (q, params: { minAge: number }) =>
+    q.from("users").where((u) => u.age >= params.minAge),
+  ),
   { minAge: 18 },
 );
 // SQL (PostgreSQL): SELECT * FROM "users" WHERE "age" >= $(minAge)
 // params: { minAge: 18 }
 
 // Literals auto-parameterized automatically
-const literals = selectStatement(schema, (q) => q.from("users").where((u) => u.age >= 18), {});
+const literals = toSql(
+  defineSelect(schema, (q) => q.from("users").where((u) => u.age >= 18)),
+  {},
+);
 // params: { __p1: 18 }
 ```
 

@@ -175,8 +175,8 @@ npm test
 ```typescript
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema } from "@webpods/tinqer";
-import { selectStatement } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
 
 describe("SQL Generation", () => {
   it("should generate SQL with WHERE clause", () => {
@@ -185,7 +185,10 @@ describe("SQL Generation", () => {
     }
 
     const schema = createSchema<Schema>();
-    const result = selectStatement(schema, (q) => q.from("users").where((u) => u.age >= 18));
+    const result = toSql(
+      defineSelect(schema, (q) => q.from("users").where((u) => u.age >= 18)),
+      {},
+    );
 
     // Assert SQL and parameters
     assert.ok(result.sql.includes("WHERE"));
@@ -199,7 +202,7 @@ describe("SQL Generation", () => {
 ```typescript
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema } from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -214,12 +217,12 @@ describe("PostgreSQL Integration", () => {
   it("should execute SELECT query", async () => {
     const results = await executeSelect(
       db,
-      schema,
-      (q, params) =>
+      defineSelect(schema, (q, params: { minAge: number }) =>
         q
           .from("users")
           .where((u) => u.age >= params.minAge)
           .select((u) => u.name),
+      ),
       { minAge: 25 },
     );
 
@@ -467,13 +470,13 @@ Error: Unsupported AST node type: TemplateLiteral
 // Incorrect - template literal in lambda
 .where(u => u.name === `User ${userId}`)
 
-// Correct - use params with executeSelect
+// Correct - use params with defineSelect and executeSelect
 await executeSelect(
   db,
-  schema,
-  (q, params) =>
+  defineSelect(schema, (q, params: { name: string }) =>
     q.from("users").where((u) => u.name === params.name),
-  { name: `User ${userId}` }
+  ),
+  { name: `User ${userId}` },
 );
 ```
 
@@ -490,13 +493,13 @@ Error: Unknown identifier 'externalVar'
 const minAge = 18;
 .where(u => u.age >= minAge)
 
-// Correct - params pattern with executeSelect
+// Correct - params pattern with defineSelect and executeSelect
 await executeSelect(
   db,
-  schema,
-  (q, params) =>
+  defineSelect(schema, (q, params: { minAge: number }) =>
     q.from("users").where((u) => u.age >= params.minAge),
-  { minAge: 18 }
+  ),
+  { minAge: 18 },
 );
 ```
 
@@ -511,8 +514,8 @@ const schema = createSchema(); // No schema type provided
 // Types will be 'unknown' without schema
 const result = await executeSelect(
   db,
-  schema,
-  (q) => q.from("users"), // Type is Queryable<unknown>
+  defineSelect(schema, (q) => q.from("users")), // Type is Queryable<unknown>
+  {},
 );
 ```
 
@@ -528,8 +531,8 @@ const schema = createSchema<Schema>();
 // Now fully typed from schema
 const result = await executeSelect(
   db,
-  schema,
-  (q) => q.from("users"), // Fully typed: Queryable<{ id: number; name: string }>
+  defineSelect(schema, (q) => q.from("users")), // Fully typed: Queryable<{ id: number; name: string }>
+  {},
 );
 ```
 
