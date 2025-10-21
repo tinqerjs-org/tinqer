@@ -35,7 +35,7 @@ const testSchema = createSchema<TestSchema>();
 describe("UpdatePlanHandle", () => {
   describe("Basic plan creation", () => {
     it("should create a plan with defineUpdate", () => {
-      const plan = defineUpdate(testSchema, "users");
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("users"));
 
       expect(plan).to.be.instanceOf(UpdatePlanHandleInitial);
 
@@ -53,7 +53,7 @@ describe("UpdatePlanHandle", () => {
     });
 
     it("should maintain immutability when adding set", () => {
-      const plan1 = defineUpdate(testSchema, "users");
+      const plan1 = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("users"));
       const plan2 = plan1.set({ name: "Jane" });
 
       // Should be different instances
@@ -67,7 +67,9 @@ describe("UpdatePlanHandle", () => {
     });
 
     it("should maintain immutability when adding where", () => {
-      const plan1 = defineUpdate(testSchema, "users").set({ name: "Jane" });
+      const plan1 = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.update("users"),
+      ).set({ name: "Jane" });
       const plan2 = plan1.where((u) => u.id === 1);
 
       // Should be different instances
@@ -83,7 +85,9 @@ describe("UpdatePlanHandle", () => {
 
   describe("SET operation", () => {
     it("should add set clause with auto-parameterization", () => {
-      const plan = defineUpdate(testSchema, "users").set({
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.update("users"),
+      ).set({
         name: "Alice",
         age: 25,
         isActive: true,
@@ -100,7 +104,9 @@ describe("UpdatePlanHandle", () => {
     });
 
     it("should handle null values in set", () => {
-      const plan = defineUpdate(testSchema, "users").set({
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.update("users"),
+      ).set({
         lastLogin: null,
       });
 
@@ -115,7 +121,7 @@ describe("UpdatePlanHandle", () => {
 
   describe("WHERE operation", () => {
     it("should add where clause with auto-parameterization", () => {
-      const plan = defineUpdate(testSchema, "users")
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("users"))
         .set({ isActive: false })
         .where((u) => u.age > 65);
 
@@ -128,7 +134,7 @@ describe("UpdatePlanHandle", () => {
     });
 
     it("should support where without external parameters", () => {
-      const plan = defineUpdate(testSchema, "posts")
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("posts"))
         .set({ isPublished: false })
         .where((p) => p.viewCount < 10);
 
@@ -142,7 +148,7 @@ describe("UpdatePlanHandle", () => {
     it("should support where with external parameters", () => {
       type Params = { minAge: number; status: boolean };
 
-      const plan = defineUpdate(testSchema, "users")
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("users"))
         .set({ isActive: true })
         .where<Params>((u, params) => u.age >= params.minAge && u.isActive === params.status);
 
@@ -155,7 +161,7 @@ describe("UpdatePlanHandle", () => {
     });
 
     it("should support complex where conditions", () => {
-      const plan = defineUpdate(testSchema, "posts")
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("posts"))
         .set({ isPublished: true })
         .where((p) => p.viewCount > 100 && p.userId === 5);
 
@@ -169,7 +175,7 @@ describe("UpdatePlanHandle", () => {
     });
 
     it("should support OR conditions in where", () => {
-      const plan = defineUpdate(testSchema, "users")
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("users"))
         .set({ isActive: false })
         .where((u) => u.age < 18 || u.age > 65);
 
@@ -182,7 +188,9 @@ describe("UpdatePlanHandle", () => {
 
   describe("allowFullTableUpdate operation", () => {
     it("should allow full table update when explicitly called", () => {
-      const plan = defineUpdate(testSchema, "posts").set({ viewCount: 0 }).allowFullTableUpdate();
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("posts"))
+        .set({ viewCount: 0 })
+        .allowFullTableUpdate();
 
       const planData = plan.toPlan();
       const updateOp = planData.operation as UpdateOperation;
@@ -192,7 +200,7 @@ describe("UpdatePlanHandle", () => {
     });
 
     it("should be mutually exclusive with where", () => {
-      const plan = defineUpdate(testSchema, "users")
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("users"))
         .set({ isActive: false })
         .allowFullTableUpdate();
 
@@ -207,7 +215,7 @@ describe("UpdatePlanHandle", () => {
 
   describe("finalize method", () => {
     it("should merge auto-params with provided params", () => {
-      const plan = defineUpdate(testSchema, "posts")
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("posts"))
         .set({ isPublished: true, viewCount: 0 })
         .where((p) => p.userId === 42);
 
@@ -221,7 +229,7 @@ describe("UpdatePlanHandle", () => {
     });
 
     it("should work with allowFullTableUpdate", () => {
-      const plan = defineUpdate(testSchema, "posts")
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("posts"))
         .set({ isPublished: false })
         .allowFullTableUpdate();
 
@@ -236,7 +244,7 @@ describe("UpdatePlanHandle", () => {
 
   describe("Complex scenarios", () => {
     it("should handle update with multiple set fields and conditions", () => {
-      const plan = defineUpdate(testSchema, "users")
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("users"))
         .set({
           name: "Anonymous",
           email: "deleted@example.com",
@@ -275,7 +283,9 @@ describe("UpdatePlanHandle", () => {
 
   describe("Type safety", () => {
     it("should enforce correct table types", () => {
-      const plan = defineUpdate(testSchema, "users").set({
+      const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.update("users"),
+      ).set({
         name: "Test",
         age: 30,
       });

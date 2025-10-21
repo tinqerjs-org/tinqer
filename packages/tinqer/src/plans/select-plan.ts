@@ -466,8 +466,7 @@ export function defineSelectPlan<TSchema, TParams, TQuery extends SelectResult>(
   builder: SelectBuilder<TSchema, TParams, TQuery>,
   options?: ParseQueryOptions,
 ): SelectPlan<unknown, TParams> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return defineSelect<TSchema, TParams, TQuery>(schema, builder as any, options).toPlan();
+  return defineSelect<TSchema, TParams, TQuery>(schema, builder, options).toPlan();
 }
 
 // -----------------------------------------------------------------------------

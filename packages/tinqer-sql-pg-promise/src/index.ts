@@ -263,12 +263,9 @@ export async function executeSelect<
           : never;
 
   // Create plan using defineSelect
-  // Type assertion needed due to complex overload resolution between
-  // the builder's union return type and defineSelect's overloads
   let plan;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    plan = defineSelect(schema, builder as any, options);
+    plan = defineSelect(schema, builder, options);
   } catch (error) {
     // Maintain backward compatibility with error messages
     if (error instanceof Error && error.message === "Failed to parse select plan") {
@@ -444,23 +441,21 @@ export async function executeInsert<TSchema, TTable, TReturning>(
 ): Promise<TReturning[]>;
 
 // Implementation
-export async function executeInsert<TSchema, TParams, TTable, TReturning = never>(
+export async function executeInsert<TSchema, TParams = Record<string, never>>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>),
+  builder: (
+    queryBuilder: QueryBuilder<TSchema>,
+    params: TParams,
+    helpers?: QueryHelpers,
+  ) => Insertable<unknown> | InsertableWithReturning<unknown, unknown>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
-): Promise<number | TReturning[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<number | any[]> {
   const normalizedParams = params || ({} as TParams);
 
-  let plan: ReturnType<typeof defineInsert>;
+  let plan;
   try {
     plan = defineInsert(schema, builder, options);
   } catch (error) {
@@ -483,7 +478,8 @@ export async function executeInsert<TSchema, TParams, TTable, TReturning = never
 
   if (insertOperation.returning) {
     const rows = await db.any(sql, expandedParams);
-    return rows as TReturning[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return rows as any[];
   }
 
   const result = await db.result(sql, expandedParams);
@@ -541,29 +537,24 @@ export async function executeUpdate<TSchema, TTable, TReturning>(
 ): Promise<TReturning[]>;
 
 // Implementation
-export async function executeUpdate<TSchema, TParams, TTable, TReturning = never>(
+export async function executeUpdate<TSchema, TParams = Record<string, never>>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>),
+  builder: (
+    queryBuilder: QueryBuilder<TSchema>,
+    params: TParams,
+    helpers?: QueryHelpers,
+  ) =>
+    | UpdatableWithSet<unknown>
+    | UpdatableComplete<unknown>
+    | UpdatableWithReturning<unknown, unknown>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
-): Promise<number | TReturning[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<number | any[]> {
   const normalizedParams = params || ({} as TParams);
 
-  let plan: ReturnType<typeof defineUpdate>;
+  let plan;
   try {
     plan = defineUpdate(schema, builder, options);
   } catch (error) {
@@ -586,7 +577,8 @@ export async function executeUpdate<TSchema, TParams, TTable, TReturning = never
 
   if (updateOperation.returning) {
     const rows = await db.any(sql, expandedParams);
-    return rows as TReturning[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return rows as any[];
   }
 
   const result = await db.result(sql, expandedParams);
@@ -596,38 +588,16 @@ export async function executeUpdate<TSchema, TParams, TTable, TReturning = never
 // ==================== DELETE Execution ====================
 
 /**
- * Execute DELETE with params, return row count
+ * Execute DELETE, return row count
  */
-export async function executeDelete<TSchema, TParams, TResult>(
+export async function executeDelete<TSchema, TParams = Record<string, never>>(
   db: PgDatabase,
   schema: DatabaseSchema<TSchema>,
   builder: (
     queryBuilder: QueryBuilder<TSchema>,
     params: TParams,
-  ) => Deletable<TResult> | DeletableComplete<TResult>,
-  params: TParams,
-  options?: ExecuteOptions & ParseQueryOptions,
-): Promise<number>;
-
-/**
- * Execute DELETE without params, return row count
- */
-export async function executeDelete<TSchema, TResult>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder: (queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>,
-): Promise<number>;
-
-// Implementation
-export async function executeDelete<TSchema, TParams, TResult>(
-  db: PgDatabase,
-  schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Deletable<TResult> | DeletableComplete<TResult>)
-    | ((queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>),
+    helpers?: QueryHelpers,
+  ) => Deletable<unknown> | DeletableComplete<unknown>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): Promise<number> {

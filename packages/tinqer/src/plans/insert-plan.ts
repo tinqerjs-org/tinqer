@@ -178,89 +178,50 @@ export class InsertPlanHandleWithReturning<TResult, TParams> {
 // Public entry points
 // -----------------------------------------------------------------------------
 
-// Type for builder function results
-type InsertResult<TTable, TReturning = unknown> =
-  | Insertable<TTable>
-  | InsertableWithReturning<TTable, TReturning>;
-
-// Type for builder functions
-type InsertBuilder<TSchema, TParams, TTable, TReturning = unknown> =
-  | ((
-      queryBuilder: QueryBuilder<TSchema>,
-      params: TParams,
-      helpers: QueryHelpers,
-    ) => InsertResult<TTable, TReturning>)
-  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => InsertResult<TTable, TReturning>)
-  | ((queryBuilder: QueryBuilder<TSchema>) => InsertResult<TTable, TReturning>);
-
-// Combined overload for all builder functions
-export function defineInsert<TSchema, TParams, TTable, TReturning = unknown>(
+// Single builder overload
+export function defineInsert<
+  TSchema,
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- {} is correct for extensible empty object
+  TParams = {},
+  TQuery = unknown,
+>(
   schema: DatabaseSchema<TSchema>,
-  builder: InsertBuilder<TSchema, TParams, TTable, TReturning>,
+  builder: (queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers?: QueryHelpers) => TQuery,
   options?: ParseQueryOptions,
-): InsertPlanHandleInitial<TTable, TParams> | InsertPlanHandleWithValues<TTable, TParams>;
+): TQuery extends InsertableWithReturning<unknown, infer TReturning>
+  ? InsertPlanHandleWithReturning<TReturning, TParams>
+  : TQuery extends Insertable<infer TTable>
+    ? InsertPlanHandleInitial<TTable, TParams>
+    : never;
 
-// Original overload for direct table name (kept for backward compatibility)
-export function defineInsert<TSchema, TParams, TTable extends keyof TSchema>(
-  schema: DatabaseSchema<TSchema>,
-  table: TTable,
-  options?: ParseQueryOptions,
-): InsertPlanHandleInitial<TSchema[TTable], TParams>;
+// Overload for direct table name - DISABLED FOR NOW
+// export function defineInsert<TSchema, TParams = {}, TTable extends keyof TSchema = keyof TSchema>(
+//   schema: DatabaseSchema<TSchema>,
+//   table: TTable,
+//   options?: ParseQueryOptions,
+// ): InsertPlanHandleInitial<TSchema[TTable], TParams>;
 
 // Implementation
-export function defineInsert<TSchema, TParams = Record<string, never>, TTable = unknown>(
-  _schema: DatabaseSchema<TSchema>,
-  builderOrTable: InsertBuilder<TSchema, TParams, TTable> | keyof TSchema,
+export function defineInsert(
+  _schema: DatabaseSchema<unknown>,
+  builder: (
+    queryBuilder: QueryBuilder<unknown>,
+    params: unknown,
+    helpers?: QueryHelpers,
+  ) => unknown,
   options?: ParseQueryOptions,
-): InsertPlanHandleInitial<TTable, TParams> | InsertPlanHandleWithValues<TTable, TParams> {
-  // Check if it's a builder function or a table name
-  if (typeof builderOrTable === "function") {
-    // Parse the builder function to get the operation
-    const parseResult = parseQuery(builderOrTable, options);
-    if (!parseResult || parseResult.operation.operationType !== "insert") {
-      throw new Error("Failed to parse insert builder or not an insert operation");
-    }
-
-    const initialState = createInitialState<TTable, TParams>(parseResult, options);
-
-    // Check if values are already present in the parsed operation
-    const insertOp = parseResult.operation as InsertOperation;
-    if (
-      insertOp.values &&
-      insertOp.values.properties &&
-      Object.keys(insertOp.values.properties).length > 0
-    ) {
-      return new InsertPlanHandleWithValues(initialState);
-    }
-
-    return new InsertPlanHandleInitial(initialState);
-  } else {
-    // Original table name path
-    const table = builderOrTable as keyof TSchema;
-    const initialOperation: InsertOperation = {
-      type: "queryOperation",
-      operationType: "insert",
-      table: table as string,
-      values: {
-        type: "object",
-        properties: {},
-      },
-    };
-
-    const parseResult: ParseResult = {
-      operation: initialOperation,
-      autoParams: {},
-      contextSnapshot: snapshotVisitorContext({
-        tableParams: new Set<string>(),
-        queryParams: new Set<string>(),
-        autoParams: new Map<string, unknown>(),
-        autoParamCounter: 0,
-      }),
-    };
-
-    const initialState = createInitialState<TTable, TParams>(parseResult, options);
-    return new InsertPlanHandleInitial(initialState);
+) {
+  // Parse the builder function to get the operation
+  const parseResult = parseQuery(builder, options);
+  if (!parseResult || parseResult.operation.operationType !== "insert") {
+    throw new Error("Failed to parse insert builder or not an insert operation");
   }
+
+  const initialState = createInitialState<unknown, unknown>(parseResult, options);
+
+  // Always return InsertPlanHandleInitial to keep the type simple
+  // The builder can call .values() to add values if needed
+  return new InsertPlanHandleInitial(initialState);
 }
 
 // -----------------------------------------------------------------------------

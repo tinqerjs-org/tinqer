@@ -244,104 +244,69 @@ export class UpdatePlanHandleWithReturning<TResult, TParams> {
 // Public entry points
 // -----------------------------------------------------------------------------
 
-// Type for builder function results
-type UpdateResult<TTable, TReturning = unknown> =
-  | Updatable<TTable>
-  | UpdatableWithSet<TTable>
-  | UpdatableComplete<TTable>
-  | UpdatableWithReturning<TTable, TReturning>;
-
-// Type for builder functions
-type UpdateBuilder<TSchema, TParams, TTable, TReturning = unknown> =
-  | ((
-      queryBuilder: QueryBuilder<TSchema>,
-      params: TParams,
-      helpers: QueryHelpers,
-    ) => UpdateResult<TTable, TReturning>)
-  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => UpdateResult<TTable, TReturning>)
-  | ((queryBuilder: QueryBuilder<TSchema>) => UpdateResult<TTable, TReturning>);
-
-// Combined overload for all builder functions
-export function defineUpdate<TSchema, TParams, TTable, TReturning = unknown>(
+// Single builder overload
+export function defineUpdate<
+  TSchema,
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- {} is correct for extensible empty object
+  TParams = {},
+  TQuery = unknown,
+>(
   schema: DatabaseSchema<TSchema>,
-  builder: UpdateBuilder<TSchema, TParams, TTable, TReturning>,
+  builder: (queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers?: QueryHelpers) => TQuery,
   options?: ParseQueryOptions,
-):
-  | UpdatePlanHandleInitial<TTable, TParams>
-  | UpdatePlanHandleWithSet<TTable, TParams>
-  | UpdatePlanHandleComplete<TTable, TParams>;
+): TQuery extends UpdatableWithReturning<unknown, infer TReturning>
+  ? UpdatePlanHandleWithReturning<TReturning, TParams>
+  : TQuery extends UpdatableComplete<infer TTable>
+    ? UpdatePlanHandleComplete<TTable, TParams>
+    : TQuery extends UpdatableWithSet<infer TTable>
+      ? UpdatePlanHandleWithSet<TTable, TParams>
+      : TQuery extends Updatable<infer TTable>
+        ? UpdatePlanHandleInitial<TTable, TParams>
+        : never;
 
-// Original overload for direct table name (kept for backward compatibility)
-export function defineUpdate<TSchema, TParams, TTable extends keyof TSchema>(
-  schema: DatabaseSchema<TSchema>,
-  table: TTable,
-  options?: ParseQueryOptions,
-): UpdatePlanHandleInitial<TSchema[TTable], TParams>;
+// Overload for direct table name - DISABLED FOR NOW
+// export function defineUpdate<TSchema, TParams = {}, TTable extends keyof TSchema = keyof TSchema>(
+//   schema: DatabaseSchema<TSchema>,
+//   table: TTable,
+//   options?: ParseQueryOptions,
+// ): UpdatePlanHandleInitial<TSchema[TTable], TParams>;
 
 // Implementation
-export function defineUpdate<TSchema, TParams = Record<string, never>, TTable = unknown>(
-  _schema: DatabaseSchema<TSchema>,
-  builderOrTable: UpdateBuilder<TSchema, TParams, TTable> | keyof TSchema,
+export function defineUpdate(
+  _schema: DatabaseSchema<unknown>,
+  builder: (
+    queryBuilder: QueryBuilder<unknown>,
+    params: unknown,
+    helpers?: QueryHelpers,
+  ) => unknown,
   options?: ParseQueryOptions,
-):
-  | UpdatePlanHandleInitial<TTable, TParams>
-  | UpdatePlanHandleWithSet<TTable, TParams>
-  | UpdatePlanHandleComplete<TTable, TParams> {
-  // Check if it's a builder function or a table name
-  if (typeof builderOrTable === "function") {
-    // Parse the builder function to get the operation
-    const parseResult = parseQuery(builderOrTable, options);
-    if (!parseResult || parseResult.operation.operationType !== "update") {
-      throw new Error("Failed to parse update builder or not an update operation");
-    }
-
-    const initialState = createInitialState<TTable, TParams>(parseResult, options);
-
-    // Check the state of the parsed operation to return the appropriate handle
-    const updateOp = parseResult.operation as UpdateOperation;
-
-    // Check if WHERE clause is present
-    if (updateOp.predicate || updateOp.allowFullTableUpdate) {
-      return new UpdatePlanHandleComplete(initialState);
-    }
-
-    // Check if SET clause is present
-    if (
-      updateOp.assignments &&
-      updateOp.assignments.properties &&
-      Object.keys(updateOp.assignments.properties).length > 0
-    ) {
-      return new UpdatePlanHandleWithSet(initialState);
-    }
-
-    return new UpdatePlanHandleInitial(initialState);
-  } else {
-    // Original table name path
-    const table = builderOrTable as keyof TSchema;
-    const initialOperation: UpdateOperation = {
-      type: "queryOperation",
-      operationType: "update",
-      table: table as string,
-      assignments: {
-        type: "object",
-        properties: {},
-      },
-    };
-
-    const parseResult: ParseResult = {
-      operation: initialOperation,
-      autoParams: {},
-      contextSnapshot: snapshotVisitorContext({
-        tableParams: new Set<string>(),
-        queryParams: new Set<string>(),
-        autoParams: new Map<string, unknown>(),
-        autoParamCounter: 0,
-      }),
-    };
-
-    const initialState = createInitialState<TTable, TParams>(parseResult, options);
-    return new UpdatePlanHandleInitial(initialState);
+) {
+  // Parse the builder function to get the operation
+  const parseResult = parseQuery(builder, options);
+  if (!parseResult || parseResult.operation.operationType !== "update") {
+    throw new Error("Failed to parse update builder or not an update operation");
   }
+
+  const initialState = createInitialState<unknown, unknown>(parseResult, options);
+
+  // Check the state of the parsed operation to return the appropriate handle
+  const updateOp = parseResult.operation as UpdateOperation;
+
+  // Check if WHERE clause is present
+  if (updateOp.predicate || updateOp.allowFullTableUpdate) {
+    return new UpdatePlanHandleComplete(initialState);
+  }
+
+  // Check if SET clause is present
+  if (
+    updateOp.assignments &&
+    updateOp.assignments.properties &&
+    Object.keys(updateOp.assignments.properties).length > 0
+  ) {
+    return new UpdatePlanHandleWithSet(initialState);
+  }
+
+  return new UpdatePlanHandleInitial(initialState);
 }
 
 // -----------------------------------------------------------------------------

@@ -300,8 +300,7 @@ export function executeSelect<
 
   let plan;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    plan = defineSelect(schema, builder as any, options);
+    plan = defineSelect(schema, builder, options);
   } catch (error) {
     if (error instanceof Error && error.message === "Failed to parse select plan") {
       throw new Error("Failed to parse query");
@@ -451,17 +450,14 @@ export function executeInsert<TSchema, TTable, TReturning>(
 ): never;
 
 // Implementation
-export function executeInsert<TSchema, TParams, TTable, TReturning = never>(
+export function executeInsert<TSchema, TParams = Record<string, never>>(
   db: BetterSqlite3Database,
   schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) => Insertable<TTable> | InsertableWithReturning<TTable, TReturning>),
+  builder: (
+    queryBuilder: QueryBuilder<TSchema>,
+    params: TParams,
+    helpers?: QueryHelpers,
+  ) => Insertable<unknown> | InsertableWithReturning<unknown, unknown>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): number {
@@ -547,23 +543,17 @@ export function executeUpdate<TSchema, TTable, TReturning>(
 ): never;
 
 // Implementation
-export function executeUpdate<TSchema, TParams, TTable, TReturning = never>(
+export function executeUpdate<TSchema, TParams = Record<string, never>>(
   db: BetterSqlite3Database,
   schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>)
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-      ) =>
-        | UpdatableWithSet<TTable>
-        | UpdatableComplete<TTable>
-        | UpdatableWithReturning<TTable, TReturning>),
+  builder: (
+    queryBuilder: QueryBuilder<TSchema>,
+    params: TParams,
+    helpers?: QueryHelpers,
+  ) =>
+    | UpdatableWithSet<unknown>
+    | UpdatableComplete<unknown>
+    | UpdatableWithReturning<unknown, unknown>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): number {
@@ -624,32 +614,20 @@ export function executeDelete<TSchema, TResult>(
 ): number;
 
 // Implementation
-export function executeDelete<TSchema, TParams, TResult>(
+export function executeDelete<TSchema, TParams = Record<string, never>>(
   db: BetterSqlite3Database,
   schema: DatabaseSchema<TSchema>,
-  builder:
-    | ((
-        queryBuilder: QueryBuilder<TSchema>,
-        params: TParams,
-      ) => Deletable<TResult> | DeletableComplete<TResult>)
-    | ((queryBuilder: QueryBuilder<TSchema>) => Deletable<TResult> | DeletableComplete<TResult>),
+  builder: (
+    queryBuilder: QueryBuilder<TSchema>,
+    params: TParams,
+    helpers?: QueryHelpers,
+  ) => Deletable<unknown> | DeletableComplete<unknown>,
   params?: TParams,
   options?: ExecuteOptions & ParseQueryOptions,
 ): number {
   const normalizedParams = params || ({} as TParams);
 
-  let plan;
-  try {
-    plan = defineDelete(schema, builder, options);
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === "Failed to parse delete builder or not a delete operation"
-    ) {
-      throw new Error("Failed to parse DELETE query or not a delete operation");
-    }
-    throw error;
-  }
+  const plan = defineDelete(schema, builder, options);
 
   let planResult;
   try {

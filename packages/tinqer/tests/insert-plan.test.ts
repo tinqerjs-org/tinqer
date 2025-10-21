@@ -6,6 +6,7 @@ import {
   InsertPlanHandleWithValues,
 } from "../src/plans/insert-plan.js";
 import { createSchema } from "../src/linq/database-context.js";
+import type { QueryBuilder } from "../src/linq/query-builder.js";
 import type { InsertOperation } from "../src/query-tree/operations.js";
 
 // Test schema
@@ -33,7 +34,9 @@ const testSchema = createSchema<TestSchema>();
 describe("InsertPlanHandle", () => {
   describe("Basic plan creation", () => {
     it("should create a plan with defineInsert", () => {
-      const plan = defineInsert(testSchema, "users");
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      );
 
       expect(plan).to.be.instanceOf(InsertPlanHandleInitial);
 
@@ -52,7 +55,9 @@ describe("InsertPlanHandle", () => {
     });
 
     it("should maintain immutability when adding values", () => {
-      const plan1 = defineInsert(testSchema, "users");
+      const plan1 = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      );
       const plan2 = plan1.values({ name: "Alice" });
 
       // Should be different instances
@@ -68,7 +73,9 @@ describe("InsertPlanHandle", () => {
 
   describe("Values operation", () => {
     it("should accept object literal values", () => {
-      const plan = defineInsert(testSchema, "users").values({
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      ).values({
         name: "Bob",
         email: "bob@example.com",
       });
@@ -82,7 +89,9 @@ describe("InsertPlanHandle", () => {
     });
 
     it("should auto-parameterize literal values", () => {
-      const plan = defineInsert(testSchema, "posts").values({
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("posts"),
+      ).values({
         userId: 1,
         title: "Hello World",
         content: "This is a test post",
@@ -101,7 +110,9 @@ describe("InsertPlanHandle", () => {
 
   describe("Returning operation", () => {
     it("should support returning specific columns", () => {
-      const plan = defineInsert(testSchema, "users")
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      )
         .values({
           name: "Charlie",
           email: "charlie@example.com",
@@ -116,7 +127,9 @@ describe("InsertPlanHandle", () => {
     });
 
     it("should support returning all columns", () => {
-      const plan = defineInsert(testSchema, "users")
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      )
         .values({
           name: "David",
           email: "david@example.com",
@@ -132,7 +145,9 @@ describe("InsertPlanHandle", () => {
     });
 
     it("should support returning single column", () => {
-      const plan = defineInsert(testSchema, "users")
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      )
         .values({
           name: "Eve",
           email: "eve@example.com",
@@ -151,7 +166,9 @@ describe("InsertPlanHandle", () => {
     it("should merge provided params", () => {
       type Params = { defaultEmail: string };
 
-      const plan = defineInsert(testSchema, "users").values({
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      ).values({
         name: "Frank",
         email: "frank@example.com", // In a real scenario, might use params.defaultEmail
       });
@@ -164,7 +181,9 @@ describe("InsertPlanHandle", () => {
     });
 
     it("should include operation and params in result", () => {
-      const plan = defineInsert(testSchema, "users").values({
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      ).values({
         name: "Grace",
         email: "grace@example.com",
       });
@@ -179,7 +198,9 @@ describe("InsertPlanHandle", () => {
 
   describe("External Parameters in Values", () => {
     it("should support values with auto-params", () => {
-      const plan = defineInsert(testSchema, "users").values({
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      ).values({
         name: "Alice",
         email: "alice@test.com",
         age: 30,
@@ -195,7 +216,9 @@ describe("InsertPlanHandle", () => {
     });
 
     it("should support values with returning", () => {
-      const plan = defineInsert(testSchema, "posts")
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("posts"),
+      )
         .values({
           userId: 123,
           title: "New Article",
@@ -219,7 +242,9 @@ describe("InsertPlanHandle", () => {
     it("should handle insert with returning and params", () => {
       type Params = { source: string };
 
-      const plan = defineInsert(testSchema, "users")
+      const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      )
         .values({
           name: "Helen",
           email: "helen@example.com",
@@ -239,7 +264,9 @@ describe("InsertPlanHandle", () => {
     });
 
     it("should maintain immutability with object values", () => {
-      const base = defineInsert(testSchema, "users");
+      const base = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.insertInto("users"),
+      );
       const withValues = base.values({
         name: "Test",
         email: "test@test.com",

@@ -34,7 +34,9 @@ const testSchema = createSchema<TestSchema>();
 describe("DeletePlanHandle", () => {
   describe("Basic plan creation", () => {
     it("should create a plan with defineDelete", () => {
-      const plan = defineDelete(testSchema, "users");
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("users"),
+      );
 
       expect(plan).to.be.instanceOf(DeletePlanHandleInitial);
 
@@ -48,7 +50,9 @@ describe("DeletePlanHandle", () => {
     });
 
     it("should maintain immutability when adding where", () => {
-      const plan1 = defineDelete(testSchema, "users");
+      const plan1 = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("users"),
+      );
       const plan2 = plan1.where((u) => u.id === 1);
 
       // Should be different instances
@@ -64,7 +68,9 @@ describe("DeletePlanHandle", () => {
 
   describe("WHERE operation", () => {
     it("should add where clause with auto-parameterization", () => {
-      const plan = defineDelete(testSchema, "users").where((u) => u.isActive === false);
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("users"),
+      ).where((u) => u.isActive === false);
 
       const planData = plan.toPlan();
       const deleteOp = planData.operation as DeleteOperation;
@@ -79,9 +85,9 @@ describe("DeletePlanHandle", () => {
       // Currently visitors only process the first parameter
       type Params = { minId: number };
 
-      const plan = defineDelete(testSchema, "posts").where<Params>(
-        (p, params) => p.id > params.minId,
-      );
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("posts"),
+      ).where<Params>((p, params) => p.id > params.minId);
 
       const sql = plan.finalize({ minId: 100 });
 
@@ -90,9 +96,9 @@ describe("DeletePlanHandle", () => {
     });
 
     it("should support complex where conditions", () => {
-      const plan = defineDelete(testSchema, "posts").where(
-        (p) => p.isPublished === false && p.userId === 5,
-      );
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("posts"),
+      ).where((p) => p.isPublished === false && p.userId === 5);
 
       const planData = plan.toPlan();
       const deleteOp = planData.operation as DeleteOperation;
@@ -106,7 +112,9 @@ describe("DeletePlanHandle", () => {
 
   describe("allowFullTableDelete operation", () => {
     it("should allow full table delete when explicitly called", () => {
-      const plan = defineDelete(testSchema, "posts").allowFullTableDelete();
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("posts"),
+      ).allowFullTableDelete();
 
       const planData = plan.toPlan();
       const deleteOp = planData.operation as DeleteOperation;
@@ -118,7 +126,9 @@ describe("DeletePlanHandle", () => {
     it("should be mutually exclusive with where", () => {
       // Cannot test runtime error in TypeScript compile time,
       // but the visitor should throw if allowFullTableDelete is called after where
-      const plan = defineDelete(testSchema, "users").allowFullTableDelete();
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("users"),
+      ).allowFullTableDelete();
 
       expect(plan).to.be.instanceOf(DeletePlanHandleComplete);
 
@@ -131,9 +141,9 @@ describe("DeletePlanHandle", () => {
   describe("finalize method", () => {
     it("should merge auto-params with provided params", () => {
       // For now, just test auto-params since external params in WHERE aren't supported yet
-      const plan = defineDelete(testSchema, "posts").where(
-        (p) => p.userId === 42 && p.isPublished === false,
-      );
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("posts"),
+      ).where((p) => p.userId === 42 && p.isPublished === false);
 
       const sql = plan.finalize({});
 
@@ -144,7 +154,9 @@ describe("DeletePlanHandle", () => {
     });
 
     it("should work with allowFullTableDelete", () => {
-      const plan = defineDelete(testSchema, "posts").allowFullTableDelete();
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("posts"),
+      ).allowFullTableDelete();
 
       const sql = plan.finalize({});
 
@@ -159,9 +171,9 @@ describe("DeletePlanHandle", () => {
     it("should support external params with simple predicate", () => {
       type Params = { targetId: number };
 
-      const plan = defineDelete(testSchema, "users").where<Params>(
-        (u, params) => u.id === params.targetId,
-      );
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("users"),
+      ).where<Params>((u, params) => u.id === params.targetId);
 
       const sql = plan.finalize({ targetId: 42 });
       expect(sql.params.targetId).to.equal(42);
@@ -170,7 +182,9 @@ describe("DeletePlanHandle", () => {
     it("should handle complex external param conditions", () => {
       type Params = { minId: number; maxId: number; dept: number };
 
-      const plan = defineDelete(testSchema, "users").where<Params>(
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("users"),
+      ).where<Params>(
         (u, params) =>
           u.id >= params.minId && u.id <= params.maxId && u.departmentId === params.dept,
       );
@@ -200,9 +214,9 @@ describe("DeletePlanHandle", () => {
     it("should mix external params with OR conditions", () => {
       type Params = { threshold: number; userId: number };
 
-      const plan = defineDelete(testSchema, "posts").where<Params>(
-        (p, params) => p.viewCount < params.threshold || p.userId === params.userId,
-      );
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("posts"),
+      ).where<Params>((p, params) => p.viewCount < params.threshold || p.userId === params.userId);
 
       const sql = plan.finalize({ threshold: 5, userId: 99 });
       expect(sql.params.threshold).to.equal(5);
@@ -212,9 +226,9 @@ describe("DeletePlanHandle", () => {
 
   describe("Complex scenarios", () => {
     it("should handle delete with multiple conditions", () => {
-      const plan = defineDelete(testSchema, "users").where(
-        (u) => u.isActive === false && u.email.endsWith("@old.com"),
-      );
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("users"),
+      ).where((u) => u.isActive === false && u.email.endsWith("@old.com"));
 
       const planData = plan.toPlan();
       const deleteOp = planData.operation as DeleteOperation;
@@ -225,9 +239,9 @@ describe("DeletePlanHandle", () => {
     });
 
     it("should handle delete with OR conditions", () => {
-      const plan = defineDelete(testSchema, "posts").where(
-        (p) => p.userId === 1 || p.isPublished === false,
-      );
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("posts"),
+      ).where((p) => p.userId === 1 || p.isPublished === false);
 
       const planData = plan.toPlan();
       const deleteOp = planData.operation as DeleteOperation;
@@ -239,7 +253,9 @@ describe("DeletePlanHandle", () => {
 
     it("should handle delete with external and auto params", () => {
       type Params = { maxId: number; status: boolean };
-      const plan = defineDelete(testSchema, "posts").where<Params>(
+      const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("posts"),
+      ).where<Params>(
         (p, params) => p.id < params.maxId && p.isPublished === params.status && p.title === "Test",
       );
       const sql = plan.finalize({ maxId: 1000, status: true });
@@ -252,7 +268,9 @@ describe("DeletePlanHandle", () => {
       type Params1 = { id1: number };
       type Params2 = { id2: number };
 
-      const base = defineDelete(testSchema, "posts");
+      const base = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+        qb.deleteFrom("posts"),
+      );
       const branch1 = base.where<Params1>((p, params) => p.id === params.id1);
       const branch2 = base.where<Params2>((p, params) => p.id === params.id2);
 

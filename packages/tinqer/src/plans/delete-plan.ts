@@ -111,13 +111,13 @@ export class DeletePlanHandleInitial<TRecord, TParams> {
     predicate:
       | ((item: TRecord) => boolean)
       | ((item: TRecord, params: TParams & ExtraParams) => boolean),
-  ): DeletePlanHandleComplete<TRecord, TParams | (TParams & ExtraParams)> {
+  ): DeletePlanHandleComplete<TRecord, TParams & ExtraParams> {
     const nextState = appendWhereDelete(
       this.state,
       predicate as unknown as (...args: unknown[]) => boolean,
     );
     return new DeletePlanHandleComplete(
-      nextState as DeletePlanState<TRecord, TParams | (TParams & ExtraParams)>,
+      nextState as DeletePlanState<TRecord, TParams & ExtraParams>,
     );
   }
 
@@ -166,81 +166,61 @@ export class DeletePlanHandleComplete<TRecord, TParams> {
 // Public entry points
 // -----------------------------------------------------------------------------
 
-// Type for builder function results
-type DeleteResult<TTable> = Deletable<TTable> | DeletableComplete<TTable>;
-
-// Type for builder functions
-type DeleteBuilder<TSchema, TParams, TTable> =
-  | ((
-      queryBuilder: QueryBuilder<TSchema>,
-      params: TParams,
-      helpers: QueryHelpers,
-    ) => DeleteResult<TTable>)
-  | ((queryBuilder: QueryBuilder<TSchema>, params: TParams) => DeleteResult<TTable>)
-  | ((queryBuilder: QueryBuilder<TSchema>) => DeleteResult<TTable>);
-
-// Combined overload for all builder functions
-export function defineDelete<TSchema, TParams, TTable>(
+// Single builder overload
+export function defineDelete<
+  TSchema,
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- {} is correct for extensible empty object
+  TParams = {},
+  TQuery = unknown,
+>(
   schema: DatabaseSchema<TSchema>,
-  builder: DeleteBuilder<TSchema, TParams, TTable>,
+  builder: (queryBuilder: QueryBuilder<TSchema>, params: TParams, helpers?: QueryHelpers) => TQuery,
   options?: ParseQueryOptions,
-): DeletePlanHandleInitial<TTable, TParams> | DeletePlanHandleComplete<TTable, TParams>;
+): TQuery extends DeletableComplete<infer TTable>
+  ? DeletePlanHandleComplete<TTable, TParams>
+  : TQuery extends Deletable<infer TTable>
+    ? DeletePlanHandleInitial<TTable, TParams>
+    : never;
 
-// Original overload for direct table name (kept for backward compatibility)
-export function defineDelete<TSchema, TParams, TTable extends keyof TSchema>(
-  schema: DatabaseSchema<TSchema>,
-  table: TTable,
-  options?: ParseQueryOptions,
-): DeletePlanHandleInitial<TSchema[TTable], TParams>;
+// Overload for direct table name - DISABLED FOR NOW
+// export function defineDelete<
+//   TSchema,
+//   // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- {} is correct for extensible empty object
+//   TParams = {},
+//   TTable extends keyof TSchema = keyof TSchema,
+// >(
+//   schema: DatabaseSchema<TSchema>,
+//   table: TTable,
+//   options?: ParseQueryOptions,
+// ): DeletePlanHandleInitial<TSchema[TTable], TParams>;
 
 // Implementation
-export function defineDelete<TSchema, TParams = Record<string, never>, TTable = unknown>(
-  _schema: DatabaseSchema<TSchema>,
-  builderOrTable: DeleteBuilder<TSchema, TParams, TTable> | keyof TSchema,
+export function defineDelete(
+  _schema: DatabaseSchema<unknown>,
+  builder: (
+    queryBuilder: QueryBuilder<unknown>,
+    params: unknown,
+    helpers?: QueryHelpers,
+  ) => unknown,
   options?: ParseQueryOptions,
-): DeletePlanHandleInitial<TTable, TParams> | DeletePlanHandleComplete<TTable, TParams> {
-  // Check if it's a builder function or a table name
-  if (typeof builderOrTable === "function") {
-    // Parse the builder function to get the operation
-    const parseResult = parseQuery(builderOrTable, options);
-    if (!parseResult || parseResult.operation.operationType !== "delete") {
-      throw new Error("Failed to parse delete builder or not a delete operation");
-    }
-
-    const initialState = createInitialState<TTable, TParams>(parseResult, options);
-
-    // Check the state of the parsed operation to return the appropriate handle
-    const deleteOp = parseResult.operation as DeleteOperation;
-
-    // Check if WHERE clause or allowFullTableDelete is present
-    if (deleteOp.predicate || deleteOp.allowFullTableDelete) {
-      return new DeletePlanHandleComplete(initialState);
-    }
-
-    return new DeletePlanHandleInitial(initialState);
-  } else {
-    // Original table name path
-    const table = builderOrTable as keyof TSchema;
-    const initialOperation: DeleteOperation = {
-      type: "queryOperation",
-      operationType: "delete",
-      table: table as string,
-    };
-
-    const parseResult: ParseResult = {
-      operation: initialOperation,
-      autoParams: {},
-      contextSnapshot: snapshotVisitorContext({
-        tableParams: new Set<string>(),
-        queryParams: new Set<string>(),
-        autoParams: new Map<string, unknown>(),
-        autoParamCounter: 0,
-      }),
-    };
-
-    const initialState = createInitialState<TTable, TParams>(parseResult, options);
-    return new DeletePlanHandleInitial(initialState);
+) {
+  // Parse the builder function to get the operation
+  const parseResult = parseQuery(builder, options);
+  if (!parseResult || parseResult.operation.operationType !== "delete") {
+    throw new Error("Failed to parse delete builder or not a delete operation");
   }
+
+  const initialState = createInitialState<unknown, unknown>(parseResult, options);
+
+  // Check the state of the parsed operation to return the appropriate handle
+  const deleteOp = parseResult.operation as DeleteOperation;
+
+  // Check if WHERE clause or allowFullTableDelete is present
+  if (deleteOp.predicate || deleteOp.allowFullTableDelete) {
+    return new DeletePlanHandleComplete(initialState);
+  }
+
+  return new DeletePlanHandleInitial(initialState);
 }
 
 // -----------------------------------------------------------------------------

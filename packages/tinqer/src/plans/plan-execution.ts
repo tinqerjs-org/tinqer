@@ -15,11 +15,11 @@ import type { QueryOperation } from "../query-tree/operations.js";
 
 import { defineSelect, SelectPlanHandle, SelectTerminalHandle } from "./select-plan.js";
 
-import { defineUpdate, UpdatePlanHandleInitial } from "./update-plan.js";
+import { UpdatePlanHandleInitial } from "./update-plan.js";
 
-import { defineInsert, InsertPlanHandleInitial } from "./insert-plan.js";
+import { InsertPlanHandleInitial } from "./insert-plan.js";
 
-import { defineDelete, DeletePlanHandleInitial } from "./delete-plan.js";
+import { DeletePlanHandleInitial } from "./delete-plan.js";
 
 // Type for any query result
 type SelectResult = Queryable<unknown> | OrderedQueryable<unknown> | TerminalQuery<unknown>;
@@ -38,50 +38,50 @@ export function createSelectPlan<TSchema>(
   options?: ParseQueryOptions,
 ): SelectPlanHandle<unknown, unknown> | SelectTerminalHandle<unknown, unknown> {
   // Just delegate to defineSelect - no re-parsing!
-  // Type assertion needed because the builder's return type (SelectResult)
-  // is a union that's difficult to match with defineSelect's overloads
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return defineSelect(schema, builder as any, options);
+  return defineSelect(schema, builder, options);
 }
 
-/**
- * Create an update plan from a builder function
- * Note: This is a placeholder until defineUpdate supports builders
- * For now, we need to extract the table from the builder
- */
-export function createUpdatePlan<TSchema>(
-  schema: DatabaseSchema<TSchema>,
-  table: keyof TSchema,
-  options?: ParseQueryOptions,
-): UpdatePlanHandleInitial<unknown, unknown> {
-  // Delegate to defineUpdate
-  // TODO: When defineUpdate supports builders, update this
-  return defineUpdate(schema, table, options);
-}
+// DISABLED: Table name overload has been disabled for defineUpdate, defineInsert, defineDelete
+// These helper functions will be re-enabled when/if table name overloads are restored
 
-/**
- * Create an insert plan
- */
-export function createInsertPlan<TSchema>(
-  schema: DatabaseSchema<TSchema>,
-  table: keyof TSchema,
-  options?: ParseQueryOptions,
-): InsertPlanHandleInitial<unknown, unknown> {
-  // Delegate to defineInsert
-  return defineInsert(schema, table, options);
-}
+// /**
+//  * Create an update plan from a builder function
+//  * Note: This is a placeholder until defineUpdate supports builders
+//  * For now, we need to extract the table from the builder
+//  */
+// export function createUpdatePlan<TSchema>(
+//   schema: DatabaseSchema<TSchema>,
+//   table: keyof TSchema,
+//   options?: ParseQueryOptions,
+// ): UpdatePlanHandleInitial<unknown, unknown> {
+//   // Delegate to defineUpdate
+//   // TODO: When defineUpdate supports builders, update this
+//   return defineUpdate(schema, table, options);
+// }
 
-/**
- * Create a delete plan
- */
-export function createDeletePlan<TSchema>(
-  schema: DatabaseSchema<TSchema>,
-  table: keyof TSchema,
-  options?: ParseQueryOptions,
-): DeletePlanHandleInitial<unknown, unknown> {
-  // Delegate to defineDelete
-  return defineDelete(schema, table, options);
-}
+// /**
+//  * Create an insert plan
+//  */
+// export function createInsertPlan<TSchema>(
+//   schema: DatabaseSchema<TSchema>,
+//   table: keyof TSchema,
+//   options?: ParseQueryOptions,
+// ): InsertPlanHandleInitial<unknown, unknown> {
+//   // Delegate to defineInsert
+//   return defineInsert(schema, table, options);
+// }
+
+// /**
+//  * Create a delete plan
+//  */
+// export function createDeletePlan<TSchema>(
+//   schema: DatabaseSchema<TSchema>,
+//   table: keyof TSchema,
+//   options?: ParseQueryOptions,
+// ): DeletePlanHandleInitial<unknown, unknown> {
+//   // Delegate to defineDelete
+//   return defineDelete(schema, table, options);
+// }
 
 /**
  * Helper that combines plan.finalize() + generateSql()

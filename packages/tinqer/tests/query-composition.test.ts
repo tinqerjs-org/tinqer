@@ -265,7 +265,9 @@ describe("Query Composition", () => {
   describe("INSERT Composition", () => {
     describe("Parameter handling in values", () => {
       it("should handle values with auto-params", () => {
-        const plan = defineInsert(testSchema, "users").values({
+        const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+          qb.insertInto("users"),
+        ).values({
           name: "Alice",
           email: "alice@example.com",
           age: 30,
@@ -283,7 +285,9 @@ describe("Query Composition", () => {
       });
 
       it("should compose values with returning", () => {
-        const plan = defineInsert(testSchema, "posts")
+        const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+          qb.insertInto("posts"),
+        )
           .values({
             userId: 1,
             title: "New Post",
@@ -307,7 +311,9 @@ describe("Query Composition", () => {
 
     describe("Builder vs chained composition", () => {
       it("should handle chained values", () => {
-        const plan = defineInsert(testSchema, "users").values({
+        const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+          qb.insertInto("users"),
+        ).values({
           name: "Bob",
           email: "bob@example.com",
           age: 25,
@@ -325,7 +331,9 @@ describe("Query Composition", () => {
       });
 
       it("should compose chained values and returning", () => {
-        const plan = defineInsert(testSchema, "posts")
+        const plan = defineInsert(testSchema, (qb: QueryBuilder<TestSchema>) =>
+          qb.insertInto("posts"),
+        )
           .values({
             userId: 1,
             title: "Test",
@@ -353,7 +361,7 @@ describe("Query Composition", () => {
       it("should mix auto-params and external params", () => {
         type WhereParams = { threshold: number };
 
-        const plan = defineUpdate(testSchema, "posts")
+        const plan = defineUpdate(testSchema, (qb: QueryBuilder<TestSchema>) => qb.update("posts"))
           .set({
             isPublished: true, // auto-param
             viewCount: 0, // auto-param
@@ -374,9 +382,9 @@ describe("Query Composition", () => {
       it("should handle external params in where", () => {
         type Params = { minAge: number; isActive: boolean };
 
-        const plan = defineDelete(testSchema, "users").where<Params>(
-          (u, p) => u.age < p.minAge && u.isActive === p.isActive,
-        );
+        const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+          qb.deleteFrom("users"),
+        ).where<Params>((u, p) => u.age < p.minAge && u.isActive === p.isActive);
 
         const sql = plan.finalize({
           minAge: 18,
@@ -411,9 +419,9 @@ describe("Query Composition", () => {
 
     describe("Complex delete composition", () => {
       it("should handle multiple conditions", () => {
-        const plan = defineDelete(testSchema, "users").where(
-          (u: TestSchema["users"]) => u.isActive === false && u.departmentId === 3,
-        );
+        const plan = defineDelete(testSchema, (qb: QueryBuilder<TestSchema>) =>
+          qb.deleteFrom("users"),
+        ).where((u: TestSchema["users"]) => u.isActive === false && u.departmentId === 3);
 
         const sql = plan.finalize({});
 
