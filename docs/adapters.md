@@ -34,13 +34,7 @@ npm install @webpods/tinqer-sql-pg-promise pg-promise
 
 ```typescript
 import pgPromise from "pg-promise";
-import {
-  createSchema,
-  defineSelect,
-  defineInsert,
-  defineUpdate,
-  defineDelete,
-} from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
@@ -60,55 +54,56 @@ const schema = createSchema<Schema>();
 // Execute with params
 const activeUsers = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.active && u.age >= params.minAge)
       .orderBy((u) => u.name),
-  ),
   { minAge: 18 },
 );
 
 // Execute with params
 const matchingUsers = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
-  ),
   { minAge: 21 },
 );
 
 // INSERT with RETURNING
 const createdUsers = await executeInsert(
   db,
-  defineInsert(schema, (q) =>
+  schema,
+  (q) =>
     q
       .insertInto("users")
       .values({ name: "Alice", email: "alice@example.com", age: 30, active: true })
       .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
-  ),
   {},
 );
 
 // UPDATE
 const updatedCount = await executeUpdate(
   db,
-  defineUpdate(schema, (q) =>
+  schema,
+  (q) =>
     q
       .update("users")
       .set({ active: false })
       .where((u) => u.age > 65),
-  ),
   {},
 );
 
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => !u.active)),
+  schema,
+  (q) => q.deleteFrom("users").where((u) => !u.active),
   {},
 );
 
@@ -141,13 +136,7 @@ npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
 
 ```typescript
 import Database from "better-sqlite3";
-import {
-  createSchema,
-  defineSelect,
-  defineInsert,
-  defineUpdate,
-  defineDelete,
-} from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
@@ -175,40 +164,38 @@ db.exec(`
 
 const inserted = executeInsert(
   db,
-  defineInsert(schema, (q) =>
-    q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
-  ),
+  schema,
+  (q) => q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
   {},
 );
 // inserted === 1
 
 const users = executeSelect(
   db,
-  defineSelect(schema, (q, params: { active: number }) =>
+  schema,
+  (q, params: { active: number }) =>
     q
       .from("users")
       .where((u) => u.isActive === params.active)
       .orderBy((u) => u.name),
-  ),
   { active: 1 },
 );
 
 const updated = executeUpdate(
   db,
-  defineUpdate(schema, (q) =>
+  schema,
+  (q) =>
     q
       .update("users")
       .set({ isActive: 0 })
       .where((u) => u.age > 60),
-  ),
   {},
 );
 
 const removed = executeDelete(
   db,
-  defineDelete(schema, (q, params: { cutoff: number }) =>
-    q.deleteFrom("users").where((u) => u.age < params.cutoff),
-  ),
+  schema,
+  (q, params: { cutoff: number }) => q.deleteFrom("users").where((u) => u.age < params.cutoff),
   { cutoff: 18 },
 );
 

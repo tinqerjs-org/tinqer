@@ -30,7 +30,7 @@ npm install @webpods/tinqer-sql-better-sqlite3
 ### PostgreSQL Example
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import pgPromise from "pg-promise";
 
@@ -49,13 +49,13 @@ const schema = createSchema<Schema>();
 
 const results = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name)
       .select((u) => ({ id: u.id, name: u.name })),
-  ),
   { minAge: 18 },
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
@@ -65,7 +65,7 @@ const results = await executeSelect(
 
 ```typescript
 import Database from "better-sqlite3";
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
 
 // Same schema definition
@@ -84,13 +84,13 @@ const schema = createSchema<Schema>();
 // Identical query logic
 const results = executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name)
       .select((u) => ({ id: u.id, name: u.name })),
-  ),
   { minAge: 18 },
 );
 // results: [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]
@@ -175,6 +175,74 @@ const query = (q) =>
 // The query builder returns a Queryable whose result type is inferred as
 // { id: number; name: string; email: string }
 ```
+
+### Query Composition
+
+Query plans are **immutable and composable** - you can chain operations onto plan handles to create reusable base queries and branch into specialized variations.
+
+#### Chaining Operations on Plans
+
+```typescript
+import { defineSelect } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
+
+const schema = createSchema<Schema>();
+
+// Start with base query
+const plan = defineSelect(schema, (q) => q.from("users"))
+  .where((u) => u.age > 18)
+  .where((u) => u.isActive)
+  .orderBy((u) => u.name)
+  .select((u) => ({ id: u.id, name: u.name }));
+
+const { sql, params } = toSql(plan, {});
+```
+
+#### Reusable Base Queries
+
+Plans are immutable - each operation returns a new plan without modifying the original. This enables creating base queries and branching:
+
+```typescript
+type DeptParams = { dept: number };
+
+// Reusable base query
+const usersInDept = defineSelect(schema, (q, p: DeptParams) =>
+  q.from("users").where((u) => u.departmentId === p.dept),
+);
+
+// Branch 1: Active users only
+const activeUsers = usersInDept
+  .where((u) => u.isActive === true)
+  .where<{ minAge: number }>((u, p) => u.age >= p.minAge);
+
+// Branch 2: Inactive users only
+const inactiveUsers = usersInDept
+  .where((u) => u.isActive === false)
+  .where<{ maxAge: number }>((u, p) => u.age <= p.maxAge);
+
+// Execute branches with different parameters
+toSql(activeUsers, { dept: 1, minAge: 25 });
+toSql(inactiveUsers, { dept: 1, maxAge: 65 });
+```
+
+#### Parameter Accumulation
+
+Parameters from the builder function and chained operations are merged:
+
+```typescript
+type BuilderParams = { baseAge: number };
+type ChainParams = { maxAge: number };
+
+const plan = defineSelect(schema, (q, p: BuilderParams) =>
+  q.from("users").where((u) => u.age > p.baseAge),
+)
+.where<ChainParams>((u, p) => u.age < p.maxAge);
+
+// Must provide both parameter types
+toSql(plan, { baseAge: 18, maxAge: 65 });
+```
+
+Composition works with all operations: `defineSelect`, `defineInsert`, `defineUpdate`, `defineDelete`.
 
 ### Joins
 
@@ -272,21 +340,19 @@ Window functions enable calculations across rows related to the current row. Tin
 // Get top earner per department (automatically wrapped in subquery)
 const topEarners = await executeSelect(
   db,
-  defineSelect(
-    schema,
-    (q, params, h) =>
-      q
-        .from("employees")
-        .select((e) => ({
-          ...e,
-          rank: h
-            .window(e)
-            .partitionBy((r) => r.department)
-            .orderByDescending((r) => r.salary)
-            .rowNumber(),
-        }))
-        .where((e) => e.rank === 1), // Filtering on window function result
-  ),
+  schema,
+  (q, params, h) =>
+    q
+      .from("employees")
+      .select((e) => ({
+        ...e,
+        rank: h
+          .window(e)
+          .partitionBy((r) => r.department)
+          .orderByDescending((r) => r.salary)
+          .rowNumber(),
+      }))
+      .where((e) => e.rank === 1), // Filtering on window function result
   {},
 );
 
@@ -305,7 +371,7 @@ See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed 
 ### CRUD Operations
 
 ```typescript
-import { createSchema, defineInsert, defineUpdate, defineDelete } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 const schema = createSchema<Schema>();
@@ -313,25 +379,25 @@ const schema = createSchema<Schema>();
 // INSERT
 const insertedRows = await executeInsert(
   db,
-  defineInsert(schema, (q) =>
+  schema,
+  (q) =>
     q.insertInto("users").values({
       name: "Alice",
       email: "alice@example.com",
     }),
-  ),
   {},
 );
 
 // UPDATE with RETURNING
 const inactiveUsers = await executeUpdate(
   db,
-  defineUpdate(schema, (q, params: { cutoffDate: Date }) =>
+  schema,
+  (q, params: { cutoffDate: Date }) =>
     q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoffDate)
       .returning((u) => u.id),
-  ),
   { cutoffDate: new Date("2023-01-01") },
 );
 
@@ -340,7 +406,8 @@ const inactiveUsers = await executeUpdate(
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => u.status === "deleted")),
+  schema,
+  (q) => q.deleteFrom("users").where((u) => u.status === "deleted"),
   {},
 );
 
@@ -502,13 +569,7 @@ npm install @webpods/tinqer-sql-pg-promise pg-promise
 
 ```typescript
 import pgPromise from "pg-promise";
-import {
-  createSchema,
-  defineSelect,
-  defineInsert,
-  defineUpdate,
-  defineDelete,
-} from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
@@ -528,55 +589,56 @@ const schema = createSchema<Schema>();
 // Execute with params
 const activeUsers = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.active && u.age >= params.minAge)
       .orderBy((u) => u.name),
-  ),
   { minAge: 18 },
 );
 
 // Execute with params
 const matchingUsers = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .select((u) => ({ id: u.id, name: u.name })),
-  ),
   { minAge: 21 },
 );
 
 // INSERT with RETURNING
 const createdUsers = await executeInsert(
   db,
-  defineInsert(schema, (q) =>
+  schema,
+  (q) =>
     q
       .insertInto("users")
       .values({ name: "Alice", email: "alice@example.com", age: 30, active: true })
       .returning((u) => ({ id: u.id, createdAt: u.createdAt })),
-  ),
   {},
 );
 
 // UPDATE
 const updatedCount = await executeUpdate(
   db,
-  defineUpdate(schema, (q) =>
+  schema,
+  (q) =>
     q
       .update("users")
       .set({ active: false })
       .where((u) => u.age > 65),
-  ),
   {},
 );
 
 // DELETE
 const deletedCount = await executeDelete(
   db,
-  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => !u.active)),
+  schema,
+  (q) => q.deleteFrom("users").where((u) => !u.active),
   {},
 );
 
@@ -609,13 +671,7 @@ npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
 
 ```typescript
 import Database from "better-sqlite3";
-import {
-  createSchema,
-  defineSelect,
-  defineInsert,
-  defineUpdate,
-  defineDelete,
-} from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@webpods/tinqer";
 import {
   executeSelect,
   executeInsert,
@@ -643,40 +699,38 @@ db.exec(`
 
 const inserted = executeInsert(
   db,
-  defineInsert(schema, (q) =>
-    q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
-  ),
+  schema,
+  (q) => q.insertInto("users").values({ name: "Sam", email: "sam@example.com", age: 28 }),
   {},
 );
 // inserted === 1
 
 const users = executeSelect(
   db,
-  defineSelect(schema, (q, params: { active: number }) =>
+  schema,
+  (q, params: { active: number }) =>
     q
       .from("users")
       .where((u) => u.isActive === params.active)
       .orderBy((u) => u.name),
-  ),
   { active: 1 },
 );
 
 const updated = executeUpdate(
   db,
-  defineUpdate(schema, (q) =>
+  schema,
+  (q) =>
     q
       .update("users")
       .set({ isActive: 0 })
       .where((u) => u.age > 60),
-  ),
   {},
 );
 
 const removed = executeDelete(
   db,
-  defineDelete(schema, (q, params: { cutoff: number }) =>
-    q.deleteFrom("users").where((u) => u.age < params.cutoff),
-  ),
+  schema,
+  (q, params: { cutoff: number }) => q.deleteFrom("users").where((u) => u.age < params.cutoff),
   { cutoff: 18 },
 );
 
@@ -840,7 +894,7 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -851,12 +905,12 @@ const schema = createSchema<Schema>();
 
 const users = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q
       .from("users")
       .where((u) => u.age >= params.minAge)
       .orderBy((u) => u.name),
-  ),
   { minAge: 21 },
 );
 // Returns: Array of user objects
@@ -920,7 +974,7 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineInsert } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -932,21 +986,20 @@ const schema = createSchema<Schema>();
 // Without RETURNING - returns number of rows inserted
 const rowCount = await executeInsert(
   db,
-  defineInsert(schema, (q, params: { name: string }) =>
-    q.insertInto("users").values({ name: params.name }),
-  ),
+  schema,
+  (q, params: { name: string }) => q.insertInto("users").values({ name: params.name }),
   { name: "Alice" },
 );
 
 // With RETURNING - returns inserted rows
 const createdUsers = await executeInsert(
   db,
-  defineInsert(schema, (q, params: { name: string }) =>
+  schema,
+  (q, params: { name: string }) =>
     q
       .insertInto("users")
       .values({ name: params.name })
       .returning((u) => ({ id: u.id, name: u.name })),
-  ),
   { name: "Bob" },
 );
 ```
@@ -1015,7 +1068,7 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineUpdate } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -1027,25 +1080,25 @@ const schema = createSchema<Schema>();
 // Without RETURNING - returns number of rows updated
 const updatedRows = await executeUpdate(
   db,
-  defineUpdate(schema, (q, params: { cutoff: Date }) =>
+  schema,
+  (q, params: { cutoff: Date }) =>
     q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoff),
-  ),
   { cutoff: new Date("2024-01-01") },
 );
 
 // With RETURNING - returns updated rows
 const updatedUsers = await executeUpdate(
   db,
-  defineUpdate(schema, (q, params: { cutoff: Date }) =>
+  schema,
+  (q, params: { cutoff: Date }) =>
     q
       .update("users")
       .set({ status: "inactive" })
       .where((u) => u.lastLogin < params.cutoff)
       .returning((u) => ({ id: u.id, status: u.status })),
-  ),
   { cutoff: new Date("2024-01-01") },
 );
 ```
@@ -1108,7 +1161,7 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema, defineDelete } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -1119,9 +1172,8 @@ const schema = createSchema<Schema>();
 
 const deletedCount = await executeDelete(
   db,
-  defineDelete(schema, (q, params: { status: string }) =>
-    q.deleteFrom("users").where((u) => u.status === params.status),
-  ),
+  schema,
+  (q, params: { status: string }) => q.deleteFrom("users").where((u) => u.status === params.status),
   { status: "inactive" },
 );
 ```
@@ -1153,7 +1205,7 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 Creates a phantom-typed `DatabaseSchema` that ties table names to row types. The schema is passed to execution functions, which provide a type-safe query builder through the lambda's first parameter.
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 
 interface Schema {
@@ -1163,10 +1215,11 @@ interface Schema {
 
 const schema = createSchema<Schema>();
 
-// Schema is passed to defineSelect, which provides the query builder 'q' parameter
+// Schema is passed to executeSelect, which provides the query builder 'q' parameter
 const results = await executeSelect(
   db,
-  defineSelect(schema, (q) => q.from("users").where((u) => u.email.endsWith("@example.com"))),
+  schema,
+  (q) => q.from("users").where((u) => u.email.endsWith("@example.com")),
   {},
 );
 ```
@@ -1425,7 +1478,7 @@ describe("SQL Generation", () => {
 ```typescript
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
 import { db } from "./shared-db.js";
 
@@ -1440,12 +1493,12 @@ describe("PostgreSQL Integration", () => {
   it("should execute SELECT query", async () => {
     const results = await executeSelect(
       db,
-      defineSelect(schema, (q, params: { minAge: number }) =>
+      schema,
+      (q, params: { minAge: number }) =>
         q
           .from("users")
           .where((u) => u.age >= params.minAge)
           .select((u) => u.name),
-      ),
       { minAge: 25 },
     );
 
@@ -1693,12 +1746,12 @@ Error: Unsupported AST node type: TemplateLiteral
 // Incorrect - template literal in lambda
 .where(u => u.name === `User ${userId}`)
 
-// Correct - use params with defineSelect and executeSelect
+// Correct - use params with executeSelect
 await executeSelect(
   db,
-  defineSelect(schema, (q, params: { name: string }) =>
+  schema,
+  (q, params: { name: string }) =>
     q.from("users").where((u) => u.name === params.name),
-  ),
   { name: `User ${userId}` },
 );
 ```
@@ -1716,12 +1769,12 @@ Error: Unknown identifier 'externalVar'
 const minAge = 18;
 .where(u => u.age >= minAge)
 
-// Correct - params pattern with defineSelect and executeSelect
+// Correct - params pattern with executeSelect
 await executeSelect(
   db,
-  defineSelect(schema, (q, params: { minAge: number }) =>
+  schema,
+  (q, params: { minAge: number }) =>
     q.from("users").where((u) => u.age >= params.minAge),
-  ),
   { minAge: 18 },
 );
 ```
@@ -1737,7 +1790,8 @@ const schema = createSchema(); // No schema type provided
 // Types will be 'unknown' without schema
 const result = await executeSelect(
   db,
-  defineSelect(schema, (q) => q.from("users")), // Type is Queryable<unknown>
+  schema,
+  (q) => q.from("users"), // Type is Queryable<unknown>
   {},
 );
 ```
@@ -1754,7 +1808,8 @@ const schema = createSchema<Schema>();
 // Now fully typed from schema
 const result = await executeSelect(
   db,
-  defineSelect(schema, (q) => q.from("users")), // Fully typed: Queryable<{ id: number; name: string }>
+  schema,
+  (q) => q.from("users"), // Fully typed: Queryable<{ id: number; name: string }>
   {},
 );
 ```
@@ -1867,6 +1922,13 @@ Complete reference for all query operations, parameters, and CRUD functionality 
   - [14.3 DELETE Statements](#143-delete-statements)
   - [14.4 Safety Features](#144-safety-features)
   - [14.5 Executing CRUD Operations](#145-executing-crud-operations)
+- [15. Query Composition and Reusability](#15-query-composition-and-reusability)
+  - [15.1 Chaining Operations on Plans](#151-chaining-operations-on-plans)
+  - [15.2 Immutability and Base Queries](#152-immutability-and-base-queries)
+  - [15.3 Branching from Base Queries](#153-branching-from-base-queries)
+  - [15.4 Parameter Accumulation](#154-parameter-accumulation)
+  - [15.5 Composition with All Operations](#155-composition-with-all-operations)
+  - [15.6 Practical Patterns](#156-practical-patterns)
 
 ---
 
@@ -2620,13 +2682,13 @@ ORDER BY "totalSalary" DESC
 ```typescript
 const largeDepartments = await executeSelect(
   db,
-  defineSelect(schema, (q) =>
+  schema,
+  (q) =>
     q
       .from("users")
       .groupBy((u) => u.departmentId)
       .select((g) => ({ departmentId: g.key, headcount: g.count() }))
       .where((row) => row.headcount > 5),
-  ),
   {},
 );
 ```
@@ -2986,7 +3048,8 @@ Get the top earner from each department:
 ```typescript
 const topEarners = await executeSelect(
   db,
-  defineSelect(schema, (q, params, helpers) =>
+  schema,
+  (q, params, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -2999,7 +3062,6 @@ const topEarners = await executeSelect(
       }))
       .where((r) => r.rank === 1)
       .orderBy((r) => r.department),
-  ),
   {},
 );
 ```
@@ -3036,7 +3098,8 @@ const schema = createSchema<EmployeeDeptSchema>();
 
 const top3Engineering = await executeSelect(
   db,
-  defineSelect(schema, (q, params: { deptId: number }, helpers) =>
+  schema,
+  (q, params: { deptId: number }, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -3050,7 +3113,6 @@ const top3Engineering = await executeSelect(
       }))
       .where((r) => r.rank <= 3 && r.department_id === params.deptId)
       .orderBy((r) => r.rank),
-  ),
   { deptId: 1 },
 );
 ```
@@ -3078,7 +3140,8 @@ const schema = createSchema<PerformanceSchema>();
 
 const topPerformers = await executeSelect(
   db,
-  defineSelect(schema, (q, params, helpers) =>
+  schema,
+  (q, params, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -3089,7 +3152,6 @@ const topPerformers = await executeSelect(
           .rowNumber(),
       }))
       .where((r) => r.performance_rank <= 10),
-  ),
   {},
 );
 ```
@@ -3115,7 +3177,8 @@ const schema = createSchema<ActiveEmployeeSchema>();
 
 const activeTopEarners = await executeSelect(
   db,
-  defineSelect(schema, (q, params, helpers) =>
+  schema,
+  (q, params, helpers) =>
     q
       .from("employees")
       .select((e) => ({
@@ -3132,7 +3195,6 @@ const activeTopEarners = await executeSelect(
       .where((r) => r.dept_rank <= 2 && r.is_active === true)
       .orderBy((r) => r.department)
       .thenBy((r) => r.dept_rank),
-  ),
   {},
 );
 ```
@@ -3294,12 +3356,12 @@ Queries are executed directly without requiring a materialization method. The qu
 ```typescript
 const activeUsers = await executeSelect(
   db,
-  defineSelect(schema, (q) =>
+  schema,
+  (q) =>
     q
       .from("users")
       .where((u) => u.active)
       .orderBy((u) => u.name),
-  ),
   {},
 );
 ```
@@ -3813,7 +3875,7 @@ The adapter packages provide execution functions for all CRUD operations:
 #### PostgreSQL (pg-promise)
 
 ```typescript
-import { createSchema, defineInsert, defineUpdate, defineDelete } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
 
 const schema = createSchema<Schema>();
@@ -3821,12 +3883,12 @@ const schema = createSchema<Schema>();
 // Execute INSERT with RETURNING
 const insertedUsers = await executeInsert(
   db,
-  defineInsert(schema, (q) =>
+  schema,
+  (q) =>
     q
       .insertInto("users")
       .values({ name: "Frank", age: 28 })
       .returning((u) => ({ id: u.id, name: u.name })),
-  ),
   {},
 );
 // Returns: [{ id: 123, name: "Frank" }]
@@ -3834,12 +3896,12 @@ const insertedUsers = await executeInsert(
 // Execute UPDATE - returns affected row count
 const updateCount = await executeUpdate(
   db,
-  defineUpdate(schema, (q) =>
+  schema,
+  (q) =>
     q
       .update("users")
       .set({ age: 29 })
       .where((u) => u.id === 123),
-  ),
   {},
 );
 // Returns number of affected rows
@@ -3847,7 +3909,8 @@ const updateCount = await executeUpdate(
 // Execute DELETE - returns affected row count
 const deleteCount = await executeDelete(
   db,
-  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => u.id === 123)),
+  schema,
+  (q) => q.deleteFrom("users").where((u) => u.id === 123),
   {},
 );
 ```
@@ -3855,7 +3918,7 @@ const deleteCount = await executeDelete(
 #### SQLite (better-sqlite3)
 
 ```typescript
-import { createSchema, defineInsert, defineUpdate, defineDelete } from "@webpods/tinqer";
+import { createSchema } from "@webpods/tinqer";
 import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-better-sqlite3";
 
 const schema = createSchema<Schema>();
@@ -3863,7 +3926,8 @@ const schema = createSchema<Schema>();
 // Execute INSERT - returns row count
 const insertCount = executeInsert(
   db,
-  defineInsert(schema, (q) => q.insertInto("users").values({ name: "Grace", age: 30 })),
+  schema,
+  (q) => q.insertInto("users").values({ name: "Grace", age: 30 }),
   {},
 );
 // Returns number of inserted rows
@@ -3871,24 +3935,25 @@ const insertCount = executeInsert(
 // Execute UPDATE - returns row count
 const updateCount = executeUpdate(
   db,
-  defineUpdate(schema, (q) =>
+  schema,
+  (q) =>
     q
       .update("users")
       .set({ age: 33 })
       .where((u) => u.name === "Henry"),
-  ),
   {},
 );
 
 // Execute DELETE - returns row count
 const deleteCount = executeDelete(
   db,
-  defineDelete(schema, (q) => q.deleteFrom("users").where((u) => u.age > 100)),
+  schema,
+  (q) => q.deleteFrom("users").where((u) => u.age > 100),
   {},
 );
 ```
 
-SQLite helpers always return the number of affected rows. To inspect row data after an insert or update, run a follow-up SELECT query using `defineSelect` and `executeSelect`.
+SQLite helpers always return the number of affected rows. To inspect row data after an insert or update, run a follow-up SELECT query using `executeSelect`.
 
 #### Transaction Support
 
@@ -3905,47 +3970,350 @@ const schema = createSchema<TxSchema>();
 await db.tx(async (t) => {
   const users = await executeInsert(
     t,
-    defineInsert(schema, (q) =>
+    schema,
+    (q) =>
       q
         .insertInto("users")
         .values({ name: "Ivy" })
         .returning((u) => u.id),
-    ),
     {},
   );
 
   await executeInsert(
     t,
-    defineInsert(schema, (q) =>
+    schema,
+    (q) =>
       q.insertInto("user_logs").values({
         userId: users[0]!.id,
         action: "created",
       }),
-    ),
     {},
   );
 });
 
 // SQLite transactions
 const transaction = sqliteDb.transaction(() => {
-  executeInsert(
-    db,
-    defineInsert(schema, (q) => q.insertInto("users").values({ name: "Jack" })),
-    {},
-  );
+  executeInsert(db, schema, (q) => q.insertInto("users").values({ name: "Jack" }), {});
   executeUpdate(
     db,
-    defineUpdate(schema, (q) =>
+    schema,
+    (q) =>
       q
         .update("users")
         .set({ lastLogin: new Date() })
         .where((u) => u.name === "Jack"),
-    ),
     {},
   );
 });
 transaction();
 ```
+
+---
+
+## 15. Query Composition and Reusability
+
+Tinqer query plans are **immutable and composable**. Plan handles returned by `define*` functions support method chaining - each operation returns a new plan without modifying the original. This enables powerful query composition patterns: reusable base queries, branching specialized variations, and parameter accumulation.
+
+### 15.1 Chaining Operations on Plans
+
+All plan handles support chaining operations like `where()`, `orderBy()`, `select()`, etc.:
+
+```typescript
+import { createSchema, defineSelect } from "@webpods/tinqer";
+import { toSql } from "@webpods/tinqer-sql-pg-promise";
+
+interface Schema {
+  users: { id: number; name: string; age: number; isActive: boolean };
+}
+
+const schema = createSchema<Schema>();
+
+// Chain operations on the plan handle
+const plan = defineSelect(schema, (q) => q.from("users"))
+  .where((u) => u.age > 18)
+  .where((u) => u.isActive === true)
+  .orderBy((u) => u.name)
+  .select((u) => ({ id: u.id, name: u.name }));
+
+const { sql, params } = toSql(plan, {});
+// SELECT "id" AS "id", "name" AS "name" FROM "users"
+// WHERE "age" > $(__p1) AND "isActive" = $(__p2)
+// ORDER BY "name" ASC
+```
+
+### 15.2 Immutability and Base Queries
+
+Plans are immutable - calling a method returns a **new plan** without modifying the original:
+
+```typescript
+const basePlan = defineSelect(schema, (q) => q.from("users"));
+
+const withAge = basePlan.where((u) => u.age > 18);
+const withStatus = basePlan.where((u) => u.isActive === true);
+
+// basePlan is unchanged
+// withAge and withStatus are independent plans
+```
+
+This immutability enables creating **reusable base queries**:
+
+```typescript
+interface Schema {
+  orders: {
+    id: number;
+    userId: number;
+    total: number;
+    status: string;
+    createdAt: Date;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+// Reusable base query
+type UserOrdersParams = { userId: number };
+
+const userOrders = defineSelect(schema, (q, p: UserOrdersParams) =>
+  q
+    .from("orders")
+    .where((o) => o.userId === p.userId)
+    .orderBy((o) => o.createdAt),
+);
+
+// Use the base query in different contexts
+const recentUserOrders = userOrders.take(10);
+const highValueUserOrders = userOrders.where((o) => o.total > 1000);
+
+// Execute with parameters
+toSql(recentUserOrders, { userId: 42 });
+toSql(highValueUserOrders, { userId: 42 });
+```
+
+### 15.3 Branching from Base Queries
+
+Since plans are immutable, you can branch multiple specialized queries from a single base:
+
+```typescript
+interface Schema {
+  users: {
+    id: number;
+    name: string;
+    age: number;
+    isActive: boolean;
+    departmentId: number;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+type DeptParams = { departmentId: number };
+
+// Base query: users in a department
+const usersInDept = defineSelect(schema, (q, p: DeptParams) =>
+  q.from("users").where((u) => u.departmentId === p.departmentId),
+);
+
+// Branch 1: Active users only
+const activeUsersInDept = usersInDept
+  .where((u) => u.isActive === true)
+  .where<{ minAge: number }>((u, p) => u.age >= p.minAge)
+  .orderBy((u) => u.name);
+
+// Branch 2: Inactive users only
+const inactiveUsersInDept = usersInDept
+  .where((u) => u.isActive === false)
+  .where<{ maxAge: number }>((u, p) => u.age <= p.maxAge)
+  .orderBy((u) => u.age);
+
+// Branch 3: Senior staff
+const seniorStaffInDept = usersInDept
+  .where((u) => u.age >= 50)
+  .select((u) => ({ id: u.id, name: u.name, age: u.age }));
+
+// Execute branches with different parameters
+toSql(activeUsersInDept, { departmentId: 1, minAge: 25 });
+toSql(inactiveUsersInDept, { departmentId: 1, maxAge: 65 });
+toSql(seniorStaffInDept, { departmentId: 1 });
+```
+
+### 15.4 Parameter Accumulation
+
+Parameters from the builder function and chained operations are **merged automatically**:
+
+```typescript
+interface Schema {
+  products: {
+    id: number;
+    name: string;
+    price: number;
+    category: string;
+    inStock: boolean;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+// Builder function defines initial params
+type BuilderParams = { category: string };
+
+const plan = defineSelect(schema, (q, p: BuilderParams) =>
+  q.from("products").where((prod) => prod.category === p.category),
+);
+
+// Chained operations add more params
+type ChainParams1 = { minPrice: number };
+type ChainParams2 = { maxPrice: number };
+
+const refinedPlan = plan
+  .where<ChainParams1>((prod, p) => prod.price >= p.minPrice)
+  .where<ChainParams2>((prod, p) => prod.price <= p.maxPrice)
+  .where((prod) => prod.inStock === true);
+
+// Must provide ALL accumulated parameters
+const { sql, params } = toSql(refinedPlan, {
+  category: "electronics",
+  minPrice: 100,
+  maxPrice: 1000,
+});
+
+// params contains: { category, minPrice, maxPrice, __p1: true }
+```
+
+**Type safety**: TypeScript enforces that all accumulated parameters are provided at execution time.
+
+### 15.5 Composition with All Operations
+
+Composition works with all CRUD operations, not just SELECT:
+
+#### INSERT Composition
+
+```typescript
+interface Schema {
+  posts: {
+    id: number;
+    userId: number;
+    title: string;
+    content: string;
+    isPublished: boolean;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+const insertPost = defineInsert(schema, (q) => q.insertInto("posts"))
+  .values({
+    userId: 1,
+    title: "My Post",
+    content: "Post content",
+    isPublished: false,
+  })
+  .returning((p) => ({ id: p.id, title: p.title }));
+
+toSql(insertPost, {});
+```
+
+#### UPDATE Composition
+
+```typescript
+const updatePlan = defineUpdate(schema, (q) => q.update("posts"))
+  .set({ isPublished: true })
+  .where<{ minViews: number }>((p, params) => p.viewCount > params.minViews)
+  .returning((p) => p.id);
+
+toSql(updatePlan, { minViews: 1000 });
+```
+
+#### DELETE Composition
+
+```typescript
+const deletePlan = defineDelete(schema, (q) => q.deleteFrom("posts"))
+  .where((p) => p.isPublished === false)
+  .where<{ beforeDate: Date }>((p, params) => p.createdAt < params.beforeDate);
+
+toSql(deletePlan, { beforeDate: new Date("2024-01-01") });
+```
+
+### 15.6 Practical Patterns
+
+#### Pattern 1: Pagination Helper
+
+```typescript
+interface Schema {
+  articles: {
+    id: number;
+    title: string;
+    createdAt: Date;
+    viewCount: number;
+  };
+}
+
+const schema = createSchema<Schema>();
+
+type PageParams = { page: number; pageSize: number };
+
+function paginate<TPlan extends { skip: Function; take: Function }>(
+  plan: TPlan,
+  page: number,
+  pageSize: number,
+): TPlan {
+  return plan.skip((page - 1) * pageSize).take(pageSize) as TPlan;
+}
+
+const allArticles = defineSelect(schema, (q) =>
+  q.from("articles").orderBy((a) => a.createdAt),
+);
+
+// Page 1
+const page1 = paginate(allArticles, 1, 20);
+toSql(page1, {});
+
+// Page 2
+const page2 = paginate(allArticles, 2, 20);
+toSql(page2, {});
+```
+
+#### Pattern 2: Common Filters
+
+```typescript
+const activeArticles = defineSelect(schema, (q) =>
+  q.from("articles").where((a) => a.isActive === true),
+);
+
+const popularActiveArticles = activeArticles.where((a) => a.viewCount > 1000);
+
+const recentActiveArticles = activeArticles
+  .where<{ since: Date }>((a, p) => a.createdAt >= p.since)
+  .orderBy((a) => a.createdAt);
+
+toSql(popularActiveArticles, {});
+toSql(recentActiveArticles, { since: new Date("2024-01-01") });
+```
+
+#### Pattern 3: Repository Pattern
+
+```typescript
+class UserRepository {
+  private baseQuery = defineSelect(schema, (q) => q.from("users"));
+
+  findActive() {
+    return this.baseQuery.where((u) => u.isActive === true);
+  }
+
+  findByDepartment(deptId: number) {
+    return this.baseQuery.where((u) => u.departmentId === deptId);
+  }
+
+  findActiveInDepartment(deptId: number) {
+    return this.findActive().where((u) => u.departmentId === deptId);
+  }
+}
+
+const repo = new UserRepository();
+toSql(repo.findActive(), {});
+toSql(repo.findActiveInDepartment(5), {});
+```
+
+**Key Takeaway**: Query composition enables building reusable, composable query fragments that can be combined and specialized without duplication.
 
 ---
 
