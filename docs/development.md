@@ -69,14 +69,14 @@ tinqer/
 │   │   │   └── types/                   # TypeScript type definitions
 │   │   └── tests/                       # Core library tests
 │   │
-│   ├── tinqer-sql-pg-promise/           # PostgreSQL adapter
+│   ├── pg-promise-adapter/           # PostgreSQL adapter
 │   │   ├── src/
 │   │   │   ├── adapter.ts               # PostgreSQL SQL adapter
 │   │   │   ├── execute.ts               # Execution functions
 │   │   │   └── visitors/                # PostgreSQL-specific visitors
 │   │   └── tests/                       # Integration tests
 │   │
-│   ├── tinqer-sql-better-sqlite3/       # SQLite adapter
+│   ├── better-sqlite3-adapter/       # SQLite adapter
 │   │   ├── src/
 │   │   │   ├── adapter.ts               # SQLite SQL adapter
 │   │   │   ├── execute.ts               # Execution functions
@@ -163,8 +163,8 @@ npm test
 
 **Integration Tests** (`packages/tinqer-sql-*/tests/`):
 
-- PostgreSQL integration: `tinqer-sql-pg-promise-integration/tests/`
-- SQLite integration: `tinqer-sql-better-sqlite3-integration/tests/`
+- PostgreSQL integration: `pg-promise-adapter-integration/tests/`
+- SQLite integration: `better-sqlite3-adapter-integration/tests/`
 - Full end-to-end query execution tests
 - Database-specific feature tests
 
@@ -233,7 +233,7 @@ describe("PostgreSQL Integration", () => {
 
 **Test Database Setup:**
 
-PostgreSQL tests use shared connection (`packages/tinqer-sql-pg-promise-integration/tests/shared-db.ts`):
+PostgreSQL tests use shared connection (`packages/pg-promise-adapter-integration/tests/shared-db.ts`):
 
 ```typescript
 import pgPromise from "pg-promise";

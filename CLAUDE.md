@@ -268,7 +268,7 @@ packages/
 │   │   ├── queryable/        # Fluent query API
 │   │   └── types/           # TypeScript type definitions
 │   └── tests/
-└── tinqer-sql-pg-promise/    # PostgreSQL adapter using pg-promise
+└── pg-promise-adapter/    # PostgreSQL adapter using pg-promise
 ```
 
 ## Code Patterns
@@ -351,7 +351,7 @@ Benefits: Keeps analysis artifacts separate from source code, allows iterative w
 **NEVER create temporary test scripts in the root directory**. Test files belong in:
 
 - `packages/tinqer/tests/` - Core library tests
-- `packages/tinqer-sql-pg-promise/tests/` - SQL adapter tests
+- `packages/pg-promise-adapter/tests/` - SQL adapter tests
 
 **Temporary debugging scripts** should be created in `.analysis/` directory (gitignored).
 
