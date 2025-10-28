@@ -2,7 +2,7 @@
  * FROM clause generator
  */
 
-import type { FromOperation } from "@webpods/tinqer";
+import type { FromOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateSql } from "../sql-generator.js";
 

@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { defineDelete } from "@webpods/tinqer";
+import { defineDelete } from "@tinqerjs/tinqer";
 import { toSql } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 

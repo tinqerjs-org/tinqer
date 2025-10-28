@@ -2,7 +2,7 @@
  * SINGLE operation generator
  */
 
-import type { SingleOperation, SingleOrDefaultOperation } from "@webpods/tinqer";
+import type { SingleOperation, SingleOrDefaultOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 
 /**

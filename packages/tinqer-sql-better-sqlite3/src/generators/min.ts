@@ -2,7 +2,7 @@
  * MIN aggregate generator
  */
 
-import type { MinOperation } from "@webpods/tinqer";
+import type { MinOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateExpression } from "../expression-generator.js";
 

@@ -45,7 +45,7 @@ Guide for contributing to Tinqer, running tests, and troubleshooting.
 
 ```bash
 # Clone the repository
-git clone https://github.com/webpods-org/tinqer.git
+git clone https://github.com/tinqerjs-org/tinqer.git
 cd tinqer
 
 # Install dependencies
@@ -175,8 +175,8 @@ npm test
 ```typescript
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 describe("SQL Generation", () => {
   it("should generate SQL with WHERE clause", () => {
@@ -202,8 +202,8 @@ describe("SQL Generation", () => {
 ```typescript
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema } from "@webpods/tinqer";
-import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeSelect } from "@tinqerjs/pg-promise-adapter";
 import { db } from "./shared-db.js";
 
 const schema = createSchema<Schema>();

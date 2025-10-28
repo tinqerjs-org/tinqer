@@ -24,7 +24,7 @@
 
 ## Commands & Testing
 
-- `npm run build`/`build:quick` compile all workspaces; `npm run test` runs the full Mocha suite; target packages via `npm run test:tinqer` or `npm run dev --workspace @webpods/tinqer`.
+- `npm run build`/`build:quick` compile all workspaces; `npm run test` runs the full Mocha suite; target packages via `npm run test:tinqer` or `npm run dev --workspace @tinqerjs/tinqer`.
 - Enforce quality with `npm run lint`, `lint:fix`, `format:check`, and `typecheck`. Test files end with `*.test.ts`, colocate helpers in `tests/test-utils/`, and assert on generated SQL plus bound parameters.
 
 ## Delivery Checklist

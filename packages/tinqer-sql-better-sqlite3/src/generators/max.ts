@@ -2,7 +2,7 @@
  * MAX aggregate generator
  */
 
-import type { MaxOperation } from "@webpods/tinqer";
+import type { MaxOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateExpression } from "../expression-generator.js";
 

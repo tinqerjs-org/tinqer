@@ -2,7 +2,7 @@
  * AVG aggregate generator
  */
 
-import type { AverageOperation } from "@webpods/tinqer";
+import type { AverageOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateExpression } from "../expression-generator.js";
 

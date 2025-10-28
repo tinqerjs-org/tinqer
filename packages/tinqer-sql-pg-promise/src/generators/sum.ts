@@ -2,7 +2,7 @@
  * SUM aggregate generator
  */
 
-import type { SumOperation } from "@webpods/tinqer";
+import type { SumOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateExpression } from "../expression-generator.js";
 

@@ -2,7 +2,7 @@
  * FIRST operation generator
  */
 
-import type { FirstOperation, FirstOrDefaultOperation } from "@webpods/tinqer";
+import type { FirstOperation, FirstOrDefaultOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 
 /**

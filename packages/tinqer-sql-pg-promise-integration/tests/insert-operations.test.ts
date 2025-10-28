@@ -4,8 +4,8 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema } from "@webpods/tinqer";
-import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeInsert } from "@tinqerjs/pg-promise-adapter";
 import { db as dbClient } from "./shared-db.js";
 
 // Define types for test tables

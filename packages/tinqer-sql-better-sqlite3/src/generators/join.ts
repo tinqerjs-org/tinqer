@@ -13,7 +13,7 @@ import type {
   ColumnShapeNode,
   ObjectShapeNode,
   ReferenceShapeNode,
-} from "@webpods/tinqer";
+} from "@tinqerjs/tinqer";
 import type { SqlContext, SymbolTable, SourceReference } from "../types.js";
 import { generateSql } from "../sql-generator.js";
 

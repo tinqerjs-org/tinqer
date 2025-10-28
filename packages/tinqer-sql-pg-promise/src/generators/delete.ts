@@ -2,7 +2,7 @@
  * DELETE SQL generation for PostgreSQL
  */
 
-import type { DeleteOperation } from "@webpods/tinqer";
+import type { DeleteOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateBooleanExpression } from "../expression-generator.js";
 

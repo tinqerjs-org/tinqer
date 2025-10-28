@@ -2,7 +2,7 @@
  * Database schema types and context for PostgreSQL integration tests
  */
 
-import { createSchema } from "@webpods/tinqer";
+import { createSchema } from "@tinqerjs/tinqer";
 
 /**
  * Database schema types matching the PostgreSQL tables

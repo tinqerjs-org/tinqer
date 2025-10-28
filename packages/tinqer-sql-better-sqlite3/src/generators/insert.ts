@@ -7,7 +7,7 @@ import type {
   Expression,
   ParameterExpression,
   ConstantExpression,
-} from "@webpods/tinqer";
+} from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateExpression } from "../expression-generator.js";
 

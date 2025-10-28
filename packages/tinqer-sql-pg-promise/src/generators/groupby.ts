@@ -2,7 +2,7 @@
  * GROUP BY clause generator
  */
 
-import type { GroupByOperation } from "@webpods/tinqer";
+import type { GroupByOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateExpression } from "../expression-generator.js";
 

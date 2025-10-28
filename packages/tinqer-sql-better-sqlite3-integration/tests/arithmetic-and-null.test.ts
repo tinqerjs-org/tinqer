@@ -4,7 +4,7 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { executeSelectSimple } from "@webpods/tinqer-sql-better-sqlite3";
+import { executeSelectSimple } from "@tinqerjs/better-sqlite3-adapter";
 import { setupTestDatabase } from "./test-setup.js";
 import { dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";

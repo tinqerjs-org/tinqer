@@ -2,7 +2,7 @@
  * Types for SQL generation
  */
 
-import type { Expression } from "@webpods/tinqer";
+import type { Expression } from "@tinqerjs/tinqer";
 
 /**
  * Result of SQL generation

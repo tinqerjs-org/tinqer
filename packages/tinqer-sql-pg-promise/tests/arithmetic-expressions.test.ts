@@ -4,7 +4,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
 import { toSql } from "../dist/index.js";
 
 describe("Arithmetic Expression SQL Generation", () => {

@@ -4,8 +4,8 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 describe("Null Coalescing Operator (??) with query", () => {
   it("should generate COALESCE for ?? operator in WHERE clause", () => {

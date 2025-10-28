@@ -8,13 +8,13 @@ Install the core library and adapter for your database:
 
 ```bash
 # Core library
-npm install @webpods/tinqer
+npm install @tinqerjs/tinqer
 
 # PostgreSQL adapter (pg-promise)
-npm install @webpods/tinqer-sql-pg-promise
+npm install @tinqerjs/pg-promise-adapter
 
 # SQLite adapter (better-sqlite3)
-npm install @webpods/tinqer-sql-better-sqlite3
+npm install @tinqerjs/better-sqlite3-adapter
 ```
 
 ## Quick Start
@@ -22,8 +22,8 @@ npm install @webpods/tinqer-sql-better-sqlite3
 ### PostgreSQL Example
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeSelect } from "@tinqerjs/pg-promise-adapter";
 import pgPromise from "pg-promise";
 
 interface Schema {
@@ -57,8 +57,8 @@ const results = await executeSelect(
 
 ```typescript
 import Database from "better-sqlite3";
-import { createSchema } from "@webpods/tinqer";
-import { executeSelect } from "@webpods/tinqer-sql-better-sqlite3";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeSelect } from "@tinqerjs/better-sqlite3-adapter";
 
 // Same schema definition
 interface Schema {
@@ -99,8 +99,8 @@ import {
   defineInsert,
   defineUpdate,
   defineDelete,
-} from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+} from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; age: number };
@@ -175,8 +175,8 @@ Query plans are **immutable and composable** - you can chain operations onto pla
 #### Chaining Operations on Plans
 
 ```typescript
-import { defineSelect } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { defineSelect } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 const schema = createSchema<Schema>();
 
@@ -362,8 +362,8 @@ See the [Window Functions Guide](docs/guide.md#8-window-functions) for detailed 
 ### CRUD Operations
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeInsert, executeUpdate, executeDelete } from "@tinqerjs/pg-promise-adapter";
 
 const schema = createSchema<Schema>();
 
@@ -433,7 +433,7 @@ const literals = toSql(
 ### Case-Insensitive String Operations
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
+import { createSchema } from "@tinqerjs/tinqer";
 
 const schema = createSchema<Schema>();
 
@@ -503,11 +503,11 @@ See [Database Adapters](docs/adapters.md) for detailed comparison.
 
 ## Packages
 
-| Package                              | Purpose                                                  |
-| ------------------------------------ | -------------------------------------------------------- |
-| `@webpods/tinqer`                    | Core expression tree and types (re-exported by adapters) |
-| `@webpods/tinqer-sql-pg-promise`     | PostgreSQL adapter with pg-promise                       |
-| `@webpods/tinqer-sql-better-sqlite3` | SQLite adapter with better-sqlite3                       |
+| Package                            | Purpose                                                  |
+| ---------------------------------- | -------------------------------------------------------- |
+| `@tinqerjs/tinqer`                 | Core expression tree and types (re-exported by adapters) |
+| `@tinqerjs/pg-promise-adapter`     | PostgreSQL adapter with pg-promise                       |
+| `@tinqerjs/better-sqlite3-adapter` | SQLite adapter with better-sqlite3                       |
 
 ## Credits
 

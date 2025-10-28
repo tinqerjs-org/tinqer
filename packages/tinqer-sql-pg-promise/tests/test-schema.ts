@@ -2,7 +2,7 @@
  * Test schema for SQL generator tests
  */
 
-import { createSchema } from "@webpods/tinqer";
+import { createSchema } from "@tinqerjs/tinqer";
 
 // Define the test database schema
 export interface TestSchema {

@@ -2,7 +2,7 @@
  * SELECT clause generator
  */
 
-import type { SelectOperation, ValueExpression } from "@webpods/tinqer";
+import type { SelectOperation, ValueExpression } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateExpression, generateValueExpression } from "../expression-generator.js";
 
