@@ -1,6 +1,6 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { defineSelect, createSchema } from "@webpods/tinqer";
+import { defineSelect, createSchema } from "@tinqerjs/tinqer";
 import { toSql } from "../dist/index.js";
 
 describe("Skip SQL Generation", () => {

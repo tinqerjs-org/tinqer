@@ -2,7 +2,7 @@
  * THEN BY clause generator
  */
 
-import type { ThenByOperation } from "@webpods/tinqer";
+import type { ThenByOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateValueExpression } from "../expression-generator.js";
 

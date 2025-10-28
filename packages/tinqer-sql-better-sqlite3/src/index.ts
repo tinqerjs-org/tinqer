@@ -35,7 +35,7 @@ import {
   UpdatePlanHandleWithReturning,
   DeletePlanHandleInitial,
   DeletePlanHandleComplete,
-} from "@webpods/tinqer";
+} from "@tinqerjs/tinqer";
 import { generateSql } from "./sql-generator.js";
 import type { ExecuteOptions } from "./types.js";
 

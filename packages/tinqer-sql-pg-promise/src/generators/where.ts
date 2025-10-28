@@ -2,7 +2,7 @@
  * WHERE clause generator
  */
 
-import type { WhereOperation } from "@webpods/tinqer";
+import type { WhereOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateBooleanExpression } from "../expression-generator.js";
 

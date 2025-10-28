@@ -2,7 +2,7 @@
 
 # Database Adapters
 
-Tinqer ships dedicated adapters for PostgreSQL (`@webpods/tinqer-sql-pg-promise`) and SQLite (`@webpods/tinqer-sql-better-sqlite3`). Both share the same builder APIs while handling dialect-specific SQL generation and parameter formatting.
+Tinqer ships dedicated adapters for PostgreSQL (`@tinqerjs/pg-promise-adapter`) and SQLite (`@tinqerjs/better-sqlite3-adapter`). Both share the same builder APIs while handling dialect-specific SQL generation and parameter formatting.
 
 ## Table of Contents
 
@@ -27,21 +27,21 @@ Tinqer ships dedicated adapters for PostgreSQL (`@webpods/tinqer-sql-pg-promise`
 ### 1.1 Installation
 
 ```bash
-npm install @webpods/tinqer-sql-pg-promise pg-promise
+npm install @tinqerjs/pg-promise-adapter pg-promise
 ```
 
 ### 1.2 Setup & Query Execution
 
 ```typescript
 import pgPromise from "pg-promise";
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
 import {
   executeSelect,
   executeInsert,
   executeUpdate,
   executeDelete,
   toSql,
-} from "@webpods/tinqer-sql-pg-promise";
+} from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; email: string; age: number; active: boolean };
@@ -129,21 +129,21 @@ const { sql, params } = toSql(
 ### 2.1 Installation
 
 ```bash
-npm install @webpods/tinqer-sql-better-sqlite3 better-sqlite3
+npm install @tinqerjs/better-sqlite3-adapter better-sqlite3
 ```
 
 ### 2.2 Setup & Query Execution
 
 ```typescript
 import Database from "better-sqlite3";
-import { createSchema, defineSelect } from "@webpods/tinqer";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
 import {
   executeSelect,
   executeInsert,
   executeUpdate,
   executeDelete,
   toSql,
-} from "@webpods/tinqer-sql-better-sqlite3";
+} from "@tinqerjs/better-sqlite3-adapter";
 
 interface Schema {
   users: { id: number; name: string; email: string; age: number; isActive: number };
@@ -241,8 +241,8 @@ const rows = db.prepare(sql).all(params);
 Use query helpers for portable case-insensitive comparisons:
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; email: string };

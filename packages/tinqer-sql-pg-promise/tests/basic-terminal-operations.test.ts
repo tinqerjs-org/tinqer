@@ -4,7 +4,7 @@
  */
 
 import { expect } from "chai";
-import { defineSelect, createSchema } from "@webpods/tinqer";
+import { defineSelect, createSchema } from "@tinqerjs/tinqer";
 import { toSql } from "../dist/index.js";
 
 interface User {

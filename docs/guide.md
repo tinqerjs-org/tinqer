@@ -76,8 +76,8 @@ The `where` method applies predicates to filter query results. Multiple `where` 
 ### 1.1 Basic Comparison
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; age: number; email: string; active: boolean };
@@ -1642,8 +1642,8 @@ The `insertInto` function creates INSERT operations. Values are specified using 
 #### Basic INSERT
 
 ```typescript
-import { createSchema, defineInsert } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineInsert } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; age: number; email: string };
@@ -1754,8 +1754,8 @@ The `update` function creates UPDATE operations. The `.set()` method uses direct
 #### Basic UPDATE
 
 ```typescript
-import { createSchema, defineUpdate } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineUpdate } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 const schema = createSchema<Schema>();
 
@@ -1858,8 +1858,8 @@ The `deleteFrom` function creates DELETE operations with optional WHERE conditio
 #### Basic DELETE
 
 ```typescript
-import { createSchema, defineDelete } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineDelete } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 const schema = createSchema<Schema>();
 
@@ -2012,8 +2012,8 @@ The adapter packages provide execution functions for all CRUD operations:
 #### PostgreSQL (pg-promise)
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeInsert, executeUpdate, executeDelete } from "@tinqerjs/pg-promise-adapter";
 
 const schema = createSchema<Schema>();
 
@@ -2055,8 +2055,8 @@ const deleteCount = await executeDelete(
 #### SQLite (better-sqlite3)
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeInsert, executeUpdate, executeDelete } from "@webpods/tinqer-sql-better-sqlite3";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeInsert, executeUpdate, executeDelete } from "@tinqerjs/better-sqlite3-adapter";
 
 const schema = createSchema<Schema>();
 
@@ -2156,8 +2156,8 @@ Tinqer query plans are **immutable and composable**. Plan handles returned by `d
 All plan handles support chaining operations like `where()`, `orderBy()`, `select()`, etc.:
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; age: number; isActive: boolean };

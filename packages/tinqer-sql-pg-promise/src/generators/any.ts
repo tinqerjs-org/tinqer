@@ -2,7 +2,7 @@
  * ANY operation generator
  */
 
-import type { AnyOperation } from "@webpods/tinqer";
+import type { AnyOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateBooleanExpression } from "../expression-generator.js";
 

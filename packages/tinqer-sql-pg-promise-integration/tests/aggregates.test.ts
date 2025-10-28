@@ -4,7 +4,7 @@
 
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { executeSelectSimple } from "@webpods/tinqer-sql-pg-promise";
+import { executeSelectSimple } from "@tinqerjs/pg-promise-adapter";
 import { setupTestDatabase } from "./test-setup.js";
 import { db as dbClient } from "./shared-db.js";
 import { schema } from "./database-schema.js";

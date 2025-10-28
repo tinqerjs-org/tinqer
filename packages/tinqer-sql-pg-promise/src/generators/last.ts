@@ -2,7 +2,7 @@
  * LAST operation generator
  */
 
-import type { LastOperation, LastOrDefaultOperation } from "@webpods/tinqer";
+import type { LastOperation, LastOrDefaultOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 
 /**

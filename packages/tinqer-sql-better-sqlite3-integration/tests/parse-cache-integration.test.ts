@@ -4,15 +4,15 @@ import {
   setParseCacheConfig,
   getParseCacheConfig,
   type QueryBuilder,
-} from "@webpods/tinqer";
+} from "@tinqerjs/tinqer";
 import {
   executeSelect,
   executeSelectSimple,
   executeInsert,
   executeUpdate,
   executeDelete,
-} from "@webpods/tinqer-sql-better-sqlite3";
-import { parseCache } from "@webpods/tinqer/dist/parser/parse-cache.js";
+} from "@tinqerjs/better-sqlite3-adapter";
+import { parseCache } from "@tinqerjs/tinqer/dist/parser/parse-cache.js";
 import { setupTestDatabase } from "./test-setup.js";
 import { dbClient } from "./shared-db.js";
 import { schema, type TestDatabaseSchema } from "./database-schema.js";

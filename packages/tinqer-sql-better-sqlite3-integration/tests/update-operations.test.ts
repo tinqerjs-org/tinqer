@@ -4,8 +4,8 @@
 
 import { describe, it, before, after, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema } from "@webpods/tinqer";
-import { executeUpdate } from "@webpods/tinqer-sql-better-sqlite3";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeUpdate } from "@tinqerjs/better-sqlite3-adapter";
 import Database from "better-sqlite3";
 
 // Use isolated in-memory database for UPDATE tests

@@ -2,7 +2,7 @@
  * ORDER BY clause generator
  */
 
-import type { OrderByOperation } from "@webpods/tinqer";
+import type { OrderByOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateValueExpression, generateExpression } from "../expression-generator.js";
 

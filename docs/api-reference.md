@@ -23,10 +23,10 @@ Reference for adapter execution helpers, typed contexts, and query utilities.
 
 Tinqer uses a two-step API:
 
-1. **Plan definition** (`define*` functions from `@webpods/tinqer`) - Creates type-safe query plans
+1. **Plan definition** (`define*` functions from `@tinqerjs/tinqer`) - Creates type-safe query plans
 2. **Execution or SQL generation** (`execute*` or `toSql` from adapter packages) - Executes plans or generates SQL
 
-Adapter packages live in `@webpods/tinqer-sql-pg-promise` (PostgreSQL) and `@webpods/tinqer-sql-better-sqlite3` (SQLite).
+Adapter packages live in `@tinqerjs/pg-promise-adapter` (PostgreSQL) and `@tinqerjs/better-sqlite3-adapter` (SQLite).
 
 ### 1.1 defineSelect, toSql & executeSelect
 
@@ -35,7 +35,7 @@ Creates SELECT query plans, generates SQL, or executes queries.
 **Signatures**
 
 ```typescript
-// Plan definition (from @webpods/tinqer)
+// Plan definition (from @tinqerjs/tinqer)
 function defineSelect<TSchema, TParams, TResult>(
   schema: DatabaseSchema<TSchema>,
   queryBuilder: (
@@ -64,8 +64,8 @@ async function executeSelect<TResult, TParams>(
 **Example - SQL Generation**
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; age: number };
@@ -89,8 +89,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeSelect } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; age: number };
@@ -118,7 +118,7 @@ Creates INSERT query plans, generates SQL, or executes queries with optional RET
 **Signatures**
 
 ```typescript
-// Plan definition (from @webpods/tinqer)
+// Plan definition (from @tinqerjs/tinqer)
 function defineInsert<TSchema, TParams, TTable, TReturning = never>(
   schema: DatabaseSchema<TSchema>,
   queryBuilder: (
@@ -147,8 +147,8 @@ async function executeInsert<TTable, TReturning, TParams>(
 **Example - SQL Generation**
 
 ```typescript
-import { createSchema, defineInsert } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineInsert } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string };
@@ -169,8 +169,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeInsert } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeInsert } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string };
@@ -206,7 +206,7 @@ Creates UPDATE query plans, generates SQL, or executes queries with optional RET
 **Signatures**
 
 ```typescript
-// Plan definition (from @webpods/tinqer)
+// Plan definition (from @tinqerjs/tinqer)
 function defineUpdate<TSchema, TParams, TTable, TReturning = never>(
   schema: DatabaseSchema<TSchema>,
   queryBuilder: (
@@ -238,8 +238,8 @@ async function executeUpdate<TTable, TReturning, TParams>(
 **Example - SQL Generation**
 
 ```typescript
-import { createSchema, defineUpdate } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineUpdate } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; status: string; lastLogin: Date };
@@ -263,8 +263,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeUpdate } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeUpdate } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; lastLogin: Date; status: string };
@@ -305,7 +305,7 @@ Creates DELETE query plans, generates SQL, or executes queries.
 **Signatures**
 
 ```typescript
-// Plan definition (from @webpods/tinqer)
+// Plan definition (from @tinqerjs/tinqer)
 function defineDelete<TSchema, TParams>(
   schema: DatabaseSchema<TSchema>,
   queryBuilder: (
@@ -334,8 +334,8 @@ async function executeDelete<TParams>(
 **Example - SQL Generation**
 
 ```typescript
-import { createSchema, defineDelete } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineDelete } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; status: string };
@@ -356,8 +356,8 @@ const { sql, params } = toSql(
 **Example - Execution**
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeDelete } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeDelete } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; status: string };
@@ -400,8 +400,8 @@ Use `onSql` for logging, testing, or debugging without changing execution flow.
 Creates a phantom-typed `DatabaseSchema` that ties table names to row types. The schema is passed to execution functions, which provide a type-safe query builder through the lambda's first parameter.
 
 ```typescript
-import { createSchema } from "@webpods/tinqer";
-import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeSelect } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string; email: string };
@@ -428,8 +428,8 @@ const results = await executeSelect(
 Provides helper functions for case-insensitive comparisons and string searches. Helpers are automatically passed as the third parameter to query builder functions.
 
 ```typescript
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 interface Schema {
   users: { id: number; name: string };

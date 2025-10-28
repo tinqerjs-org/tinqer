@@ -4,15 +4,15 @@ import {
   setParseCacheConfig,
   getParseCacheConfig,
   type QueryBuilder,
-} from "@webpods/tinqer";
+} from "@tinqerjs/tinqer";
 import {
   executeSelect,
   executeSelectSimple,
   executeInsert,
   executeUpdate,
   executeDelete,
-} from "@webpods/tinqer-sql-pg-promise";
-import { parseCache } from "@webpods/tinqer/dist/parser/parse-cache.js";
+} from "@tinqerjs/pg-promise-adapter";
+import { parseCache } from "@tinqerjs/tinqer/dist/parser/parse-cache.js";
 import { setupTestDatabase } from "./test-setup.js";
 import { db as dbClient } from "./shared-db.js";
 import { schema, type TestDatabaseSchema } from "./database-schema.js";

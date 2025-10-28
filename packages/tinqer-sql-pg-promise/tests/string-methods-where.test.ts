@@ -5,7 +5,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { defineSelect } from "@webpods/tinqer";
+import { defineSelect } from "@tinqerjs/tinqer";
 import { toSql } from "../dist/index.js";
 import { schema } from "./test-schema.js";
 

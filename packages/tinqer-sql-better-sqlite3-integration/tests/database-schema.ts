@@ -2,7 +2,7 @@
  * Database schema types and context for Better SQLite3 integration tests
  */
 
-import { createSchema } from "@webpods/tinqer";
+import { createSchema } from "@tinqerjs/tinqer";
 
 /**
  * Database schema types matching the SQLite tables

@@ -2,7 +2,7 @@
  * COUNT aggregate generator
  */
 
-import type { CountOperation } from "@webpods/tinqer";
+import type { CountOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 
 /**

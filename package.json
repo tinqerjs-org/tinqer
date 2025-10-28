@@ -1,5 +1,5 @@
 {
-  "name": "@webpods/tinqer-monorepo",
+  "name": "@tinqerjs/monorepo",
   "version": "0.0.21",
   "description": "LINQ to SQL for TypeScript",
   "type": "module",

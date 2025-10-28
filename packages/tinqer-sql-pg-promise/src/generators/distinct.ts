@@ -2,7 +2,7 @@
  * DISTINCT clause generator
  */
 
-import type { DistinctOperation } from "@webpods/tinqer";
+import type { DistinctOperation } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 
 /**

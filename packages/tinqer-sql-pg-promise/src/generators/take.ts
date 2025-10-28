@@ -2,7 +2,7 @@
  * TAKE (LIMIT) clause generator
  */
 
-import type { TakeOperation, ValueExpression } from "@webpods/tinqer";
+import type { TakeOperation, ValueExpression } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateValueExpression } from "../expression-generator.js";
 

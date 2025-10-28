@@ -27,7 +27,7 @@ import type {
   CaseExpression,
   ReferenceExpression,
   WindowFunctionExpression,
-} from "@webpods/tinqer";
+} from "@tinqerjs/tinqer";
 import type { SqlContext } from "./types.js";
 
 /**

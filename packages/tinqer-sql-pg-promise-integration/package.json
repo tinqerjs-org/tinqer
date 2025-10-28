@@ -1,5 +1,5 @@
 {
-  "name": "@webpods/tinqer-sql-pg-promise-integration",
+  "name": "@tinqerjs/pg-promise-adapter-integration",
   "version": "0.0.21",
   "description": "PostgreSQL integration tests for Tinqer using pg-promise",
   "type": "module",
@@ -13,8 +13,8 @@
     "lint:fix": "eslint tests --ext .ts --fix"
   },
   "dependencies": {
-    "@webpods/tinqer": "file:../tinqer",
-    "@webpods/tinqer-sql-pg-promise": "file:../tinqer-sql-pg-promise",
+    "@tinqerjs/tinqer": "file:../tinqer",
+    "@tinqerjs/pg-promise-adapter": "file:../tinqer-sql-pg-promise",
     "pg-promise": "^11.9.1"
   },
   "devDependencies": {

@@ -1,8 +1,8 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { defineSelect } from "@webpods/tinqer";
+import { defineSelect } from "@tinqerjs/tinqer";
 import { toSql } from "../dist/index.js";
-import { createSchema } from "@webpods/tinqer";
+import { createSchema } from "@tinqerjs/tinqer";
 
 interface TestTable {
   id: number;

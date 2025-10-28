@@ -175,8 +175,8 @@ npm test
 ```typescript
 import { describe, it } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema, defineSelect } from "@webpods/tinqer";
-import { toSql } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema, defineSelect } from "@tinqerjs/tinqer";
+import { toSql } from "@tinqerjs/pg-promise-adapter";
 
 describe("SQL Generation", () => {
   it("should generate SQL with WHERE clause", () => {
@@ -202,8 +202,8 @@ describe("SQL Generation", () => {
 ```typescript
 import { describe, it, beforeEach } from "mocha";
 import { strict as assert } from "assert";
-import { createSchema } from "@webpods/tinqer";
-import { executeSelect } from "@webpods/tinqer-sql-pg-promise";
+import { createSchema } from "@tinqerjs/tinqer";
+import { executeSelect } from "@tinqerjs/pg-promise-adapter";
 import { db } from "./shared-db.js";
 
 const schema = createSchema<Schema>();

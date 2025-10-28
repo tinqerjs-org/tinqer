@@ -2,7 +2,7 @@
  * SKIP (OFFSET) clause generator
  */
 
-import type { SkipOperation, ValueExpression } from "@webpods/tinqer";
+import type { SkipOperation, ValueExpression } from "@tinqerjs/tinqer";
 import type { SqlContext } from "../types.js";
 import { generateValueExpression } from "../expression-generator.js";
 

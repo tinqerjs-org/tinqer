@@ -30,7 +30,7 @@ import type {
   InsertOperation,
   UpdateOperation,
   DeleteOperation,
-} from "@webpods/tinqer";
+} from "@tinqerjs/tinqer";
 import type { SqlContext } from "./types.js";
 import { generateFrom } from "./generators/from.js";
 import { generateSelect } from "./generators/select.js";
