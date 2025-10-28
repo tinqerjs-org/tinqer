@@ -17,5 +17,5 @@ publish_package() {
 
 # Publish packages in dependency order
 publish_package "$ROOT_DIR/packages/tinqer" "$@"
-publish_package "$ROOT_DIR/packages/tinqer-sql-pg-promise" "$@"
-publish_package "$ROOT_DIR/packages/tinqer-sql-better-sqlite3" "$@"
+publish_package "$ROOT_DIR/packages/pg-promise-adapter" "$@"
+publish_package "$ROOT_DIR/packages/better-sqlite3-adapter" "$@"

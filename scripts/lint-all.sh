@@ -19,10 +19,10 @@ fi
 # Define packages
 PACKAGES=(
   "tinqer"
-  "tinqer-sql-pg-promise"
-  "tinqer-sql-pg-promise-integration"
-  "tinqer-sql-better-sqlite3"
-  "tinqer-sql-better-sqlite3-integration"
+  "pg-promise-adapter"
+  "pg-promise-adapter-integration"
+  "better-sqlite3-adapter"
+  "better-sqlite3-adapter-integration"
 )
 
 # Track overall success

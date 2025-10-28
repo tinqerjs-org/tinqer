@@ -1,9 +1,9 @@
 {
-  "name": "@tinqerjs/better-sqlite3-adapter-integration",
-  "version": "0.0.21",
-  "private": true,
+  "name": "@tinqerjs/pg-promise-adapter-integration",
+  "version": "0.0.22",
+  "description": "PostgreSQL integration tests for Tinqer using pg-promise",
   "type": "module",
-  "description": "SQLite integration tests for Tinqer using better-sqlite3",
+  "private": true,
   "scripts": {
     "test": "mocha tests/**/*.test.ts",
     "test:watch": "mocha tests/**/*.test.ts --watch",
@@ -14,17 +14,16 @@
   },
   "dependencies": {
     "@tinqerjs/tinqer": "file:../tinqer",
-    "@tinqerjs/better-sqlite3-adapter": "file:../tinqer-sql-better-sqlite3",
-    "better-sqlite3": "^11.8.1"
+    "@tinqerjs/pg-promise-adapter": "file:../pg-promise-adapter",
+    "pg-promise": "^11.9.1"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.12",
     "@types/chai": "^5.2.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.3.3",
     "chai": "^5.3.3",
     "mocha": "^11.7.2",
-    "tsx": "^4.20.5",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.2"
   }
 }
