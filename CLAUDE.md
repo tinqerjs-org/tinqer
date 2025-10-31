@@ -118,7 +118,7 @@ The `.todos/` directory is gitignored for persistent task tracking across sessio
 
 ## Project Overview & Principles
 
-Tinqer is a LINQ-to-SQL query builder for TypeScript that provides type-safe, composable query construction using lambda expressions parsed at runtime. For project overview, see [README.md](../README.md).
+Tinqer is a type-safe query builder for TypeScript that provides type-safe, composable query construction using lambda expressions parsed at runtime. For project overview, see [README.md](../README.md).
 
 ### Greenfield Development Context
 

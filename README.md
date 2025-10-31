@@ -1,6 +1,6 @@
 # Tinqer
 
-Runtime LINQ-to-SQL query builder for TypeScript. Queries are expressed as inline arrow functions, parsed into an expression tree, and compiled into SQL for PostgreSQL or SQLite.
+A type-safe query builder for TypeScript. Queries are expressed as inline arrow functions, parsed into an expression tree, and compiled into SQL for PostgreSQL or SQLite. The API is similar to DotNet's LINQ-based frameworks.
 
 ## Installation
 
