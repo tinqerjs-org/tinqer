@@ -45,7 +45,7 @@ Guide for contributing to Tinqer, running tests, and troubleshooting.
 
 ```bash
 # Clone the repository
-git clone https://github.com/tinqerjs-org/tinqer.git
+git clone https://github.com/tinqerjs/tinqer.git
 cd tinqer
 
 # Install dependencies

@@ -43,7 +43,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tinqerjs-org/tinqer.git"
+    "url": "https://github.com/tinqerjs/tinqer.git"
   },
   "keywords": [
     "linq",
