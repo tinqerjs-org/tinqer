@@ -12,8 +12,7 @@ echo "Generating ${OUTPUT_FILE} from documentation files..."
 cat > "${OUTPUT_FILE}" << 'HEADER'
 # Tinqer Documentation
 
-This file contains the complete documentation for Tinqer, a runtime LINQ-to-SQL query builder for TypeScript.
-
+This file contains the complete documentation for Tinqer, a type-safe query builder for TypeScript.
 ---
 
 HEADER

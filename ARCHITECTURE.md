@@ -1,6 +1,6 @@
 # Architecture
 
-Tinqer is a LINQ-to-SQL query builder for TypeScript that converts lambda expressions into SQL queries through runtime parsing and expression tree generation.
+Tinqer is a type-safe query builder (for TypeScript) that converts lambda expressions into SQL queries through runtime parsing and expression tree generation. The API is similar to DotNet's LINQ-based frameworks.
 
 ## Database Adapters
 
